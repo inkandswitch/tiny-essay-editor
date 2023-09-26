@@ -4,7 +4,7 @@ import "./App.css";
 
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import * as A from "@automerge/automerge";
+import { next as A } from "@automerge/automerge";
 
 interface CounterDoc {
   counter: A.Counter;
