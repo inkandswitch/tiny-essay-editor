@@ -6,7 +6,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { next as A } from "@automerge/automerge";
 
-interface TextDoc {
+export interface TextDoc {
   content: string;
 }
 
@@ -18,12 +18,14 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       A.mark(
         doc,
         ["content"],
-        { start: 0, end: 2, expand: "none" },
+        { start: 1, end: 2, expand: "none" },
         "bold",
         true
       )
     );
   };
+
+  if (!doc) return <></>;
 
   return (
     <>
@@ -42,14 +44,12 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           onChange={(e) => changeDoc((d) => (d.content = e.target.value))}
         />
         <button onClick={markDoc}>Mark</button>
-        <p>Marks: {A.marks(doc, ["content"]).length} marks</p>
+        <p>Marks: {JSON.stringify(A.marks(doc, ["content"]))}</p>
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          Instructions: 1) type 'test' into the box, 2) click Mark, see the mark
+          appear, 3) edit the text further, the marks will disappear
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   );
 }

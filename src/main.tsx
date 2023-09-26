@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.tsx";
+import App, { TextDoc } from "./App.tsx";
 import "./index.css";
 
 import { isValidAutomergeUrl, Repo } from "@automerge/automerge-repo";
@@ -19,8 +19,8 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<{ counter?: A.Counter }>();
-  handle.change((d) => (d.counter = new A.Counter()));
+  handle = repo.create<TextDoc>();
+  handle.change((d) => (d.content = ""));
 }
 
 // eslint-disable-next-line
