@@ -25,6 +25,14 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     );
   };
 
+  const addChar = () => {
+    const randomIndex = Math.floor(Math.random() * doc.content.length);
+    const randomChar = String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+    changeDoc((doc: TextDoc) =>
+      A.splice(doc, ["content"], randomIndex, 0, randomChar)
+    );
+  };
+
   if (!doc) return <></>;
 
   return (
@@ -43,6 +51,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           onChange={(e) => changeDoc((d) => (d.content = e.target.value))}
         />
         <button onClick={markDoc}>Mark</button>
+        <button onClick={addChar}>Add Char</button>
         <p>Marks: {JSON.stringify(A.marks(doc, ["content"]))}</p>
       </div>
     </>
