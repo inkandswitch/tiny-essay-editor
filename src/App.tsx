@@ -6,12 +6,24 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { next as A } from "@automerge/automerge";
 
-interface CounterDoc {
-  counter: A.Counter;
+interface TextDoc {
+  content: string;
 }
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc, changeDoc] = useDocument<CounterDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<TextDoc>(docUrl);
+
+  const markDoc = () => {
+    changeDoc((doc: TextDoc) =>
+      A.mark(
+        doc,
+        ["content"],
+        { start: 0, end: 2, expand: "none" },
+        "bold",
+        true
+      )
+    );
+  };
 
   return (
     <>
@@ -25,9 +37,12 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => changeDoc((d) => d.counter.increment(1))}>
-          count is {doc && doc.counter.value}
-        </button>
+        <input
+          value={doc ? doc.content : ""}
+          onChange={(e) => changeDoc((d) => (d.content = e.target.value))}
+        />
+        <button onClick={markDoc}>Mark</button>
+        <p>Marks: {A.marks(doc, ["content"]).length} marks</p>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
