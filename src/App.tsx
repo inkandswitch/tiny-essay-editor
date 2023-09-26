@@ -1,10 +1,7 @@
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
-
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { next as A } from "@automerge/automerge";
+import MarkdownEditor from "./MarkdownEditor";
 
 export interface TextDoc {
   content: string;
@@ -34,6 +31,8 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   };
 
   if (!doc) return <></>;
+
+  return <MarkdownEditor doc={doc} changeDoc={changeDoc} />;
 
   return (
     <>
