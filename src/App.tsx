@@ -29,15 +29,14 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h1>Vite React Automerge app</h1>
+      <p>
+        This is an editable text box, and a debug view of marks on the text box.
+      </p>
+      <p>
+        Instructions: 1) type 'test' into the box, 2) click Mark, see the mark
+        appear, 3) edit the text further, the marks will disappear
+      </p>
       <div className="card">
         <input
           value={doc ? doc.content : ""}
@@ -45,10 +44,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         />
         <button onClick={markDoc}>Mark</button>
         <p>Marks: {JSON.stringify(A.marks(doc, ["content"]))}</p>
-        <p>
-          Instructions: 1) type 'test' into the box, 2) click Mark, see the mark
-          appear, 3) edit the text further, the marks will disappear
-        </p>
       </div>
     </>
   );
