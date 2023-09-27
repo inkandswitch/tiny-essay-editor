@@ -35,7 +35,7 @@ export default function MarkdownEditor({
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range | null>(null);
-  console.log("rendering MarkdowEditor");
+  console.log("rendering editor", doc.content.toString());
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -44,8 +44,6 @@ export default function MarkdownEditor({
       children: [{ text: doc.content.toString() }],
     },
   ];
-
-  console.log({ content });
 
   const renderLeaf = (props: RenderLeafProps) => <Leaf {...props} />;
 
@@ -117,7 +115,7 @@ export default function MarkdownEditor({
         width: 100%;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: 750px auto;
+        grid-template-columns: min(750px, 70%) auto;
         grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
