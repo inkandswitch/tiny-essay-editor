@@ -18,6 +18,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       css={css`
         width: 100vw;
         height: 100vh;
+        overflow: hidden;
       `}
     >
       <MarkdownEditor doc={doc} changeDoc={changeDoc} />

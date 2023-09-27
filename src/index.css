@@ -16,7 +16,7 @@ body {
 }
 
 
-
+/* Steal a bunch of styles from the I&S website */
 
 /* LOAD FONTS ================================ */
 
@@ -98,3 +98,138 @@ body {
   font-display: swap
 }
 
+/* Link style -------------------------------- */
+
+a {
+  background-image: url("assets/splat-underline-2-default.svg");
+  background-size: 100% 4px;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  color: #000;
+  padding-bottom: .05rem;
+  text-decoration: none;
+  -webkit-tap-highlight-color:hsla(1, 76%, 51%, .4);
+}
+
+a.plain {
+  background-image: none;
+  /* Shouldn't these have the padding removed, and some other affordance added? */
+}
+
+figcaption a, aside a {
+  padding-bottom: 0;
+}
+nav a {
+  background-image: none;
+}
+a:hover{
+  background-image: url("assets/splat-underline-2-hover.svg");
+  color: #D70A1B;
+}
+
+/* Should these use .outro instead of the less-clear p:last-of-type? */
+header p:last-of-type span a {
+  background-image: url("assets/splat-underline-1-default.svg");
+  padding-bottom: .1rem;
+}
+header p:last-of-type span a:hover{
+  background-image: url("assets/splat-underline-1-hover.svg");
+}
+
+/* This is bad for accessibility, and Safari / Chrome don't seem to respect it */
+::-moz-selection,
+::selection{
+    background: hsla(1, 0%, 75%, 0.4);
+    text-shadow: none;
+}
+
+/* Separator ----------------------------------- */
+
+hr {
+  background-image: url("assets/splat-separator-1.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 5px;
+  padding-top: 1rem;
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+
+  display: block;
+  border: none;
+  margin-inline-end: auto;
+}
+
+/* Headers ----------------------------------- */
+
+h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  margin: 2rem 0 1rem 0;
+}
+
+h4 {
+  font-size: 1.1rem;
+  margin: 2rem 0 1rem 0;
+}
+
+h1+h2, h2+h3 {
+  margin: -.5rem 0 1rem 0;
+}
+
+/* Text -------------------------------------- */
+
+p, li {
+  /* By default, don't use hyphens — current browsers do an awful job of it. */
+  /* See the HYPHENS section below for more */
+  /* -ms-hyphens: auto; */
+  /* -webkit-hyphens: auto; */
+  font-size: 1rem;
+  /* hyphens: auto; */
+  line-height: 1.5rem;
+  margin: 0 0 1.5rem 0;
+  text-align: justify;
+}
+
+small, sup {
+  font-size: .8125em;
+}
+
+strong {
+  font-weight: 700;
+}
+
+em {
+  font-style: italic;
+}
+
+sup {
+  display: inline-block;
+  padding-left: .125rem;
+  padding-right: .125rem;
+  position: relative;
+  top: .125rem;
+  vertical-align: top;
+  line-height: .75rem;
+}
+sup a {
+  background: none;
+  text-decoration: underline;
+}
+sup a:hover {
+  background: none;
+  text-decoration: underline;
+}

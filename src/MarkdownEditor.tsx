@@ -128,8 +128,8 @@ export default function MarkdownEditor({
           grid-area: toolbar;
           padding: 5px;
           background: linear-gradient(to bottom, #fff, #eee);
-
           border-bottom: #ddd solid thin;
+          box-sizing: border-box;
         `}
       >
         <div
@@ -163,7 +163,9 @@ export default function MarkdownEditor({
           border-right: solid thin #eee;
           grid-area: editor;
           overflow: hidden;
-          font-family: "Merriweather", "Comic Sans", sans-serif;
+          font-family: "Merriweather", serif;
+          font-size: 16px;
+          line-height: 24px;
         `}
       >
         <Slate editor={editor} initialValue={content} onChange={() => {}}>
