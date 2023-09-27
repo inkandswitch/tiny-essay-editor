@@ -8,6 +8,7 @@ import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-networ
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as A } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { ESSAY_TEXT } from "./essayText.ts";
 
 const repo = new Repo({
   network: [new BroadcastChannelNetworkAdapter()],
@@ -20,7 +21,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
   handle = repo.create<TextDoc>();
-  handle.change((d) => (d.content = "hello world"));
+  handle.change((d) => (d.content = "hello"));
 }
 
 // eslint-disable-next-line
