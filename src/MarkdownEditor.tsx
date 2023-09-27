@@ -169,7 +169,7 @@ export default function MarkdownEditor({
           text-align: justify;
         `}
       >
-        <Slate editor={editor} initialValue={content} onChange={() => {}}>
+        <Slate editor={editor} value={content} onChange={() => {}}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
