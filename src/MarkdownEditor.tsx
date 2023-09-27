@@ -115,7 +115,7 @@ export default function MarkdownEditor({
         width: 100%;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: min(750px, 70%) auto;
+        grid-template-columns: minmax(750px, 70%) auto;
         grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
