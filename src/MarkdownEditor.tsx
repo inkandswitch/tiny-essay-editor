@@ -35,6 +35,7 @@ export default function MarkdownEditor({
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range | null>(null);
+  console.log("rendering MarkdowEditor");
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -87,6 +88,7 @@ export default function MarkdownEditor({
     };
 
     // Add Markdown decorations
+    console.log("tokenizing!");
     const tokens = Prism.tokenize(node.text, Prism.languages.markdown);
     let start = 0;
 
@@ -115,7 +117,7 @@ export default function MarkdownEditor({
         width: 100%;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: 70% 30%;
+        grid-template-columns: 750px auto;
         grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
@@ -166,6 +168,7 @@ export default function MarkdownEditor({
           font-family: "Merriweather", serif;
           font-size: 16px;
           line-height: 24px;
+          text-align: justify;
         `}
       >
         <Slate editor={editor} initialValue={content} onChange={() => {}}>
@@ -180,7 +183,7 @@ export default function MarkdownEditor({
               height: "100%",
               overflowY: "scroll",
               outline: "none",
-              padding: "20px",
+              padding: "20px 50px",
               boxSizing: "border-box",
               overflowX: "hidden",
             }}
