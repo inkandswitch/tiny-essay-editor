@@ -1,0 +1,792 @@
+/* Background */
+
+.chroma {
+  color: #272822;
+  background-color: #fafafa;
+}
+
+/* Other */
+
+.chroma .x {
+}
+
+/* Error */
+
+.chroma .err {
+  color: #960050;
+  background-color: #1e0010;
+}
+
+/* LineTableTD */
+
+.chroma .lntd {
+  vertical-align: top;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+/* LineTable */
+
+.chroma .lntable {
+  border-spacing: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  width: auto;
+  overflow: auto;
+  display: block;
+}
+
+/* LineHighlight */
+
+.chroma .hl {
+  display: block;
+  width: 100%;
+  background-color: #ffffcc;
+}
+
+/* LineNumbersTable */
+
+.chroma .lnt {
+  margin-right: 0.4em;
+  padding: 0 0.4em 0 0.4em;
+  color: #7f7f7f;
+}
+
+/* LineNumbers */
+
+.chroma .ln {
+  margin-right: 0.4em;
+  padding: 0 0.4em 0 0.4em;
+  color: #7f7f7f;
+}
+
+/* Keyword */
+
+.chroma .k {
+  color: #00a8c8;
+}
+
+/* KeywordConstant */
+
+.chroma .kc {
+  color: #00a8c8;
+}
+
+/* KeywordDeclaration */
+
+.chroma .kd {
+  color: #00a8c8;
+}
+
+/* KeywordNamespace */
+
+.chroma .kn {
+  color: #f92672;
+}
+
+/* KeywordPseudo */
+
+.chroma .kp {
+  color: #00a8c8;
+}
+
+/* KeywordReserved */
+
+.chroma .kr {
+  color: #00a8c8;
+}
+
+/* KeywordType */
+
+.chroma .kt {
+  color: #00a8c8;
+}
+
+/* Name */
+
+.chroma .n {
+  color: #111111;
+}
+
+/* NameAttribute */
+
+.chroma .na {
+  color: #75af00;
+}
+
+/* NameBuiltin */
+
+.chroma .nb {
+  color: #111111;
+}
+
+/* NameBuiltinPseudo */
+
+.chroma .bp {
+  color: #111111;
+}
+
+/* NameClass */
+
+.chroma .nc {
+  color: #75af00;
+}
+
+/* NameConstant */
+
+.chroma .no {
+  color: #00a8c8;
+}
+
+/* NameDecorator */
+
+.chroma .nd {
+  color: #75af00;
+}
+
+/* NameEntity */
+
+.chroma .ni {
+  color: #111111;
+}
+
+/* NameException */
+
+.chroma .ne {
+  color: #75af00;
+}
+
+/* NameFunction */
+
+.chroma .nf {
+  color: #75af00;
+}
+
+/* NameFunctionMagic */
+
+.chroma .fm {
+  color: #111111;
+}
+
+/* NameLabel */
+
+.chroma .nl {
+  color: #111111;
+}
+
+/* NameNamespace */
+
+.chroma .nn {
+  color: #111111;
+}
+
+/* NameOther */
+
+.chroma .nx {
+  color: #75af00;
+}
+
+/* NameProperty */
+
+.chroma .py {
+  color: #111111;
+}
+
+/* NameTag */
+
+.chroma .nt {
+  color: #f92672;
+}
+
+/* NameVariable */
+
+.chroma .nv {
+  color: #111111;
+}
+
+/* NameVariableClass */
+
+.chroma .vc {
+  color: #111111;
+}
+
+/* NameVariableGlobal */
+
+.chroma .vg {
+  color: #111111;
+}
+
+/* NameVariableInstance */
+
+.chroma .vi {
+  color: #111111;
+}
+
+/* NameVariableMagic */
+
+.chroma .vm {
+  color: #111111;
+}
+
+/* Literal */
+
+.chroma .l {
+  color: #ae81ff;
+}
+
+/* LiteralDate */
+
+.chroma .ld {
+  color: #d88200;
+}
+
+/* LiteralString */
+
+.chroma .s {
+  color: #d88200;
+}
+
+/* LiteralStringAffix */
+
+.chroma .sa {
+  color: #d88200;
+}
+
+/* LiteralStringBacktick */
+
+.chroma .sb {
+  color: #d88200;
+}
+
+/* LiteralStringChar */
+
+.chroma .sc {
+  color: #d88200;
+}
+
+/* LiteralStringDelimiter */
+
+.chroma .dl {
+  color: #d88200;
+}
+
+/* LiteralStringDoc */
+
+.chroma .sd {
+  color: #d88200;
+}
+
+/* LiteralStringDouble */
+
+.chroma .s2 {
+  color: #d88200;
+}
+
+/* LiteralStringEscape */
+
+.chroma .se {
+  color: #8045ff;
+}
+
+/* LiteralStringHeredoc */
+
+.chroma .sh {
+  color: #d88200;
+}
+
+/* LiteralStringInterpol */
+
+.chroma .si {
+  color: #d88200;
+}
+
+/* LiteralStringOther */
+
+.chroma .sx {
+  color: #d88200;
+}
+
+/* LiteralStringRegex */
+
+.chroma .sr {
+  color: #d88200;
+}
+
+/* LiteralStringSingle */
+
+.chroma .s1 {
+  color: #d88200;
+}
+
+/* LiteralStringSymbol */
+
+.chroma .ss {
+  color: #d88200;
+}
+
+/* LiteralNumber */
+
+.chroma .m {
+  color: #ae81ff;
+}
+
+/* LiteralNumberBin */
+
+.chroma .mb {
+  color: #ae81ff;
+}
+
+/* LiteralNumberFloat */
+
+.chroma .mf {
+  color: #ae81ff;
+}
+
+/* LiteralNumberHex */
+
+.chroma .mh {
+  color: #ae81ff;
+}
+
+/* LiteralNumberInteger */
+
+.chroma .mi {
+  color: #ae81ff;
+}
+
+/* LiteralNumberIntegerLong */
+
+.chroma .il {
+  color: #ae81ff;
+}
+
+/* LiteralNumberOct */
+
+.chroma .mo {
+  color: #ae81ff;
+}
+
+/* Operator */
+
+.chroma .o {
+  color: #f92672;
+}
+
+/* OperatorWord */
+
+.chroma .ow {
+  color: #f92672;
+}
+
+/* Punctuation */
+
+.chroma .p {
+  color: #111111;
+}
+
+/* Comment */
+
+.chroma .c {
+  color: #75715e;
+}
+
+/* CommentHashbang */
+
+.chroma .ch {
+  color: #75715e;
+}
+
+/* CommentMultiline */
+
+.chroma .cm {
+  color: #75715e;
+}
+
+/* CommentSingle */
+
+.chroma .c1 {
+  color: #75715e;
+}
+
+/* CommentSpecial */
+
+.chroma .cs {
+  color: #75715e;
+}
+
+/* CommentPreproc */
+
+.chroma .cp {
+  color: #75715e;
+}
+
+/* CommentPreprocFile */
+
+.chroma .cpf {
+  color: #75715e;
+}
+
+/* Generic */
+
+.chroma .g {
+}
+
+/* GenericDeleted */
+
+.chroma .gd {
+}
+
+/* GenericEmph */
+
+.chroma .ge {
+  font-style: italic;
+}
+
+/* GenericError */
+
+.chroma .gr {
+}
+
+/* GenericHeading */
+
+.chroma .gh {
+}
+
+/* GenericInserted */
+
+.chroma .gi {
+}
+
+/* GenericOutput */
+
+.chroma .go {
+}
+
+/* GenericPrompt */
+
+.chroma .gp {
+}
+
+/* GenericStrong */
+
+.chroma .gs {
+  font-weight: bold;
+}
+
+/* GenericSubheading */
+
+.chroma .gu {
+}
+
+/* GenericTraceback */
+
+.chroma .gt {
+}
+
+/* GenericUnderline */
+
+.chroma .gl {
+}
+
+/* TextWhitespace */
+
+.chroma .w {
+}
+
+/* PrismJS 1.21.0
+https://prismjs.com/download.html#themes=prism&languages=markup+css+clike+javascript+json+json5+yaml&plugins=line-highlight+show-language+toolbar */
+
+/**
+ * prism.js default theme for JavaScript, CSS and HTML
+ * Based on dabblet (http://dabblet.com)
+ * @author Lea Verou
+ */
+
+.highlight pre[class*="chroma"], /* fix for when js is disabled */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: black;
+  background: none;
+  text-shadow: 0 1px white;
+  font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  font-size: 1em;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.5;
+
+  -moz-tab-size: 4;
+  tab-size: 4;
+
+  -webkit-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
+}
+
+.highlight pre[class*="chroma"]::-moz-selection,
+.highlight pre[class*="chroma"] ::-moz-selection,
+pre[class*="language-"]::-moz-selection,
+pre[class*="language-"] ::-moz-selection,
+code[class*="language-"]::-moz-selection,
+code[class*="language-"] ::-moz-selection {
+  text-shadow: none;
+  background: #b3d4fc;
+}
+
+.highlight pre[class*="chroma"]::selection,
+.highlight pre[class*="chroma"] ::selection,
+pre[class*="language-"]::selection,
+pre[class*="language-"] ::selection,
+code[class*="language-"]::selection,
+code[class*="language-"] ::selection {
+  text-shadow: none;
+  background: #b3d4fc;
+}
+
+@media print {
+  .highlight pre[class*="chroma"],
+  code[class*="language-"],
+  pre[class*="language-"] {
+    text-shadow: none;
+  }
+}
+
+/* Code blocks */
+
+.highlight pre[class*="chroma"],
+pre[class*="language-"] {
+  padding: 1em;
+  margin: 0.5em 0;
+  overflow: auto;
+  /* Put code snippets closer to the text above than below, clearer text flow */
+  margin-bottom: 1.5em;
+  margin-top: -0.5em;
+}
+
+:not(pre) > code[class*="language-"],
+.highlight pre[class*="chroma"],
+pre[class*="language-"] {
+  background: #f5f2f0;
+}
+
+/* Inline code */
+
+:not(pre) > code[class*="language-"] {
+  padding: 0.1em;
+  border-radius: 0.3em;
+  white-space: normal;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: slategray;
+}
+
+.token.punctuation {
+  color: #999;
+}
+
+.token.namespace {
+  opacity: 0.7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #905;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #690;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #9a6e3a;
+  /* This background color was intended by the author of this theme. */
+  background: hsla(0, 0%, 100%, 0.5);
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #07a;
+}
+
+.token.function,
+.token.class-name {
+  color: #dd4a68;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #e90;
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+pre[data-line] {
+  position: relative;
+  padding: 1em 0 1em 3em;
+}
+
+.line-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: inherit 0;
+  margin-top: 1em; /* Same as .prism’s padding-top */
+
+  background: hsla(24, 20%, 50%, 0.08);
+  background: linear-gradient(
+    to right,
+    hsla(24, 20%, 50%, 0.1) 70%,
+    hsla(24, 20%, 50%, 0)
+  );
+
+  pointer-events: none;
+
+  line-height: inherit;
+  white-space: pre;
+}
+
+.line-highlight:before,
+.line-highlight[data-end]:after {
+  content: attr(data-start);
+  position: absolute;
+  top: 0.4em;
+  left: 0.6em;
+  min-width: 1em;
+  padding: 0 0.5em;
+  background-color: hsla(24, 20%, 50%, 0.4);
+  color: hsl(24, 20%, 95%);
+  font: bold 65%/1.5 sans-serif;
+  text-align: center;
+  vertical-align: 0.3em;
+  border-radius: 999px;
+  text-shadow: none;
+  box-shadow: 0 1px white;
+}
+
+.line-highlight[data-end]:after {
+  content: attr(data-end);
+  top: auto;
+  bottom: 0.4em;
+}
+
+.line-numbers .line-highlight:before,
+.line-numbers .line-highlight:after {
+  content: none;
+}
+
+pre[id].linkable-line-numbers span.line-numbers-rows {
+  pointer-events: all;
+}
+
+pre[id].linkable-line-numbers span.line-numbers-rows > span:before {
+  cursor: pointer;
+}
+
+pre[id].linkable-line-numbers span.line-numbers-rows > span:hover:before {
+  background-color: rgba(128, 128, 128, 0.2);
+}
+
+div.code-toolbar {
+  position: relative;
+}
+
+div.code-toolbar > .toolbar {
+  position: absolute;
+  top: 0.3em;
+  right: 0.2em;
+  transition: opacity 0.3s ease-in-out;
+  opacity: 0;
+}
+
+div.code-toolbar:hover > .toolbar {
+  opacity: 1;
+}
+
+/* Separate line b/c rules are thrown out if selector is invalid.
+   IE11 and old Edge versions don't support :focus-within. */
+
+div.code-toolbar:focus-within > .toolbar {
+  opacity: 1;
+}
+
+div.code-toolbar > .toolbar .toolbar-item {
+  display: inline-block;
+}
+
+div.code-toolbar > .toolbar a {
+  cursor: pointer;
+}
+
+div.code-toolbar > .toolbar button {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  line-height: normal;
+  overflow: visible;
+  padding: 0;
+  -webkit-user-select: none; /* for button */
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+div.code-toolbar > .toolbar a,
+div.code-toolbar > .toolbar button,
+div.code-toolbar > .toolbar span {
+  color: #bbb;
+  font-size: 0.8em;
+  padding: 0 0.5em;
+  background: #f5f2f0;
+  background: rgba(224, 224, 224, 0.2);
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.2);
+  border-radius: 0.5em;
+}
+
+div.code-toolbar > .toolbar a:hover,
+div.code-toolbar > .toolbar a:focus,
+div.code-toolbar > .toolbar button:hover,
+div.code-toolbar > .toolbar button:focus,
+div.code-toolbar > .toolbar span:hover,
+div.code-toolbar > .toolbar span:focus {
+  color: inherit;
+  text-decoration: none;
+}
+
+pre code {
+  padding: 0;
+}

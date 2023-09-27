@@ -21,6 +21,7 @@
     "prismjs": "^1.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-json-view": "^1.21.3",
     "slate": "^0.94.1",
     "slate-history": "^0.93.0",
     "slate-react": "^0.99.0",

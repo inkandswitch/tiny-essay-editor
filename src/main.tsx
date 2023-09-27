@@ -20,7 +20,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
   handle = repo.create<TextDoc>();
-  handle.change((d) => (d.content = ""));
+  handle.change((d) => (d.content = "hello world"));
 }
 
 // eslint-disable-next-line

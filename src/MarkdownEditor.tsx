@@ -1,28 +1,16 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { jsx, css } from "@emotion/react";
+import { useCallback, useMemo, useState } from "react";
+import { css } from "@emotion/react";
 
-import {
-  createEditor,
-  Text,
-  Range,
-  Point,
-  Node,
-  Operation,
-  Editor,
-} from "slate";
+import { createEditor, Text, Range, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
+import { next as A } from "@automerge/automerge";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
 import Prism, { Token } from "prismjs";
-import { loremIpsum } from "lorem-ipsum";
-import { v4 as uuidv4 } from "uuid";
-import {
-  MarkdownDoc,
-  slateRangeFromAutomergeSpan,
-  automergeSpanFromSlateRange,
-} from "./slate-automerge";
+
+import { MarkdownDoc } from "./slate-automerge";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -46,8 +34,7 @@ export default function MarkdownEditor({
   doc,
   changeDoc,
 }: MarkdownEditorProps) {
-  const [selection, setSelection] = useState<Range>(null);
-  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Range | null>(null);
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -57,33 +44,9 @@ export default function MarkdownEditor({
     },
   ];
 
-  const renderLeaf = useCallback(
-    (props) => <Leaf {...props} />,
-    [docSpans, activeCommentId]
-  );
+  console.log({ content });
 
-  const addComment = () => {
-    console.log("todo");
-  };
-
-  // Set the active comment based on the latest selection in the doc
-  useEffect(() => {
-    let activeCommentId = null;
-    for (const comment of docSpans) {
-      if (
-        activeCommentId !== comment.id &&
-        selection &&
-        Range.intersection(
-          selection,
-          slateRangeFromAutomergeSpan(comment.range)
-        )
-      ) {
-        activeCommentId = comment.id;
-        break;
-      }
-    }
-    setActiveCommentId(activeCommentId);
-  }, [selection]);
+  const renderLeaf = (props: RenderLeafProps) => <Leaf {...props} />;
 
   const editor = useMemo(() => {
     return withOpHandler(
@@ -92,119 +55,132 @@ export default function MarkdownEditor({
         console.log("applying Slate operation", op);
         if (op.type === "insert_text") {
           changeDoc((doc: MarkdownDoc) =>
-            doc.content.insertAt(op.offset, op.text)
+            A.splice(doc, ["content"], op.offset, 0, op.text)
           );
         }
         if (op.type === "remove_text") {
           changeDoc((doc: MarkdownDoc) =>
-            doc.content.deleteAt(op.offset, op.text.length)
+            A.splice(doc, ["content"], op.offset, op.text.length)
           );
         }
       }
     );
   }, []);
 
-  const decorate = useCallback(
-    ([node, path]) => {
-      const ranges: Range[] = [];
+  const decorate = useCallback(([node, path]) => {
+    const ranges: Range[] = [];
 
-      if (!Text.isText(node)) {
-        return ranges;
-      }
-
-      const getLength = (token: any): number => {
-        if (typeof token === "string") {
-          return token.length;
-        } else if (typeof token.content === "string") {
-          return token.content.length;
-        } else if (Array.isArray(token.content)) {
-          return token.content.reduce((l, t) => l + getLength(t), 0);
-        } else {
-          return 0;
-        }
-      };
-
-      // Add comment highlighting decorations
-      for (const docSpan of docSpans) {
-        if (activeCommentId === docSpan.id) {
-          ranges.push({
-            ...slateRangeFromAutomergeSpan(docSpan.range),
-            extraHighlighted: true,
-          });
-        } else {
-          ranges.push({
-            ...slateRangeFromAutomergeSpan(docSpan.range),
-            highlighted: true,
-          });
-        }
-      }
-
-      // Add Markdown decorations
-
-      const tokens = Prism.tokenize(node.text, Prism.languages.markdown);
-      let start = 0;
-
-      for (const token of tokens) {
-        const length = getLength(token);
-        const end = start + length;
-
-        if (typeof token !== "string") {
-          ranges.push({
-            [token.type]: true,
-            anchor: { path, offset: start },
-            focus: { path, offset: end },
-          });
-        }
-
-        start = end;
-      }
-
+    if (!Text.isText(node)) {
       return ranges;
-    },
-    [docSpans, activeCommentId]
-  );
+    }
+
+    const getLength = (token: any): number => {
+      if (typeof token === "string") {
+        return token.length;
+      } else if (typeof token.content === "string") {
+        return token.content.length;
+      } else if (Array.isArray(token.content)) {
+        return token.content.reduce((l, t) => l + getLength(t), 0);
+      } else {
+        return 0;
+      }
+    };
+
+    // Add Markdown decorations
+    const tokens = Prism.tokenize(node.text, Prism.languages.markdown);
+    let start = 0;
+
+    for (const token of tokens) {
+      const length = getLength(token);
+      const end = start + length;
+
+      if (typeof token !== "string") {
+        ranges.push({
+          [token.type]: true,
+          anchor: { path, offset: start },
+          focus: { path, offset: end },
+        });
+      }
+
+      start = end;
+    }
+
+    return ranges;
+  }, []);
 
   return (
     <div
       css={css`
-        padding: 10px;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
         display: grid;
         grid-template-columns: 70% 30%;
-        grid-template-rows: 30px auto;
+        grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
           "editor comments";
         column-gap: 10px;
-        row-gap: 10px;
       `}
     >
       <div
         css={css`
           grid-area: toolbar;
+          padding: 5px;
+          background: linear-gradient(to bottom, #fff, #eee);
+
+          border-bottom: #ddd solid thin;
         `}
       >
-        <button
-          className="toolbar-button"
-          disabled={selection?.anchor?.offset === selection?.focus?.offset}
-          onClick={addComment}
+        <div
+          css={css`
+            color: #333;
+            font-weight: bold;
+            font-size: 1rem;
+            font-family: "Merriweather Sans";
+          `}
         >
-          💬 Comment
-        </button>
+          <img
+            src="assets/logo-favicon-310x310-transparent.png"
+            height="30px"
+            css={css`
+              display: inline;
+              vertical-align: top;
+            `}
+          />
+          <div
+            css={css`
+              display: inline-block;
+              padding-top: 3px;
+            `}
+          >
+            Essay Editor
+          </div>
+        </div>
       </div>
       <div
         css={css`
-          border: solid thin #ddd;
-          padding: 5px;
+          border-right: solid thin #eee;
           grid-area: editor;
+          overflow: hidden;
+          font-family: "Merriweather", "Comic Sans", sans-serif;
         `}
       >
-        <Slate editor={editor} value={content} onChange={() => {}}>
+        <Slate editor={editor} initialValue={content} onChange={() => {}}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
             placeholder="Write some markdown here!"
             onSelect={() => {
               setSelection(editor.selection);
+            }}
+            style={{
+              height: "100%",
+              overflowY: "scroll",
+              outline: "none",
+              padding: "20px",
+              boxSizing: "border-box",
+              overflowX: "hidden",
             }}
             // We want to keep the whole doc as one giant node;
             // block Enter key from creating a new node here.
@@ -216,17 +192,6 @@ export default function MarkdownEditor({
             }}
           />
         </Slate>
-      </div>
-      <div
-        css={css`
-          grid-area: comments;
-        `}
-      >
-        <Comments
-          comments={doc.comments}
-          activeCommentId={activeCommentId}
-          setActiveCommentId={setActiveCommentId}
-        />
       </div>
     </div>
   );
@@ -289,61 +254,3 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
     </span>
   );
 };
-
-type CommentsProps = {
-  comments: Comment[];
-  activeCommentId: string;
-  setActiveCommentId: any;
-};
-
-function Comments({
-  comments,
-  activeCommentId,
-  setActiveCommentId,
-}: CommentsProps) {
-  // todo: sort the comments
-
-  return (
-    <div className="comments-list">
-      {comments.map((comment) => {
-        // If a comment's start and end index are the same,
-        // the span it pointed to has been removed from the doc
-        if (comment.range.start.index === comment.range.end.index) {
-          return null;
-        }
-        return (
-          <div
-            key={comment.id}
-            css={css`
-              border: solid thin #ddd;
-              border-radius: 10px;
-              padding: 10px;
-              margin: 10px;
-              cursor: pointer;
-
-              &:hover {
-                border: solid thin #bbb;
-              }
-
-              ${activeCommentId === comment.id &&
-              `border: solid thin #bbb;
-              box-shadow: 0px 0px 5px 3px #ddd;`}
-            `}
-            onClick={() => setActiveCommentId(comment.id)}
-          >
-            {comment.text}
-            <div
-              css={css`
-                margin-top: 5px;
-                font-size: 12px;
-              `}
-            >
-              (Text index: {comment.range.start.index} to{" "}
-              {comment.range.end.index})
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
