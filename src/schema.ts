@@ -2,7 +2,7 @@ export type Comment = {
   id: string;
   content: string;
   user: string;
-  timestamp: string;
+  timestamp: number;
 };
 
 export type CommentThread = {

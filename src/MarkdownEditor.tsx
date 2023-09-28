@@ -43,12 +43,11 @@ export default function MarkdownEditor({
   const [selection, setSelection] = useState<Range | null>(null);
 
   const marks = A.marks(doc, ["content"]);
+  console.log(marks);
   const commentsToShow = Object.values(doc.commentThreads)
     .filter((thread) => !thread.resolved)
     .map((thread) => {
-      const mark = marks.find(
-        (m) => m.name === "commentThread" && m.value === thread.id
-      );
+      const mark = marks.find((m) => m.name === `commentThread-${thread.id}`);
 
       if (!mark) {
         console.error("no mark for thread!?", thread);
@@ -154,7 +153,14 @@ export default function MarkdownEditor({
     changeDoc((d) => {
       d.commentThreads[threadId] = {
         id: threadId,
-        comments: [],
+        comments: [
+          {
+            id: uuid(),
+            content: "this is a comment",
+            user: "geoffrey",
+            timestamp: Date.now(),
+          },
+        ],
         resolved: false,
       };
 
@@ -162,8 +168,8 @@ export default function MarkdownEditor({
         d,
         ["content"],
         { start: 1, end: 5, expand: "none" },
-        "commentThread",
-        threadId
+        `commentThread-${threadId}`,
+        true
       );
     });
   };
@@ -272,8 +278,14 @@ export default function MarkdownEditor({
       >
         <button onClick={addCommentThread}>Add comment thread</button>
         {sortBy(commentsToShow, (t) => t.start).map((thread) => (
-          <div>
-            {thread.id}: {thread.start} to {thread.end}
+          <div key={thread.id}>
+            {thread.comments.map((comment) => (
+              <div key={comment.id}>
+                <div>
+                  {comment.content} (by {comment.user})
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
