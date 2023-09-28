@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App, { TextDoc } from "./App.tsx";
+import App from "./App.tsx";
 import "./index.css";
 
 import { isValidAutomergeUrl, Repo } from "@automerge/automerge-repo";
