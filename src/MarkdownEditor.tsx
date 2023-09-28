@@ -175,7 +175,7 @@ export default function MarkdownEditor({
               color: #444;
             `}
           >
-            Embark: A computational outliner for travel
+            Tiny Essay Editor
           </div>
         </div>
       </div>
