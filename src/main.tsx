@@ -10,6 +10,7 @@ import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 // import { next as A } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { MarkdownDoc } from "./schema.ts";
 
 const repo = new Repo({
   network: [
@@ -24,8 +25,11 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<TextDoc>();
-  handle.change((d) => (d.content = "hello"));
+  handle = repo.create<MarkdownDoc>();
+  handle.change((d) => {
+    d.content = "hello";
+    d.commentThreads = {};
+  });
 }
 
 // eslint-disable-next-line

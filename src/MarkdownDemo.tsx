@@ -3,8 +3,9 @@
 
 import { css } from "@emotion/react";
 import ReactJson from "react-json-view";
-import MarkdownEditor, { MarkdownDoc } from "./MarkdownEditor";
+import MarkdownEditor from "./MarkdownEditor";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import { MarkdownDoc } from "./schema";
 
 export default function MarkdownDemo() {
   const [doc, changeDoc] = useDocument<MarkdownDoc>();

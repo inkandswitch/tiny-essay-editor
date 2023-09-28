@@ -2,13 +2,10 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import MarkdownEditor from "./MarkdownEditor";
 import { css } from "@emotion/react";
-
-export interface TextDoc {
-  content: string;
-}
+import { MarkdownDoc } from "./schema";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc, changeDoc] = useDocument<TextDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
 
   if (!doc) return <></>;
 

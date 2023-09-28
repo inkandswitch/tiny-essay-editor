@@ -6,7 +6,8 @@ import { css } from "@emotion/react";
 
 import { createEditor, Text, Range, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
-import { next as A } from "@automerge/automerge";
+import { next as A, uuid } from "@automerge/automerge";
+import { sortBy } from "lodash";
 import {
   Editable,
   ReactEditor,
@@ -15,10 +16,7 @@ import {
   withReact,
 } from "slate-react";
 import Prism from "prismjs";
-
-export type MarkdownDoc = {
-  content: string;
-};
+import { MarkdownDoc } from "./schema";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -43,7 +41,27 @@ export default function MarkdownEditor({
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range | null>(null);
-  // console.log("rendering editor", doc.content.toString());
+
+  const marks = A.marks(doc, ["content"]);
+  const commentsToShow = Object.values(doc.commentThreads)
+    .filter((thread) => !thread.resolved)
+    .map((thread) => {
+      const mark = marks.find(
+        (m) => m.name === "commentThread" && m.value === thread.id
+      );
+
+      if (!mark) {
+        console.error("no mark for thread!?", thread);
+      }
+
+      const { start, end } = mark;
+
+      return {
+        ...thread,
+        start,
+        end,
+      };
+    });
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -105,8 +123,10 @@ export default function MarkdownEditor({
     };
 
     // Add Markdown decorations
-    console.log("tokenizing!");
+    const before = performance.now();
     const tokens = Prism.tokenize(node.text, Prism.languages.markdown);
+    const after = performance.now();
+    console.log(`Prism.tokenize took ${Math.round(after - before)}ms`);
     let start = 0;
 
     for (const token of tokens) {
@@ -126,6 +146,27 @@ export default function MarkdownEditor({
 
     return ranges;
   }, []);
+
+  const addCommentThread = () => {
+    console.log("adding a comment");
+    const threadId = uuid();
+
+    changeDoc((d) => {
+      d.commentThreads[threadId] = {
+        id: threadId,
+        comments: [],
+        resolved: false,
+      };
+
+      A.mark(
+        d,
+        ["content"],
+        { start: 1, end: 5, expand: "none" },
+        "commentThread",
+        threadId
+      );
+    });
+  };
 
   return (
     <div
@@ -222,6 +263,19 @@ export default function MarkdownEditor({
             }}
           />
         </Slate>
+      </div>
+      <div
+        css={css`
+          grid-area: comments;
+          padding: 5px;
+        `}
+      >
+        <button onClick={addCommentThread}>Add comment thread</button>
+        {sortBy(commentsToShow, (t) => t.start).map((thread) => (
+          <div>
+            {thread.id}: {thread.start} to {thread.end}
+          </div>
+        ))}
       </div>
     </div>
   );
