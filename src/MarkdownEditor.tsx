@@ -17,6 +17,7 @@ import {
 } from "slate-react";
 import Prism from "prismjs";
 import { MarkdownDoc } from "./schema";
+import { getRelativeTimeString } from "./utils";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -310,9 +311,48 @@ export default function MarkdownEditor({
         {sortBy(commentsToShow, (t) => t.start).map((thread) => (
           <div key={thread.id}>
             {thread.comments.map((comment) => (
-              <div key={comment.id}>
-                <div>
-                  {comment.content} (by {comment.user})
+              <div
+                key={comment.id}
+                css={css`
+                  background-color: #f2f2f2;
+                  margin: 10px;
+                  padding: 10px;
+                  max-width: 300px;
+                `}
+              >
+                <div
+                  css={css`
+                    font-size: 14px;
+                    font-weight: 400;
+                  `}
+                >
+                  <div
+                    css={css`
+                      margin-bottom: 10px;
+                    `}
+                  >
+                    {comment.content}
+                  </div>
+                  <div
+                    css={css`
+                      font-size: 12px;
+                    `}
+                  >
+                    <span
+                      css={css`
+                        color: #444;
+                      `}
+                    >
+                      {comment.user}
+                    </span>{" "}
+                    <span
+                      css={css`
+                        color: #888;
+                      `}
+                    >
+                      {getRelativeTimeString(comment.timestamp)}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
