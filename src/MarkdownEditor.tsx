@@ -43,17 +43,21 @@ export default function MarkdownEditor({
   const [selection, setSelection] = useState<Range | null>(null);
 
   const marks = A.marks(doc, ["content"]);
-  console.log(marks);
   const commentsToShow = Object.values(doc.commentThreads)
-    .filter((thread) => !thread.resolved)
+    .filter(
+      (thread) =>
+        !thread.resolved &&
+        marks.find((m) => m.name === `commentThread-${thread.id}`)
+    )
     .map((thread) => {
       const mark = marks.find((m) => m.name === `commentThread-${thread.id}`);
 
       if (!mark) {
-        console.error("no mark for thread!?", thread);
+        console.error("no mark for thread!?", thread, marks);
       }
 
       const { start, end } = mark;
+      console.log("mark", mark, start, end);
 
       return {
         ...thread,
@@ -62,6 +66,7 @@ export default function MarkdownEditor({
       };
     });
 
+  console.log({ marks, commentsToShow });
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
   const content: Node[] = [
@@ -102,7 +107,9 @@ export default function MarkdownEditor({
     ) as ReactEditor;
   }, []);
 
-  const decorate = useCallback(([node, path]) => {
+  // TODO: this was in a usecallback originally but that caused a memoizing bug;
+  // figure out how to cache this fn without caching mark start/end ranges
+  const decorate = ([node, path]) => {
     const ranges: Range[] = [];
 
     if (!Text.isText(node)) {
@@ -120,6 +127,22 @@ export default function MarkdownEditor({
         return 0;
       }
     };
+
+    // highlight comments
+
+    for (const comment of commentsToShow) {
+      ranges.push({
+        anchor: {
+          path: [0, 0],
+          offset: comment.start,
+        },
+        focus: {
+          path: [0, 0],
+          offset: comment.end,
+        },
+        highlighted: true,
+      });
+    }
 
     // Add Markdown decorations
     const before = performance.now();
@@ -143,11 +166,11 @@ export default function MarkdownEditor({
       start = end;
     }
 
+    console.log("ranges", ranges);
     return ranges;
-  }, []);
+  };
 
   const addCommentThread = () => {
-    console.log("adding a comment");
     const threadId = uuid();
 
     changeDoc((d) => {
