@@ -5,13 +5,18 @@ import "./index.css";
 
 import { isValidAutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
+import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
+
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as A } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { ESSAY_TEXT } from "./essayText.ts";
 
 const repo = new Repo({
-  network: [new BroadcastChannelNetworkAdapter()],
+  network: [
+    new BroadcastChannelNetworkAdapter(),
+    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+  ],
   storage: new IndexedDBStorageAdapter(),
 });
 

@@ -1,15 +1,3 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
 body {
   margin: 0;
   padding: 0;
@@ -97,6 +85,28 @@ body {
   url('assets/fira/fira-mono-v7-latin-500.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap
 }
+
+/* SET FONTS --------------------------------- */
+
+/* Serif, long form text, default rem size */
+body {
+  font-family: "Merriweather", serif;
+}
+
+/* Sans Serif, most other text */
+/* TODO: Why header>ul li and not #byline li? */
+/* TODO: What's the usage difference between nav and .nav? */
+aside, figcaption, nav, header>ul li, h1, h2, h3, h4, blockquote, figure table, .nav {
+  font-family: "Merriweather Sans", sans-serif;
+  font-weight: 400;
+}
+
+/* Monospace */
+pre, code {
+  font-family: 'Fira Mono', monospace;
+}
+
+/* TODO: this should all be scoped inside the article, not to the whole app..... */
 
 /* Link style -------------------------------- */
 
@@ -232,4 +242,70 @@ sup a {
 sup a:hover {
   background: none;
   text-decoration: underline;
+}
+
+/* Blockquotes ------------------------------- */
+
+blockquote {
+  -ms-hyphens: none;
+  -webkit-hyphens: none;
+  border-left: .2rem solid #f2f2f2;
+  hyphens: none;
+  line-height: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem 0 1rem .8rem;
+}
+
+blockquote, blockquote>* {
+  -ms-hyphens: none;
+  -webkit-hyphens: none;
+  font-size: 1rem;
+  font-weight: 300;
+  hyphens: none;
+  line-height: 1.5rem;
+}
+blockquote cite {
+  white-space: nowrap;
+}
+
+blockquote footer {
+  font-weight: 200;
+}
+
+blockquote footer::before {
+  content: "– "
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists ------------------------------------- */
+
+ul, ol {
+  margin-bottom: 1.5rem;
+  margin-left: 1.3em;
+}
+
+ul {
+  list-style-type: square;
+}
+ol {
+  list-style-type: decimal;
+}
+
+li {
+  margin-bottom: .5rem;
+  white-space: normal;
+}
+
+li.no-bullet {
+  list-style-type: none;
+  margin-left: -1.3em;
+}
+li h3, li h4 {
+  display: inline;
+  font-size: inherit;
+}
+li ul {
+  margin-top: .5rem;
 }

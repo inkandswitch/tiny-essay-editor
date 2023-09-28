@@ -35,7 +35,7 @@ export default function MarkdownEditor({
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range | null>(null);
-  console.log("rendering editor", doc.content.toString());
+  // console.log("rendering editor", doc.content.toString());
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -52,15 +52,26 @@ export default function MarkdownEditor({
       withHistory(withReact(createEditor())),
       (op: Operation) => {
         console.log("applying Slate operation", op);
-        if (op.type === "insert_text") {
-          changeDoc((doc: MarkdownDoc) =>
-            A.splice(doc, ["content"], op.offset, 0, op.text)
-          );
-        }
-        if (op.type === "remove_text") {
-          changeDoc((doc: MarkdownDoc) =>
-            A.splice(doc, ["content"], op.offset, op.text.length)
-          );
+        switch (op.type) {
+          case "insert_text": {
+            changeDoc((doc: MarkdownDoc) =>
+              A.splice(doc, ["content"], op.offset, 0, op.text)
+            );
+            break;
+          }
+          case "remove_text": {
+            changeDoc((doc: MarkdownDoc) =>
+              A.splice(doc, ["content"], op.offset, op.text.length)
+            );
+            break;
+          }
+          case "split_node":
+          case "insert_node":
+          case "merge_node": {
+            throw new Error(
+              "we never want to see these ops that split nodes up"
+            );
+          }
         }
       }
     );
@@ -115,7 +126,7 @@ export default function MarkdownEditor({
         width: 100%;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: minmax(750px, 70%) auto;
+        grid-template-columns: min(776px, 70%) auto;
         grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
@@ -151,10 +162,12 @@ export default function MarkdownEditor({
           <div
             css={css`
               display: inline-block;
-              padding-top: 3px;
+              padding-top: 5px;
+              font-weight: bold;
+              color: #444;
             `}
           >
-            Essay Editor
+            Embark: A computational outliner for travel
           </div>
         </div>
       </div>
@@ -177,11 +190,17 @@ export default function MarkdownEditor({
             onSelect={() => {
               setSelection(editor.selection);
             }}
+            onPaste={(event) => {
+              // Slate does weird fancy things when plaintext is pasted.
+              // Just keep it simple and insert text.
+              event.preventDefault();
+              editor.insertText(event.clipboardData.getData("text/plain"));
+            }}
             style={{
               height: "100%",
               overflowY: "scroll",
               outline: "none",
-              padding: "20px 50px",
+              padding: "20px 80px",
               boxSizing: "border-box",
               overflowX: "hidden",
             }}
@@ -201,6 +220,22 @@ export default function MarkdownEditor({
 }
 
 const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
+  let headingSize = 16;
+  if (leaf.title) {
+    if (leaf.text.startsWith("# ")) {
+      headingSize = 32;
+    }
+    if (leaf.text.startsWith("## ")) {
+      headingSize = 24;
+    }
+    if (leaf.text.startsWith("### ")) {
+      headingSize = 20;
+    }
+    if (leaf.text.startsWith("#### ")) {
+      headingSize = 18;
+    }
+  }
+
   return (
     <span
       {...attributes}
@@ -208,11 +243,16 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
         font-weight: ${leaf.bold && "bold"};
         font-style: ${leaf.italic && "italic"};
         text-decoration: ${leaf.underlined && "underline"};
+        ${leaf.text === "<!--endintro-->" &&
+        css`
+          color: #ddd;
+        `}
         ${leaf.title &&
         css`
           display: inline-block;
-          font-weight: bold;
-          font-size: 20px;
+          font-size: ${headingSize}px;
+          font-weight: 400;
+          font-family: "Merriweather Sans", sans-serif;
           margin: 20px 0 10px 0;
         `}
         ${leaf.list &&
