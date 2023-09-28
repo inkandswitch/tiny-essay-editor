@@ -173,13 +173,20 @@ export default function MarkdownEditor({
   const addCommentThread = () => {
     const threadId = uuid();
 
+    let start = selection.anchor.offset;
+    let end = selection.focus.offset;
+
+    if (start > end) {
+      [start, end] = [end, start];
+    }
+
     changeDoc((d) => {
       d.commentThreads[threadId] = {
         id: threadId,
         comments: [
           {
             id: uuid(),
-            content: "this is a comment",
+            content: window.prompt("enter your comment text"),
             user: "geoffrey",
             timestamp: Date.now(),
           },
@@ -190,7 +197,7 @@ export default function MarkdownEditor({
       A.mark(
         d,
         ["content"],
-        { start: 1, end: 5, expand: "none" },
+        { start, end, expand: "none" },
         `commentThread-${threadId}`,
         true
       );
