@@ -2,9 +2,8 @@
 /* @jsxFrag React.Fragment */
 
 import { css } from "@emotion/react";
-import { MarkdownDoc } from "./slate-automerge";
 import ReactJson from "react-json-view";
-import MarkdownEditor from "./MarkdownEditor";
+import MarkdownEditor, { MarkdownDoc } from "./MarkdownEditor";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 export default function MarkdownDemo() {

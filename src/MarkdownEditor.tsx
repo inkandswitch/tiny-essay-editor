@@ -7,10 +7,18 @@ import { css } from "@emotion/react";
 import { createEditor, Text, Range, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
 import { next as A } from "@automerge/automerge";
-import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
-import Prism, { Token } from "prismjs";
+import {
+  Editable,
+  ReactEditor,
+  RenderLeafProps,
+  Slate,
+  withReact,
+} from "slate-react";
+import Prism from "prismjs";
 
-import { MarkdownDoc } from "./slate-automerge";
+export type MarkdownDoc = {
+  content: string;
+};
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -74,7 +82,7 @@ export default function MarkdownEditor({
           }
         }
       }
-    );
+    ) as ReactEditor;
   }, []);
 
   const decorate = useCallback(([node, path]) => {
@@ -126,7 +134,7 @@ export default function MarkdownEditor({
         width: 100%;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: min(776px, 70%) auto;
+        grid-template-columns: min(776px, 80%) auto;
         grid-template-rows: 40px auto;
         grid-template-areas:
           "toolbar toolbar"
