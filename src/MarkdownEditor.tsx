@@ -18,6 +18,7 @@ import {
 import Prism from "prismjs";
 import { MarkdownDoc } from "./schema";
 import { getRelativeTimeString } from "./utils";
+import { giveFeedback } from "./llm";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -37,12 +38,17 @@ type MarkdownEditorProps = {
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
 };
 
+type LLMStatus = "idle" | "running" | "complete" | "error";
+
 export default function MarkdownEditor({
   doc,
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range | null>(null);
+  const [llmStatus, setLlmStatus] = useState<LLMStatus>("idle");
+  const [activeThread, setActiveThread] = useState<string | null>(null);
 
+  const content = doc.content.toString();
   const marks = A.marks(doc, ["content"]);
   const commentsToShow = Object.values(doc.commentThreads)
     .filter(
@@ -67,12 +73,13 @@ export default function MarkdownEditor({
       };
     });
 
-  console.log({ marks, commentsToShow });
+  // console.log({ marks, commentsToShow });
+
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
-  const content: Node[] = [
+  const slateNodes: Node[] = [
     {
-      children: [{ text: doc.content.toString() }],
+      children: [{ text: content }],
     },
   ];
 
@@ -131,18 +138,32 @@ export default function MarkdownEditor({
 
     // highlight comments
 
-    for (const comment of commentsToShow) {
-      ranges.push({
-        anchor: {
-          path: [0, 0],
-          offset: comment.start,
-        },
-        focus: {
-          path: [0, 0],
-          offset: comment.end,
-        },
-        highlighted: true,
-      });
+    for (const thread of commentsToShow) {
+      if (activeThread === thread.id) {
+        ranges.push({
+          anchor: {
+            path: [0, 0],
+            offset: thread.start,
+          },
+          focus: {
+            path: [0, 0],
+            offset: thread.end,
+          },
+          extraHighlighted: true,
+        });
+      } else {
+        ranges.push({
+          anchor: {
+            path: [0, 0],
+            offset: thread.start,
+          },
+          focus: {
+            path: [0, 0],
+            offset: thread.end,
+          },
+          highlighted: true,
+        });
+      }
     }
 
     // Add Markdown decorations
@@ -171,15 +192,31 @@ export default function MarkdownEditor({
     return ranges;
   };
 
-  const addCommentThread = () => {
-    const threadId = uuid();
-
+  const addThreadForSelection = () => {
     let start = selection.anchor.offset;
     let end = selection.focus.offset;
-
     if (start > end) {
       [start, end] = [end, start];
     }
+
+    const message = window.prompt("enter your comment text");
+    const user = "geoffrey";
+
+    addCommentThread({ start, end, message, user });
+  };
+
+  const addCommentThread = ({
+    start,
+    end,
+    message,
+    user,
+  }: {
+    start: number;
+    end: number;
+    message: string;
+    user: string;
+  }) => {
+    const threadId = uuid();
 
     changeDoc((d) => {
       d.commentThreads[threadId] = {
@@ -187,8 +224,8 @@ export default function MarkdownEditor({
         comments: [
           {
             id: uuid(),
-            content: window.prompt("enter your comment text"),
-            user: "geoffrey",
+            content: message,
+            user,
             timestamp: Date.now(),
           },
         ],
@@ -203,6 +240,38 @@ export default function MarkdownEditor({
         true
       );
     });
+  };
+
+  const getLLMFeedback = async () => {
+    setLlmStatus("running");
+    const feedback = await giveFeedback(content);
+    console.log("feedback", feedback);
+
+    if (feedback._type === "error") {
+      setLlmStatus("error");
+      return;
+    }
+
+    setLlmStatus("complete");
+    const comments = feedback.result;
+    for (const comment of comments) {
+      const index = content.indexOf(comment.text);
+      let start = 1;
+      let end = 2;
+      if (index !== -1) {
+        start = index;
+        end = start + comment.text.length;
+      } else {
+        console.warn(`Couldn't find this text in the doc: ${comment.text}`);
+      }
+
+      addCommentThread({
+        start,
+        end,
+        message: `${comment.comment} (${comment.styleGuideItem})`,
+        user: "🤖 Academish Voice Check",
+      });
+    }
   };
 
   return (
@@ -268,7 +337,7 @@ export default function MarkdownEditor({
           text-align: justify;
         `}
       >
-        <Slate editor={editor} value={content} onChange={() => {}}>
+        <Slate editor={editor} value={slateNodes} onChange={() => {}}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
@@ -305,17 +374,66 @@ export default function MarkdownEditor({
         css={css`
           grid-area: comments;
           padding: 5px;
+          overflow-y: scroll;
         `}
       >
-        <button onClick={addCommentThread}>Add comment thread</button>
+        <div
+          css={css`
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+          `}
+        >
+          <div>
+            <button onClick={addThreadForSelection}>Add comment thread</button>{" "}
+          </div>
+          <div>
+            <button onClick={getLLMFeedback}>Academish Voice Check</button>
+            {llmStatus === "running" && (
+              <div
+                css={css`
+                  color: #333;
+                  font-size: 12px;
+                  animation: pulse 2s infinite;
+                  @keyframes pulse {
+                    0% {
+                      opacity: 1;
+                    }
+                    50% {
+                      opacity: 0.5;
+                    }
+                    100% {
+                      opacity: 1;
+                    }
+                  }
+                `}
+              >
+                Checking...
+              </div>
+            )}
+          </div>
+        </div>
+
         {sortBy(commentsToShow, (t) => t.start).map((thread) => (
-          <div key={thread.id}>
+          <div
+            key={thread.id}
+            onClick={() => {
+              if (activeThread === thread.id) {
+                setActiveThread(null);
+              } else {
+                setActiveThread(thread.id);
+              }
+            }}
+            css={css`
+              margin: 10px 0;
+              border: ${activeThread === thread.id ? "solid 2px #ddd" : "none"};
+            `}
+          >
             {thread.comments.map((comment) => (
               <div
                 key={comment.id}
                 css={css`
                   background-color: #f2f2f2;
-                  margin: 10px;
                   padding: 10px;
                   max-width: 300px;
                 `}
@@ -328,7 +446,7 @@ export default function MarkdownEditor({
                 >
                   <div
                     css={css`
-                      margin-bottom: 10px;
+                      margin-bottom: 12px;
                     `}
                   >
                     {comment.content}
@@ -336,6 +454,7 @@ export default function MarkdownEditor({
                   <div
                     css={css`
                       font-size: 12px;
+                      text-align: right;
                     `}
                   >
                     <span
@@ -352,6 +471,29 @@ export default function MarkdownEditor({
                     >
                       {getRelativeTimeString(comment.timestamp)}
                     </span>
+                  </div>
+                  <div
+                    css={css`
+                      text-align: right;
+                    `}
+                  >
+                    <a
+                      css={css`
+                        font-size: 12px;
+                        cursor: pointer;
+                        opacity: 0.5;
+                        &:hover {
+                          opacity: 1;
+                        }
+                      `}
+                      onClick={() => {
+                        changeDoc((d) => {
+                          d.commentThreads[thread.id].resolved = true;
+                        });
+                      }}
+                    >
+                      Resolve this comment
+                    </a>
                   </div>
                 </div>
               </div>

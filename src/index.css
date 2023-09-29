@@ -3,6 +3,25 @@ body {
   padding: 0;
 }
 
+button {
+  background: linear-gradient(to bottom, #eee, #ddd);
+  border: #ddd;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: inherit;
+  margin: 0;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+button:hover {
+  background: linear-gradient(to bottom, #ddd, #ccc);
+}
+
+button:active {
+  background: linear-gradient(to bottom, #ccc, #bbb);
+}
 
 /* Steal a bunch of styles from the I&S website */
 
