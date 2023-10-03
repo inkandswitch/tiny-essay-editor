@@ -39,9 +39,11 @@ const docUrl = (document.location.hash = handle.url);
 window.handle = handle; // we'll use this later for experimentation
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <RepoContext.Provider value={repo}>
-      <App docUrl={docUrl} />
-    </RepoContext.Provider>
-  </React.StrictMode>
+  // TODO: we disabled strict mode to avoid double-creation of editor;
+  // need to patch up the useEffect in MarkdownEditor to handle async destroy
+  // <React.StrictMode>
+  <RepoContext.Provider value={repo}>
+    <App docUrl={docUrl} />
+  </RepoContext.Provider>
+  // </React.StrictMode>
 );
