@@ -19,6 +19,7 @@
     "@automerge/automerge-repo-storage-indexeddb": "^1.0.3",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/view": "6.13.2",
+    "@radix-ui/react-slot": "^1.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "codemirror": "^6.0.1",
