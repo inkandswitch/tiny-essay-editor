@@ -62,7 +62,7 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
       parent: containerRef.current,
     }))
 
-    handle.addListener("change", ({ doc, patchInfo }) => {
+    handle.addListener("change", () => {
       semaphore.reconcile(handle, view)
     })
 
