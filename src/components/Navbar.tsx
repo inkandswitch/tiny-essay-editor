@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChangeFn } from "@automerge/automerge/next";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Command,
@@ -26,7 +26,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 
@@ -35,6 +34,27 @@ const initials = (name: string) => {
     .split(" ")
     .map((word) => word[0])
     .join("");
+};
+
+const saveFile = async (blob) => {
+  try {
+    // @ts-expect-error - experimental API
+    const handle = await window.showSaveFilePicker({
+      types: [
+        {
+          accept: {
+            // Omitted
+          },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return handle;
+  } catch (err) {
+    console.error(err.name, err.message);
+  }
 };
 
 export const Navbar = ({
@@ -58,6 +78,11 @@ export const Navbar = ({
     return <></>;
   }
 
+  const downloadDoc = () => {
+    const file = new Blob([doc.content], { type: "text/markdown" });
+    saveFile(file);
+  };
+
   return (
     <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
       <img
@@ -66,7 +91,9 @@ export const Navbar = ({
       />
       <div className="text-md my-3 select-none">Tiny Essay Editor</div>
       <div className="ml-auto px-8 py-1 flex gap-2">
-        {/* <Button variant="ghost">Settings</Button> */}
+        <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
+          <Download size={"20px"} />
+        </Button>
         <Dialog>
           <DialogTrigger>
             <Button variant="ghost" className="px-2 py-0">

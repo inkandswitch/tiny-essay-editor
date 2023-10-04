@@ -1720,7 +1720,7 @@ cmdk@^0.2.0:
 
 codemirror@^6.0.1:
   version "6.0.1"
-  resolved "https://registry.npmjs.org/codemirror/-/codemirror-6.0.1.tgz"
+  resolved "https://registry.yarnpkg.com/codemirror/-/codemirror-6.0.1.tgz#62b91142d45904547ee3e0e0e4c1a79158035a29"
   integrity sha512-J8j+nZ+CdWmIeFIGXEFbFPtpiYacFMDR8GlHK3IyHQJMCaVRfGx9NT+Hxivv1ckLWPvNdZqndbr/7lVhrf/Svg==
   dependencies:
     "@codemirror/autocomplete" "^6.0.0"
