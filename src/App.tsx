@@ -6,6 +6,10 @@ import { MarkdownDoc } from "./schema";
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const handle = useHandle<MarkdownDoc>(docUrl);
 
+  if (!handle.isReady()) { 
+    return "Loading..."
+  }
+
   return (
     <div>
       <div className="h-10 w-screen bg-gray-200 p-2 bg-gradient-to-b from-white to-gray-200 border-b border-gray-300">

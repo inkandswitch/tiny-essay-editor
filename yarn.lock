@@ -20,13 +20,14 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@automerge/automerge-codemirror@file:../automerge-codemirror/automerge-automerge-codemirror-0.0.4.tgz":
-  version "0.0.4"
-  resolved "file:../automerge-codemirror/automerge-automerge-codemirror-0.0.4.tgz#6c65430a2cbd52d44a613a5338555aa7855ead83"
+"@automerge/automerge-codemirror@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-codemirror/-/automerge-codemirror-0.0.6.tgz#27e2918640a35f90dcbcb3e0ea7b7d48285defc2"
+  integrity sha512-X2uXDLKqKTqwTzy3q/JVzoXtd5Se7CXzjFF74s5suYWL+S4IqpyvYbBErXKOUc1gmtkYcxaew4drFg1+8x9fCw==
   dependencies:
     "@automerge/automerge" "^2.1.3"
     "@codemirror/state" "^6.2.1"
-    "@codemirror/view" "^6.21.2"
+    "@codemirror/view" "6.13.2"
     codemirror "^6.0.1"
 
 "@automerge/automerge-repo-network-broadcastchannel@^1.0.3":
@@ -427,7 +428,16 @@
   resolved "https://registry.npmjs.org/@codemirror/state/-/state-6.2.1.tgz"
   integrity sha512-RupHSZ8+OjNT38zU9fKH2sv+Dnlr8Eb8sl4NOnnqz95mCFTZUaiRP8Xv5MeeaG0px2b8Bnfe7YGwCV3nsBhbuw==
 
-"@codemirror/view@^6.0.0", "@codemirror/view@^6.17.0", "@codemirror/view@^6.21.2":
+"@codemirror/view@6.13.2":
+  version "6.13.2"
+  resolved "https://registry.yarnpkg.com/@codemirror/view/-/view-6.13.2.tgz#bb13e26c0e3ece2f9598d76de9ae9929a658795f"
+  integrity sha512-XA/jUuu1H+eTja49654QkrQwx2CuDMdjciHcdqyasfTVo4HRlvj87rD/Qmm4HfnhwX8234FQSSA8HxEzxihX/Q==
+  dependencies:
+    "@codemirror/state" "^6.1.4"
+    style-mod "^4.0.0"
+    w3c-keyname "^2.2.4"
+
+"@codemirror/view@^6.0.0", "@codemirror/view@^6.17.0":
   version "6.21.2"
   resolved "https://registry.npmjs.org/@codemirror/view/-/view-6.21.2.tgz"
   integrity sha512-EZ/Q1WeMWVarWiZHcy4E2aOjjDySeipVkPawOIu2iViZ1YNaZXPBqJBd9/2zLJtN/MrXKm0V1mHB8Cxn50t91A==
