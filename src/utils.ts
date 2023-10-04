@@ -1,3 +1,9 @@
+import { mapValues } from "lodash";
+import { CommentThreadWithResolvedPositions, MarkdownDoc } from "./schema";
+import { EditorView } from "codemirror";
+import { next as A } from "@automerge/automerge";
+import { useEffect, useState } from "react";
+
 // taken from https://www.builder.io/blog/relative-time
 /**
  * Convert a date to a relative time string, such as
@@ -49,3 +55,60 @@ export function getRelativeTimeString(
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
 }
+
+export const commentThreadsWithPositions = (
+  doc: MarkdownDoc,
+  view: EditorView
+): {
+  [key: string]: CommentThreadWithResolvedPositions;
+} => {
+  return mapValues(doc.commentThreads ?? {}, (thread) => {
+    const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
+    const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+    const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
+    const viewportCoordsOfThread = view?.coordsAtPos(from)?.top;
+
+    let yCoord;
+    if (viewportCoordsOfThread !== undefined) {
+      yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
+    } else {
+      console.log("comment isn't visible right now");
+      yCoord = -1000;
+    }
+
+    if (!thread.resolved) {
+      console.log({
+        from,
+        to,
+        topOfEditor,
+        viewportCoordsOfThread,
+        yCoord,
+        text: thread.comments[0].content,
+      });
+    }
+
+    return {
+      ...thread,
+      from,
+      to,
+      yCoord,
+    };
+  });
+};
+
+export const useScrollPosition = () => {
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      setScrollPosition(window.pageYOffset);
+    };
+    window.addEventListener("scroll", updatePosition);
+    updatePosition();
+    return () => window.removeEventListener("scroll", updatePosition);
+  }, []);
+
+  return scrollPosition;
+};
+
+export default useScrollPosition;

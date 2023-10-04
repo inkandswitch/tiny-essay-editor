@@ -21,6 +21,7 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { EditorView } from "codemirror";
 import { useState } from "react";
+import useScrollPosition, { commentThreadsWithPositions } from "@/utils";
 
 export const CommentsSidebar = ({
   doc,
@@ -38,24 +39,17 @@ export const CommentsSidebar = ({
   const [pendingCommentText, setPendingCommentText] = useState("");
   const showCommentButton = selection && selection.from !== selection.to;
 
-  const threadsWithPositions: {
-    [key: string]: CommentThreadWithResolvedPositions;
-  } = mapValues(doc?.commentThreads ?? {}, (thread) => {
-    const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
-    const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
-    const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
-    const viewportCoordsOfThread = view?.coordsAtPos(from)?.top ?? 0;
-    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
+  // It may be inefficient to rerender comments sidebar on each scroll but
+  // it's fine for now and it lets us reposition comments as the user scrolls.
+  // (Notably we're not literally repositioning comments in JS;
+  // we just use CodeMirror to compute position, and it doesn't tell us position
+  // of comments that are way off-screen. That's why we need this scroll handler
+  // to catch when things come near the screen)
+  useScrollPosition();
 
-    console.log({ from, to, topOfEditor, viewportCoordsOfThread, yCoord });
-
-    return {
-      ...thread,
-      from,
-      to,
-      yCoord,
-    };
-  });
+  const threadsWithPositions = view
+    ? commentThreadsWithPositions(doc, view)
+    : {};
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;

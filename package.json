@@ -42,6 +42,7 @@
     "vite-plugin-wasm": "^3.2.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.199",
     "@types/node": "^20.8.2",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
