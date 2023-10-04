@@ -50,7 +50,7 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
     const source = doc.content; // this should use path
     const plugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(plugin);
-    const view = (editorRoot.current = new EditorView({
+    const view = new EditorView({
       doc: source,
       extensions: [
         basicSetup,
@@ -64,7 +64,10 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
         semaphore.reconcile(handle, view);
       },
       parent: containerRef.current,
-    }));
+    });
+
+    // todo: what's going on with this typecast?
+    editorRoot.current = view as unknown as HTMLDivElement;
 
     handle.addListener("change", () => {
       semaphore.reconcile(handle, view);
