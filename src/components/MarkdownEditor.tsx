@@ -18,13 +18,17 @@ export type EditorProps = {
 
 const theme = EditorView.theme({
   "&": {},
-  ".cm-editor": {
+  "&.cm-editor.cm-focused": {
+    outline: "none",
+  },
+  "&.cm-editor": {
     height: "100%",
   },
   ".cm-scroller": {
     height: "100%",
   },
   ".cm-content": {
+    height: "100%",
     fontFamily: '"Merriweather", serif',
     padding: "10px",
     textAlign: "justify",
@@ -82,7 +86,7 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
   return (
     <div className="flex flex-col items-stretch h-screen">
       <div
-        className="codemirror-editor flex-grow relative"
+        className="codemirror-editor flex-grow relative h-screen"
         ref={containerRef}
         onKeyDown={(evt) => evt.stopPropagation()}
       />
