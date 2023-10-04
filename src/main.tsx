@@ -27,8 +27,14 @@ if (isValidAutomergeUrl(rootDocUrl)) {
 } else {
   handle = repo.create<MarkdownDoc>();
   handle.change((d) => {
-    d.content = "hello";
+    d.content = "This is a **Markdown document**.";
     d.commentThreads = {};
+    d.users = [
+      { id: "1", name: "Geoffrey Litt" },
+      { id: "2", name: "Paul Sonnentag" },
+      { id: "3", name: "Alexander Obenauer" },
+      { id: "4", name: "Peter van Hardenberg" },
+    ];
   });
 }
 

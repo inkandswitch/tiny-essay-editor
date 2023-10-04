@@ -2,25 +2,42 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { Button } from "@/components/ui/button";
-import { MarkdownDoc } from "../schema";
+import { LocalSession, MarkdownDoc } from "../schema";
+import { Navbar } from "./Navbar";
+import { LoadingScreen } from "./LoadingScreen";
+import { useEffect, useState } from "react";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
+  const [session, setSessionInMemory] = useState<LocalSession>();
 
-  if (!doc) {
-    return `Loading ${docUrl}: ${handle.state}...`;
+  useEffect(() => {
+    const session = localStorage.getItem("LocalSession");
+    if (session) {
+      setSessionInMemory(JSON.parse(session));
+    } else {
+      setSessionInMemory({ userId: null });
+    }
+  }, []);
+
+  const setSession = (session: LocalSession) => {
+    localStorage.setItem("LocalSession", JSON.stringify(session));
+    setSessionInMemory(session);
+  };
+
+  if (!doc || !session) {
+    return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
   return (
     <div>
-      <div className="h-10 w-screen bg-gray-200 p-2 bg-gradient-to-b from-white to-gray-200 border-b border-gray-300 align-middle">
-        <img
-          className="h-full inline-block mr-1"
-          src="/assets/logo-favicon-310x310-transparent.png"
-        />
-        <div className="inline-block align-middle">Tiny Essay Editor</div>
-      </div>
+      <Navbar
+        doc={doc}
+        changeDoc={changeDoc}
+        session={session}
+        setSession={setSession}
+      />
       <div className="flex bg-gray-50">
         <div className="w-4/5 max-w-[776px] bg-white my-4 mx-8 border border-gray-200 p-4 ">
           <MarkdownEditor handle={handle} path={["content"]} />
