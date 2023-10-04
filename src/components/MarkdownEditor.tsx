@@ -11,9 +11,16 @@ import {
 import { type DocHandle } from "@automerge/automerge-repo";
 import { MarkdownDoc } from "../schema";
 
+export type TextSelection = {
+  from: number;
+  to: number;
+  yCoord: number;
+};
+
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
   path: Prop[];
+  setSelection: (selection: TextSelection) => void;
 };
 
 const theme = EditorView.theme({
@@ -45,7 +52,7 @@ const theme = EditorView.theme({
   },
 });
 
-export function MarkdownEditor({ handle, path }: EditorProps) {
+export function MarkdownEditor({ handle, path, setSelection }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<HTMLDivElement>(null);
 
@@ -66,6 +73,12 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
       dispatch(transaction) {
         view.update([transaction]);
         semaphore.reconcile(handle, view);
+        const selection = view.state.selection.ranges[0];
+        setSelection({
+          from: selection.from,
+          to: selection.to,
+          yCoord: view.coordsAtPos(selection.from).top,
+        });
       },
       parent: containerRef.current,
     });
@@ -84,9 +97,9 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-stretch h-screen">
+    <div className="flex flex-col items-stretch min-h-screen">
       <div
-        className="codemirror-editor flex-grow relative h-screen"
+        className="codemirror-editor flex-grow relative min-h-screen"
         ref={containerRef}
         onKeyDown={(evt) => evt.stopPropagation()}
       />
