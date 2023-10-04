@@ -7,7 +7,7 @@ import {
   MarkdownDoc,
 } from "../schema";
 
-import { MessageSquarePlus } from "lucide-react";
+import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
 import { mapValues } from "lodash";
@@ -16,9 +16,11 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
 import { EditorView } from "codemirror";
+import { useState } from "react";
 
 export const CommentsSidebar = ({
   doc,
@@ -30,9 +32,10 @@ export const CommentsSidebar = ({
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  view: EditorView;
+  view: EditorView | undefined;
   session: LocalSession;
 }) => {
+  const [pendingCommentText, setPendingCommentText] = useState("");
   const showCommentButton = selection && selection.from !== selection.to;
 
   const threadsWithPositions: {
@@ -40,8 +43,8 @@ export const CommentsSidebar = ({
   } = mapValues(doc?.commentThreads ?? {}, (thread) => {
     const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
     const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
-    const topOfEditor = view?.scrollDOM.getBoundingClientRect().top ?? 0;
-    const viewportCoordsOfThread = view?.coordsAtPos(from).top ?? 0;
+    const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
+    const viewportCoordsOfThread = view?.coordsAtPos(from)?.top ?? 0;
     const yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
 
     console.log({ from, to, topOfEditor, viewportCoordsOfThread, yCoord });
@@ -78,32 +81,89 @@ export const CommentsSidebar = ({
     changeDoc((doc) => {
       doc.commentThreads[thread.id] = thread;
     });
+
+    setPendingCommentText("");
+  };
+
+  const addReplyToThread = (threadId: string) => {
+    const comment: Comment = {
+      id: uuid(),
+      content: pendingCommentText,
+      userId: session?.userId ?? null,
+      timestamp: Date.now(),
+    };
+
+    changeDoc((doc) => {
+      doc.commentThreads[threadId].comments.push(comment);
+    });
+
+    setPendingCommentText("");
   };
 
   return (
     <div>
       <div className="flex-grow bg-gray-50 p-4">
-        {Object.values(threadsWithPositions).map((thread) => (
-          <div
-            key={thread.id}
-            className="bg-white p-4 absolute"
-            style={{ top: thread.yCoord }}
-          >
-            {thread.comments.map((comment) => (
-              <div>
-                <div className="mb-2">{comment.content}</div>
-                <div className="text-sm text-gray-600">
-                  {doc.users.find((user) => user.id === comment.userId).name ??
-                    "unknown"}
+        {Object.values(threadsWithPositions)
+          .filter((thread) => !thread.resolved)
+          .map((thread) => (
+            <div
+              key={thread.id}
+              className="bg-white p-4 absolute"
+              style={{ top: thread.yCoord }}
+            >
+              {thread.comments.map((comment) => (
+                <div className="mb-4 pb-4 border-b border-gray-300">
+                  <div className="text-sm text-gray-600 mb-1">
+                    {doc.users.find((user) => user.id === comment.userId)
+                      .name ?? "unknown"}
+                  </div>
+                  <div>{comment.content}</div>
                 </div>
+              ))}
+              <div className="mt-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button className="mr-2" variant="outline">
+                      <Reply className="mr-2" /> Reply
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    <Textarea
+                      className="mb-4"
+                      value={pendingCommentText}
+                      onChange={(event) =>
+                        setPendingCommentText(event.target.value)
+                      }
+                    />
+
+                    <PopoverClose>
+                      <Button
+                        variant="outline"
+                        onClick={() => addReplyToThread(thread.id)}
+                      >
+                        Comment
+                      </Button>
+                    </PopoverClose>
+                  </PopoverContent>
+                </Popover>
+
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    changeDoc(
+                      (d) => (d.commentThreads[thread.id].resolved = true)
+                    )
+                  }
+                >
+                  <Check className="mr-2" /> Resolve thread
+                </Button>
               </div>
-            ))}
-          </div>
-        ))}
+            </div>
+          ))}
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              className={`transition fixed duration-200 ease-in-out ${
+              className={`z-100 transition fixed duration-200 ease-in-out ${
                 showCommentButton ? "opacity-100" : "opacity-0"
               }`}
               variant="outline"
@@ -116,13 +176,22 @@ export const CommentsSidebar = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent>
-            <Textarea className="mb-4" />
-            <Button
-              variant="outline"
-              onClick={() => startCommentThreadAtSelection("hello")}
-            >
-              Comment
-            </Button>
+            <Textarea
+              className="mb-4"
+              value={pendingCommentText}
+              onChange={(event) => setPendingCommentText(event.target.value)}
+            />
+
+            <PopoverClose>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  startCommentThreadAtSelection(pendingCommentText)
+                }
+              >
+                Comment
+              </Button>
+            </PopoverClose>
           </PopoverContent>
         </Popover>
       </div>
