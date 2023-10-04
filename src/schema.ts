@@ -1,7 +1,7 @@
 export type Comment = {
   id: string;
   content: string;
-  user: string;
+  userId: string | null;
   timestamp: number;
 };
 
@@ -9,6 +9,14 @@ export type CommentThread = {
   id: string;
   comments: Comment[];
   resolved: boolean;
+  fromCursor: string; // Automerge cursor
+  toCursor: string; // Automerge cursor
+};
+
+export type CommentThreadWithResolvedPositions = CommentThread & {
+  from: number;
+  to: number;
+  yCoord: number;
 };
 
 export type User = {

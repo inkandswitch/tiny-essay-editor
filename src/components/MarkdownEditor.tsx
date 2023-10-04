@@ -21,6 +21,7 @@ export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
+  setView: (view: EditorView) => void;
 };
 
 const theme = EditorView.theme({
@@ -52,7 +53,12 @@ const theme = EditorView.theme({
   },
 });
 
-export function MarkdownEditor({ handle, path, setSelection }: EditorProps) {
+export function MarkdownEditor({
+  handle,
+  path,
+  setSelection,
+  setView,
+}: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<HTMLDivElement>(null);
 
@@ -85,6 +91,9 @@ export function MarkdownEditor({ handle, path, setSelection }: EditorProps) {
 
     // todo: what's going on with this typecast?
     editorRoot.current = view as unknown as HTMLDivElement;
+
+    // pass the view up to the parent so it can use it too
+    setView(view);
 
     handle.addListener("change", () => {
       semaphore.reconcile(handle, view);
