@@ -9,7 +9,7 @@ import {
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
-import { MarkdownDoc } from "./schema";
+import { MarkdownDoc } from "../schema";
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
@@ -46,31 +46,35 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
   const editorRoot = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const doc = handle.docSync()
-    const source = doc.content // this should use path
-    const plugin = amgPlugin(doc, path)
-    const semaphore = new PatchSemaphore(plugin)
+    const doc = handle.docSync();
+    const source = doc.content; // this should use path
+    const plugin = amgPlugin(doc, path);
+    const semaphore = new PatchSemaphore(plugin);
     const view = (editorRoot.current = new EditorView({
       doc: source,
-      extensions: [basicSetup, plugin,EditorView.lineWrapping,
+      extensions: [
+        basicSetup,
+        plugin,
+        EditorView.lineWrapping,
         theme,
-        markdown({})],
+        markdown({}),
+      ],
       dispatch(transaction) {
-        view.update([transaction])
-        semaphore.reconcile(handle, view)
+        view.update([transaction]);
+        semaphore.reconcile(handle, view);
       },
       parent: containerRef.current,
-    }))
+    }));
 
     handle.addListener("change", () => {
-      semaphore.reconcile(handle, view)
-    })
+      semaphore.reconcile(handle, view);
+    });
 
     return () => {
-      handle.removeAllListeners()
-      view.destroy()
-    }
-  }, [])
+      handle.removeAllListeners();
+      view.destroy();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-stretch h-screen">
