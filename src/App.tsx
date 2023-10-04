@@ -1,10 +1,15 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useHandle } from "@automerge/automerge-repo-react-hooks";
+import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { MarkdownDoc } from "./schema";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc] = useDocument<MarkdownDoc>(docUrl) // used to trigger re-rendering when the doc loads
+  const handle = useHandle<MarkdownDoc>(docUrl)
+
+  if (!doc) {
+    return `Loading ${docUrl}: ${handle.state}...`
+  }
 
   return (
     <div>

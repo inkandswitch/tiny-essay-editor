@@ -46,38 +46,31 @@ export function MarkdownEditor({ handle, path }: EditorProps) {
   const editorRoot = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    (async () => {
-      const doc = await handle.doc();
-      console.log("doc", doc);
-      const source = doc.content;
-      const plugin = amgPlugin(doc, path);
-      const semaphore = new PatchSemaphore(plugin);
-      const view = (editorRoot.current = new EditorView({
-        doc: source.toString(),
-        extensions: [
-          basicSetup,
-          plugin,
-          EditorView.lineWrapping,
-          theme,
-          markdown({}),
-        ],
-        dispatch(transaction) {
-          view.update([transaction]);
-          semaphore.reconcile(doc, handle.changeAt.bind(handle), view);
-        },
-        parent: containerRef.current,
-      }));
+    const doc = handle.docSync()
+    const source = doc.content // this should use path
+    const plugin = amgPlugin(doc, path)
+    const semaphore = new PatchSemaphore(plugin)
+    const view = (editorRoot.current = new EditorView({
+      doc: source,
+      extensions: [basicSetup, plugin,EditorView.lineWrapping,
+        theme,
+        markdown({})],
+      dispatch(transaction) {
+        view.update([transaction])
+        semaphore.reconcile(handle, view)
+      },
+      parent: containerRef.current,
+    }))
 
-      handle.addListener("change", ({ doc }) => {
-        semaphore.reconcile(doc, handle.changeAt.bind(handle), view);
-      });
+    handle.addListener("change", () => {
+      semaphore.reconcile(handle, view)
+    })
 
-      return () => {
-        handle.removeAllListeners();
-        view.destroy();
-      };
-    })();
-  }, []);
+    return () => {
+      handle.removeAllListeners()
+      view.destroy()
+    }
+  }, [])
 
   return (
     <div className="flex flex-col items-stretch h-screen">
