@@ -35,8 +35,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
-  console.log("in app", { view });
-
   return (
     <div>
       <Navbar
