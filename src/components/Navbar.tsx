@@ -40,10 +40,11 @@ const saveFile = async (blob) => {
   try {
     // @ts-expect-error - experimental API
     const handle = await window.showSaveFilePicker({
+      suggestedName: "index.md",
       types: [
         {
           accept: {
-            // Omitted
+            "text/markdown": [".md"],
           },
         },
       ],
