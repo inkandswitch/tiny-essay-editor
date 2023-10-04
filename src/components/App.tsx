@@ -7,6 +7,13 @@ import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { useEffect, useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -51,18 +58,26 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           />
         </div>
         <div className="flex-grow bg-gray-50 p-4">
-          <Button
-            className={`transition fixed duration-200 ease-in-out ${
-              showCommentButton ? "opacity-100" : "opacity-0"
-            }`}
-            variant="outline"
-            style={{
-              top: (selection?.yCoord ?? 0) - 11,
-            }}
-          >
-            <MessageSquarePlus size={24} className="mr-2" />
-            Add a comment
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                className={`transition fixed duration-200 ease-in-out ${
+                  showCommentButton ? "opacity-100" : "opacity-0"
+                }`}
+                variant="outline"
+                style={{
+                  top: (selection?.yCoord ?? 0) - 11,
+                }}
+              >
+                <MessageSquarePlus size={24} className="mr-2" />
+                Add a comment
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Textarea className="mb-4" />
+              <Button variant="outline">Comment</Button>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
