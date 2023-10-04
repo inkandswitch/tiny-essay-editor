@@ -60,7 +60,11 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       ["content"],
       thread.toCursor
     );
-    const yCoord = view?.coordsAtPos(from)?.top ?? 0;
+    const topOfEditor = view?.scrollDOM.getBoundingClientRect().top ?? 0;
+    const viewportCoordsOfThread = view?.coordsAtPos(from).top ?? 0;
+    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
+
+    console.log({ from, to, topOfEditor, viewportCoordsOfThread, yCoord });
 
     return {
       ...thread,
@@ -127,7 +131,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           {Object.values(threadsWithPositions).map((thread) => (
             <div
               key={thread.id}
-              className="bg-white p-4 fixed"
+              className="bg-white p-4 absolute"
               style={{ top: thread.yCoord }}
             >
               {thread.comments.map((comment) => (
