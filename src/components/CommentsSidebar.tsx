@@ -105,118 +105,114 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      <div className="flex-grow bg-gray-50">
-        {Object.values(threadsWithPositions)
-          .filter((thread) => !thread.resolved && thread.yCoord)
-          .map((thread) => (
-            <div
-              key={thread.id}
-              className="bg-white p-4 absolute border border-gray-300 rounded-sm"
-              style={{ top: thread.yCoord }}
-            >
-              {thread.comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="mb-4 pb-4 border-b border-gray-200"
-                >
-                  <div className="text-xs text-gray-600 mb-1 cursor-default">
-                    {doc.users.find((user) => user.id === comment.userId)
-                      .name ?? "unknown"}
+      {Object.values(threadsWithPositions)
+        .filter((thread) => !thread.resolved && thread.yCoord)
+        .map((thread) => (
+          <div
+            key={thread.id}
+            className="bg-white p-4 absolute border border-gray-300 rounded-sm max-w-lg"
+            style={{ top: thread.yCoord }}
+          >
+            {thread.comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="mb-4 pb-4 border-b border-gray-200"
+              >
+                <div className="text-xs text-gray-600 mb-1 cursor-default">
+                  {doc.users.find((user) => user.id === comment.userId).name ??
+                    "unknown"}
 
-                    <span className="ml-2 text-gray-400">
-                      {getRelativeTimeString(comment.timestamp)}
-                    </span>
-                  </div>
-                  <div className="cursor-default text-sm">
-                    {comment.content}
-                  </div>
+                  <span className="ml-2 text-gray-400">
+                    {getRelativeTimeString(comment.timestamp)}
+                  </span>
                 </div>
-              ))}
-              <div className="mt-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button className="mr-2" variant="outline">
-                      <Reply className="mr-2 " /> Reply
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent>
-                    <Textarea
-                      className="mb-4"
-                      value={pendingCommentText}
-                      onChange={(event) =>
-                        setPendingCommentText(event.target.value)
-                      }
-                    />
-
-                    <PopoverClose>
-                      <Button
-                        variant="outline"
-                        onClick={() => addReplyToThread(thread.id)}
-                      >
-                        Comment
-                      </Button>
-                    </PopoverClose>
-                  </PopoverContent>
-                </Popover>
-
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    changeDoc(
-                      (d) => (d.commentThreads[thread.id].resolved = true)
-                    )
-                  }
-                >
-                  <Check className="mr-2" /> Resolve
-                </Button>
+                <div className="cursor-default text-sm">{comment.content}</div>
               </div>
-            </div>
-          ))}
-        <Popover>
-          <PopoverTrigger asChild>
-            {showCommentButton && (
-              <Button
-                className="fixed"
-                variant="outline"
-                style={{
-                  top: (selection?.yCoord ?? 0) - 11,
-                }}
-              >
-                <MessageSquarePlus size={24} className="mr-2" />
-                Add a comment
-              </Button>
-            )}
-          </PopoverTrigger>
-          <PopoverContent>
-            <Textarea
-              className="mb-4"
-              value={pendingCommentText}
-              onChange={(event) => setPendingCommentText(event.target.value)}
-              // todo: figure out how to close the popover upon cmd-enter submit
-              // onKeyDown={(event) => {
-              //   if (event.key === "Enter" && event.metaKey) {
-              //     startCommentThreadAtSelection(pendingCommentText);
-              //     setSuppressButton(true);
-              //     event.preventDefault();
-              //   }
-              // }}
-            />
+            ))}
+            <div className="mt-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button className="mr-2" variant="outline">
+                    <Reply className="mr-2 " /> Reply
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <Textarea
+                    className="mb-4"
+                    value={pendingCommentText}
+                    onChange={(event) =>
+                      setPendingCommentText(event.target.value)
+                    }
+                  />
 
-            <PopoverClose>
+                  <PopoverClose>
+                    <Button
+                      variant="outline"
+                      onClick={() => addReplyToThread(thread.id)}
+                    >
+                      Comment
+                    </Button>
+                  </PopoverClose>
+                </PopoverContent>
+              </Popover>
+
               <Button
                 variant="outline"
-                onClick={() => {
-                  startCommentThreadAtSelection(pendingCommentText);
-                  setSuppressButton(true);
-                }}
+                onClick={() =>
+                  changeDoc(
+                    (d) => (d.commentThreads[thread.id].resolved = true)
+                  )
+                }
               >
-                Comment
-                {/* <span className="text-gray-400 ml-2 text-xs">(⌘-⏎)</span> */}
+                <Check className="mr-2" /> Resolve
               </Button>
-            </PopoverClose>
-          </PopoverContent>
-        </Popover>
-      </div>
+            </div>
+          </div>
+        ))}
+      <Popover>
+        <PopoverTrigger asChild>
+          {showCommentButton && (
+            <Button
+              className="fixed"
+              variant="outline"
+              style={{
+                top: (selection?.yCoord ?? 0) - 11,
+              }}
+            >
+              <MessageSquarePlus size={24} className="mr-2" />
+              Add a comment
+            </Button>
+          )}
+        </PopoverTrigger>
+        <PopoverContent>
+          <Textarea
+            className="mb-4"
+            value={pendingCommentText}
+            onChange={(event) => setPendingCommentText(event.target.value)}
+            // todo: figure out how to close the popover upon cmd-enter submit
+            // onKeyDown={(event) => {
+            //   if (event.key === "Enter" && event.metaKey) {
+            //     startCommentThreadAtSelection(pendingCommentText);
+            //     setSuppressButton(true);
+            //     event.preventDefault();
+            //   }
+            // }}
+          />
+
+          <PopoverClose>
+            <Button
+              variant="outline"
+              onClick={() => {
+                startCommentThreadAtSelection(pendingCommentText);
+                setSuppressButton(true);
+              }}
+            >
+              Comment
+              {/* <span className="text-gray-400 ml-2 text-xs">(⌘-⏎)</span> */}
+            </Button>
+          </PopoverClose>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
