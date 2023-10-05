@@ -77,8 +77,9 @@ const theme = EditorView.theme({
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
-    padding: "10px",
+    padding: "10px 60px",
     textAlign: "justify",
+    lineHeight: "24px",
   },
   ".cm-activeLine": {
     backgroundColor: "inherit",
