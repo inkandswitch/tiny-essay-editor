@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const initials = (name: string) => {
   return name
@@ -75,6 +75,11 @@ export const Navbar = ({
     (user) => user.id === session?.userId
   );
 
+  const downloadDoc = useCallback(() => {
+    const file = new Blob([doc.content], { type: "text/markdown" });
+    saveFile(file);
+  }, [doc.content]);
+
   // handle cmd-s for saving to local file
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -87,16 +92,11 @@ export const Navbar = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [downloadDoc]);
 
   if (!doc) {
     return <></>;
   }
-
-  const downloadDoc = () => {
-    const file = new Blob([doc.content], { type: "text/markdown" });
-    saveFile(file);
-  };
 
   return (
     <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
