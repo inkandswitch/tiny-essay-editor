@@ -37,13 +37,16 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
   return (
     <div>
-      <Navbar
-        doc={doc}
-        changeDoc={changeDoc}
-        session={session}
-        setSession={setSession}
-      />
-      <div className="flex bg-gray-50">
+      <div className="fixed z-50 top-0">
+        <Navbar
+          doc={doc}
+          changeDoc={changeDoc}
+          session={session}
+          setSession={setSession}
+        />
+      </div>
+
+      <div className="flex bg-gray-50 mt-12">
         <div className="w-4/5 max-w-[776px] bg-white my-4 ml-8 mr-4 border border-gray-200 p-4 rounded-sm ">
           <MarkdownEditor
             handle={handle}
