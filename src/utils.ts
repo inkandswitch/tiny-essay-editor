@@ -103,10 +103,10 @@ export const useScrollPosition = () => {
   return scrollPosition;
 };
 
-// Utils for converting back and forth between CodeMirror and Automerge ranges
-// If we select at the end of the doc, Codemirror returns a "to" which is
-// larger than Automerge wants. So we have to subtract one when converting
-// to an AM range, and then add it back later
+// Utils for converting back and forth between CodeMirror and Automerge ranges.
+// The end of a Codemirror range can be an index past the last character in the
+// document, but we can't get an Automerge cursor for that position.
+// TODO: understand and document this more thoroughly
 
 export const cmRangeToAMRange = (range: { from: number; to: number }) => ({
   from: range.from,
