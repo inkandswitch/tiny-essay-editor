@@ -7,7 +7,7 @@ import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { useEffect, useState } from "react";
 
-import { EditorView } from "codemirror";
+import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
@@ -49,7 +49,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
             handle={handle}
             path={["content"]}
             setSelection={setSelection}
-            setView={(view) => setView(view as EditorView)}
+            setView={setView}
           />
         </div>
         <div className="flex-grow bg-gray-50 p-4">

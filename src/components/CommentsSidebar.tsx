@@ -12,7 +12,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { EditorView } from "codemirror";
+import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
 import {
   useScrollPosition,

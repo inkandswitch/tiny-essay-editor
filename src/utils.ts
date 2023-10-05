@@ -1,6 +1,6 @@
 import { mapValues } from "lodash";
 import { CommentThreadForUI, MarkdownDoc } from "./schema";
-import { EditorView } from "codemirror";
+import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { useEffect, useState } from "react";
 
