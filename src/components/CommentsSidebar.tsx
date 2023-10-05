@@ -1,16 +1,9 @@
 import { Button } from "@/components/ui/button";
-import {
-  Comment,
-  CommentThread,
-  CommentThreadWithResolvedPositions,
-  LocalSession,
-  MarkdownDoc,
-} from "../schema";
+import { Comment, CommentThread, LocalSession, MarkdownDoc } from "../schema";
 
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
-import { mapValues } from "lodash";
 
 import {
   Popover,
@@ -20,8 +13,13 @@ import {
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
 import { EditorView } from "codemirror";
-import { useState } from "react";
-import useScrollPosition, { commentThreadsWithPositions } from "@/utils";
+import { useEffect, useState } from "react";
+import {
+  useScrollPosition,
+  getCommentThreadsWithPositions,
+  getRelativeTimeString,
+  cmRangeToAMRange,
+} from "@/utils";
 
 export const CommentsSidebar = ({
   doc,
@@ -37,7 +35,16 @@ export const CommentsSidebar = ({
   session: LocalSession;
 }) => {
   const [pendingCommentText, setPendingCommentText] = useState("");
-  const showCommentButton = selection && selection.from !== selection.to;
+
+  // suppress showing the button immediately after adding a thread
+  const [suppressButton, setSuppressButton] = useState(false);
+  const showCommentButton =
+    selection && selection.from !== selection.to && !suppressButton;
+
+  // un-suppress the button once the selection changes
+  useEffect(() => {
+    setSuppressButton(false);
+  }, [selection?.from, selection?.to]);
 
   // It may be inefficient to rerender comments sidebar on each scroll but
   // it's fine for now and it lets us reposition comments as the user scrolls.
@@ -48,14 +55,16 @@ export const CommentsSidebar = ({
   useScrollPosition();
 
   const threadsWithPositions = view
-    ? commentThreadsWithPositions(doc, view)
+    ? getCommentThreadsWithPositions(doc, view)
     : {};
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
 
-    const fromCursor = A.getCursor(doc, ["content"], selection.from);
-    const toCursor = A.getCursor(doc, ["content"], selection.to);
+    const amRange = cmRangeToAMRange(selection);
+
+    const fromCursor = A.getCursor(doc, ["content"], amRange.from);
+    const toCursor = A.getCursor(doc, ["content"], amRange.to);
 
     const comment: Comment = {
       id: uuid(),
@@ -98,20 +107,27 @@ export const CommentsSidebar = ({
     <div>
       <div className="flex-grow bg-gray-50 p-4">
         {Object.values(threadsWithPositions)
-          .filter((thread) => !thread.resolved)
+          .filter((thread) => !thread.resolved && thread.yCoord)
           .map((thread) => (
             <div
               key={thread.id}
-              className="bg-white p-4 absolute"
+              className="bg-white p-4 absolute border border-gray-300 rounded-sm"
               style={{ top: thread.yCoord }}
             >
               {thread.comments.map((comment) => (
-                <div className="mb-4 pb-4 border-b border-gray-300">
-                  <div className="text-sm text-gray-600 mb-1">
+                <div
+                  key={comment.id}
+                  className="mb-4 pb-4 border-b border-gray-300"
+                >
+                  <div className="text-sm text-gray-600 mb-1 cursor-default">
                     {doc.users.find((user) => user.id === comment.userId)
                       .name ?? "unknown"}
+
+                    <span className="ml-2 text-gray-400">
+                      {getRelativeTimeString(comment.timestamp)}
+                    </span>
                   </div>
-                  <div>{comment.content}</div>
+                  <div className="cursor-default">{comment.content}</div>
                 </div>
               ))}
               <div className="mt-4">
@@ -156,34 +172,44 @@ export const CommentsSidebar = ({
           ))}
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              className={`z-100 transition fixed duration-200 ease-in-out ${
-                showCommentButton ? "opacity-100" : "opacity-0"
-              }`}
-              variant="outline"
-              style={{
-                top: (selection?.yCoord ?? 0) - 11,
-              }}
-            >
-              <MessageSquarePlus size={24} className="mr-2" />
-              Add a comment
-            </Button>
+            {showCommentButton && (
+              <Button
+                className="fixed"
+                variant="outline"
+                style={{
+                  top: (selection?.yCoord ?? 0) - 11,
+                }}
+              >
+                <MessageSquarePlus size={24} className="mr-2" />
+                Add a comment
+              </Button>
+            )}
           </PopoverTrigger>
           <PopoverContent>
             <Textarea
               className="mb-4"
               value={pendingCommentText}
               onChange={(event) => setPendingCommentText(event.target.value)}
+              // todo: figure out how to close the popover upon cmd-enter submit
+              // onKeyDown={(event) => {
+              //   if (event.key === "Enter" && event.metaKey) {
+              //     startCommentThreadAtSelection(pendingCommentText);
+              //     setSuppressButton(true);
+              //     event.preventDefault();
+              //   }
+              // }}
             />
 
             <PopoverClose>
               <Button
                 variant="outline"
-                onClick={() =>
-                  startCommentThreadAtSelection(pendingCommentText)
-                }
+                onClick={() => {
+                  startCommentThreadAtSelection(pendingCommentText);
+                  setSuppressButton(true);
+                }}
               >
                 Comment
+                {/* <span className="text-gray-400 ml-2 text-xs">(⌘-⏎)</span> */}
               </Button>
             </PopoverClose>
           </PopoverContent>

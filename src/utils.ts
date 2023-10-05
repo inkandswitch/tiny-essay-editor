@@ -1,5 +1,5 @@
 import { mapValues } from "lodash";
-import { CommentThreadWithResolvedPositions, MarkdownDoc } from "./schema";
+import { CommentThreadForUI, MarkdownDoc } from "./schema";
 import { EditorView } from "codemirror";
 import { next as A } from "@automerge/automerge";
 import { useEffect, useState } from "react";
@@ -56,35 +56,27 @@ export function getRelativeTimeString(
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
 }
 
-export const commentThreadsWithPositions = (
+export const getCommentThreadsWithPositions = (
   doc: MarkdownDoc,
   view: EditorView
 ): {
-  [key: string]: CommentThreadWithResolvedPositions;
+  [key: string]: CommentThreadForUI;
 } => {
+  // TODO: May need to get fancier here to resolve overlapping comments
+
   return mapValues(doc.commentThreads ?? {}, (thread) => {
     const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
     const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
-    const viewportCoordsOfThread = view?.coordsAtPos(from)?.top;
+    const viewportCoordsOfThread = view?.coordsAtPos(
+      Math.min(from, doc.content.length - 1)
+    )?.top;
 
     let yCoord;
     if (viewportCoordsOfThread !== undefined) {
       yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
     } else {
-      console.log("comment isn't visible right now");
-      yCoord = -1000;
-    }
-
-    if (!thread.resolved) {
-      console.log({
-        from,
-        to,
-        topOfEditor,
-        viewportCoordsOfThread,
-        yCoord,
-        text: thread.comments[0].content,
-      });
+      yCoord = null;
     }
 
     return {
@@ -111,4 +103,17 @@ export const useScrollPosition = () => {
   return scrollPosition;
 };
 
-export default useScrollPosition;
+// Utils for converting back and forth between CodeMirror and Automerge ranges
+// If we select at the end of the doc, Codemirror returns a "to" which is
+// larger than Automerge wants. So we have to subtract one when converting
+// to an AM range, and then add it back later
+
+export const cmRangeToAMRange = (range: { from: number; to: number }) => ({
+  from: range.from,
+  to: range.to - 1,
+});
+
+export const amRangeToCMRange = (range: { from: number; to: number }) => ({
+  from: range.from,
+  to: range.to + 1,
+});

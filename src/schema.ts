@@ -13,10 +13,10 @@ export type CommentThread = {
   toCursor: string; // Automerge cursor
 };
 
-export type CommentThreadWithResolvedPositions = CommentThread & {
+export type CommentThreadForUI = CommentThread & {
   from: number;
   to: number;
-  yCoord: number;
+  yCoord: number | null;
 };
 
 export type User = {

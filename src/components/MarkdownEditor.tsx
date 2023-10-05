@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { EditorView } from "@codemirror/view";
+import { EditorView, Decoration } from "@codemirror/view";
+import { StateEffect, StateField } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { Prop } from "@automerge/automerge";
@@ -9,7 +10,9 @@ import {
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
-import { MarkdownDoc } from "../schema";
+import { CommentThreadForUI, MarkdownDoc } from "../schema";
+import { amRangeToCMRange, getCommentThreadsWithPositions } from "@/utils";
+import { sortBy } from "lodash";
 
 export type TextSelection = {
   from: number;
@@ -23,6 +26,42 @@ export type EditorProps = {
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
 };
+
+const setThreadsEffect = StateEffect.define<CommentThreadForUI[]>();
+const threadsField = StateField.define<CommentThreadForUI[]>({
+  create() {
+    return [];
+  },
+  update(threads, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setThreadsEffect)) {
+        return e.value;
+      }
+    }
+    return threads;
+  },
+});
+
+const threadDecoration = Decoration.mark({ class: "cm-comment-thread" });
+
+const threadDecorations = EditorView.decorations.compute(
+  [threadsField],
+  (state) => {
+    const commentThreads = state.field(threadsField);
+
+    const decorations =
+      sortBy(commentThreads ?? [], (thread) => thread.from)?.flatMap(
+        (thread) => {
+          const cmRange = amRangeToCMRange(thread);
+          return thread.to > thread.from
+            ? threadDecoration.range(cmRange.from, cmRange.to)
+            : [];
+        }
+      ) ?? [];
+
+    return Decoration.set(decorations);
+  }
+);
 
 const theme = EditorView.theme({
   "&": {},
@@ -51,6 +90,9 @@ const theme = EditorView.theme({
     textDecoration: "none",
     fontWeight: 300,
   },
+  ".cm-comment-thread": {
+    backgroundColor: "rgb(255 249 194)",
+  },
 });
 
 export function MarkdownEditor({
@@ -60,7 +102,15 @@ export function MarkdownEditor({
   setView,
 }: EditorProps) {
   const containerRef = useRef(null);
-  const editorRoot = useRef<HTMLDivElement>(null);
+  const editorRoot = useRef<EditorView>(null);
+
+  const getThreadsForDecorations = useCallback(
+    () =>
+      Object.values(
+        getCommentThreadsWithPositions(handle.docSync(), editorRoot.current)
+      ).filter((thread) => !thread.resolved),
+    []
+  );
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -75,6 +125,8 @@ export function MarkdownEditor({
         EditorView.lineWrapping,
         theme,
         markdown({}),
+        threadsField,
+        threadDecorations,
       ],
       dispatch(transaction) {
         view.update([transaction]);
@@ -89,14 +141,22 @@ export function MarkdownEditor({
       parent: containerRef.current,
     });
 
-    // todo: what's going on with this typecast?
-    editorRoot.current = view as unknown as HTMLDivElement;
+    editorRoot.current = view;
 
     // pass the view up to the parent so it can use it too
     setView(view);
 
+    view.dispatch({
+      effects: setThreadsEffect.of(getThreadsForDecorations()),
+    });
+
     handle.addListener("change", () => {
       semaphore.reconcile(handle, view);
+
+      // TODO: is this the right place to update the threads field? not sure.
+      view.dispatch({
+        effects: setThreadsEffect.of(getThreadsForDecorations()),
+      });
     });
 
     return () => {

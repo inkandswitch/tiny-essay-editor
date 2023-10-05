@@ -44,7 +44,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         setSession={setSession}
       />
       <div className="flex bg-gray-50">
-        <div className="w-4/5 max-w-[776px] bg-white my-4 ml-8 mr-4 border border-gray-200 p-4 ">
+        <div className="w-4/5 max-w-[776px] bg-white my-4 ml-8 mr-4 border border-gray-200 p-4 rounded-sm ">
           <MarkdownEditor
             handle={handle}
             path={["content"]}
