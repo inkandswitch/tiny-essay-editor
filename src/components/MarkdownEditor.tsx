@@ -171,7 +171,13 @@ export function MarkdownEditor({
       <div
         className="codemirror-editor flex-grow relative min-h-screen"
         ref={containerRef}
-        onKeyDown={(evt) => evt.stopPropagation()}
+        onKeyDown={(evt) => {
+          // Let cmd-s thru for saving the doc
+          if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
+            return;
+          }
+          evt.stopPropagation();
+        }}
       />
     </div>
   );

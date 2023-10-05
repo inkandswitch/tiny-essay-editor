@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const initials = (name: string) => {
   return name
@@ -74,6 +74,20 @@ export const Navbar = ({
   const sessionUser: User | undefined = users?.find(
     (user) => user.id === session?.userId
   );
+
+  // handle cmd-s for saving to local file
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "s" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        downloadDoc();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   if (!doc) {
     return <></>;
