@@ -52,7 +52,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
             setView={setView}
           />
         </div>
-        <div className="flex-grow bg-gray-50 p-4">
+        <div className="flex-grow bg-gray-50">
           <CommentsSidebar
             view={view}
             session={session}

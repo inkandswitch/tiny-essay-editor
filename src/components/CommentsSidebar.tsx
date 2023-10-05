@@ -105,7 +105,7 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      <div className="flex-grow bg-gray-50 p-4">
+      <div className="flex-grow bg-gray-50">
         {Object.values(threadsWithPositions)
           .filter((thread) => !thread.resolved && thread.yCoord)
           .map((thread) => (
@@ -117,9 +117,9 @@ export const CommentsSidebar = ({
               {thread.comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="mb-4 pb-4 border-b border-gray-300"
+                  className="mb-4 pb-4 border-b border-gray-200"
                 >
-                  <div className="text-sm text-gray-600 mb-1 cursor-default">
+                  <div className="text-xs text-gray-600 mb-1 cursor-default">
                     {doc.users.find((user) => user.id === comment.userId)
                       .name ?? "unknown"}
 
@@ -127,14 +127,16 @@ export const CommentsSidebar = ({
                       {getRelativeTimeString(comment.timestamp)}
                     </span>
                   </div>
-                  <div className="cursor-default">{comment.content}</div>
+                  <div className="cursor-default text-sm">
+                    {comment.content}
+                  </div>
                 </div>
               ))}
               <div className="mt-4">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button className="mr-2" variant="outline">
-                      <Reply className="mr-2" /> Reply
+                      <Reply className="mr-2 " /> Reply
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent>
@@ -165,7 +167,7 @@ export const CommentsSidebar = ({
                     )
                   }
                 >
-                  <Check className="mr-2" /> Resolve thread
+                  <Check className="mr-2" /> Resolve
                 </Button>
               </div>
             </div>
