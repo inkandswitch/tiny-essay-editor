@@ -56,15 +56,23 @@ export function getRelativeTimeString(
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
 }
 
+// a very rough approximation; needs to be better but being perfect seems hard
+const veryRoughHeightOfThread = (thread: CommentThreadForUI) => {
+  const commentHeights = thread.comments.map(
+    (comment) => 64 + Math.floor(comment.content.length / 60) * 20
+  );
+  const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
+  const PADDING = 32;
+  const BUTTONS = 40;
+  return PADDING + BUTTONS + commentsHeight + 20;
+};
+
 export const getCommentThreadsWithPositions = (
   doc: MarkdownDoc,
-  view: EditorView
-): {
-  [key: string]: CommentThreadForUI;
-} => {
-  // TODO: May need to get fancier here to resolve overlapping comments
-
-  return mapValues(doc.commentThreads ?? {}, (thread) => {
+  view: EditorView,
+  activeThreadId: string | null
+): CommentThreadForUI[] => {
+  const initialDraft = Object.values(doc.commentThreads ?? {}).map((thread) => {
     const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
     const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
@@ -84,8 +92,43 @@ export const getCommentThreadsWithPositions = (
       from,
       to,
       yCoord,
+      active: thread.id === activeThreadId,
     };
   });
+
+  // Now it's possible that we have comments which are overlapping one another.
+  // Make a best effort to mostly avoid overlaps.
+
+  // Sort the draft by yCoords
+  initialDraft.sort((a, b) => a.yCoord - b.yCoord);
+
+  // If any thread is too close to the previous one, bump it down a bit
+  // If the thread.id is the activeThreadId, then we keep its ycoord and move any overlapping threads up or down to get out of the way
+  console.log("----------");
+  for (let i = 1; i < initialDraft.length; i++) {
+    if (
+      initialDraft[i].yCoord <
+      initialDraft[i - 1].yCoord + veryRoughHeightOfThread(initialDraft[i - 1])
+    ) {
+      console.log(
+        "collision!!",
+        initialDraft[i].yCoord,
+        initialDraft[i - 1].yCoord,
+        initialDraft[i].yCoord - initialDraft[i - 1].yCoord,
+        veryRoughHeightOfThread(initialDraft[i - 1])
+      );
+      if (initialDraft[i].id === activeThreadId) {
+        initialDraft[i - 1].yCoord =
+          initialDraft[i].yCoord - veryRoughHeightOfThread(initialDraft[i - 1]);
+      } else {
+        initialDraft[i].yCoord =
+          initialDraft[i - 1].yCoord +
+          veryRoughHeightOfThread(initialDraft[i - 1]);
+      }
+    }
+  }
+
+  return initialDraft;
 };
 
 export const useScrollPosition = () => {

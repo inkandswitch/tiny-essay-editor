@@ -25,6 +25,8 @@ export type EditorProps = {
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
+  activeThreadId: string | null;
+  setActiveThreadId: (threadId: string | null) => void;
 };
 
 const setThreadsEffect = StateEffect.define<CommentThreadForUI[]>();
@@ -43,6 +45,9 @@ const threadsField = StateField.define<CommentThreadForUI[]>({
 });
 
 const threadDecoration = Decoration.mark({ class: "cm-comment-thread" });
+const activeThreadDecoration = Decoration.mark({
+  class: "cm-comment-thread active",
+});
 
 const threadDecorations = EditorView.decorations.compute(
   [threadsField],
@@ -53,9 +58,15 @@ const threadDecorations = EditorView.decorations.compute(
       sortBy(commentThreads ?? [], (thread) => thread.from)?.flatMap(
         (thread) => {
           const cmRange = amRangeToCMRange(thread);
-          return thread.to > thread.from
-            ? threadDecoration.range(cmRange.from, cmRange.to)
-            : [];
+          if (thread.to > thread.from) {
+            if (thread.active) {
+              return activeThreadDecoration.range(cmRange.from, cmRange.to);
+            } else {
+              return threadDecoration.range(cmRange.from, cmRange.to);
+            }
+          } else {
+            return [];
+          }
         }
       ) ?? [];
 
@@ -94,6 +105,9 @@ const theme = EditorView.theme({
   ".cm-comment-thread": {
     backgroundColor: "rgb(255 249 194)",
   },
+  ".cm-comment-thread.active": {
+    backgroundColor: "rgb(255 227 135)",
+  },
 });
 
 export function MarkdownEditor({
@@ -101,17 +115,28 @@ export function MarkdownEditor({
   path,
   setSelection,
   setView,
+  activeThreadId,
+  setActiveThreadId,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
 
   const getThreadsForDecorations = useCallback(
     () =>
-      Object.values(
-        getCommentThreadsWithPositions(handle.docSync(), editorRoot.current)
+      getCommentThreadsWithPositions(
+        handle.docSync(),
+        editorRoot.current,
+        activeThreadId
       ).filter((thread) => !thread.resolved),
-    []
+    [activeThreadId, handle]
   );
+
+  // Propagate activeThreadId into the codemirror
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      effects: setThreadsEffect.of(getThreadsForDecorations()),
+    });
+  }, [activeThreadId, getThreadsForDecorations]);
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -130,6 +155,20 @@ export function MarkdownEditor({
         threadDecorations,
       ],
       dispatch(transaction) {
+        const newSelection = transaction.newSelection.ranges[0];
+        if (transaction.newSelection !== view.state.selection) {
+          // set the active thread id if our selection is in a thread
+          for (const thread of getThreadsForDecorations()) {
+            if (
+              thread.from <= newSelection.from &&
+              thread.to >= newSelection.to
+            ) {
+              setActiveThreadId(thread.id);
+              break;
+            }
+            setActiveThreadId(null);
+          }
+        }
         view.update([transaction]);
         semaphore.reconcile(handle, view);
         const selection = view.state.selection.ranges[0];
@@ -138,6 +177,8 @@ export function MarkdownEditor({
           to: selection.to,
           yCoord: view.coordsAtPos(selection.from).top,
         });
+
+        // See if this transaction changed the selection
       },
       parent: containerRef.current,
     });

@@ -27,12 +27,16 @@ export const CommentsSidebar = ({
   selection,
   view,
   session,
+  activeThreadId,
+  setActiveThreadId,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
   view: EditorView | undefined;
   session: LocalSession;
+  activeThreadId: string | null;
+  setActiveThreadId: (threadId: string | null) => void;
 }) => {
   const [pendingCommentText, setPendingCommentText] = useState("");
 
@@ -55,8 +59,8 @@ export const CommentsSidebar = ({
   useScrollPosition();
 
   const threadsWithPositions = view
-    ? getCommentThreadsWithPositions(doc, view)
-    : {};
+    ? getCommentThreadsWithPositions(doc, view, activeThreadId)
+    : [];
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
@@ -105,19 +109,26 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      {Object.values(threadsWithPositions)
+      {threadsWithPositions
         .filter((thread) => !thread.resolved && thread.yCoord)
         .map((thread) => (
           <div
             key={thread.id}
-            className="bg-white p-4 absolute border border-gray-300 rounded-sm max-w-lg"
-            style={{ top: thread.yCoord }}
+            className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+              thread.id === activeThreadId
+                ? "z-50 shadow-sm border-gray-500"
+                : "z-0"
+            }`}
+            style={{
+              top: thread.yCoord,
+            }}
+            onClick={(e) => {
+              setActiveThreadId(thread.id);
+              e.stopPropagation();
+            }}
           >
             {thread.comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="mb-4 pb-4 border-b border-gray-200 rounded-md"
-              >
+              <div key={comment.id} className="mb-2 pb-4  rounded-md">
                 <div className="text-xs text-gray-600 mb-1 cursor-default">
                   {doc.users.find((user) => user.id === comment.userId)?.name ??
                     "unknown"}
@@ -129,7 +140,7 @@ export const CommentsSidebar = ({
                 <div className="cursor-default text-sm">{comment.content}</div>
               </div>
             ))}
-            <div className="mt-4">
+            <div className="mt-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button className="mr-2" variant="outline">

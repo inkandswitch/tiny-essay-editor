@@ -15,6 +15,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();
+  const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
 
   useEffect(() => {
@@ -53,6 +54,8 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
             path={["content"]}
             setSelection={setSelection}
             setView={setView}
+            activeThreadId={activeThreadId}
+            setActiveThreadId={setActiveThreadId}
           />
         </div>
         <div className="flex-grow bg-gray-50">
@@ -62,6 +65,8 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
             doc={doc}
             changeDoc={changeDoc}
             selection={selection}
+            activeThreadId={activeThreadId}
+            setActiveThreadId={setActiveThreadId}
           />
         </div>
       </div>
