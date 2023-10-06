@@ -116,10 +116,10 @@ export const CommentsSidebar = ({
             {thread.comments.map((comment) => (
               <div
                 key={comment.id}
-                className="mb-4 pb-4 border-b border-gray-200"
+                className="mb-4 pb-4 border-b border-gray-200 rounded-md"
               >
                 <div className="text-xs text-gray-600 mb-1 cursor-default">
-                  {doc.users.find((user) => user.id === comment.userId).name ??
+                  {doc.users.find((user) => user.id === comment.userId)?.name ??
                     "unknown"}
 
                   <span className="ml-2 text-gray-400">
