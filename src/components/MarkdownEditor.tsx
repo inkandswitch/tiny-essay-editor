@@ -74,6 +74,28 @@ const threadDecorations = EditorView.decorations.compute(
   }
 );
 
+// We manually set a selection decoration in addition to native browser
+// so that the selection remains highlighted as the user is leaving a comment
+
+const selectionDecoration = Decoration.mark({ class: "cm-selection" });
+
+const selectionDecorations = EditorView.decorations.compute(
+  ["selection"],
+  (state) => {
+    const selection = state.selection.ranges[0];
+    let decorations;
+    if (!selection || selection.from === selection.to) {
+      decorations = Decoration.none;
+    } else {
+      decorations = Decoration.set([
+        selectionDecoration.range(selection.from, selection.to),
+      ]);
+    }
+
+    return decorations;
+  }
+);
+
 const theme = EditorView.theme({
   "&": {},
   "&.cm-editor.cm-focused": {
@@ -107,6 +129,9 @@ const theme = EditorView.theme({
   },
   ".cm-comment-thread.active": {
     backgroundColor: "rgb(255 227 135)",
+  },
+  ".cm-selection": {
+    backgroundColor: "#d8efff",
   },
 });
 
@@ -148,6 +173,7 @@ export function MarkdownEditor({
         markdown({}),
         threadsField,
         threadDecorations,
+        selectionDecorations,
       ],
       dispatch(transaction) {
         const newSelection = transaction.newSelection.ranges[0];
@@ -170,7 +196,9 @@ export function MarkdownEditor({
         setSelection({
           from: selection.from,
           to: selection.to,
-          yCoord: view.coordsAtPos(selection.from).top,
+          yCoord:
+            -1 * view.scrollDOM.getBoundingClientRect().top +
+            view.coordsAtPos(selection.from).top,
         });
 
         // See if this transaction changed the selection
