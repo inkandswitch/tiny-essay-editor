@@ -16,7 +16,6 @@ export type CommentThread = {
 export type CommentThreadForUI = CommentThread & {
   from: number;
   to: number;
-  yCoord: number | null;
   active: boolean;
 };
 

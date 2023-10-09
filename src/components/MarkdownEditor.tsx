@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import { EditorView, Decoration } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
@@ -11,7 +11,7 @@ import {
 } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
-import { amRangeToCMRange, getCommentThreadsWithPositions } from "@/utils";
+import { amRangeToCMRange, getThreadsForUI } from "@/utils";
 import { sortBy } from "lodash";
 
 export type TextSelection = {
@@ -122,12 +122,7 @@ export function MarkdownEditor({
   const editorRoot = useRef<EditorView>(null);
 
   const getThreadsForDecorations = useCallback(
-    () =>
-      getCommentThreadsWithPositions(
-        handle.docSync(),
-        editorRoot.current,
-        activeThreadId
-      ).filter((thread) => !thread.resolved),
+    () => getThreadsForUI(handle.docSync(), editorRoot.current, activeThreadId),
     [activeThreadId, handle]
   );
 

@@ -16,10 +16,10 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
 import {
   useScrollPosition,
-  getCommentThreadsWithPositions,
+  getVisibleTheadsWithPos,
   getRelativeTimeString,
   cmRangeToAMRange,
-} from "@/utils";
+} from "../utils";
 
 export const CommentsSidebar = ({
   doc,
@@ -59,7 +59,7 @@ export const CommentsSidebar = ({
   useScrollPosition();
 
   const threadsWithPositions = view
-    ? getCommentThreadsWithPositions(doc, view, activeThreadId)
+    ? getVisibleTheadsWithPos(doc, view, activeThreadId)
     : [];
 
   const startCommentThreadAtSelection = (commentText: string) => {
@@ -109,77 +109,73 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      {threadsWithPositions
-        .filter((thread) => !thread.resolved && thread.yCoord)
-        .map((thread) => (
-          <div
-            key={thread.id}
-            className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-              thread.id === activeThreadId
-                ? "z-50 shadow-sm border-gray-500"
-                : "z-0"
-            }`}
-            style={{
-              top: thread.yCoord,
-            }}
-            onClick={(e) => {
-              setActiveThreadId(thread.id);
-              e.stopPropagation();
-            }}
-          >
-            {thread.comments.map((comment) => (
-              <div key={comment.id} className="mb-2 pb-4  rounded-md">
-                <div className="text-xs text-gray-600 mb-1 cursor-default">
-                  {doc.users.find((user) => user.id === comment.userId)?.name ??
-                    "unknown"}
+      {threadsWithPositions.map((thread) => (
+        <div
+          key={thread.id}
+          className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+            thread.id === activeThreadId
+              ? "z-50 shadow-sm border-gray-500"
+              : "z-0"
+          }`}
+          style={{
+            top: thread.yCoord,
+          }}
+          onClick={(e) => {
+            setActiveThreadId(thread.id);
+            e.stopPropagation();
+          }}
+        >
+          {thread.comments.map((comment) => (
+            <div key={comment.id} className="mb-2 pb-4  rounded-md">
+              <div className="text-xs text-gray-600 mb-1 cursor-default">
+                {doc.users.find((user) => user.id === comment.userId)?.name ??
+                  "unknown"}
 
-                  <span className="ml-2 text-gray-400">
-                    {getRelativeTimeString(comment.timestamp)}
-                  </span>
-                </div>
-                <div className="cursor-default text-sm">{comment.content}</div>
+                <span className="ml-2 text-gray-400">
+                  {getRelativeTimeString(comment.timestamp)}
+                </span>
               </div>
-            ))}
-            <div className="mt-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button className="mr-2" variant="outline">
-                    <Reply className="mr-2 " /> Reply
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Textarea
-                    className="mb-4"
-                    value={pendingCommentText}
-                    onChange={(event) =>
-                      setPendingCommentText(event.target.value)
-                    }
-                  />
-
-                  <PopoverClose>
-                    <Button
-                      variant="outline"
-                      onClick={() => addReplyToThread(thread.id)}
-                    >
-                      Comment
-                    </Button>
-                  </PopoverClose>
-                </PopoverContent>
-              </Popover>
-
-              <Button
-                variant="outline"
-                onClick={() =>
-                  changeDoc(
-                    (d) => (d.commentThreads[thread.id].resolved = true)
-                  )
-                }
-              >
-                <Check className="mr-2" /> Resolve
-              </Button>
+              <div className="cursor-default text-sm">{comment.content}</div>
             </div>
+          ))}
+          <div className="mt-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button className="mr-2" variant="outline">
+                  <Reply className="mr-2 " /> Reply
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Textarea
+                  className="mb-4"
+                  value={pendingCommentText}
+                  onChange={(event) =>
+                    setPendingCommentText(event.target.value)
+                  }
+                />
+
+                <PopoverClose>
+                  <Button
+                    variant="outline"
+                    onClick={() => addReplyToThread(thread.id)}
+                  >
+                    Comment
+                  </Button>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="outline"
+              onClick={() =>
+                changeDoc((d) => (d.commentThreads[thread.id].resolved = true))
+              }
+            >
+              <Check className="mr-2" /> Resolve
+            </Button>
           </div>
-        ))}
+        </div>
+      ))}
       <Popover>
         <PopoverTrigger asChild>
           {showCommentButton && (

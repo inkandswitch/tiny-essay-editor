@@ -57,7 +57,7 @@ export function getRelativeTimeString(
 }
 
 // a very rough approximation; needs to be better but being perfect seems hard
-const veryRoughHeightOfThread = (thread: CommentThreadForUI) => {
+const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
   const commentHeights = thread.comments.map(
     (comment) => 64 + Math.floor(comment.content.length / 60) * 20
   );
@@ -67,68 +67,115 @@ const veryRoughHeightOfThread = (thread: CommentThreadForUI) => {
   return PADDING + BUTTONS + commentsHeight + 20;
 };
 
-export const getCommentThreadsWithPositions = (
+// Resolve comment thread cursors to integer positions in the document
+export const getThreadsForUI = (
   doc: MarkdownDoc,
   view: EditorView,
   activeThreadId: string | null
 ): CommentThreadForUI[] => {
-  const initialDraft = Object.values(doc.commentThreads ?? {}).map((thread) => {
-    const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
-    const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+  return Object.values(doc.commentThreads ?? {})
+    .map((thread) => {
+      const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
+      const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+      return {
+        ...thread,
+        from,
+        to,
+        active: thread.id === activeThreadId,
+      };
+    })
+    .filter((thread) => !thread.resolved);
+};
+
+// Calculate a vertical position for each comment.
+// We roughly try to put the comments vertically near the text they are commenting on.
+// But we also avoid overlapping comments by bumping them up or down if they overlap.
+// The currently active comment gets priority for being nearby its text;
+// other comments bump up or down from that point.
+export const getVisibleTheadsWithPos = (
+  doc: MarkdownDoc,
+  view: EditorView,
+  activeThreadId: string | null
+): CommentThreadForUI[] => {
+  // As an initial draft, put each thread right next to its comment
+  const draft = getThreadsForUI(doc, view, activeThreadId).flatMap((thread) => {
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
     const viewportCoordsOfThread = view?.coordsAtPos(
-      Math.min(from, doc.content.length - 1)
+      Math.min(thread.from, doc.content.length - 1)
     )?.top;
 
-    let yCoord;
-    if (viewportCoordsOfThread !== undefined) {
-      yCoord = -1 * topOfEditor + viewportCoordsOfThread + 80; // why 100??
-    } else {
-      yCoord = null;
+    if (viewportCoordsOfThread === undefined) {
+      return [];
     }
 
-    return {
-      ...thread,
-      from,
-      to,
-      yCoord,
-      active: thread.id === activeThreadId,
-    };
+    const TOP_MARGIN = 80;
+    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + TOP_MARGIN;
+
+    return [
+      {
+        ...thread,
+
+        yCoord,
+      },
+    ];
   });
+
+  // Sort the draft by yCoords
+  draft.sort((a, b) => a.yCoord - b.yCoord);
 
   // Now it's possible that we have comments which are overlapping one another.
   // Make a best effort to mostly avoid overlaps.
 
-  // Sort the draft by yCoords
-  initialDraft.sort((a, b) => a.yCoord - b.yCoord);
+  let activeIndex = draft.findIndex((thread) => thread.id === activeThreadId);
+  if (activeIndex === -1) activeIndex = 0;
 
-  // If any thread is too close to the previous one, bump it down a bit
-  // If the thread.id is the activeThreadId, then we keep its ycoord and move any overlapping threads up or down to get out of the way
-  console.log("----------");
-  for (let i = 1; i < initialDraft.length; i++) {
+  // Iterate upwards
+  for (let i = activeIndex - 1; i >= 0; i--) {
     if (
-      initialDraft[i].yCoord <
-      initialDraft[i - 1].yCoord + veryRoughHeightOfThread(initialDraft[i - 1])
+      draft[i].yCoord + estimatedHeightOfThread(draft[i]) >
+      draft[i + 1].yCoord
     ) {
-      console.log(
-        "collision!!",
-        initialDraft[i].yCoord,
-        initialDraft[i - 1].yCoord,
-        initialDraft[i].yCoord - initialDraft[i - 1].yCoord,
-        veryRoughHeightOfThread(initialDraft[i - 1])
-      );
-      if (initialDraft[i].id === activeThreadId) {
-        initialDraft[i - 1].yCoord =
-          initialDraft[i].yCoord - veryRoughHeightOfThread(initialDraft[i - 1]);
+      draft[i].yCoord = draft[i + 1].yCoord - estimatedHeightOfThread(draft[i]);
+    }
+  }
+
+  // Iterate downwards
+  for (let i = activeIndex + 1; i < draft.length; i++) {
+    if (
+      draft[i].yCoord <
+      draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1])
+    ) {
+      draft[i].yCoord =
+        draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1]);
+    }
+  }
+
+  // console.log("----------");
+  for (let i = 1; i < draft.length; i++) {
+    if (
+      draft[i].yCoord <
+      draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1])
+    ) {
+      // console.log(
+      //   "collision!",
+      //   initialDraft[i].comments[0].content.slice(0, 10),
+      //   initialDraft[i].yCoord,
+      //   initialDraft[i - 1].comments[0].content.slice(0, 10),
+      //   initialDraft[i - 1].yCoord
+      // initialDraft[i].yCoord - initialDraft[i - 1].yCoord,
+      // veryRoughHeightOfThread(initialDraft[i - 1])
+      // );
+      if (draft[i].id === activeThreadId) {
+        draft[i - 1].yCoord =
+          draft[i].yCoord - estimatedHeightOfThread(draft[i - 1]);
       } else {
-        initialDraft[i].yCoord =
-          initialDraft[i - 1].yCoord +
-          veryRoughHeightOfThread(initialDraft[i - 1]);
+        draft[i].yCoord =
+          draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1]);
       }
     }
   }
 
-  return initialDraft;
+  return draft;
 };
 
 export const useScrollPosition = () => {
