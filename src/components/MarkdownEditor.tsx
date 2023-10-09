@@ -110,7 +110,7 @@ const theme = EditorView.theme({
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
-    padding: "10px 60px",
+    padding: "10px var(--cm-padding-x)",
     textAlign: "justify",
     lineHeight: "24px",
   },

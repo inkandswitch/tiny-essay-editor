@@ -400,3 +400,14 @@ body {
   }
 }
 
+  :root {
+    --cm-padding-x: 60px;
+
+  }
+
+
+  @media (max-width: 500px) {
+    :root {
+      --cm-padding-x: 10px;
+    }
+  }
