@@ -130,6 +130,10 @@ const theme = EditorView.theme({
   ".cm-comment-thread.active": {
     backgroundColor: "rgb(255 227 135)",
   },
+  // active highlighting wins if it's inside another thread
+  ".cm-comment-thread.active .cm-comment-thread": {
+    backgroundColor: "rgb(255 227 135)",
+  },
   ".cm-selection": {
     backgroundColor: "#d8efff",
   },

@@ -16,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 import {
   Dialog,
@@ -58,6 +59,19 @@ const saveFile = async (blob) => {
   }
 };
 
+type TentativeUser =
+  | {
+      _type: "existing";
+      id: string;
+    }
+  | {
+      _type: "new";
+      name: string;
+    }
+  | {
+      _type: "unknown";
+    };
+
 export const Navbar = ({
   doc,
   changeDoc,
@@ -70,6 +84,9 @@ export const Navbar = ({
   setSession: (session: LocalSession) => void;
 }) => {
   const [namePickerOpen, setNamePickerOpen] = useState(false);
+  const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
+    _type: "unknown",
+  });
   const users = doc.users;
   const sessionUser: User | undefined = users?.find(
     (user) => user.id === session?.userId
@@ -93,6 +110,13 @@ export const Navbar = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [downloadDoc]);
+
+  // sync session user to the local user state for the login process
+  useEffect(() => {
+    if (sessionUser) {
+      setTentativeUser({ _type: "existing", id: sessionUser.id });
+    }
+  }, [sessionUser]);
 
   if (!doc) {
     return <></>;
@@ -124,13 +148,13 @@ export const Navbar = ({
             <DialogHeader>
               <DialogTitle>Edit profile</DialogTitle>
               <DialogDescription>
-                Choose your name from the list of users on this doc.
+                Log in as existing user, or sign up with your name
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
-                  Name
+                  Log in:
                 </Label>
                 <Popover open={namePickerOpen} onOpenChange={setNamePickerOpen}>
                   <PopoverTrigger asChild>
@@ -138,13 +162,15 @@ export const Navbar = ({
                       variant="outline"
                       role="combobox"
                       aria-expanded={namePickerOpen}
-                      className="w-[200px] justify-between"
+                      className="justify-between col-span-3"
                     >
-                      {sessionUser ? sessionUser.name : "Select user..."}
+                      {tentativeUser._type === "existing"
+                        ? doc.users[tentativeUser.id]?.name
+                        : "Select user..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
+                  <PopoverContent className="p-0">
                     <Command>
                       <CommandInput placeholder="Search users..." />
                       <CommandEmpty>No user found.</CommandEmpty>
@@ -152,10 +178,12 @@ export const Navbar = ({
                         {users.map((user) => (
                           <CommandItem
                             key={user.id}
-                            value={user.id}
-                            onSelect={(currentValue) => {
-                              if (currentValue !== sessionUser?.id) {
-                                setSession({ userId: currentValue });
+                            onSelect={() => {
+                              if (user.id !== sessionUser?.id) {
+                                setTentativeUser({
+                                  _type: "existing",
+                                  id: user.id,
+                                });
                               }
                               setNamePickerOpen(false);
                             }}
@@ -176,10 +204,51 @@ export const Navbar = ({
                   </PopoverContent>
                 </Popover>
               </div>
+              <div className="text-center text-sm text-gray-400">or</div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Sign up:
+                </Label>
+                <Input
+                  placeholder="Your name here"
+                  className="col-span-3"
+                  value={
+                    tentativeUser._type === "new" ? tentativeUser.name : ""
+                  }
+                  onFocus={() => {
+                    setTentativeUser({ _type: "new", name: "" });
+                    setNamePickerOpen(false);
+                  }}
+                  onChange={(e) => {
+                    setTentativeUser({
+                      _type: "new",
+                      name: e.target.value,
+                    });
+                  }}
+                ></Input>
+              </div>
             </div>
             <DialogFooter>
               <DialogTrigger asChild>
-                <Button type="submit">Save changes</Button>
+                <Button
+                  type="submit"
+                  onClick={() => {
+                    if (tentativeUser._type === "existing") {
+                      setSession({ userId: tentativeUser.id });
+                    } else if (tentativeUser._type === "new") {
+                      const user = {
+                        id: doc.users.length.toString(),
+                        name: tentativeUser.name,
+                      };
+                      changeDoc((doc) => {
+                        doc.users.push(user);
+                      });
+                      setSession({ userId: user.id });
+                    }
+                  }}
+                >
+                  Save changes
+                </Button>
               </DialogTrigger>
             </DialogFooter>
           </DialogContent>

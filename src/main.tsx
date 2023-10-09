@@ -11,6 +11,7 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 // import { next as A } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDoc } from "./schema.ts";
+import { sortBy } from "lodash";
 
 const repo = new Repo({
   network: [
@@ -19,6 +20,24 @@ const repo = new Repo({
   ],
   storage: new IndexedDBStorageAdapter(),
 });
+
+const LAB_USERS = sortBy(
+  [
+    "Geoffrey Litt",
+    "Paul Sonnentag",
+    "Alexander Obenauer",
+    "Peter van Hardenberg",
+    "James Lindenbaum",
+    "Marcel Goethals",
+    "Ivan Reese",
+    "Alex Warth",
+    "Todd Matthews",
+    "Alex Good",
+    "Orion Henry",
+    "Mary Rose Cook",
+  ],
+  (name) => name.toLowerCase()
+);
 
 const rootDocUrl = `${document.location.hash.substr(1)}`;
 let handle;
@@ -29,12 +48,13 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle.change((d) => {
     d.content = "This is a **Markdown document**.";
     d.commentThreads = {};
-    d.users = [
-      { id: "1", name: "Geoffrey Litt" },
-      { id: "2", name: "Paul Sonnentag" },
-      { id: "3", name: "Alexander Obenauer" },
-      { id: "4", name: "Peter van Hardenberg" },
-    ];
+    d.users = [];
+    let id = 0;
+    for (const name of LAB_USERS) {
+      const idStr = (id++).toString();
+      const user = { id: idStr, name };
+      d.users.push(user);
+    }
   });
 }
 
