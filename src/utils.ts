@@ -84,7 +84,11 @@ export const getThreadsForUI = (
         active: thread.id === activeThreadId,
       };
     })
-    .filter((thread) => !thread.resolved);
+    .filter(
+      (thread) =>
+        !thread.resolved && // hide resolved threads
+        thread.to > thread.from // hide threads pointing to deleted text
+    );
 };
 
 // Calculate a vertical position for each comment.
@@ -96,7 +100,7 @@ export const getVisibleTheadsWithPos = (
   doc: MarkdownDoc,
   view: EditorView,
   activeThreadId: string | null
-): CommentThreadForUI[] => {
+) => {
   // As an initial draft, put each thread right next to its comment
   const draft = getThreadsForUI(doc, view, activeThreadId).flatMap((thread) => {
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
@@ -120,8 +124,8 @@ export const getVisibleTheadsWithPos = (
     ];
   });
 
-  // Sort the draft by yCoords
-  draft.sort((a, b) => a.yCoord - b.yCoord);
+  // Sort the draft by vertical position in the doc
+  draft.sort((a, b) => a.from - b.from);
 
   // Now it's possible that we have comments which are overlapping one another.
   // Make a best effort to mostly avoid overlaps.

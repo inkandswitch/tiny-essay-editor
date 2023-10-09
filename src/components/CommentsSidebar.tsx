@@ -125,19 +125,24 @@ export const CommentsSidebar = ({
             e.stopPropagation();
           }}
         >
-          {thread.comments.map((comment) => (
-            <div key={comment.id} className="mb-2 pb-4  rounded-md">
-              <div className="text-xs text-gray-600 mb-1 cursor-default">
-                {doc.users.find((user) => user.id === comment.userId)?.name ??
-                  "unknown"}
+          <div>
+            {thread.comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
+              >
+                <div className="text-xs text-gray-600 mb-1 cursor-default">
+                  {doc.users.find((user) => user.id === comment.userId)?.name ??
+                    "unknown"}
 
-                <span className="ml-2 text-gray-400">
-                  {getRelativeTimeString(comment.timestamp)}
-                </span>
+                  <span className="ml-2 text-gray-400">
+                    {getRelativeTimeString(comment.timestamp)}
+                  </span>
+                </div>
+                <div className="cursor-default text-sm">{comment.content}</div>
               </div>
-              <div className="cursor-default text-sm">{comment.content}</div>
-            </div>
-          ))}
+            ))}
+          </div>
           <div className="mt-2">
             <Popover>
               <PopoverTrigger asChild>
