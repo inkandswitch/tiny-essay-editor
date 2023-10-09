@@ -133,7 +133,7 @@ export const CommentsSidebar = ({
               >
                 <div className="text-xs text-gray-600 mb-1 cursor-default">
                   {doc.users.find((user) => user.id === comment.userId)?.name ??
-                    "unknown"}
+                    "Anonymous"}
 
                   <span className="ml-2 text-gray-400">
                     {getRelativeTimeString(comment.timestamp)}
