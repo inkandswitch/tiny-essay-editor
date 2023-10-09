@@ -165,7 +165,8 @@ export const Navbar = ({
                       className="justify-between col-span-3"
                     >
                       {tentativeUser._type === "existing"
-                        ? doc.users[tentativeUser.id]?.name
+                        ? doc.users.find((user) => user.id === tentativeUser.id)
+                            ?.name
                         : "Select user..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
