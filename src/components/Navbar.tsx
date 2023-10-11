@@ -29,34 +29,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
+import { saveFile } from "../utils";
 
 const initials = (name: string) => {
   return name
     .split(" ")
     .map((word) => word[0])
     .join("");
-};
-
-const saveFile = async (blob) => {
-  try {
-    // @ts-expect-error - experimental API
-    const handle = await window.showSaveFilePicker({
-      suggestedName: "index.md",
-      types: [
-        {
-          accept: {
-            "text/markdown": [".md"],
-          },
-        },
-      ],
-    });
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    return handle;
-  } catch (err) {
-    console.error(err.name, err.message);
-  }
 };
 
 type TentativeUser =
@@ -94,7 +73,13 @@ export const Navbar = ({
 
   const downloadDoc = useCallback(() => {
     const file = new Blob([doc.content], { type: "text/markdown" });
-    saveFile(file);
+    saveFile(file, "index.md", [
+      {
+        accept: {
+          "text/markdown": [".md"],
+        },
+      },
+    ]);
   }, [doc.content]);
 
   // handle cmd-s for saving to local file
