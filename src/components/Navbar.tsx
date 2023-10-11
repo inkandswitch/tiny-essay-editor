@@ -30,6 +30,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { saveFile } from "../utils";
+import { uuid } from "@automerge/automerge";
 
 const initials = (name: string) => {
   return name
@@ -223,7 +224,7 @@ export const Navbar = ({
                       setSession({ userId: tentativeUser.id });
                     } else if (tentativeUser._type === "new") {
                       const user = {
-                        id: doc.users.length.toString(),
+                        id: uuid(),
                         name: tentativeUser.name,
                       };
                       changeDoc((doc) => {

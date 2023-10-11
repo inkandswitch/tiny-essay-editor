@@ -12,6 +12,7 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDoc } from "./schema.ts";
 import { sortBy } from "lodash";
+import { uuid } from "@automerge/automerge";
 
 const repo = new Repo({
   network: [
@@ -49,9 +50,8 @@ if (isValidAutomergeUrl(rootDocUrl)) {
     d.content = "This is a **Markdown document**.";
     d.commentThreads = {};
     d.users = [];
-    let id = 0;
     for (const name of LAB_USERS) {
-      const idStr = (id++).toString();
+      const idStr = name.toLowerCase().replace(" ", "-");
       const user = { id: idStr, name };
       d.users.push(user);
     }
