@@ -139,7 +139,7 @@ export const CommentsSidebar = ({
                     {getRelativeTimeString(comment.timestamp)}
                   </span>
                 </div>
-                <div className="cursor-default text-sm">{comment.content}</div>
+                <div className="cursor-default text-sm whitespace-pre-wrap">{comment.content}</div>
               </div>
             ))}
           </div>
