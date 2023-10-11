@@ -6,7 +6,7 @@ import {
   ViewPlugin,
   WidgetType,
   DecorationSet,
-  ViewUpdate
+  ViewUpdate,
 } from "@codemirror/view";
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { basicSetup } from "codemirror";
@@ -147,13 +147,13 @@ const theme = EditorView.theme({
 });
 
 export function MarkdownEditor({
-                                 handle,
-                                 path,
-                                 setSelection,
-                                 setView,
-                                 activeThreadId,
-                                 setActiveThreadId,
-                               }: EditorProps) {
+  handle,
+  path,
+  setSelection,
+  setView,
+  activeThreadId,
+  setActiveThreadId,
+}: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
 
@@ -259,13 +259,12 @@ export function MarkdownEditor({
   );
 }
 
-
 // todo: currently hard coded for embark essay, assumes hugo is running on default port
-const BASE_URL = 'http://localhost:1313/embark'
+const BASE_URL = "http://localhost:1313/embark";
 
 class Figure extends WidgetType {
   constructor(protected url: string) {
-    super()
+    super();
   }
 
   toDOM(view: EditorView): HTMLElement {
@@ -273,112 +272,122 @@ class Figure extends WidgetType {
   }
 
   eq(other: Figure) {
-    return other.url === this.url
+    return other.url === this.url;
   }
 
   ignoreEvent() {
-    return true
+    return true;
   }
 }
 
 class ImageFigure extends Figure {
   toDOM() {
-    const wrap = document.createElement("div")
-    const image = document.createElement("img")
-    image.src = `${BASE_URL}/${this.url}`
+    const wrap = document.createElement("div");
+    const image = document.createElement("img");
+    image.crossOrigin = "anonymous";
+    image.src = `${BASE_URL}/${this.url}`;
 
-    wrap.append(image)
-    wrap.className = "border border-gray-200 mb-2"
+    wrap.append(image);
+    wrap.className = "border border-gray-200 mb-2";
 
-    return wrap
+    return wrap;
   }
 }
 
 class VideoFigure extends Figure {
   toDOM() {
-    const wrap = document.createElement("div")
-    const video = document.createElement('video');
-    video.className = "w-full"
+    const wrap = document.createElement("div");
+    const video = document.createElement("video");
+    video.className = "w-full";
     video.width = 320;
     video.height = 240;
     video.controls = true;
 
-    const source = document.createElement('source');
-    source.src = `${BASE_URL}/${this.url}`
-    source.type = 'video/mp4';
+    const source = document.createElement("source");
+    source.src = `${BASE_URL}/${this.url}`;
+    source.type = "video/mp4";
 
     video.appendChild(source);
     wrap.appendChild(video);
 
-    wrap.className = "border border-gray-200 mb-2"
-    return wrap
+    wrap.className = "border border-gray-200 mb-2";
+    return wrap;
   }
 }
 
-const previewFiguresPlugin = ViewPlugin.fromClass(class {
-  decorations: DecorationSet
+const previewFiguresPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
 
-  constructor(view: EditorView) {
-    this.decorations = getFigures(view)
+    constructor(view: EditorView) {
+      this.decorations = getFigures(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged)
+        this.decorations = getFigures(update.view);
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
   }
+);
 
-  update(update: ViewUpdate) {
-    if (update.docChanged || update.viewportChanged)
-      this.decorations = getFigures(update.view)
-  }
-}, {
-  decorations: v => v.decorations,
-})
-
-const SOURCE_ATTR_REGEX = /src="(?<value>.*?)"/
-const BLOCK_EXPR_REGEX = /(\{\{< rawhtml >}}(?<source>.*?){{< \/rawhtml >}})/sg
-const INLINE_EXPR_REGEX = /({{(?<source>.*?)}})/sg
+const SOURCE_ATTR_REGEX = /src="(?<value>.*?)"/;
+const BLOCK_EXPR_REGEX = /(\{\{< rawhtml >}}(?<source>.*?){{< \/rawhtml >}})/gs;
+const INLINE_EXPR_REGEX = /({{(?<source>.*?)}})/gs;
 
 function getFigures(view: EditorView) {
-  const decorations: Range<Decoration>[] = []
+  const decorations: Range<Decoration>[] = [];
   const parser = new DOMParser();
 
   for (const { from, to } of view.visibleRanges) {
-    const text = view.state.sliceDoc(from, to)
+    const text = view.state.sliceDoc(from, to);
 
-    let match
+    let match;
     // eslint-disable-next-line no-cond-assign
-    while (match = INLINE_EXPR_REGEX.exec(text)) {
-      const position = match.index + from
+    while ((match = INLINE_EXPR_REGEX.exec(text))) {
+      const position = match.index + from;
 
-      const srcAttrMatch = match.groups.source.match(SOURCE_ATTR_REGEX)
+      const srcAttrMatch = match.groups.source.match(SOURCE_ATTR_REGEX);
       if (srcAttrMatch) {
-        const url = srcAttrMatch.groups.value
+        const url = srcAttrMatch.groups.value;
         const widget = Decoration.widget({
           widget: new ImageFigure(url),
-          side: 1
-        }).range(position)
-        decorations.push(widget)
-        decorations.push(Decoration.mark({
-          class: "text-gray-500 font-mono text-left",
-        }).range(position, position + match[0].length))
+          side: 1,
+        }).range(position);
+        decorations.push(widget);
+        decorations.push(
+          Decoration.mark({
+            class: "text-gray-500 font-mono text-left",
+          }).range(position, position + match[0].length)
+        );
       }
     }
 
     // eslint-disable-next-line no-cond-assign
-    while (match = BLOCK_EXPR_REGEX.exec(text)) {
-      const position = match.index + from
-      const doc = parser.parseFromString(match.groups.source, "text/html")
-      const src = doc.body.getElementsByTagName("video")[0]?.src
+    while ((match = BLOCK_EXPR_REGEX.exec(text))) {
+      const position = match.index + from;
+      const doc = parser.parseFromString(match.groups.source, "text/html");
+      const src = doc.body.getElementsByTagName("video")[0]?.src;
 
       if (src) {
-        const url = new URL(src).pathname
+        const url = new URL(src).pathname;
         const widget = Decoration.widget({
           widget: new VideoFigure(url),
-          side: 1
-        }).range(position)
-        decorations.push(widget)
-        decorations.push(Decoration.mark({
-          class: "text-gray-500",
-        }).range(position, position + match[0].length))
+          side: 1,
+        }).range(position);
+        decorations.push(widget);
+        decorations.push(
+          Decoration.mark({
+            class: "text-gray-500",
+          }).range(position, position + match[0].length)
+        );
       }
     }
   }
 
-  return Decoration.set(decorations.sort((range1, range2) =>  range1.from - range2.from));
+  return Decoration.set(
+    decorations.sort((range1, range2) => range1.from - range2.from)
+  );
 }
