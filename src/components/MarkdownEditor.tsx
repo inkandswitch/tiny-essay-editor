@@ -299,6 +299,7 @@ class VideoFigure extends Figure {
     const wrap = document.createElement("div");
     const video = document.createElement("video");
     video.className = "w-full";
+    video.crossOrigin = "anonymous";
     video.width = 320;
     video.height = 240;
     video.controls = true;
@@ -372,7 +373,7 @@ function getFigures(view: EditorView) {
       const src = doc.body.getElementsByTagName("video")[0]?.src;
 
       if (src) {
-        const url = new URL(src).pathname;
+        const url = new URL(src).pathname.slice(1);
         const widget = Decoration.widget({
           widget: new VideoFigure(url),
           side: 1,
