@@ -18,17 +18,19 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
 
+  const localStorageKey = `LocalSession-${docUrl}`;
+
   useEffect(() => {
-    const session = localStorage.getItem("LocalSession");
+    const session = localStorage.getItem(localStorageKey);
     if (session) {
       setSessionInMemory(JSON.parse(session));
     } else {
       setSessionInMemory({ userId: null });
     }
-  }, []);
+  }, [localStorageKey]);
 
   const setSession = (session: LocalSession) => {
-    localStorage.setItem("LocalSession", JSON.stringify(session));
+    localStorage.setItem(localStorageKey, JSON.stringify(session));
     setSessionInMemory(session);
   };
 
