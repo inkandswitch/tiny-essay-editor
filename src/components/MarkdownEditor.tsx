@@ -186,6 +186,7 @@ export function MarkdownEditor({
         threadDecorations,
         selectionDecorations,
         previewFiguresPlugin,
+        highlightKeywordsPlugin,
       ],
       dispatch(transaction) {
         const newSelection = transaction.newSelection.ranges[0];
@@ -385,6 +386,49 @@ function getFigures(view: EditorView) {
           }).range(position, position + match[0].length)
         );
       }
+    }
+  }
+
+  return Decoration.set(
+    decorations.sort((range1, range2) => range1.from - range2.from)
+  );
+}
+
+const highlightKeywordsPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = getHighlightWords(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged)
+        this.decorations = getHighlightWords(update.view);
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  }
+);
+
+// TODO: make these highlight words configurable in the app
+const HIGHLIGHT_KEYWORDS_REGEX = /todo:|@paul|@alex|@geoffrey/gi;
+function getHighlightWords(view: EditorView) {
+  const decorations: Range<Decoration>[] = [];
+
+  for (const { from, to } of view.visibleRanges) {
+    const text = view.state.sliceDoc(from, to);
+
+    let match;
+    // eslint-disable-next-line no-cond-assign
+    while ((match = HIGHLIGHT_KEYWORDS_REGEX.exec(text))) {
+      const position = match.index + from;
+      decorations.push(
+        Decoration.mark({
+          class: "bg-red-200 p-1 rounded-sm",
+        }).range(position, position + match[0].length)
+      );
     }
   }
 
