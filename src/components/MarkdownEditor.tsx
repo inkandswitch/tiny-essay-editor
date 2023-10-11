@@ -360,7 +360,7 @@ function getFigures(view: EditorView) {
         decorations.push(widget);
         decorations.push(
           Decoration.mark({
-            class: "text-gray-500 font-mono text-left",
+            class: "text-gray-500 font-mono text-left text-sm",
           }).range(position, position + match[0].length)
         );
       }
@@ -381,7 +381,7 @@ function getFigures(view: EditorView) {
         decorations.push(widget);
         decorations.push(
           Decoration.mark({
-            class: "text-gray-500",
+            class: "text-gray-500 font-mono text-left text-sm",
           }).range(position, position + match[0].length)
         );
       }
