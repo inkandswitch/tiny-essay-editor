@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangeFn, save } from "@automerge/automerge/next";
+import {
+  ChangeFn,
+  diff,
+  getHeads,
+  save,
+  splice,
+} from "@automerge/automerge/next";
 import {
   Check,
   ChevronsUpDown,
@@ -158,13 +164,26 @@ export const Navbar = ({
     document.title = title;
   }, [title]);
 
-  const mergeDoc = () => {
+  const mergeDoc = async () => {
     if (!isValidAutomergeUrl(mergeDocUrl)) {
       alert("Invalid document URL, please try again.");
       return;
     }
     const mergeDocHandle = repo.find<MarkdownDoc>(mergeDocUrl);
     try {
+      const currentDoc = await handle.doc();
+
+      // Make a new "rebased fork" which is the fork + any changes from this doc since the fork
+      const rebaseForkHandle = repo.clone(mergeDocHandle);
+      rebaseForkHandle.merge(handle);
+      const rebaseForkDoc = await rebaseForkHandle.doc();
+
+      // Now we can get a nice diff between the rebased fork and our doc
+      const oldHeads = getHeads(currentDoc);
+      const newHeads = getHeads(rebaseForkDoc);
+      const patches = diff(rebaseForkDoc, oldHeads, newHeads);
+      console.log(patches);
+
       handle.merge(mergeDocHandle);
     } catch (e) {
       console.error("Error merging document", e);
