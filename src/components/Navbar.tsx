@@ -84,9 +84,9 @@ export const Navbar = ({
   }, [doc.content]);
 
   useEffect(() => {
-    const file = new Blob([save(doc)], { type: "application/octet-stream" });
     // @ts-expect-error window global
-    window.saveAutomergeFile = () =>
+    window.saveAutomergeFile = () => {
+      const file = new Blob([save(doc)], { type: "application/octet-stream" });
       saveFile(file, "index.automerge", [
         {
           accept: {
@@ -94,6 +94,7 @@ export const Navbar = ({
           },
         },
       ]);
+    };
   }, [doc]);
 
   // handle cmd-s for saving to local file
