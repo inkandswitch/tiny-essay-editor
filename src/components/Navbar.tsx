@@ -3,6 +3,7 @@ import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   ChangeFn,
+  Patch,
   diff,
   getHeads,
   save,
@@ -46,7 +47,11 @@ import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  isValidAutomergeUrl,
+} from "@automerge/automerge-repo";
 
 const initials = (name: string) => {
   return name
@@ -87,6 +92,8 @@ export const Navbar = ({
     _type: "unknown",
   });
   const [mergeDocUrl, setMergeDocUrl] = useState("");
+  const [showingDiff, setShowingDiff] = useState(false);
+  const [patches, setPatches] = useState<Patch[]>([]);
   const users = doc.users;
   const sessionUser: User | undefined = users?.find(
     (user) => user.id === session?.userId
@@ -164,7 +171,7 @@ export const Navbar = ({
     document.title = title;
   }, [title]);
 
-  const mergeDoc = async () => {
+  const computeDiff = async () => {
     if (!isValidAutomergeUrl(mergeDocUrl)) {
       alert("Invalid document URL, please try again.");
       return;
@@ -182,13 +189,18 @@ export const Navbar = ({
       const oldHeads = getHeads(currentDoc);
       const newHeads = getHeads(rebaseForkDoc);
       const patches = diff(rebaseForkDoc, oldHeads, newHeads);
-      console.log(patches);
-
-      handle.merge(mergeDocHandle);
+      setPatches(patches);
+      setShowingDiff(true);
     } catch (e) {
       console.error("Error merging document", e);
       console.error(e);
     }
+  };
+
+  const mergeDoc = async () => {
+    const mergeDocHandle = repo.find<MarkdownDoc>(mergeDocUrl as AutomergeUrl);
+    handle.merge(mergeDocHandle);
+    setShowingDiff(false);
   };
 
   const isMergeDocUrlValid = isValidAutomergeUrl(mergeDocUrl);
@@ -252,6 +264,7 @@ export const Navbar = ({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
         <Dialog>
           <DialogTrigger>
             <Button variant="ghost" className="text-gray-500">
@@ -285,19 +298,37 @@ export const Navbar = ({
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <DialogTrigger asChild>
-                <Button
-                  type="submit"
-                  onClick={mergeDoc}
-                  disabled={!isMergeDocUrlValid}
-                >
-                  Merge
-                </Button>
-              </DialogTrigger>
-            </DialogFooter>
+            {showingDiff ? (
+              <div>
+                <div>{JSON.stringify(patches)}</div>
+                <DialogFooter>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="submit"
+                      onClick={mergeDoc}
+                      disabled={!isMergeDocUrlValid}
+                    >
+                      Merge doc
+                    </Button>
+                  </DialogTrigger>
+                </DialogFooter>
+              </div>
+            ) : (
+              <DialogFooter>
+                <DialogTrigger asChild>
+                  <Button
+                    type="submit"
+                    onClick={computeDiff}
+                    disabled={!isMergeDocUrlValid}
+                  >
+                    See diff
+                  </Button>
+                </DialogTrigger>
+              </DialogFooter>
+            )}
           </DialogContent>
         </Dialog>
+
         <Dialog>
           <DialogTrigger>
             <Button variant="ghost" className="px-2 py-0">
