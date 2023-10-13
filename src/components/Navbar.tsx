@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangeFn, save, splice } from "@automerge/automerge/next";
+import { ChangeFn, save } from "@automerge/automerge/next";
 import {
   Check,
   ChevronsUpDown,
   Download,
   GitFork,
+  GitMerge,
   Plus,
   User as UserIcon,
 } from "lucide-react";
@@ -39,7 +40,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { DocHandle } from "@automerge/automerge-repo";
+import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 const initials = (name: string) => {
   return name
@@ -79,6 +80,7 @@ export const Navbar = ({
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
     _type: "unknown",
   });
+  const [mergeDocUrl, setMergeDocUrl] = useState("");
   const users = doc.users;
   const sessionUser: User | undefined = users?.find(
     (user) => user.id === session?.userId
@@ -98,19 +100,17 @@ export const Navbar = ({
   const cloneDoc = useCallback(() => {
     const clone = repo.clone(handle);
 
+    // NOTE: for now I'm not deleting all comments;
+    // this is so that we can simply merge back in the entire doc
+    // without getting comments deleted.
+    // Going forward, I think a better plan is to more selectively
+    // merge in changes from a different doc (eg partial patches on text);
+    // once we get there we can delete all comments in the fork.
+
     // delete all comments
-    clone.change((d) => {
-      d.commentThreads = {};
-      splice(
-        d,
-        ["content"],
-        0,
-        0,
-        `*Note: This doc is a fork of \`${
-          handle.url
-        }\` created on ${new Date().toLocaleDateString()}. Any changes made here won't automatically flow back into the original, but they can be manually merged back in later.*\n\n---\n\n`
-      );
-    });
+    // clone.change((d) => {
+    //   d.commentThreads = {};
+    // });
 
     // open clone in new tab
     const cloneUrl = `${window.location.origin}/#${clone.url}`;
@@ -158,6 +158,22 @@ export const Navbar = ({
     document.title = title;
   }, [title]);
 
+  const mergeDoc = () => {
+    if (!isValidAutomergeUrl(mergeDocUrl)) {
+      alert("Invalid document URL, please try again.");
+      return;
+    }
+    const mergeDocHandle = repo.find<MarkdownDoc>(mergeDocUrl);
+    try {
+      handle.merge(mergeDocHandle);
+    } catch (e) {
+      console.error("Error merging document", e);
+      console.error(e);
+    }
+  };
+
+  const isMergeDocUrlValid = isValidAutomergeUrl(mergeDocUrl);
+
   if (!doc) {
     return <></>;
   }
@@ -184,10 +200,85 @@ export const Navbar = ({
           <Download size={"20px"} className="mr-2" />{" "}
           <div className="hidden md:inline-block">Download</div>
         </Button>
-        <Button onClick={cloneDoc} variant="ghost" className="text-gray-500">
-          <GitFork size={"20px"} className="mr-1" />
-          Fork
-        </Button>
+
+        <Dialog>
+          <DialogTrigger>
+            <Button variant="ghost" className="text-gray-500">
+              <GitFork size={"20px"} className="mr-1" />
+              Fork
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                <GitFork className="inline" /> Fork
+              </DialogTitle>
+            </DialogHeader>
+            <p>
+              Forking this document will create a new document with the same
+              contents. You can then edit the forked document independently,
+              without affecting the contents of this doc.
+            </p>
+            <p>
+              Later, if you'd like, you can merge back all of your changes into
+              this document using the <GitMerge className="inline" /> Merge
+              button.
+            </p>
+            <DialogFooter>
+              <DialogTrigger asChild>
+                <Button type="submit" onClick={cloneDoc}>
+                  Fork
+                </Button>
+              </DialogTrigger>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog>
+          <DialogTrigger>
+            <Button variant="ghost" className="text-gray-500">
+              <GitMerge size={"20px"} className="mr-1" />
+              Merge
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                <GitMerge className="inline" /> Merge
+              </DialogTitle>
+              <DialogDescription>
+                Merge changes from a fork into this document
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                URL:
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  placeholder="automerge:xyz123"
+                  value={mergeDocUrl}
+                  onChange={(e) => setMergeDocUrl(e.target.value)}
+                ></Input>
+                <div className="text-red-700 text-xs h-4 p-1">
+                  {!isMergeDocUrlValid && mergeDocUrl.length > 0
+                    ? "Invalid automerge doc URL"
+                    : " "}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogTrigger asChild>
+                <Button
+                  type="submit"
+                  onClick={mergeDoc}
+                  disabled={!isMergeDocUrlValid}
+                >
+                  Merge
+                </Button>
+              </DialogTrigger>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog>
           <DialogTrigger>
             <Button variant="ghost" className="px-2 py-0">
