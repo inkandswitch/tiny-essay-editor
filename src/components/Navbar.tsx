@@ -92,7 +92,6 @@ export const Navbar = ({
     _type: "unknown",
   });
   const [mergeDocUrl, setMergeDocUrl] = useState("");
-  const [showingDiff, setShowingDiff] = useState(false);
   const [patches, setPatches] = useState<Patch[]>([]);
   const users = doc.users;
   const sessionUser: User | undefined = users?.find(
@@ -189,8 +188,7 @@ export const Navbar = ({
       const oldHeads = getHeads(currentDoc);
       const newHeads = getHeads(rebaseForkDoc);
       const patches = diff(rebaseForkDoc, oldHeads, newHeads);
-      setPatches(patches);
-      setShowingDiff(true);
+      return patches;
     } catch (e) {
       console.error("Error merging document", e);
       console.error(e);
@@ -200,10 +198,22 @@ export const Navbar = ({
   const mergeDoc = async () => {
     const mergeDocHandle = repo.find<MarkdownDoc>(mergeDocUrl as AutomergeUrl);
     handle.merge(mergeDocHandle);
-    setShowingDiff(false);
   };
 
   const isMergeDocUrlValid = isValidAutomergeUrl(mergeDocUrl);
+
+  useEffect(() => {
+    (async () => {
+      if (!isValidAutomergeUrl(mergeDocUrl)) {
+        setPatches([]);
+        return;
+      }
+
+      const patches = await computeDiff();
+
+      setPatches(patches);
+    })();
+  }, [mergeDocUrl]);
 
   if (!doc) {
     return <></>;
@@ -298,34 +308,20 @@ export const Navbar = ({
                 </div>
               </div>
             </div>
-            {showingDiff ? (
-              <div>
-                <div>{JSON.stringify(patches)}</div>
-                <DialogFooter>
-                  <DialogTrigger asChild>
-                    <Button
-                      type="submit"
-                      onClick={mergeDoc}
-                      disabled={!isMergeDocUrlValid}
-                    >
-                      Merge doc
-                    </Button>
-                  </DialogTrigger>
-                </DialogFooter>
-              </div>
-            ) : (
-              <DialogFooter>
-                <DialogTrigger asChild>
-                  <Button
-                    type="submit"
-                    onClick={computeDiff}
-                    disabled={!isMergeDocUrlValid}
-                  >
-                    See diff
-                  </Button>
-                </DialogTrigger>
-              </DialogFooter>
-            )}
+
+            <div>{patches.length > 0 && JSON.stringify(patches)}</div>
+
+            <DialogFooter>
+              <DialogTrigger asChild>
+                <Button
+                  type="submit"
+                  onClick={mergeDoc}
+                  disabled={!isMergeDocUrlValid}
+                >
+                  Merge doc
+                </Button>
+              </DialogTrigger>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
