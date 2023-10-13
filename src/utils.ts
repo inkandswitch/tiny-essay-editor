@@ -241,8 +241,7 @@ export const saveFile = async (blob, suggestedName, types) => {
       return;
     } catch (err) {
       // Fail silently if the user has simply canceled the dialog.
-      if (err.name !== "AbortError") {
-        console.error(err.name, err.message);
+      if (err.name === "AbortError") {
         return;
       }
     }
