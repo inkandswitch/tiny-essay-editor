@@ -72,7 +72,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   // need to patch up the useEffect in MarkdownEditor to handle async destroy
   // <React.StrictMode>
   <RepoContext.Provider value={repo}>
-    <App docUrl={docUrl} />
+    <App docUrl={docUrl} repo={repo} />
   </RepoContext.Provider>
   // </React.StrictMode>
 );

@@ -1,4 +1,4 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
@@ -44,6 +44,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         <Navbar
           doc={doc}
           changeDoc={changeDoc}
+          handle={handle}
           session={session}
           setSession={setSession}
         />

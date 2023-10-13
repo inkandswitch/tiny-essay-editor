@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangeFn, save } from "@automerge/automerge/next";
+import { ChangeFn, save, splice } from "@automerge/automerge/next";
 import {
   Check,
   ChevronsUpDown,
   Download,
+  GitFork,
   Plus,
   User as UserIcon,
 } from "lucide-react";
@@ -37,6 +38,8 @@ import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { DocHandle } from "@automerge/automerge-repo";
 
 const initials = (name: string) => {
   return name
@@ -63,12 +66,15 @@ export const Navbar = ({
   changeDoc,
   session,
   setSession,
+  handle,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
   setSession: (session: LocalSession) => void;
+  handle: DocHandle<MarkdownDoc>;
 }) => {
+  const repo = useRepo();
   const [namePickerOpen, setNamePickerOpen] = useState(false);
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
     _type: "unknown",
@@ -88,6 +94,28 @@ export const Navbar = ({
       },
     ]);
   }, [doc.content]);
+
+  const cloneDoc = useCallback(() => {
+    const clone = repo.clone(handle);
+
+    // delete all comments
+    clone.change((d) => {
+      d.commentThreads = {};
+      splice(
+        d,
+        ["content"],
+        0,
+        0,
+        `*Note: This doc is a fork of \`${
+          handle.url
+        }\` created on ${new Date().toLocaleDateString()}. Any changes made here won't automatically flow back into the original, but they can be manually merged back in later.*\n\n---\n\n`
+      );
+    });
+
+    // open clone in new tab
+    const cloneUrl = `${window.location.origin}/#${clone.url}`;
+    window.open(cloneUrl, "_blank");
+  }, [repo]);
 
   useEffect(() => {
     // @ts-expect-error window global
@@ -155,6 +183,10 @@ export const Navbar = ({
         <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
           <Download size={"20px"} className="mr-2" />{" "}
           <div className="hidden md:inline-block">Download</div>
+        </Button>
+        <Button onClick={cloneDoc} variant="ghost" className="text-gray-500">
+          <GitFork size={"20px"} className="mr-1" />
+          Fork
         </Button>
         <Dialog>
           <DialogTrigger>
