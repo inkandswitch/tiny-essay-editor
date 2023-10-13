@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangeFn } from "@automerge/automerge/next";
+import { ChangeFn, save } from "@automerge/automerge/next";
 import { Check, ChevronsUpDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -82,6 +82,19 @@ export const Navbar = ({
       },
     ]);
   }, [doc.content]);
+
+  useEffect(() => {
+    const file = new Blob([save(doc)], { type: "application/octet-stream" });
+    // @ts-expect-error window global
+    window.saveAutomergeFile = () =>
+      saveFile(file, "index.automerge", [
+        {
+          accept: {
+            "application/octet-stream": [".automerge"],
+          },
+        },
+      ]);
+  }, [doc]);
 
   // handle cmd-s for saving to local file
   useEffect(() => {
