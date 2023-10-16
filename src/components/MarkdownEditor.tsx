@@ -156,6 +156,7 @@ export function MarkdownEditor({
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
+  const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
 
   const getThreadsForDecorations = useCallback(
     () => getThreadsForUI(handle.docSync(), editorRoot.current, activeThreadId),
@@ -189,32 +190,39 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
       ],
       dispatch(transaction) {
-        const newSelection = transaction.newSelection.ranges[0];
-        if (transaction.newSelection !== view.state.selection) {
-          // set the active thread id if our selection is in a thread
-          for (const thread of getThreadsForDecorations()) {
-            if (
-              thread.from <= newSelection.from &&
-              thread.to >= newSelection.to
-            ) {
-              setActiveThreadId(thread.id);
-              break;
+        try {
+          const newSelection = transaction.newSelection.ranges[0];
+          if (transaction.newSelection !== view.state.selection) {
+            // set the active thread id if our selection is in a thread
+            for (const thread of getThreadsForDecorations()) {
+              if (
+                thread.from <= newSelection.from &&
+                thread.to >= newSelection.to
+              ) {
+                setActiveThreadId(thread.id);
+                break;
+              }
+              setActiveThreadId(null);
             }
-            setActiveThreadId(null);
           }
+          view.update([transaction]);
+          semaphore.reconcile(handle, view);
+          const selection = view.state.selection.ranges[0];
+          setSelection({
+            from: selection.from,
+            to: selection.to,
+            yCoord:
+              -1 * view.scrollDOM.getBoundingClientRect().top +
+              view.coordsAtPos(selection.from).top,
+          });
+        } catch (e) {
+          console.error(
+            "Encountered an error in dispatch function; crashing the editor to notify the user and avoid data loss."
+          );
+          console.error(e);
+          setEditorCrashed(true);
+          editorRoot.current?.destroy();
         }
-        view.update([transaction]);
-        semaphore.reconcile(handle, view);
-        const selection = view.state.selection.ranges[0];
-        setSelection({
-          from: selection.from,
-          to: selection.to,
-          yCoord:
-            -1 * view.scrollDOM.getBoundingClientRect().top +
-            view.coordsAtPos(selection.from).top,
-        });
-
-        // See if this transaction changed the selection
       },
       parent: containerRef.current,
     });
@@ -242,6 +250,22 @@ export function MarkdownEditor({
       view.destroy();
     };
   }, []);
+
+  if (editorCrashed) {
+    return (
+      <div className="bg-red-100 p-4 rounded-md">
+        <p className="mb-2">⛔️ Error: editor crashed!</p>
+        <p className="mb-2">
+          We're so sorry for the inconvenience. Please reload to keep working.
+          Your data was most likely saved before the crash so you can pick up
+          right where you left off.
+        </p>
+        <p className="mb-2">
+          If you'd like you can screenshot the dev console as a bug report.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-stretch min-h-screen">
