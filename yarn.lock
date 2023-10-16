@@ -30,46 +30,46 @@
     "@codemirror/view" "6.13.2"
     codemirror "^6.0.1"
 
-"@automerge/automerge-repo-network-broadcastchannel@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-broadcastchannel/-/automerge-repo-network-broadcastchannel-1.0.8.tgz#7f05b9a35d7042caeb396d3ba798e206294571d4"
-  integrity sha512-rqPLCoID7OUTiL1o37CQT//0AIsZcRN8hSENOOn71tJZ2a4QPpKXIj//zMzvx7U/NsNe4VxBTkXjZwDi5aIH6Q==
+"@automerge/automerge-repo-network-broadcastchannel@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-broadcastchannel/-/automerge-repo-network-broadcastchannel-1.0.9.tgz#fea5ef535b7098f33d0c8f08b448b9da2777df45"
+  integrity sha512-oOnwXVw+IL+5ElLG66BGUZvW8MXEsvX/hk6EVTsaC+xYFvYEF9DBRuIzQWhuKtps2Sl7gFgyrfsPYb08Zkl0ZA==
   dependencies:
-    "@automerge/automerge-repo" "^1.0.8"
+    "@automerge/automerge-repo" "^1.0.9"
 
-"@automerge/automerge-repo-network-websocket@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-websocket/-/automerge-repo-network-websocket-1.0.8.tgz#eb02946403a1ed5d88e65741f45a7e6582697afe"
-  integrity sha512-AaK1N9P2c2MblXgEc3yZqBh9bWj+262e0irVcp5be1vSZNgWDrTvVZ/DovyR49N6/JrnXEMq8FkAa7r8rpIMCg==
+"@automerge/automerge-repo-network-websocket@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-websocket/-/automerge-repo-network-websocket-1.0.9.tgz#ce5075fade93de3c6a1913953550dbca01ee2dfd"
+  integrity sha512-NReHry3HT1aeFGLF71mYf3IL4PFT/BBRwQqk0ZkL0hgatCMOSDHATHAN2a/f6YMD/vXWMSFtxzuAz7WEQ+ZK7g==
   dependencies:
-    "@automerge/automerge-repo" "^1.0.8"
+    "@automerge/automerge-repo" "^1.0.9"
     cbor-x "^1.3.0"
     eventemitter3 "^5.0.1"
     isomorphic-ws "^5.0.0"
     ws "^8.7.0"
 
-"@automerge/automerge-repo-react-hooks@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-react-hooks/-/automerge-repo-react-hooks-1.0.8.tgz#b7422ef2953e613fa0b64f3bcc146d9b01e6703a"
-  integrity sha512-SSPWkIIQC4FpEBlXOPvuskFzfeAGKq/8IZWcEEy71PZJscUfl7f2BgThm38YDs90bchgvmKOKoBLpYd0QfB00w==
+"@automerge/automerge-repo-react-hooks@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-react-hooks/-/automerge-repo-react-hooks-1.0.9.tgz#506ec96fc4e3c86fac06487557f02de9119f83f7"
+  integrity sha512-KYht0wLddOK6NrP3MSg50ANGf7qcGTB+i2L5/emXAYnkwvGVSs8ilonMuI/MDUp9mEpWTFC0LWaqAy9rAlK0FA==
   dependencies:
-    "@automerge/automerge-repo" "^1.0.8"
+    "@automerge/automerge-repo" "^1.0.9"
     eventemitter3 "^5.0.1"
     react "^18.2.0"
     react-dom "^18.2.0"
     react-usestateref "^1.0.8"
 
-"@automerge/automerge-repo-storage-indexeddb@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-storage-indexeddb/-/automerge-repo-storage-indexeddb-1.0.8.tgz#e5a22e84e43e2cdd5eafd068dbb1aa4c90322bb3"
-  integrity sha512-p1PhY6H9SVjk5ZIDzwiSVu54qki0wpc2ml3OIcw7YK8Q9ellTeEMpI5uOssAKlNFustu3twfvDoCrfdN9/LcJg==
+"@automerge/automerge-repo-storage-indexeddb@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-storage-indexeddb/-/automerge-repo-storage-indexeddb-1.0.9.tgz#fef3b031b5ffce452251cebc7f659fb6c262955c"
+  integrity sha512-h1fYDz3WTGkhkE0LFF2RU8jRsuHTUkd4mu78QsgxhBmkQRJ06/xezxOHlbGgcu4CsPfBUltyqM2ClZNcdzp/Qg==
   dependencies:
-    "@automerge/automerge-repo" "^1.0.8"
+    "@automerge/automerge-repo" "^1.0.9"
 
-"@automerge/automerge-repo@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo/-/automerge-repo-1.0.8.tgz#45778cdf9866f27db1befc15a4af39e3fbd58b9b"
-  integrity sha512-RxwmsSP27xMkqatHHtRdBt5RxDMiUlu66e4VCX/xXeHg3Yy2eNpnhFWkZmo3WjekNfgRZfipZRwW5G6hJmwd1g==
+"@automerge/automerge-repo@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo/-/automerge-repo-1.0.9.tgz#82c27ed644ac98a98b6ae130c1d13a0c4c05ff67"
+  integrity sha512-MI+eJYi5CmDHavt7RYVqdwiBVZkqDnvjkf542LqfRqvbxgL3DRhs+2xXp3hFa6ZB6/xbkrZZKg1veyhjZADpbg==
   dependencies:
     bs58check "^3.0.1"
     cbor-x "^1.3.0"
