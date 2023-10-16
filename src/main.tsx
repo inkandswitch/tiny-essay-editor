@@ -12,7 +12,7 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDoc } from "./schema.ts";
 import { sortBy } from "lodash";
-import { uuid } from "@automerge/automerge";
+import * as Automerge from "@automerge/automerge";
 
 const repo = new Repo({
   network: [
@@ -61,6 +61,10 @@ if (isValidAutomergeUrl(rootDocUrl)) {
 // eslint-disable-next-line
 const docUrl = (document.location.hash = handle.url);
 
+// @ts-expect-error - adding property to window
+window.Automerge = Automerge;
+// @ts-expect-error - adding property to window
+window.repo = repo;
 // @ts-expect-error - adding property to window
 window.handle = handle; // we'll use this later for experimentation
 
