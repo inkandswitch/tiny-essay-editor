@@ -369,7 +369,7 @@ class Figure extends WidgetType {
   }
 
   eq(other: Figure) {
-    return other.url === this.url;
+    return other.url === this.url && other.caption === this.caption;
   }
 
   ignoreEvent() {
@@ -440,14 +440,6 @@ const previewFiguresPlugin = ViewPlugin.fromClass(
     decorations: (v) => v.decorations,
   }
 );
-
-class HideCodeWidget extends WidgetType {
-  toDOM() {
-    const div = document.createElement("div");
-    div.appendChild(document.createTextNode("Code!"));
-    return div;
-  }
-}
 
 const SOURCE_ATTR_REGEX = /src="(?<value>.*?)" caption="(?<caption>.*?)"/;
 const BLOCK_EXPR_REGEX = /(\{\{< rawhtml >}}(?<source>.*?){{< \/rawhtml >}})/gs;
