@@ -416,7 +416,7 @@ class ImageFigure extends Figure {
     image.src = `${BASE_URL}/${this.url}`;
 
     wrap.append(image);
-    wrap.className = "border border-gray-200";
+    wrap.className = "border border-gray-200 mb-4";
 
     const captionDiv = document.createElement("div");
     captionDiv.append(document.createTextNode(this.caption));
@@ -449,7 +449,7 @@ class VideoFigure extends Figure {
     wrap.appendChild(video);
     wrap.append(captionDiv);
 
-    wrap.className = "border border-gray-200";
+    wrap.className = "border border-gray-200 mb-4";
     return wrap;
   }
 }
@@ -500,7 +500,7 @@ function getFigures(view: EditorView) {
         decorations.push(
           Decoration.mark({
             class:
-              "text-gray-400 font-mono text-left text-xs leading-snug inline-block opacity-50 bg-gray-100 border border-gray-200",
+              "text-gray-400 font-mono text-left text-sm leading-snug inline-block opacity-60",
           }).range(position, position + match[0].length)
         );
       }
@@ -524,7 +524,7 @@ function getFigures(view: EditorView) {
         decorations.push(
           Decoration.mark({
             class:
-              "text-gray-400 font-mono text-left text-xs leading-snug inline-block opacity-50 bg-gray-100 border border-gray-200",
+              "text-gray-400 font-mono text-left text-sm leading-snug inline-block opacity-60",
           }).range(position, position + match[0].length)
         );
       }
