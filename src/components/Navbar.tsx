@@ -2,7 +2,13 @@ import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChangeFn, save } from "@automerge/automerge/next";
-import { Check, ChevronsUpDown, Download } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  Download,
+  Plus,
+  User as UserIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Command,
@@ -136,8 +142,15 @@ export const Navbar = ({
       />
       <div className="text-md my-3 select-none">{title}</div>
       <div className="ml-auto px-8 py-1 flex gap-2">
+        <Button
+          onClick={() => window.open("/", "_blank")}
+          variant="ghost"
+          className="text-gray-500"
+        >
+          <Plus size={"20px"} className="mr-2" /> New
+        </Button>
         <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
-          <Download size={"20px"} />
+          <Download size={"20px"} className="mr-2" /> Download
         </Button>
         <Dialog>
           <DialogTrigger>
@@ -145,7 +158,7 @@ export const Navbar = ({
               <Avatar>
                 {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
                 <AvatarFallback>
-                  {sessionUser ? initials(sessionUser.name) : "??"}
+                  {sessionUser ? initials(sessionUser.name) : <UserIcon />}
                 </AvatarFallback>
               </Avatar>
             </Button>
