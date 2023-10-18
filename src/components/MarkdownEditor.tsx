@@ -90,28 +90,6 @@ const threadDecorations = EditorView.decorations.compute(
   }
 );
 
-// We manually set a selection decoration in addition to native browser
-// so that the selection remains highlighted as the user is leaving a comment
-
-const selectionDecoration = Decoration.mark({ class: "cm-selection" });
-
-const selectionDecorations = EditorView.decorations.compute(
-  ["selection"],
-  (state) => {
-    const selection = state.selection.ranges[0];
-    let decorations;
-    if (!selection || selection.from === selection.to) {
-      decorations = Decoration.none;
-    } else {
-      decorations = Decoration.set([
-        selectionDecoration.range(selection.from, selection.to),
-      ]);
-    }
-
-    return decorations;
-  }
-);
-
 const theme = EditorView.theme({
   "&": {},
   "&.cm-editor.cm-focused": {
@@ -129,7 +107,8 @@ const theme = EditorView.theme({
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
-    padding: "10px var(--cm-padding-x)",
+    padding: "10px 0",
+    margin: "0 var(--cm-padding-x)",
     textAlign: "justify",
     lineHeight: "24px",
   },
@@ -148,9 +127,6 @@ const theme = EditorView.theme({
   // active highlighting wins if it's inside another thread
   ".cm-comment-thread.active .cm-comment-thread": {
     backgroundColor: "rgb(255 227 135)",
-  },
-  ".cm-selection": {
-    backgroundColor: "#d8efff",
   },
   ".frontmatter": {
     fontFamily: "monospace",
@@ -303,7 +279,6 @@ export function MarkdownEditor({
         frontmatterPlugin,
         threadsField,
         threadDecorations,
-        selectionDecorations,
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
