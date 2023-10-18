@@ -191,7 +191,7 @@ const headingStyles = HighlightStyle.define([
   },
   {
     tag: tags.comment,
-    color: "#666",
+    color: "#ccc",
     fontFamily: "monospace",
   },
   {
@@ -208,7 +208,7 @@ const headingStyles = HighlightStyle.define([
   },
   {
     tag: [tags.meta, tags.contentSeparator],
-    color: "#bbb",
+    color: "#ccc",
     fontWeight: 300,
     fontFamily: '"Merriweather Sans", sans-serif',
   },
@@ -325,10 +325,12 @@ export function MarkdownEditor({
     return (
       <div className="bg-red-100 p-4 rounded-md">
         <p className="mb-2">⛔️ Error: editor crashed!</p>
+        {import.meta.env.MODE === "development" && (
+          <p className="mb-2">Probably due to hot reload in dev.</p>
+        )}
         <p className="mb-2">
-          We're so sorry for the inconvenience. Please reload to keep working.
-          Your data was most likely saved before the crash so you can pick up
-          right where you left off.
+          We're sorry for the inconvenience. Please reload to keep working. Your
+          data was most likely saved before the crash.
         </p>
         <p className="mb-2">
           If you'd like you can screenshot the dev console as a bug report.
@@ -358,7 +360,7 @@ export function MarkdownEditor({
 const BASE_URL = "https://www.inkandswitch.com/essay-embark";
 
 class Figure extends WidgetType {
-  constructor(protected url: string) {
+  constructor(protected url: string, protected caption: string) {
     super();
   }
 
@@ -385,6 +387,11 @@ class ImageFigure extends Figure {
     wrap.append(image);
     wrap.className = "border border-gray-200 mb-2";
 
+    const captionDiv = document.createElement("div");
+    captionDiv.append(document.createTextNode(this.caption));
+    captionDiv.className = "p-4 bg-gray-100 text-sm font-sans";
+    wrap.append(captionDiv);
+
     return wrap;
   }
 }
@@ -403,8 +410,13 @@ class VideoFigure extends Figure {
     source.src = `${BASE_URL}/${this.url}`;
     source.type = "video/mp4";
 
+    const captionDiv = document.createElement("div");
+    captionDiv.append(document.createTextNode(this.caption));
+    captionDiv.className = "p-4 bg-gray-100 text-sm font-sans";
+
     video.appendChild(source);
     wrap.appendChild(video);
+    wrap.append(captionDiv);
 
     wrap.className = "border border-gray-200 mb-2";
     return wrap;
@@ -429,7 +441,15 @@ const previewFiguresPlugin = ViewPlugin.fromClass(
   }
 );
 
-const SOURCE_ATTR_REGEX = /src="(?<value>.*?)"/;
+class HideCodeWidget extends WidgetType {
+  toDOM() {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode("Code!"));
+    return div;
+  }
+}
+
+const SOURCE_ATTR_REGEX = /src="(?<value>.*?)" caption="(?<caption>.*?)"/;
 const BLOCK_EXPR_REGEX = /(\{\{< rawhtml >}}(?<source>.*?){{< \/rawhtml >}})/gs;
 const INLINE_EXPR_REGEX = /({{(?<source>.*?)}})/gs;
 
@@ -448,14 +468,15 @@ function getFigures(view: EditorView) {
       const srcAttrMatch = match.groups.source.match(SOURCE_ATTR_REGEX);
       if (srcAttrMatch) {
         const url = srcAttrMatch.groups.value;
+        const caption = srcAttrMatch.groups.caption;
         const widget = Decoration.widget({
-          widget: new ImageFigure(url),
+          widget: new ImageFigure(url, caption),
           side: 1,
         }).range(position);
         decorations.push(widget);
         decorations.push(
           Decoration.mark({
-            class: "text-gray-500 font-mono text-left text-sm",
+            class: "text-gray-400 font-mono text-left text-xs leading-none",
           }).range(position, position + match[0].length)
         );
       }
@@ -466,17 +487,19 @@ function getFigures(view: EditorView) {
       const position = match.index + from;
       const doc = parser.parseFromString(match.groups.source, "text/html");
       const src = doc.body.getElementsByTagName("video")[0]?.src;
+      const caption =
+        doc.body.getElementsByTagName("figcaption")[0]?.innerText?.trim() ?? "";
 
       if (src) {
         const url = new URL(src).pathname.slice(1);
         const widget = Decoration.widget({
-          widget: new VideoFigure(url),
+          widget: new VideoFigure(url, caption),
           side: 1,
         }).range(position);
         decorations.push(widget);
         decorations.push(
           Decoration.mark({
-            class: "text-gray-500 font-mono text-left text-sm",
+            class: "text-gray-400 font-mono text-left text-xs leading-none",
           }).range(position, position + match[0].length)
         );
       }
