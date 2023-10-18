@@ -232,21 +232,25 @@ export const Navbar = ({
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
-          className="text-gray-500"
+          className="text-gray-500 px-1"
         >
           <Plus size={"20px"} className="mr-2" />{" "}
           <span className="hidden md:inline-block">New</span>
         </Button>
-        <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
+        <Button
+          onClick={downloadDoc}
+          variant="ghost"
+          className="text-gray-500 px-1"
+        >
           <Download size={"20px"} className="mr-2" />{" "}
           <div className="hidden md:inline-block">Download</div>
         </Button>
 
         <Dialog>
           <DialogTrigger>
-            <Button variant="ghost" className="text-gray-500">
-              <GitFork size={"20px"} className="mr-1" />
-              Fork
+            <Button variant="ghost" className="text-gray-500 px-1">
+              <GitFork size={"20px"} className="mr-2" />
+              <div className="hidden md:inline-block">Fork</div>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -277,9 +281,9 @@ export const Navbar = ({
 
         <Dialog>
           <DialogTrigger>
-            <Button variant="ghost" className="text-gray-500">
-              <GitMerge size={"20px"} className="mr-1" />
-              Merge
+            <Button variant="ghost" className="text-gray-500 px-1">
+              <GitMerge size={"20px"} className="mr-2" />
+              <div className="hidden md:inline-block">Merge</div>
             </Button>
           </DialogTrigger>
           <DialogContent>
