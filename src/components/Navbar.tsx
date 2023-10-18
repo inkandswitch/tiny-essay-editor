@@ -140,17 +140,21 @@ export const Navbar = ({
         className="h-8 my-2 ml-2"
         src="/assets/logo-favicon-310x310-transparent.png"
       />
-      <div className="text-md my-3 select-none">{title}</div>
+      <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
+        {title}
+      </div>
       <div className="ml-auto px-8 py-1 flex gap-2">
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
           className="text-gray-500"
         >
-          <Plus size={"20px"} className="mr-2" /> New
+          <Plus size={"20px"} className="mr-2" />{" "}
+          <span className="hidden md:inline-block">New</span>
         </Button>
         <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
-          <Download size={"20px"} className="mr-2" /> Download
+          <Download size={"20px"} className="mr-2" />{" "}
+          <div className="hidden md:inline-block">Download</div>
         </Button>
         <Dialog>
           <DialogTrigger>
