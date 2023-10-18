@@ -11,6 +11,8 @@ import {
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
+import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 import { Prop } from "@automerge/automerge";
 import {
   plugin as amgPlugin,
@@ -114,6 +116,9 @@ const theme = EditorView.theme({
   ".cm-scroller": {
     height: "100%",
   },
+  ".cm-gutters": {
+    display: "none",
+  },
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
@@ -123,13 +128,6 @@ const theme = EditorView.theme({
   },
   ".cm-activeLine": {
     backgroundColor: "inherit",
-  },
-  // todo can we rely on this class name?
-  ".ͼ7": {
-    fontFamily: '"Merriweather Sans", sans-serif',
-    fontSize: "1.3rem",
-    textDecoration: "none",
-    fontWeight: 300,
   },
   ".cm-comment-thread": {
     backgroundColor: "rgb(255 249 194)",
@@ -144,7 +142,77 @@ const theme = EditorView.theme({
   ".cm-selection": {
     backgroundColor: "#d8efff",
   },
+  ".frontmatter": {
+    fontFamily: "monospace",
+    color: "#666",
+    textDecoration: "none",
+    fontWeight: "normal",
+    lineHeight: "0.8em",
+  },
 });
+
+const baseHeadingStyles = {
+  fontFamily: '"Merriweather Sans", sans-serif',
+  fontWeight: 400,
+  textDecoration: "none",
+};
+
+const headingStyles = HighlightStyle.define([
+  {
+    tag: tags.heading1,
+    ...baseHeadingStyles,
+    fontSize: "1.5rem",
+    lineHeight: "2rem",
+    marginBottom: "1rem",
+    marginTop: "2rem",
+  },
+  {
+    tag: tags.heading2,
+    ...baseHeadingStyles,
+    fontSize: "1.5rem",
+    lineHeight: "2rem",
+    marginBottom: "1rem",
+    marginTop: "2rem",
+  },
+  {
+    tag: tags.heading3,
+    ...baseHeadingStyles,
+    fontSize: "1.25rem",
+    lineHeight: "1.75rem",
+    marginBottom: "1rem",
+    marginTop: "2rem",
+  },
+  {
+    tag: tags.heading4,
+    ...baseHeadingStyles,
+    fontSize: "1.1rem",
+    marginBottom: "1rem",
+    marginTop: "2rem",
+  },
+  {
+    tag: tags.comment,
+    color: "#666",
+    fontFamily: "monospace",
+  },
+  {
+    tag: tags.strong,
+    fontWeight: "bold",
+  },
+  {
+    tag: tags.emphasis,
+    fontStyle: "italic",
+  },
+  {
+    tag: tags.strikethrough,
+    textDecoration: "line-through",
+  },
+  {
+    tag: [tags.meta, tags.contentSeparator],
+    color: "#bbb",
+    fontWeight: 300,
+    fontFamily: '"Merriweather Sans", sans-serif',
+  },
+]);
 
 export function MarkdownEditor({
   handle,
@@ -183,6 +251,8 @@ export function MarkdownEditor({
         EditorView.lineWrapping,
         theme,
         markdown({}),
+        syntaxHighlighting(headingStyles),
+        frontmatterPlugin,
         threadsField,
         threadDecorations,
         selectionDecorations,
@@ -452,6 +522,48 @@ function getHighlightWords(view: EditorView) {
         Decoration.mark({
           class: "bg-red-200 p-1 rounded-sm",
         }).range(position, position + match[0].length)
+      );
+    }
+  }
+
+  return Decoration.set(
+    decorations.sort((range1, range2) => range1.from - range2.from)
+  );
+}
+
+const frontmatterPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = getFrontmatterDecorations(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged)
+        this.decorations = getFrontmatterDecorations(update.view);
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  }
+);
+
+const frontmatterRegex = /^---.*---/s;
+function getFrontmatterDecorations(view: EditorView) {
+  const decorations: Range<Decoration>[] = [];
+
+  for (const { from, to } of view.visibleRanges) {
+    const text = view.state.sliceDoc(from, to);
+
+    const frontmatterMatch = text.match(frontmatterRegex);
+
+    if (frontmatterMatch) {
+      const position = frontmatterMatch.index + from;
+      decorations.push(
+        Decoration.mark({
+          class: "frontmatter",
+        }).range(position, position + frontmatterMatch[0].length)
       );
     }
   }
