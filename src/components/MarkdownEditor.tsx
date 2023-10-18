@@ -11,6 +11,8 @@ import {
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
+// import {javascript} from "@codemirror/lang-javascript"
 import {
   syntaxHighlighting,
   HighlightStyle,
@@ -165,7 +167,12 @@ const baseHeadingStyles = {
   textDecoration: "none",
 };
 
-const headingStyles = HighlightStyle.define([
+const baseCodeStyles = {
+  fontFamily: "monospace",
+  fontSize: "14px",
+};
+
+const markdownStyles = HighlightStyle.define([
   {
     tag: tags.heading1,
     ...baseHeadingStyles,
@@ -199,7 +206,7 @@ const headingStyles = HighlightStyle.define([
   },
   {
     tag: tags.comment,
-    color: "#ccc",
+    color: "#555",
     fontFamily: "monospace",
   },
   {
@@ -215,11 +222,40 @@ const headingStyles = HighlightStyle.define([
     textDecoration: "line-through",
   },
   {
-    tag: [tags.meta, tags.contentSeparator],
-    color: "#ccc",
+    tag: [tags.meta],
     fontWeight: 300,
+    color: "#888",
     fontFamily: '"Merriweather Sans", sans-serif',
   },
+  { tag: tags.keyword, ...baseCodeStyles, color: "#708" },
+  {
+    tag: [
+      tags.atom,
+      tags.bool,
+      tags.url,
+      tags.contentSeparator,
+      tags.labelName,
+    ],
+    ...baseCodeStyles,
+    color: "#219",
+  },
+  { tag: [tags.literal, tags.inserted], ...baseCodeStyles, color: "#164" },
+  { tag: [tags.string, tags.deleted], ...baseCodeStyles, color: "#a11" },
+  {
+    tag: [tags.regexp, tags.escape, tags.special(tags.string)],
+    ...baseCodeStyles,
+    color: "#e40",
+  },
+  { tag: tags.definition(tags.variableName), ...baseCodeStyles, color: "#00f" },
+  { tag: tags.local(tags.variableName), ...baseCodeStyles, color: "#30a" },
+  { tag: [tags.typeName, tags.namespace], ...baseCodeStyles, color: "#085" },
+  { tag: tags.className, ...baseCodeStyles, color: "#167" },
+  {
+    tag: [tags.special(tags.variableName), tags.macroName],
+    ...baseCodeStyles,
+    color: "#256",
+  },
+  { tag: tags.definition(tags.propertyName), ...baseCodeStyles, color: "#00c" },
 ]);
 
 export function MarkdownEditor({
@@ -246,6 +282,8 @@ export function MarkdownEditor({
     });
   }, [activeThreadId, getThreadsForDecorations]);
 
+  console.log({ languages });
+
   useEffect(() => {
     const doc = handle.docSync();
     const source = doc.content; // this should use path
@@ -258,8 +296,10 @@ export function MarkdownEditor({
         plugin,
         EditorView.lineWrapping,
         theme,
-        markdown({}),
-        syntaxHighlighting(headingStyles),
+        markdown({
+          codeLanguages: languages,
+        }),
+        syntaxHighlighting(markdownStyles),
         frontmatterPlugin,
         threadsField,
         threadDecorations,
@@ -267,6 +307,7 @@ export function MarkdownEditor({
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
+        codeMonospacePlugin,
       ],
       dispatch(transaction) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -537,7 +578,7 @@ const highlightKeywordsPlugin = ViewPlugin.fromClass(
 );
 
 // TODO: make these highlight words configurable in the app
-const HIGHLIGHT_KEYWORDS_REGEX = /todo:|@paul|@alex|@geoffrey/gi;
+const HIGHLIGHT_KEYWORDS_REGEX = /TODO|@Paul|@Geoffrey|@Alex/g;
 function getHighlightWords(view: EditorView) {
   const decorations: Range<Decoration>[] = [];
 
@@ -748,6 +789,47 @@ const tableOfContentsPreviewPlugin = ViewPlugin.fromClass(
     update(update: ViewUpdate) {
       if (update.docChanged || update.viewportChanged)
         this.decorations = getTOCDecorations(update.view);
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  }
+);
+
+const CODE_BLOCK_REGEX = /```.*?```/gs;
+function getCodeDecorations(view: EditorView) {
+  const decorations: Range<Decoration>[] = [];
+
+  const text = view.state.doc.sliceString(0);
+
+  const codeBlockMatches = text.matchAll(CODE_BLOCK_REGEX);
+
+  for (const match of codeBlockMatches) {
+    const position = match.index;
+
+    decorations.push(
+      Decoration.mark({
+        class: "font-mono text-sm text-left inline-block",
+      }).range(position, position + match[0].length)
+    );
+  }
+
+  return Decoration.set(
+    decorations.sort((range1, range2) => range1.from - range2.from)
+  );
+}
+
+const codeMonospacePlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = getCodeDecorations(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged)
+        this.decorations = getCodeDecorations(update.view);
     }
   },
   {
