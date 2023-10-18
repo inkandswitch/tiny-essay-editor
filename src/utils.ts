@@ -2,7 +2,8 @@ import { mapValues } from "lodash";
 import { CommentThreadForUI, MarkdownDoc } from "./schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
-import { useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
+import ReactDOMServer from "react-dom/server";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -262,4 +263,11 @@ export const saveFile = async (blob, suggestedName, types) => {
     URL.revokeObjectURL(blobURL);
     a.remove();
   }, 1000);
+};
+
+export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
+  const htmlString = ReactDOMServer.renderToStaticMarkup(jsx);
+  const div = document.createElement("div");
+  div.innerHTML = htmlString;
+  return div.firstElementChild as HTMLElement;
 };
