@@ -285,7 +285,7 @@ export function MarkdownEditor({
 }
 
 // todo: currently hard coded for embark essay, assumes hugo is running on default port
-const BASE_URL = "http://localhost:1313/embark";
+const BASE_URL = "https://www.inkandswitch.com/essay-embark";
 
 class Figure extends WidgetType {
   constructor(protected url: string) {
