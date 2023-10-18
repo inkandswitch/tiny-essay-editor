@@ -14,7 +14,6 @@ import { markdown } from "@codemirror/lang-markdown";
 import {
   syntaxHighlighting,
   HighlightStyle,
-  syntaxTree,
   ensureSyntaxTree,
 } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
