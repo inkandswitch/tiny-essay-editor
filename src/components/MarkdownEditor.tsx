@@ -258,8 +258,6 @@ export function MarkdownEditor({
     });
   }, [activeThreadId, getThreadsForDecorations]);
 
-  console.log({ languages });
-
   useEffect(() => {
     const doc = handle.docSync();
     const source = doc.content; // this should use path

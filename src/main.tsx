@@ -8,11 +8,10 @@ import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-networ
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
-// import { next as A } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
+import { next as Automerge } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDoc } from "./schema.ts";
 import { sortBy } from "lodash";
-import * as Automerge from "@automerge/automerge";
 
 const repo = new Repo({
   network: [
@@ -47,7 +46,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
 } else {
   handle = repo.create<MarkdownDoc>();
   handle.change((d) => {
-    d.content = "This is a **Markdown document**.";
+    d.content = "# Untitled\n\n";
     d.commentThreads = {};
     d.users = [];
     for (const name of LAB_USERS) {

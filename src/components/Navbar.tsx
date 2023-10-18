@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
-import { saveFile } from "../utils";
+import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
 
 const initials = (name: string) => {
@@ -118,6 +118,12 @@ export const Navbar = ({
     }
   }, [sessionUser]);
 
+  const title = getTitle(doc?.content ?? "");
+
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+
   if (!doc) {
     return <></>;
   }
@@ -128,7 +134,7 @@ export const Navbar = ({
         className="h-8 my-2 ml-2"
         src="/assets/logo-favicon-310x310-transparent.png"
       />
-      <div className="text-md my-3 select-none">Tiny Essay Editor</div>
+      <div className="text-md my-3 select-none">{title}</div>
       <div className="ml-auto px-8 py-1 flex gap-2">
         <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
           <Download size={"20px"} />
