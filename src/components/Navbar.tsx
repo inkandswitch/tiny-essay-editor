@@ -73,6 +73,21 @@ type TentativeUser =
       _type: "unknown";
     };
 
+const summarizePatches = (
+  patches: Patch[]
+): { insertions: number; deletions: number } => {
+  const insertions = patches
+    .filter((p) => p.action === "splice")
+    .map((p) => p.value.length)
+    .reduce((a, b) => a + b, 0);
+  const deletions = patches
+    .filter((p) => p.action === "del")
+    .map((p) => p.length)
+    .reduce((a, b) => a + b, 0);
+
+  return { insertions, deletions };
+};
+
 export const Navbar = ({
   doc,
   changeDoc,
@@ -170,7 +185,7 @@ export const Navbar = ({
     document.title = title;
   }, [title]);
 
-  const computeDiff = async () => {
+  const computeDiff = async (): Promise<Patch[]> => {
     if (!isValidAutomergeUrl(mergeDocUrl)) {
       alert("Invalid document URL, please try again.");
       return;
@@ -187,13 +202,18 @@ export const Navbar = ({
       // Now we can get a nice diff between the rebased fork and our doc
       const oldHeads = getHeads(currentDoc);
       const newHeads = getHeads(rebaseForkDoc);
-      const patches = diff(rebaseForkDoc, oldHeads, newHeads);
+      const patches = diff(rebaseForkDoc, oldHeads, newHeads).filter(
+        (p) => p.path[0] === "content"
+      );
+
       return patches;
     } catch (e) {
       console.error("Error merging document", e);
       console.error(e);
     }
   };
+
+  const patchesSummary = summarizePatches(patches);
 
   const mergeDoc = async () => {
     const mergeDocHandle = repo.find<MarkdownDoc>(mergeDocUrl as AutomergeUrl);
@@ -313,7 +333,17 @@ export const Navbar = ({
               </div>
             </div>
 
-            <div>{patches.length > 0 && JSON.stringify(patches)}</div>
+            {isMergeDocUrlValid && (
+              <div>
+                <div className="text-green-600">
+                  + {patchesSummary.insertions} characters
+                </div>
+                <div className="text-red-500">
+                  {" "}
+                  -{patchesSummary.deletions} characters
+                </div>
+              </div>
+            )}
 
             <DialogFooter>
               <DialogTrigger asChild>
