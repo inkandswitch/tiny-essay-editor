@@ -17,11 +17,10 @@ export const RawView: React.FC<{
   const resolveAllComments = () => {
     changeDoc((doc: MarkdownDoc) => {
       A.splice(doc, ["content"], 0, 0, "hi");
-      // for (const threadId in doc.commentThreads) {
-      //   const thread = doc.commentThreads[threadId];
-      //   thread.resolved = true;
-      //   console.log("resolved thread", thread.id);
-      // }
+      for (const threadId in doc.commentThreads) {
+        const thread = doc.commentThreads[threadId];
+        thread.resolved = true;
+      }
     });
   };
 

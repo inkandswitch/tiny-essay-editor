@@ -33,7 +33,7 @@ import { Tree } from "@lezer/common";
 export type TextSelection = {
   from: number;
   to: number;
-  yCoord: number;
+  yCoord: number | null;
 };
 
 export type EditorProps = {
@@ -307,7 +307,7 @@ export function MarkdownEditor({
             to: selection.to,
             yCoord:
               -1 * view.scrollDOM.getBoundingClientRect().top +
-              view.coordsAtPos(selection.from).top,
+              view.coordsAtPos(selection.from)?.top,
           });
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where

@@ -64,31 +64,29 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           <RawView doc={doc} changeDoc={changeDoc} handle={handle} />
         </div>
       )}
-      {!showRawView && (
-        <div className="flex bg-gray-50 mt-12">
-          <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
-            <MarkdownEditor
-              handle={handle}
-              path={["content"]}
-              setSelection={setSelection}
-              setView={setView}
-              activeThreadId={activeThreadId}
-              setActiveThreadId={setActiveThreadId}
-            />
-          </div>
-          <div className="flex-grow bg-gray-50">
-            <CommentsSidebar
-              view={view}
-              session={session}
-              doc={doc}
-              changeDoc={changeDoc}
-              selection={selection}
-              activeThreadId={activeThreadId}
-              setActiveThreadId={setActiveThreadId}
-            />
-          </div>
+      <div className={`flex bg-gray-50 mt-12 ${showRawView ? "hidden" : ""}`}>
+        <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
+          <MarkdownEditor
+            handle={handle}
+            path={["content"]}
+            setSelection={setSelection}
+            setView={setView}
+            activeThreadId={activeThreadId}
+            setActiveThreadId={setActiveThreadId}
+          />
         </div>
-      )}
+        <div className="flex-grow bg-gray-50">
+          <CommentsSidebar
+            view={view}
+            session={session}
+            doc={doc}
+            changeDoc={changeDoc}
+            selection={selection}
+            activeThreadId={activeThreadId}
+            setActiveThreadId={setActiveThreadId}
+          />
+        </div>
+      </div>
     </div>
   );
 }
