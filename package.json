@@ -23,6 +23,7 @@
     "@codemirror/language-data": "^6.3.1",
     "@codemirror/view": "^6.21.3",
     "@lezer/highlight": "^1.1.6",
+    "@microlink/react-json-view": "^1.22.2",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-label": "^2.0.2",

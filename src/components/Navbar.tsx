@@ -5,6 +5,7 @@ import { ChangeFn, save } from "@automerge/automerge/next";
 import {
   Check,
   ChevronsUpDown,
+  Code,
   Download,
   Plus,
   User as UserIcon,
@@ -63,11 +64,15 @@ export const Navbar = ({
   changeDoc,
   session,
   setSession,
+  showRawView,
+  setShowRawView,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
   setSession: (session: LocalSession) => void;
+  showRawView: boolean;
+  setShowRawView: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [namePickerOpen, setNamePickerOpen] = useState(false);
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
@@ -144,6 +149,16 @@ export const Navbar = ({
         {title}
       </div>
       <div className="ml-auto px-8 py-1 flex gap-2">
+        <Button
+          onClick={() => setShowRawView((raw) => !raw)}
+          variant="ghost"
+          className="text-gray-500"
+        >
+          <Code size={"20px"} className="mr-2" />{" "}
+          <span className="hidden md:inline-block">
+            {showRawView ? "Hide Raw" : "Show Raw"}
+          </span>
+        </Button>
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
