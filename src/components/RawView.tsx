@@ -16,7 +16,6 @@ export const RawView: React.FC<{
   console.log("render the raw view");
   const resolveAllComments = () => {
     changeDoc((doc: MarkdownDoc) => {
-      A.splice(doc, ["content"], 0, 0, "hi");
       for (const threadId in doc.commentThreads) {
         const thread = doc.commentThreads[threadId];
         thread.resolved = true;
@@ -72,7 +71,7 @@ export const RawView: React.FC<{
     <div className="h-screen">
       <div className="flex h-full">
         <div className="w-1/2 border-r border-gray-300 p-2">
-          <div className="h-10 text-center p-2 font-mono bg-gray-100">
+          <div className="text-center p-1 font-mono bg-gray-100">
             Document Contents
           </div>
           <div className="p-4">
@@ -86,9 +85,7 @@ export const RawView: React.FC<{
           </div>
         </div>
         <div className="w-1/2 p-2">
-          <div className="h-10 text-center p-2 font-mono bg-gray-100">
-            Actions
-          </div>
+          <div className=" text-center p-1 font-mono bg-gray-100">Actions</div>
           <div className="p-4">
             <Button onClick={() => resolveAllComments()}>
               Resolve All Comments
