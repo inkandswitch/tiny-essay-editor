@@ -75,15 +75,30 @@ export const getThreadsForUI = (
   activeThreadId: string | null
 ): CommentThreadForUI[] => {
   return Object.values(doc.commentThreads ?? {})
-    .map((thread) => {
-      const from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
-      const to = A.getCursorPosition(doc, ["content"], thread.toCursor);
-      return {
-        ...thread,
-        from,
-        to,
-        active: thread.id === activeThreadId,
-      };
+    .flatMap((thread) => {
+      let from = 0;
+      let to = 0;
+      try {
+        from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
+        to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+      } catch (e) {
+        if (e instanceof RangeError) {
+          // If the cursor isn't found in the content string, hide the comment.
+          // This does *not* occur if the comment is pointing to deleted text!
+          // It only happens if the string at /content has been replaced entirely.
+          return [];
+        } else {
+          throw e;
+        }
+      }
+      return [
+        {
+          ...thread,
+          from,
+          to,
+          active: thread.id === activeThreadId,
+        },
+      ];
     })
     .filter(
       (thread) =>
