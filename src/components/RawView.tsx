@@ -48,16 +48,33 @@ export const RawView: React.FC<{
   );
 
   if (!doc) {
-    return <div>Loading {documentUrl}...</div>;
+    return <div>Loading...</div>;
   }
 
   return (
-    <ReactJson
-      collapsed={2}
-      src={doc}
-      onEdit={onEdit}
-      onAdd={onAdd}
-      onDelete={onDelete}
-    />
+    <div className="h-screen">
+      <div className="flex h-full">
+        <div className="w-1/2 border-r border-gray-300 p-2">
+          <div className="h-10 text-center p-2 font-mono bg-gray-100">
+            Document Contents
+          </div>
+          <div className="p-4">
+            <ReactJson
+              collapsed={2}
+              src={doc}
+              onEdit={onEdit}
+              onAdd={onAdd}
+              onDelete={onDelete}
+            />
+          </div>
+        </div>
+        <div className="w-1/2 p-2">
+          <div className="h-10 text-center p-2 font-mono bg-gray-100">
+            Actions
+          </div>
+          <div className="p-4">todo</div>
+        </div>
+      </div>
+    </div>
   );
 };
