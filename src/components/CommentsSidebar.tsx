@@ -38,6 +38,7 @@ export const CommentsSidebar = ({
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
+  console.log("rerender comments sidebar");
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
@@ -139,7 +140,9 @@ export const CommentsSidebar = ({
                     {getRelativeTimeString(comment.timestamp)}
                   </span>
                 </div>
-                <div className="cursor-default text-sm whitespace-pre-wrap">{comment.content}</div>
+                <div className="cursor-default text-sm whitespace-pre-wrap">
+                  {comment.content}
+                </div>
               </div>
             ))}
           </div>

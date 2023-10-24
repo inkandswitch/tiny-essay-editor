@@ -2,11 +2,28 @@ import { ChangeFn } from "@automerge/automerge/next";
 import { MarkdownDoc } from "../schema";
 import ReactJson from "@microlink/react-json-view";
 import { useCallback } from "react";
+import { Button } from "./ui/button";
+import { next as A } from "@automerge/automerge";
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
 }> = ({ doc, changeDoc }) => {
+  console.log("render raw", doc);
+
+  const resolveAllComments = () => {
+    changeDoc((doc) => {
+      A.splice(doc, ["content"], 0, 0, "hi");
+      for (const threadId in doc.commentThreads) {
+        const thread = doc.commentThreads[threadId];
+        console.log(thread);
+        thread.resolved = true;
+        console.log(thread);
+        console.log("done");
+      }
+    });
+  };
+
   const onEdit = useCallback(
     ({ namespace, new_value, name }) => {
       changeDoc(function (doc) {
@@ -72,7 +89,11 @@ export const RawView: React.FC<{
           <div className="h-10 text-center p-2 font-mono bg-gray-100">
             Actions
           </div>
-          <div className="p-4">todo</div>
+          <div className="p-4">
+            <Button onClick={() => resolveAllComments()}>
+              Resolve All Comments
+            </Button>
+          </div>
         </div>
       </div>
     </div>

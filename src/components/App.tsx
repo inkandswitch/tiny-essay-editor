@@ -20,6 +20,8 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [view, setView] = useState<EditorView>();
   const [showRawView, setShowRawView] = useState(false);
 
+  console.log("render app", doc);
+
   const localStorageKey = `LocalSession-${docUrl}`;
 
   useEffect(() => {
