@@ -4,23 +4,24 @@ import ReactJson from "@microlink/react-json-view";
 import { useCallback } from "react";
 import { Button } from "./ui/button";
 import { next as A } from "@automerge/automerge";
+import { DocHandle } from "@automerge/automerge-repo";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
-}> = ({ doc, changeDoc }) => {
-  console.log("render raw", doc);
-
+  handle: DocHandle<MarkdownDoc>;
+}> = ({ doc, changeDoc, handle }) => {
+  useHandle(handle.url);
+  console.log("render the raw view");
   const resolveAllComments = () => {
-    changeDoc((doc) => {
+    changeDoc((doc: MarkdownDoc) => {
       A.splice(doc, ["content"], 0, 0, "hi");
-      for (const threadId in doc.commentThreads) {
-        const thread = doc.commentThreads[threadId];
-        console.log(thread);
-        thread.resolved = true;
-        console.log(thread);
-        console.log("done");
-      }
+      // for (const threadId in doc.commentThreads) {
+      //   const thread = doc.commentThreads[threadId];
+      //   thread.resolved = true;
+      //   console.log("resolved thread", thread.id);
+      // }
     });
   };
 

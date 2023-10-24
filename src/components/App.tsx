@@ -10,10 +10,14 @@ import { useEffect, useState } from "react";
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { RawView } from "./RawView";
+import { uuid } from "@automerge/automerge";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
+
+  console.log("rerender app");
+
   const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
@@ -57,7 +61,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
       {showRawView && (
         <div className="mt-12">
-          <RawView doc={doc} changeDoc={changeDoc} />
+          <RawView doc={doc} changeDoc={changeDoc} handle={handle} />
         </div>
       )}
       {!showRawView && (

@@ -16,7 +16,7 @@ import { sortBy } from "lodash";
 const repo = new Repo({
   network: [
     new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+    // new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
   ],
   storage: new IndexedDBStorageAdapter(),
 });
