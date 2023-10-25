@@ -1,66 +1,15 @@
 import { ChangeFn } from "@automerge/automerge/next";
-import { CommentThread, MarkdownDoc, Comment } from "../schema";
+import { MarkdownDoc } from "../schema";
 import ReactJson from "@microlink/react-json-view";
 import { useCallback, useState } from "react";
 import { Button } from "./ui/button";
-import { next as A, uuid } from "@automerge/automerge";
+
 import { DocHandle } from "@automerge/automerge-repo";
 import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { mapValues } from "lodash";
-
-type ActionSpec = {
-  [key: string]: {
-    params: { [key: string]: "number" | "string" | "boolean" };
-    action: (doc: MarkdownDoc, params: any) => void;
-  };
-};
-
-const actionSpec: ActionSpec = {
-  "resolve all comments": {
-    params: {},
-    action: (doc) => {
-      for (const threadId in doc.commentThreads) {
-        const thread = doc.commentThreads[threadId];
-        thread.resolved = true;
-      }
-    },
-  },
-  "start new thread": {
-    params: {
-      "comment text": "string",
-      "user id": "string",
-      "text start index": "number",
-      "text end index": "number",
-    },
-    action: (doc, params) => {
-      const fromCursor = A.getCursor(
-        doc,
-        ["content"],
-        params["text start index"]
-      );
-      const toCursor = A.getCursor(doc, ["content"], params["text end index"]);
-
-      const comment: Comment = {
-        id: uuid(),
-        content: params["comment text"],
-        userId: params["user id"],
-        timestamp: Date.now(),
-      };
-
-      const thread: CommentThread = {
-        id: uuid(),
-        comments: [comment],
-        resolved: false,
-        fromCursor,
-        toCursor,
-      };
-
-      doc.commentThreads[thread.id] = thread;
-    },
-  },
-};
+import { MarkdownDocActions } from "@/MarkdownDoc";
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
@@ -72,7 +21,7 @@ export const RawView: React.FC<{
   const [actionParams, setActionParams] = useState<{
     [key: string]: { [key: string]: any };
   }>(
-    mapValues(actionSpec, (params) =>
+    mapValues(MarkdownDocActions, (params) =>
       mapValues(params.params, (paramType) =>
         paramType === "string" ? "" : paramType === "number" ? 0 : false
       )
@@ -143,7 +92,7 @@ export const RawView: React.FC<{
         <div className="w-1/2 p-2">
           <div className=" text-center p-1 font-mono bg-gray-100">Actions</div>
           <div className="p-4">
-            {Object.entries(actionSpec).map(([action, config]) => (
+            {Object.entries(MarkdownDocActions).map(([action, config]) => (
               <div className="my-2 p-4 border border-gray-400 rounded-md">
                 {Object.entries(config.params).map(([param, paramType]) => (
                   <div key={param} className="mb-2 flex gap-1">
@@ -183,7 +132,7 @@ export const RawView: React.FC<{
                       config.action(doc, actionParams[action])
                     );
                     actionParams[action] = mapValues(
-                      actionSpec[action].params,
+                      MarkdownDocActions[action].params,
                       (paramType) =>
                         paramType === "string"
                           ? ""
