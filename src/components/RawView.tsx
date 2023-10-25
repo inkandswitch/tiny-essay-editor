@@ -1,11 +1,66 @@
 import { ChangeFn } from "@automerge/automerge/next";
-import { MarkdownDoc } from "../schema";
+import { CommentThread, MarkdownDoc, Comment } from "../schema";
 import ReactJson from "@microlink/react-json-view";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "./ui/button";
-import { next as A } from "@automerge/automerge";
+import { next as A, uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
 import { useHandle } from "@automerge/automerge-repo-react-hooks";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { mapValues } from "lodash";
+
+type ActionSpec = {
+  [key: string]: {
+    params: { [key: string]: "number" | "string" | "boolean" };
+    action: (doc: MarkdownDoc, params: any) => void;
+  };
+};
+
+const actionSpec: ActionSpec = {
+  "resolve all comments": {
+    params: {},
+    action: (doc) => {
+      for (const threadId in doc.commentThreads) {
+        const thread = doc.commentThreads[threadId];
+        thread.resolved = true;
+      }
+    },
+  },
+  "start new thread": {
+    params: {
+      "comment text": "string",
+      "user id": "string",
+      "text start index": "number",
+      "text end index": "number",
+    },
+    action: (doc, params) => {
+      const fromCursor = A.getCursor(
+        doc,
+        ["content"],
+        params["text start index"]
+      );
+      const toCursor = A.getCursor(doc, ["content"], params["text end index"]);
+
+      const comment: Comment = {
+        id: uuid(),
+        content: params["comment text"],
+        userId: params["user id"],
+        timestamp: Date.now(),
+      };
+
+      const thread: CommentThread = {
+        id: uuid(),
+        comments: [comment],
+        resolved: false,
+        fromCursor,
+        toCursor,
+      };
+
+      doc.commentThreads[thread.id] = thread;
+    },
+  },
+};
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
@@ -13,15 +68,16 @@ export const RawView: React.FC<{
   handle: DocHandle<MarkdownDoc>;
 }> = ({ doc, changeDoc, handle }) => {
   useHandle(handle.url);
-  console.log("render the raw view");
-  const resolveAllComments = () => {
-    changeDoc((doc: MarkdownDoc) => {
-      for (const threadId in doc.commentThreads) {
-        const thread = doc.commentThreads[threadId];
-        thread.resolved = true;
-      }
-    });
-  };
+
+  const [actionParams, setActionParams] = useState<{
+    [key: string]: { [key: string]: any };
+  }>(
+    mapValues(actionSpec, (params) =>
+      mapValues(params.params, (paramType) =>
+        paramType === "string" ? "" : paramType === "number" ? 0 : false
+      )
+    )
+  );
 
   const onEdit = useCallback(
     ({ namespace, new_value, name }) => {
@@ -87,9 +143,60 @@ export const RawView: React.FC<{
         <div className="w-1/2 p-2">
           <div className=" text-center p-1 font-mono bg-gray-100">Actions</div>
           <div className="p-4">
-            <Button onClick={() => resolveAllComments()}>
-              Resolve All Comments
-            </Button>
+            {Object.entries(actionSpec).map(([action, config]) => (
+              <div className="my-2 p-4 border border-gray-400 rounded-md">
+                {Object.entries(config.params).map(([param, paramType]) => (
+                  <div key={param} className="mb-2 flex gap-1">
+                    <Label className="w-36 pt-3" htmlFor={param}>
+                      {param}
+                    </Label>
+                    <Input
+                      id={param}
+                      value={actionParams[action][param]}
+                      type={
+                        paramType === "number"
+                          ? "number"
+                          : paramType === "string"
+                          ? "text"
+                          : "checkbox"
+                      }
+                      onChange={(e) => {
+                        setActionParams((params) => ({
+                          ...params,
+                          [action]: {
+                            ...params[action],
+                            [param]:
+                              paramType === "number"
+                                ? parseInt(e.target.value) ?? 0
+                                : paramType === "string"
+                                ? e.target.value
+                                : e.target.checked ?? false,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  onClick={() => {
+                    changeDoc((doc) =>
+                      config.action(doc, actionParams[action])
+                    );
+                    actionParams[action] = mapValues(
+                      actionSpec[action].params,
+                      (paramType) =>
+                        paramType === "string"
+                          ? ""
+                          : paramType === "number"
+                          ? 0
+                          : false
+                    );
+                  }}
+                >
+                  {action}
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
