@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./components/App.tsx";
+import App from "./components/App";
 import "./index.css";
 
 import { isValidAutomergeUrl, Repo } from "@automerge/automerge-repo";
@@ -10,7 +10,7 @@ import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as Automerge } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownDoc } from "./schema.ts";
+import type { MarkdownDoc } from "./schema.ts";
 import { sortBy } from "lodash";
 
 const repo = new Repo({
