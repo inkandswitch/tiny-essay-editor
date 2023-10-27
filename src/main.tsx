@@ -11,7 +11,6 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { next as Automerge } from "@automerge/automerge"; //why `next`? See the the "next" section of the conceptual overview
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import type { MarkdownDoc } from "./schema.ts";
-import { sortBy } from "lodash";
 
 const repo = new Repo({
   network: [
@@ -21,7 +20,7 @@ const repo = new Repo({
   storage: new IndexedDBStorageAdapter(),
 });
 
-const LAB_USERS = sortBy(
+const LAB_USERS = 
   [
     "Geoffrey Litt",
     "Paul Sonnentag",
@@ -35,9 +34,7 @@ const LAB_USERS = sortBy(
     "Alex Good",
     "Orion Henry",
     "Mary Rose Cook",
-  ],
-  (name) => name.toLowerCase()
-);
+  ].sort()
 
 const rootDocUrl = `${document.location.hash.substr(1)}`;
 let handle;

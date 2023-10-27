@@ -138,7 +138,7 @@ export const Navbar = ({
     <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
       <img
         className="h-8 my-2 ml-2"
-        src="/assets/logo-favicon-310x310-transparent.png"
+        src="../assets/logo-favicon-310x310-transparent.png"
       />
       <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
         {title}

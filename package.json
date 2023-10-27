@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
-    "export": "tsc -p ./tsconfig.trailrunner.json && tsc-alias tsc -p ./tsconfig.trailrunner.json && cp -r public/* tsc/",
+    "export": "tsc -p ./tsconfig.trailrunner.json && tsc-alias tsc -p ./tsconfig.trailrunner.json && cp -r public/* tsc/ && trailhead push --dir ./tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
