@@ -29,7 +29,7 @@ export const MarkdownDocActions: { [key: string]: ActionSpec } = {
       if (textStartIndex < 0) {
         throw new Error(`text not found: ${params.text}`);
       }
-      const textEndIndex = textStartIndex + params.text.length;
+      const textEndIndex = textStartIndex + params.text.length - 1;
 
       const fromCursor = A.getCursor(doc, ["content"], textStartIndex);
       const toCursor = A.getCursor(doc, ["content"], textEndIndex);

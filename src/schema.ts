@@ -24,10 +24,13 @@ export type User = {
   name: string;
 };
 
+export type LLMTool = { name: string; prompt: string };
+
 export type MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
+  llmTools?: LLMTool[];
 };
 
 export type LocalSession = {

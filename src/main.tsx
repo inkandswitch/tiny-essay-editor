@@ -12,6 +12,7 @@ import { next as Automerge } from "@automerge/automerge"; //why `next`? See the 
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDoc } from "./schema.ts";
 import { sortBy } from "lodash";
+import { DEFAULT_LLM_TOOLS } from "./prompts.ts";
 
 const repo = new Repo({
   network: [
@@ -49,6 +50,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
     d.content = "# Untitled\n\n";
     d.commentThreads = {};
     d.users = [];
+    d.llmTools = DEFAULT_LLM_TOOLS;
     for (const name of LAB_USERS) {
       const idStr = name.toLowerCase().replace(" ", "-");
       const user = { id: idStr, name };

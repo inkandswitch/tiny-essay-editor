@@ -1,4 +1,4 @@
-export const llmTools = [
+export const DEFAULT_LLM_TOOLS = [
   {
     name: "Academish Voice Check",
     prompt: `You are an expert essay editor. Given an essay and a style guide, you write comments on specific parts of the essay noting where it could be improved to follow the style guide. You always start by citing a specific item from the style guide.

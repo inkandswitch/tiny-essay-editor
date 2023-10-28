@@ -1,5 +1,5 @@
 import { ChangeFn } from "@automerge/automerge/next";
-import { MarkdownDoc } from "../schema";
+import { LLMTool, MarkdownDoc } from "../schema";
 import ReactJson from "@microlink/react-json-view";
 import { useCallback, useState } from "react";
 import { Button } from "./ui/button";
@@ -9,7 +9,7 @@ import { Input } from "./ui/input";
 import { mapValues } from "lodash";
 import { MarkdownDocActions } from "@/MarkdownDoc";
 import { editDocument } from "../llm";
-import { llmTools } from "@/prompts";
+import { DEFAULT_LLM_TOOLS } from "@/prompts";
 import { ActionSpec } from "@/types";
 
 const ActionForm: React.FC<{
@@ -17,8 +17,6 @@ const ActionForm: React.FC<{
   config: ActionSpec;
   changeDoc: (fn: ChangeFn<MarkdownDoc>) => void;
 }> = ({ action, config, changeDoc }) => {
-  console.log({ action, config, changeDoc });
-
   const [params, setParams] = useState<{
     [key: string]: string | number | boolean;
   }>(
@@ -78,6 +76,45 @@ const ActionForm: React.FC<{
   );
 };
 
+const LLMToolView: React.FC<{ doc: MarkdownDoc; tool: LLMTool }> = ({
+  doc,
+  tool,
+}) => {
+  const [uiState, setUiState] = useState<"idle" | "loading" | "error">("idle");
+
+  const runLLM = async (prompt: string) => {
+    setUiState("loading");
+    const result = await editDocument(prompt, doc);
+    console.log("llm result", result);
+    if (result._type === "error") {
+      setUiState("error");
+      throw new Error(`LLM had an error...`);
+    }
+    setUiState("idle");
+    const edits = result.result.edits;
+
+    for (const edit of edits) {
+      const action = MarkdownDocActions[edit.action];
+      if (!action) {
+        throw new Error(`Unexpected action returned by LLM: ${action}`);
+      }
+      action.executeFn(doc, edit.parameters);
+    }
+  };
+  return (
+    <div>
+      <Button
+        disabled={uiState === "loading"}
+        onClick={() => runLLM(tool.prompt)}
+      >
+        {tool.name}
+      </Button>
+      {uiState === "loading" && <div className="text-xs">Loading...</div>}
+      {uiState === "error" && <div className="text-xs text-red-500">Error</div>}
+    </div>
+  );
+};
+
 export const RawView: React.FC<{
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
@@ -130,22 +167,6 @@ export const RawView: React.FC<{
     [changeDoc]
   );
 
-  const runLLM = async (prompt: string) => {
-    const result = await editDocument(prompt, doc);
-    if (result._type === "error") {
-      throw new Error(`LLM had an error...`);
-    }
-    const edits = result.result.edits;
-
-    for (const edit of edits) {
-      const action = MarkdownDocActions[edit.action];
-      if (!action) {
-        throw new Error(`Unexpected action returned by LLM: ${action}`);
-      }
-      action.executeFn(doc, edit.parameters);
-    }
-  };
-
   if (!doc) {
     return <div>Loading...</div>;
   }
@@ -174,10 +195,8 @@ export const RawView: React.FC<{
         <div>
           <div className=" px-2 py-1 bg-gray-100 text-sm">LLM Tools</div>
           <div className="p-4">
-            {llmTools.map((tool) => (
-              <div>
-                <Button onClick={() => runLLM(tool.prompt)}>{tool.name}</Button>
-              </div>
+            {(doc.llmTools ?? DEFAULT_LLM_TOOLS).map((tool) => (
+              <LLMToolView doc={doc} tool={tool} />
             ))}
           </div>
         </div>

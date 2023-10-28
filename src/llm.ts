@@ -68,6 +68,7 @@ ${JSON.stringify(functionsSpec)}
 
   try {
     const parsed: any = JSON.parse(output.function_call.arguments);
+
     return {
       _type: "ok",
       result: parsed,
