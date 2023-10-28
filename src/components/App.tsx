@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { RawView } from "./RawView";
-import { uuid } from "@automerge/automerge";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -56,11 +55,11 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       </div>
 
       {showRawView && (
-        <div className="mt-12">
-          <RawView doc={doc} changeDoc={changeDoc} handle={handle} />
+        <div className="fixed h-96 bottom-0 bg-white w-full z-50 overflow-y-auto border-t-4 border-t-gray-500">
+          <RawView doc={doc} changeDoc={changeDoc} />
         </div>
       )}
-      <div className={`flex bg-gray-50 mt-12 ${showRawView ? "hidden" : ""}`}>
+      <div className={`flex bg-gray-50 mt-12`}>
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
           <MarkdownEditor
             handle={handle}

@@ -5,7 +5,7 @@ import { ChangeFn, save } from "@automerge/automerge/next";
 import {
   Check,
   ChevronsUpDown,
-  Code,
+  Inspect,
   Download,
   Plus,
   User as UserIcon,
@@ -154,9 +154,9 @@ export const Navbar = ({
           variant="ghost"
           className="text-gray-500"
         >
-          <Code size={"20px"} className="mr-2" />{" "}
+          <Inspect size={"20px"} className="mr-2" />{" "}
           <span className="hidden md:inline-block">
-            {showRawView ? "Hide Raw" : "Show Raw"}
+            {showRawView ? "Hide Inspector" : "Show Inspector"}
           </span>
         </Button>
         <Button

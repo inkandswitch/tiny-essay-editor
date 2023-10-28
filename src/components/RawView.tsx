@@ -4,8 +4,6 @@ import ReactJson from "@microlink/react-json-view";
 import { useCallback, useState } from "react";
 import { Button } from "./ui/button";
 
-import { DocHandle } from "@automerge/automerge-repo";
-import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { mapValues } from "lodash";
@@ -16,22 +14,27 @@ import { llmTools } from "@/prompts";
 export const RawView: React.FC<{
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
-  handle: DocHandle<MarkdownDoc>;
-}> = ({ doc, changeDoc, handle }) => {
-  useHandle(handle.url);
-
+}> = ({ doc, changeDoc }) => {
   const [actionParams, setActionParams] = useState<{
     [key: string]: { [key: string]: any };
   }>(
     mapValues(MarkdownDocActions, (params) =>
-      mapValues(params.parameters, (paramType) =>
-        paramType === "string" ? "" : paramType === "number" ? 0 : false
+      mapValues(params.parameters.properties, ({ type }) =>
+        type === "string" ? "" : type === "number" ? 0 : false
       )
     )
   );
 
   const onEdit = useCallback(
-    ({ namespace, new_value, name }) => {
+    ({
+      namespace,
+      new_value,
+      name,
+    }: {
+      namespace: any;
+      new_value?: any;
+      name: any;
+    }) => {
       changeDoc(function (doc) {
         let current = doc;
         for (
@@ -77,17 +80,13 @@ export const RawView: React.FC<{
     }
     const edits = result.result.edits;
 
-    console.log(result.result);
-
     for (const edit of edits) {
       const action = MarkdownDocActions[edit.action];
       if (!action) {
         throw new Error(`Unexpected action returned by LLM: ${action}`);
       }
-      console.log("adding a comment with params", edit.parameters);
       action.executeFn(doc, edit.parameters);
     }
-    console.log("LLM result", result);
   };
 
   if (!doc) {
@@ -95,89 +94,83 @@ export const RawView: React.FC<{
   }
 
   return (
-    <div className="h-screen">
-      <div className="flex h-full">
-        <div className="w-1/2 border-r border-gray-300">
-          <div className=" px-2 py-1 bg-gray-100 text-sm">
-            Document Contents
-          </div>
-          <div className="p-4">
-            <ReactJson
-              collapsed={2}
-              src={doc}
-              onEdit={onEdit}
-              onAdd={onAdd}
-              onDelete={onDelete}
-            />
-          </div>
+    <div className="flex h-full">
+      <div className="w-1/2 border-r border-gray-300 h-full">
+        <div className=" px-2 py-1 bg-gray-100 text-sm">Document Contents</div>
+        <div className="p-4">
+          <ReactJson
+            collapsed={2}
+            src={doc}
+            onEdit={onEdit}
+            onAdd={onAdd}
+            onDelete={onDelete}
+          />
         </div>
-        <div className="w-1/2">
-          <div className=" px-2 py-1  bg-gray-100  text-sm">Actions</div>
+      </div>
+      <div className="w-1/2">
+        <div className=" px-2 py-1  bg-gray-100  text-sm">Actions</div>
+        <div className="p-4">
+          {Object.entries(MarkdownDocActions).map(([action, config]) => (
+            <div className="my-2 p-4 border bg-gray-100 border-gray-200 rounded-sm">
+              {Object.entries(config.parameters.properties).map(
+                ([param, { type }]) => (
+                  <div key={param} className="mb-2 flex gap-1">
+                    <Label className="w-36 pt-3" htmlFor={param}>
+                      {param}
+                    </Label>
+                    <Input
+                      id={param}
+                      value={actionParams[action][param]}
+                      type={
+                        type === "number"
+                          ? "number"
+                          : type === "string"
+                          ? "text"
+                          : "checkbox"
+                      }
+                      onChange={(e) => {
+                        setActionParams((params) => ({
+                          ...params,
+                          [action]: {
+                            ...params[action],
+                            [param]:
+                              type === "number"
+                                ? parseInt(e.target.value) ?? 0
+                                : type === "string"
+                                ? e.target.value
+                                : e.target.checked ?? false,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                )
+              )}
+              <Button
+                onClick={() => {
+                  changeDoc((doc) =>
+                    config.executeFn(doc, actionParams[action])
+                  );
+                  actionParams[action] = mapValues(
+                    MarkdownDocActions[action].parameters.properties,
+                    ({ type }) =>
+                      type === "string" ? "" : type === "number" ? 0 : false
+                  );
+                }}
+              >
+                {action}
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div className=" px-2 py-1 bg-gray-100 text-sm">LLM Tools</div>
           <div className="p-4">
-            {Object.entries(MarkdownDocActions).map(([action, config]) => (
-              <div className="my-2 p-4 border bg-gray-100 border-gray-200 rounded-sm">
-                {Object.entries(config.parameters.properties).map(
-                  ([param, { type }]) => (
-                    <div key={param} className="mb-2 flex gap-1">
-                      <Label className="w-36 pt-3" htmlFor={param}>
-                        {param}
-                      </Label>
-                      <Input
-                        id={param}
-                        value={actionParams[action][param]}
-                        type={
-                          type === "number"
-                            ? "number"
-                            : type === "string"
-                            ? "text"
-                            : "checkbox"
-                        }
-                        onChange={(e) => {
-                          setActionParams((params) => ({
-                            ...params,
-                            [action]: {
-                              ...params[action],
-                              [param]:
-                                type === "number"
-                                  ? parseInt(e.target.value) ?? 0
-                                  : type === "string"
-                                  ? e.target.value
-                                  : e.target.checked ?? false,
-                            },
-                          }));
-                        }}
-                      />
-                    </div>
-                  )
-                )}
-                <Button
-                  onClick={() => {
-                    changeDoc((doc) =>
-                      config.executeFn(doc, actionParams[action])
-                    );
-                    actionParams[action] = mapValues(
-                      MarkdownDocActions[action].parameters.properties,
-                      ({ type }) =>
-                        type === "string" ? "" : type === "number" ? 0 : false
-                    );
-                  }}
-                >
-                  {action}
-                </Button>
+            {llmTools.map((tool) => (
+              <div>
+                <Button onClick={() => runLLM(tool.prompt)}>{tool.name}</Button>
               </div>
             ))}
-          </div>
-          <div>
-            <div className=" px-2 py-1 bg-gray-100 text-sm">LLM Tools</div>
-            <div className="p-4">
-              {llmTools.map((tool) => (
-                <div>
-                  <Button onClick={() => runLLM(tool.prompt)}>
-                    {tool.name}
-                  </Button>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
