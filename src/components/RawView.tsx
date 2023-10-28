@@ -84,7 +84,7 @@ export const RawView: React.FC<{
         throw new Error(`Unexpected action returned by LLM: ${action}`);
       }
       console.log("adding a comment with params", edit.parameters);
-      action.action(doc, edit.parameters);
+      action.executeFn(doc, edit.parameters);
     }
     console.log("LLM result", result);
   };
@@ -151,7 +151,7 @@ export const RawView: React.FC<{
                 <Button
                   onClick={() => {
                     changeDoc((doc) =>
-                      config.action(doc, actionParams[action])
+                      config.executeFn(doc, actionParams[action])
                     );
                     actionParams[action] = mapValues(
                       MarkdownDocActions[action].params,

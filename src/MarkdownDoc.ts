@@ -6,7 +6,7 @@ import { next as A } from "@automerge/automerge";
 export const MarkdownDocActions: ActionSpec = {
   "resolve all comments": {
     params: {},
-    action: (doc) => {
+    executeFn: (doc) => {
       console.log("resolve");
       for (const threadId in doc.commentThreads) {
         const thread = doc.commentThreads[threadId];
@@ -19,7 +19,7 @@ export const MarkdownDocActions: ActionSpec = {
       text: "string",
       comment: "string",
     },
-    action: (doc, params) => {
+    executeFn: (doc, params) => {
       const textStartIndex = doc.content.indexOf(params.text);
       if (textStartIndex < 0) {
         throw new Error(`text not found: ${params.text}`);
