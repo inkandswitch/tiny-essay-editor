@@ -68,6 +68,10 @@ export const RawView: React.FC<{
     [changeDoc]
   );
 
+  const runLLM = () => {
+    console.log("yo");
+  };
+
   if (!doc) {
     return <div>Loading...</div>;
   }
@@ -92,6 +96,7 @@ export const RawView: React.FC<{
         <div className="w-1/2 p-2">
           <div className=" text-center p-1 font-mono bg-gray-100">Actions</div>
           <div className="p-4">
+            <Button onClick={runLLM}>Academish Voice Check</Button>
             {Object.entries(MarkdownDocActions).map(([action, config]) => (
               <div className="my-2 p-4 border border-gray-400 rounded-md">
                 {Object.entries(config.params).map(([param, paramType]) => (
