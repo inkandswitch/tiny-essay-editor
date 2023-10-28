@@ -173,7 +173,7 @@ export const RawView: React.FC<{
 
   return (
     <div className="flex h-full">
-      <div className="w-1/2 border-r border-gray-300 h-full">
+      <div className="w-1/2 border-r border-gray-300 min-h-full overflow-y-scroll">
         <div className=" px-2 py-1 bg-gray-100 text-sm">Document Contents</div>
         <div className="p-4">
           <ReactJson
@@ -185,7 +185,7 @@ export const RawView: React.FC<{
           />
         </div>
       </div>
-      <div className="w-1/2">
+      <div className="w-1/2 min-h-full overflow-y-scroll">
         <div className=" px-2 py-1  bg-gray-100  text-sm">Actions</div>
         <div className="p-4">
           {Object.entries(MarkdownDocActions).map(([action, config]) => (
