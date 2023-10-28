@@ -29,8 +29,7 @@ const functionsSpec = [
   },
 ];
 
-// todo: the any type should be the type for editDocument
-export const editDocument = async (
+export const inferDocumentEdits = async (
   prompt: string,
   document: any
 ): Promise<{ _type: "ok"; result: any } | { _type: "error" }> => {

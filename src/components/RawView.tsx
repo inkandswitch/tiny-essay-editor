@@ -8,7 +8,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { mapValues } from "lodash";
 import { MarkdownDocActions } from "@/MarkdownDoc";
-import { editDocument } from "../llm";
+import { inferDocumentEdits } from "../llm";
 import { DEFAULT_LLM_TOOLS } from "@/prompts";
 import { ActionSpec } from "@/types";
 
@@ -84,7 +84,7 @@ const LLMToolView: React.FC<{ doc: MarkdownDoc; tool: LLMTool }> = ({
 
   const runLLM = async (prompt: string) => {
     setUiState("loading");
-    const result = await editDocument(prompt, doc);
+    const result = await inferDocumentEdits(prompt, doc);
     console.log("llm result", result);
     if (result._type === "error") {
       setUiState("error");
