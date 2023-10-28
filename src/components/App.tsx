@@ -16,15 +16,11 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
 
-  console.log("rerender app");
-
   const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
   const [showRawView, setShowRawView] = useState(false);
-
-  console.log("render app", doc);
 
   const localStorageKey = `LocalSession-${docUrl}`;
 

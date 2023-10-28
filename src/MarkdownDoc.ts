@@ -16,23 +16,23 @@ export const MarkdownDocActions: ActionSpec = {
   },
   "start new thread": {
     params: {
-      "comment text": "string",
-      "user id": "string",
-      "text start index": "number",
-      "text end index": "number",
+      text: "string",
+      comment: "string",
     },
     action: (doc, params) => {
-      const fromCursor = A.getCursor(
-        doc,
-        ["content"],
-        params["text start index"]
-      );
-      const toCursor = A.getCursor(doc, ["content"], params["text end index"]);
+      const textStartIndex = doc.content.indexOf(params.text);
+      if (textStartIndex < 0) {
+        throw new Error(`text not found: ${params.text}`);
+      }
+      const textEndIndex = textStartIndex + params.text.length;
+
+      const fromCursor = A.getCursor(doc, ["content"], textStartIndex);
+      const toCursor = A.getCursor(doc, ["content"], textEndIndex);
 
       const comment: Comment = {
         id: uuid(),
-        content: params["comment text"],
-        userId: params["user id"],
+        content: params.comment,
+        userId: null,
         timestamp: Date.now(),
       };
 

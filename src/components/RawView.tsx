@@ -10,6 +10,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { mapValues } from "lodash";
 import { MarkdownDocActions } from "@/MarkdownDoc";
+import { editDocument } from "../llm";
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
@@ -68,8 +69,24 @@ export const RawView: React.FC<{
     [changeDoc]
   );
 
-  const runLLM = () => {
-    console.log("yo");
+  const runLLM = async () => {
+    const result = await editDocument(doc.content);
+    if (result._type === "error") {
+      throw new Error(`LLM had an error...`);
+    }
+    const edits = result.result.edits;
+
+    console.log(result.result);
+
+    for (const edit of edits) {
+      const action = MarkdownDocActions[edit.action];
+      if (!action) {
+        throw new Error(`Unexpected action returned by LLM: ${action}`);
+      }
+      console.log("adding a comment with params", edit.parameters);
+      action.action(doc, edit.parameters);
+    }
+    console.log("LLM result", result);
   };
 
   if (!doc) {

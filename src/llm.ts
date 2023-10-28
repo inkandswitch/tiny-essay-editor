@@ -11,39 +11,32 @@ type LLMFeedback = Array<{
   comment: string;
 }>;
 
-const SYSTEM_PROMPT = `You are an expert essay editor. Given an essay and a style guide, you write comments on specific parts of the essay noting where it could be improved to follow the style guide.
+const SYSTEM_PROMPT = `You are an expert essay editor. Given an essay and a style guide, you write comments on specific parts of the essay noting where it could be improved to follow the style guide. You always start by citing a specific item from the style guide.
 
-Return a JSON array of 5 comments. Each comment should have the shape below:
-
-{
-  /* Excerpt the text being addressed */
-  text: string;
-
-  /* Reference by name the style guide item being cited */
-  styleGuideItem: string;
-
-  /* A short (1 or 2 sentence) comment giving feedback and suggestion for improvement. */
-  comment: string;
-}
-
-An example:
+Some examples:
 
 [
   {
-    "text": "these techniques are too weak to handle complex workflows like planning travel",
-    "styleGuideItem": "Make no claims without support.",
-    "comment": "What evidence is there for this claim? Could you perhaps add an aside demonstrating that users are suffering in the status quo?"
+    "action": "start new thread",
+    "parameters": {
+      "text": "these techniques are too weak to handle complex workflows like planning travel",
+      "comment": "Make no claims without support: What evidence is there for this claim? Could you perhaps add an aside with an example?"
+    }
   },
   {
-    "text": "computational outliner",
-    "styleGuideItem": "Explain jargon.",
-    "comment": "Computational outliner is borderline jargon, and redundant with the rest of the sentence. Either just say outliner here, or define the term."
+    "action": "start new thread",
+    "parameters": {
+      "text": "computational outliner",
+      "comment": "Explain jargon: Computational outliner is borderline jargon, and redundant with the rest of the sentence."
+    }
   },
   {
-    "text": "we demonstrate that these primitives are simple yet powerful enough to prove useful with real tasks",
-    "styleGuideItem": "Be humble and transparent about shortcomings and problems.",
-    "comment": "This makes it sound like the system has no flaws, can you add a brief note on some of the limitations?"
-  },
+    "action": "start new thread",
+    "parameters": {
+      "text": "we demonstrate that these primitives are simple yet powerful enough to prove useful with real tasks",
+      "comment": "Be humble and transparent about shortcomings and problems: This makes it sound like the system has no flaws, can you add a brief note on limitations?"
+    }
+  }
 ]
 
 ---
@@ -64,9 +57,10 @@ Our publications follow what we call “academish” voice. We follow a largely 
 * It’s okay to share hunches and beliefs as long as they’re appropriately labeled. Don’t be shy about drawing conclusions, just be clear about the degree of confidence you have and where it comes from.
 * Keep it classy. We don’t dismiss other people’s work or insult their products. Everything around you was made by someone working really hard on it. If we have found a better way, we should show gratitude to those who helped us realize the path forward and humility about our contributions.`;
 
-export const giveFeedback = async (
+// todo: the any type should be the type for editDocument
+export const editDocument = async (
   contents: string
-): Promise<{ _type: "ok"; result: LLMFeedback } | { _type: "error" }> => {
+): Promise<{ _type: "ok"; result: any } | { _type: "error" }> => {
   const message = `Here is my essay:
 
   ${contents}
@@ -75,7 +69,7 @@ export const giveFeedback = async (
   console.log(message);
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4-0613",
     temperature: 0,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -84,13 +78,48 @@ export const giveFeedback = async (
         content: message,
       },
     ],
+    functions: [
+      {
+        name: "editDocument",
+        description: "Apply a series of edits to the document",
+        parameters: {
+          type: "object",
+          properties: {
+            edits: {
+              type: "array",
+              items: {
+                oneof: [
+                  {
+                    type: "object",
+                    properties: {
+                      action: { const: "start new thread" },
+                      parameters: {
+                        type: "object",
+                        properties: {
+                          text: { type: "string" },
+                          comment: { type: "string" },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ],
+    function_call: { name: "editDocument" },
   });
 
-  // console.log({ response });
-  const output = response.choices[0].message?.content as string;
+  const output = response.choices[0].message;
+
+  if (!output.function_call) {
+    throw new Error("it was supposed to do a function call deterministically");
+  }
 
   try {
-    const parsed: LLMFeedback = JSON.parse(output);
+    const parsed: any = JSON.parse(output.function_call.arguments);
     return {
       _type: "ok",
       result: parsed,

@@ -38,7 +38,6 @@ export const CommentsSidebar = ({
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
-  console.log("rerender comments sidebar");
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
