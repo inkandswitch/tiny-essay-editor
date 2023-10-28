@@ -23,7 +23,7 @@ export const RawView: React.FC<{
     [key: string]: { [key: string]: any };
   }>(
     mapValues(MarkdownDocActions, (params) =>
-      mapValues(params.params, (paramType) =>
+      mapValues(params.parameters, (paramType) =>
         paramType === "string" ? "" : paramType === "number" ? 0 : false
       )
     )
@@ -116,51 +116,49 @@ export const RawView: React.FC<{
             <Button onClick={runLLM}>Academish Voice Check</Button>
             {Object.entries(MarkdownDocActions).map(([action, config]) => (
               <div className="my-2 p-4 border border-gray-400 rounded-md">
-                {Object.entries(config.params).map(([param, paramType]) => (
-                  <div key={param} className="mb-2 flex gap-1">
-                    <Label className="w-36 pt-3" htmlFor={param}>
-                      {param}
-                    </Label>
-                    <Input
-                      id={param}
-                      value={actionParams[action][param]}
-                      type={
-                        paramType === "number"
-                          ? "number"
-                          : paramType === "string"
-                          ? "text"
-                          : "checkbox"
-                      }
-                      onChange={(e) => {
-                        setActionParams((params) => ({
-                          ...params,
-                          [action]: {
-                            ...params[action],
-                            [param]:
-                              paramType === "number"
-                                ? parseInt(e.target.value) ?? 0
-                                : paramType === "string"
-                                ? e.target.value
-                                : e.target.checked ?? false,
-                          },
-                        }));
-                      }}
-                    />
-                  </div>
-                ))}
+                {Object.entries(config.parameters.properties).map(
+                  ([param, { type }]) => (
+                    <div key={param} className="mb-2 flex gap-1">
+                      <Label className="w-36 pt-3" htmlFor={param}>
+                        {param}
+                      </Label>
+                      <Input
+                        id={param}
+                        value={actionParams[action][param]}
+                        type={
+                          type === "number"
+                            ? "number"
+                            : type === "string"
+                            ? "text"
+                            : "checkbox"
+                        }
+                        onChange={(e) => {
+                          setActionParams((params) => ({
+                            ...params,
+                            [action]: {
+                              ...params[action],
+                              [param]:
+                                type === "number"
+                                  ? parseInt(e.target.value) ?? 0
+                                  : type === "string"
+                                  ? e.target.value
+                                  : e.target.checked ?? false,
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
+                  )
+                )}
                 <Button
                   onClick={() => {
                     changeDoc((doc) =>
                       config.executeFn(doc, actionParams[action])
                     );
                     actionParams[action] = mapValues(
-                      MarkdownDocActions[action].params,
-                      (paramType) =>
-                        paramType === "string"
-                          ? ""
-                          : paramType === "number"
-                          ? 0
-                          : false
+                      MarkdownDocActions[action].parameters.properties,
+                      ({ type }) =>
+                        type === "string" ? "" : type === "number" ? 0 : false
                     );
                   }}
                 >

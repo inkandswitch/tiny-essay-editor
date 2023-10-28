@@ -5,9 +5,11 @@ import { next as A } from "@automerge/automerge";
 
 export const MarkdownDocActions: ActionSpec = {
   "resolve all comments": {
-    params: {},
+    parameters: {
+      type: "object",
+      properties: {},
+    },
     executeFn: (doc) => {
-      console.log("resolve");
       for (const threadId in doc.commentThreads) {
         const thread = doc.commentThreads[threadId];
         thread.resolved = true;
@@ -15,9 +17,12 @@ export const MarkdownDocActions: ActionSpec = {
     },
   },
   "start new thread": {
-    params: {
-      text: "string",
-      comment: "string",
+    parameters: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
+        comment: { type: "string" },
+      },
     },
     executeFn: (doc, params) => {
       const textStartIndex = doc.content.indexOf(params.text);
