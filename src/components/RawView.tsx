@@ -11,6 +11,7 @@ import { Input } from "./ui/input";
 import { mapValues } from "lodash";
 import { MarkdownDocActions } from "@/MarkdownDoc";
 import { editDocument } from "../llm";
+import { llmTools } from "@/prompts";
 
 export const RawView: React.FC<{
   doc: MarkdownDoc;
@@ -69,8 +70,8 @@ export const RawView: React.FC<{
     [changeDoc]
   );
 
-  const runLLM = async () => {
-    const result = await editDocument(doc.content);
+  const runLLM = async (prompt: string) => {
+    const result = await editDocument(prompt, doc);
     if (result._type === "error") {
       throw new Error(`LLM had an error...`);
     }
@@ -96,8 +97,8 @@ export const RawView: React.FC<{
   return (
     <div className="h-screen">
       <div className="flex h-full">
-        <div className="w-1/2 border-r border-gray-300 p-2">
-          <div className="text-center p-1 font-mono bg-gray-100">
+        <div className="w-1/2 border-r border-gray-300">
+          <div className=" px-2 py-1 bg-gray-100 text-sm">
             Document Contents
           </div>
           <div className="p-4">
@@ -110,12 +111,11 @@ export const RawView: React.FC<{
             />
           </div>
         </div>
-        <div className="w-1/2 p-2">
-          <div className=" text-center p-1 font-mono bg-gray-100">Actions</div>
+        <div className="w-1/2">
+          <div className=" px-2 py-1  bg-gray-100  text-sm">Actions</div>
           <div className="p-4">
-            <Button onClick={runLLM}>Academish Voice Check</Button>
             {Object.entries(MarkdownDocActions).map(([action, config]) => (
-              <div className="my-2 p-4 border border-gray-400 rounded-md">
+              <div className="my-2 p-4 border bg-gray-100 border-gray-200 rounded-sm">
                 {Object.entries(config.parameters.properties).map(
                   ([param, { type }]) => (
                     <div key={param} className="mb-2 flex gap-1">
@@ -166,6 +166,18 @@ export const RawView: React.FC<{
                 </Button>
               </div>
             ))}
+          </div>
+          <div>
+            <div className=" px-2 py-1 bg-gray-100 text-sm">LLM Tools</div>
+            <div className="p-4">
+              {llmTools.map((tool) => (
+                <div>
+                  <Button onClick={() => runLLM(tool.prompt)}>
+                    {tool.name}
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
