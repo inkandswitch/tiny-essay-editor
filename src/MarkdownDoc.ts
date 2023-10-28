@@ -3,7 +3,7 @@ import { ActionSpec } from "./types";
 import { CommentThread, Comment } from "./schema";
 import { next as A } from "@automerge/automerge";
 
-export const MarkdownDocActions: ActionSpec = {
+export const MarkdownDocActions: { [key: string]: ActionSpec } = {
   "resolve all comments": {
     parameters: {
       type: "object",
