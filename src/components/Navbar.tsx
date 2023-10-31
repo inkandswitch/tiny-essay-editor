@@ -37,6 +37,8 @@ import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
+import { DocHandle } from "@automerge/automerge-repo";
+import { SyncIndicator } from "./SyncIndicator";
 
 const initials = (name: string) => {
   return name
@@ -47,23 +49,25 @@ const initials = (name: string) => {
 
 type TentativeUser =
   | {
-      _type: "existing";
-      id: string;
-    }
+    _type: "existing";
+    id: string;
+  }
   | {
-      _type: "new";
-      name: string;
-    }
+    _type: "new";
+    name: string;
+  }
   | {
-      _type: "unknown";
-    };
+    _type: "unknown";
+  };
 
 export const Navbar = ({
+  handle,
   doc,
   changeDoc,
   session,
   setSession,
 }: {
+  handle: DocHandle<MarkdownDoc>
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
@@ -140,9 +144,15 @@ export const Navbar = ({
         className="h-8 my-2 ml-2"
         src="/assets/logo-favicon-310x310-transparent.png"
       />
-      <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
-        {title}
+
+      <div className="flex items-center gap-1 ml-2">
+        <SyncIndicator handle={handle} />
+
+        <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
+          {title}
+        </div>
       </div>
+
       <div className="ml-auto px-8 py-1 flex gap-2">
         <Button
           onClick={() => window.open("/", "_blank")}
@@ -189,7 +199,7 @@ export const Navbar = ({
                     >
                       {tentativeUser._type === "existing"
                         ? doc.users.find((user) => user.id === tentativeUser.id)
-                            ?.name
+                          ?.name
                         : "Select user..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
