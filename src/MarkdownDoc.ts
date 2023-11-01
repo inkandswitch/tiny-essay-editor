@@ -9,11 +9,13 @@ export const MarkdownDocActions: { [key: string]: ActionSpec } = {
       type: "object",
       properties: {},
     },
-    executeFn: (doc) => {
-      for (const threadId in doc.commentThreads) {
-        const thread = doc.commentThreads[threadId];
-        thread.resolved = true;
-      }
+    executeFn: (changeDoc) => {
+      changeDoc((doc) => {
+        for (const threadId in doc.commentThreads) {
+          const thread = doc.commentThreads[threadId];
+          thread.resolved = true;
+        }
+      });
     },
   },
   "start new thread": {
@@ -24,32 +26,34 @@ export const MarkdownDocActions: { [key: string]: ActionSpec } = {
         comment: { type: "string" },
       },
     },
-    executeFn: (doc, params) => {
-      const textStartIndex = doc.content.indexOf(params.text);
-      if (textStartIndex < 0) {
-        throw new Error(`text not found: ${params.text}`);
-      }
-      const textEndIndex = textStartIndex + params.text.length - 1;
+    executeFn: (changeDoc, params) => {
+      changeDoc((doc) => {
+        const textStartIndex = doc.content.indexOf(params.text);
+        if (textStartIndex < 0) {
+          throw new Error(`text not found: ${params.text}`);
+        }
+        const textEndIndex = textStartIndex + params.text.length - 1;
 
-      const fromCursor = A.getCursor(doc, ["content"], textStartIndex);
-      const toCursor = A.getCursor(doc, ["content"], textEndIndex);
+        const fromCursor = A.getCursor(doc, ["content"], textStartIndex);
+        const toCursor = A.getCursor(doc, ["content"], textEndIndex);
 
-      const comment: Comment = {
-        id: uuid(),
-        content: params.comment,
-        userId: null,
-        timestamp: Date.now(),
-      };
+        const comment: Comment = {
+          id: uuid(),
+          content: params.comment,
+          userId: null,
+          timestamp: Date.now(),
+        };
 
-      const thread: CommentThread = {
-        id: uuid(),
-        comments: [comment],
-        resolved: false,
-        fromCursor,
-        toCursor,
-      };
+        const thread: CommentThread = {
+          id: uuid(),
+          comments: [comment],
+          resolved: false,
+          fromCursor,
+          toCursor,
+        };
 
-      doc.commentThreads[thread.id] = thread;
+        doc.commentThreads[thread.id] = thread;
+      });
     },
   },
 };

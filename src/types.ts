@@ -1,4 +1,5 @@
 import { MarkdownDoc } from "./schema";
+import { ChangeFn } from "@automerge/automerge";
 
 export type ActionSpec = {
   parameters: {
@@ -15,5 +16,8 @@ export type ActionSpec = {
         | { type: "boolean" };
     };
   };
-  executeFn: (doc: MarkdownDoc, params: any) => void;
+  executeFn: (
+    changeDoc: (fn: ChangeFn<MarkdownDoc>) => void,
+    params: any
+  ) => void;
 };
