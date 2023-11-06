@@ -340,17 +340,19 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(getThreadsForDecorations()),
     });
 
-    handle.addListener("change", () => {
+    const handleChange = () => {
       semaphore.reconcile(handle, view);
 
       // TODO: is this the right place to update the threads field? not sure.
       view.dispatch({
         effects: setThreadsEffect.of(getThreadsForDecorations()),
       });
-    });
+    };
+
+    handle.addListener("change", handleChange);
 
     return () => {
-      handle.removeAllListeners();
+      handle.removeListener("change", handleChange);
       view.destroy();
     };
   }, []);
