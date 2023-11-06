@@ -21,16 +21,16 @@ const SYNC_SERVER_PEER_ID = "storage-server-sync-automerge-org" as PeerId
 
 function useIsSyncedWithServer (handle: DocHandle<unknown>) : boolean {
   const [currentHeads, setCurrentHeads] = useState(A.getHeads(handle.docSync()))
-  const [syncedHeads, setSyncedHeads] = useState(handle.getSyncState(SYNC_SERVER_PEER_ID)?.sharedHeads ?? [])
+  const [syncedHeads, setSyncedHeads] =  useState(handle.getRemoteHeads(SYNC_SERVER_PEER_ID)?.sharedHeads ?? [])
 
   useEffect(() => {
     handle.on("change", (doc) => {
       setCurrentHeads(A.getHeads(handle.docSync()))
     })
 
-    handle.on("sync-state", ({ peerId, syncState }) => {
+    handle.on("remote-heads", ({ peerId, heads }) => {
       if (peerId === SYNC_SERVER_PEER_ID) {
-        setSyncedHeads(syncState.sharedHeads)
+        setSyncedHeads(heads)
       }
     })
   }, [handle])
