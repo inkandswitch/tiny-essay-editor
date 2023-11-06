@@ -18,7 +18,7 @@ import {
   syntaxHighlighting,
   HighlightStyle,
   ensureSyntaxTree,
-  indentUnit
+  indentUnit,
 } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import { Prop } from "@automerge/automerge";
@@ -26,7 +26,7 @@ import {
   plugin as amgPlugin,
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
-import { indentWithTab } from "@codemirror/commands"
+import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
@@ -285,7 +285,7 @@ export function MarkdownEditor({
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
-        codeMonospacePlugin,  
+        codeMonospacePlugin,
       ],
       dispatch(transaction) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
