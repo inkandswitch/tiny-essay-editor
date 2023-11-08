@@ -14,8 +14,8 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 
 ## Usage
 
-- Go to the root of this domain in your browser to make a new doc, or hit the New button.
-- The URL will update with a doc ID. If you share that URL to another browser/device, it should sync live.
+- If you visit the root domain the app will make a new doc. Or you can hit the New button.
+- Once you have a doc, the URL will update with a doc ID. If you share that URL to another browser/device, it should sync live. Hold on to the URL if you want to come back to that doc!
 
 ## Feature set
 
