@@ -145,15 +145,12 @@ export const Navbar = ({
         src="/assets/logo-favicon-310x310-transparent.png"
       />
 
-      <div className="flex items-center gap-1 ml-2">
-        <SyncIndicator handle={handle} />
-
-        <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
-          {title}
-        </div>
+      <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
+        {title}
       </div>
 
-      <div className="ml-auto px-8 py-1 flex gap-2">
+      <div className="ml-auto px-8 py-1 flex gap-2 items-center">
+        <SyncIndicator handle={handle} />
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
