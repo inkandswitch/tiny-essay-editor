@@ -8,6 +8,10 @@ import {
   Download,
   Plus,
   User as UserIcon,
+  Wifi,
+  WifiIcon,
+  WifiOff,
+  WifiOffIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -144,6 +148,19 @@ export const Navbar = ({
         {title}
       </div>
       <div className="ml-auto px-8 py-1 flex gap-2">
+        {/* todo: only show the relevant icon given the actual sync state */}
+        <div className="mt-1 px-2 py-1 text-xs text-gray-500 select-none">
+          <WifiIcon size={"16px"} className="mr-1 inline-block" />
+          <div className="inline-block pt-1">Online</div>
+        </div>
+        <div className="mt-1 px-2 py-1 text-xs text-gray-500 select-none">
+          <WifiOffIcon size={"16px"} className="mr-1 inline-block" />
+          <div className="inline-block pt-1">Offline</div>
+        </div>
+        <div className="mt-1 px-2 py-1 text-xs text-red-600 select-none">
+          <WifiOffIcon size={"16px"} className="mr-1 inline-block" />
+          <div className="inline-block pt-1">Sync Error</div>
+        </div>
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
