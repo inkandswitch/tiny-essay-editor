@@ -37,19 +37,20 @@ export const SyncIndicator = ({
   )
 }
 
-const SYNC_SERVER_PEER_ID = "storage-server-sync-automerge-org" as PeerId
+const SYNC_SERVER_PREFIX = "storage-server-"
 
 function useIsSyncedWithServer (handle: DocHandle<unknown>) : boolean {
   const [currentHeads, setCurrentHeads] = useState(A.getHeads(handle.docSync()))
-  const [syncedHeads, setSyncedHeads] =  useState(handle.getRemoteHeads(SYNC_SERVER_PEER_ID) ?? [])
+  const [syncServerPeerId, setSyncServerPeerId] = useState<PeerId | null>(null)
+  const [syncedHeads, setSyncedHeads] =  useState(handle.getRemoteHeads(syncServerPeerId) ?? [])
 
   useEffect(() => {
-    handle.on("change", (doc) => {
+    handle.on("change", () => {
       setCurrentHeads(A.getHeads(handle.docSync()))
     })
 
     handle.on("remote-heads", ({ peerId, heads }) => {
-      if (peerId === SYNC_SERVER_PEER_ID) {
+      if (peerId.match(SYNC_SERVER_PREFIX)) {
         setSyncedHeads(heads)
       }
     })
@@ -68,13 +69,13 @@ export function arraysEqual(a, b) {
 
 function useIsConnectedToServer () {
   const repo = useRepo()
-  const [isConnected, setIsConnected] = useState(() => repo.peers.includes(SYNC_SERVER_PEER_ID))
+  const [isConnected, setIsConnected] = useState(() => repo.peers.some( p => p.match(SYNC_SERVER_PREFIX) ))
 
   useEffect(() => {
     const onPeerConnected = ({peerId}) => {
       console.log("connected", peerId)
 
-      if (peerId === SYNC_SERVER_PEER_ID) {
+      if (peerId.match(SYNC_SERVER_PREFIX)) {
         setIsConnected(true)
       }
     }
@@ -82,7 +83,7 @@ function useIsConnectedToServer () {
     const onPeerDisconnnected = ({peerId}) => {
       console.log("disconnect", peerId)
 
-      if (peerId === SYNC_SERVER_PEER_ID) {
+      if (peerId.match(SYNC_SERVER_PREFIX)) {
         setIsConnected(false)
       }
     }
