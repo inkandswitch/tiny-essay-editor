@@ -1,4 +1,4 @@
-import * as A from "@automerge/automerge";
+import { next as A } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
 import { useState, useEffect } from "react";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
@@ -77,16 +77,12 @@ function useIsConnectedToServer() {
 
   useEffect(() => {
     const onPeerConnected = ({ peerId }) => {
-      console.log("connected", peerId);
-
       if (peerId.match(SYNC_SERVER_PREFIX)) {
         setIsConnected(true);
       }
     };
 
     const onPeerDisconnnected = ({ peerId }) => {
-      console.log("disconnect", peerId);
-
       if (peerId.match(SYNC_SERVER_PREFIX)) {
         setIsConnected(false);
       }
@@ -104,12 +100,10 @@ function useIsOnline() {
 
   useEffect(() => {
     const onOnline = () => {
-      console.log("online");
       setIsOnline(true);
     };
 
     const onOffline = () => {
-      console.log("offline");
       setIsOnline(false);
     };
 
