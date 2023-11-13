@@ -7,8 +7,9 @@ import {
   WidgetType,
   DecorationSet,
   ViewUpdate,
+  keymap,
 } from "@codemirror/view";
-import { StateEffect, StateField, Range } from "@codemirror/state";
+import { StateEffect, StateField, Range, EditorState } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -17,6 +18,7 @@ import {
   syntaxHighlighting,
   HighlightStyle,
   ensureSyntaxTree,
+  indentUnit,
 } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import { Prop } from "@automerge/automerge";
@@ -24,6 +26,7 @@ import {
   plugin as amgPlugin,
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
+import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
@@ -273,6 +276,8 @@ export function MarkdownEditor({
         markdown({
           codeLanguages: languages,
         }),
+        keymap.of([indentWithTab]),
+        indentUnit.of("    "),
         syntaxHighlighting(markdownStyles),
         frontmatterPlugin,
         threadsField,
@@ -335,17 +340,19 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(getThreadsForDecorations()),
     });
 
-    handle.addListener("change", () => {
+    const handleChange = () => {
       semaphore.reconcile(handle, view);
 
       // TODO: is this the right place to update the threads field? not sure.
       view.dispatch({
         effects: setThreadsEffect.of(getThreadsForDecorations()),
       });
-    });
+    };
+
+    handle.addListener("change", handleChange);
 
     return () => {
-      handle.removeAllListeners();
+      handle.removeListener("change", handleChange);
       view.destroy();
     };
   }, []);
