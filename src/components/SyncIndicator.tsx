@@ -1,5 +1,5 @@
 import * as A from "@automerge/automerge"
-import { DocHandle, PeerId } from "@automerge/automerge-repo"
+import { DocHandle } from "@automerge/automerge-repo"
 import { useState, useEffect } from "react"
 import {
   Circle,
@@ -41,8 +41,7 @@ const SYNC_SERVER_PREFIX = "storage-server-"
 
 function useIsSyncedWithServer (handle: DocHandle<unknown>) : boolean {
   const [currentHeads, setCurrentHeads] = useState(A.getHeads(handle.docSync()))
-  const [syncServerPeerId, setSyncServerPeerId] = useState<PeerId | null>(null)
-  const [syncedHeads, setSyncedHeads] =  useState(handle.getRemoteHeads(syncServerPeerId) ?? [])
+  const [syncedHeads, setSyncedHeads] =  useState([])
 
   useEffect(() => {
     handle.on("change", () => {
