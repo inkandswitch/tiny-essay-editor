@@ -1,7 +1,11 @@
-import { CommentThreadForUI, MarkdownDoc } from "./schema";
+import {
+  CommentThreadForUI,
+  CommentThreadWithPosition,
+  MarkdownDoc,
+} from "./schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 
 // taken from https://www.builder.io/blog/relative-time
@@ -70,10 +74,10 @@ const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
 // Resolve comment thread cursors to integer positions in the document
 export const getThreadsForUI = (
   doc: MarkdownDoc,
-  view: EditorView,
   activeThreadId: string | null
 ): CommentThreadForUI[] => {
   return Object.values(doc.commentThreads ?? {})
+    .filter((thread) => !thread.resolved) // hide resolved threads
     .flatMap((thread) => {
       let from = 0;
       let to = 0;
@@ -100,29 +104,32 @@ export const getThreadsForUI = (
       ];
     })
     .filter(
-      (thread) =>
-        !thread.resolved && // hide resolved threads
-        thread.to > thread.from // hide threads pointing to deleted text
+      (thread) => thread.to > thread.from // hide threads pointing to deleted text
     );
 };
 
-// Calculate a vertical position for each comment.
+// Given a list of comment threads, find a vertical position for each comment.
 // We roughly try to put the comments vertically near the text they are commenting on.
 // But we also avoid overlapping comments by bumping them up or down if they overlap.
 // The currently active comment gets priority for being nearby its text;
 // other comments bump up or down from that point.
-export const getVisibleTheadsWithPos = (
-  doc: MarkdownDoc,
-  view: EditorView,
-  activeThreadId: string | null
-) => {
+export const getVisibleTheadsWithPos = ({
+  threads,
+  doc,
+  view,
+  activeThreadId,
+}: {
+  threads: CommentThreadForUI[];
+  doc: MarkdownDoc;
+  view: EditorView;
+  activeThreadId: string | null;
+}): CommentThreadWithPosition[] => {
   // As an initial draft, put each thread right next to its comment
-  const draft = getThreadsForUI(doc, view, activeThreadId).flatMap((thread) => {
+  const threadsWithPositions = threads.flatMap((thread) => {
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
     const viewportCoordsOfThread = view?.coordsAtPos(
       Math.min(thread.from, doc.content.length - 1)
     )?.top;
-
     if (viewportCoordsOfThread === undefined) {
       return [];
     }
@@ -133,68 +140,67 @@ export const getVisibleTheadsWithPos = (
     return [
       {
         ...thread,
-
         yCoord,
       },
     ];
   });
 
   // Sort the draft by vertical position in the doc
-  draft.sort((a, b) => a.from - b.from);
+  threadsWithPositions.sort((a, b) => a.from - b.from);
 
   // Now it's possible that we have comments which are overlapping one another.
   // Make a best effort to mostly avoid overlaps.
 
-  let activeIndex = draft.findIndex((thread) => thread.id === activeThreadId);
+  let activeIndex = threadsWithPositions.findIndex(
+    (thread) => thread.id === activeThreadId
+  );
   if (activeIndex === -1) activeIndex = 0;
 
   // Iterate upwards
   for (let i = activeIndex - 1; i >= 0; i--) {
     if (
-      draft[i].yCoord + estimatedHeightOfThread(draft[i]) >
-      draft[i + 1].yCoord
+      threadsWithPositions[i].yCoord +
+        estimatedHeightOfThread(threadsWithPositions[i]) >
+      threadsWithPositions[i + 1].yCoord
     ) {
-      draft[i].yCoord = draft[i + 1].yCoord - estimatedHeightOfThread(draft[i]);
+      threadsWithPositions[i].yCoord =
+        threadsWithPositions[i + 1].yCoord -
+        estimatedHeightOfThread(threadsWithPositions[i]);
     }
   }
 
   // Iterate downwards
-  for (let i = activeIndex + 1; i < draft.length; i++) {
+  for (let i = activeIndex + 1; i < threadsWithPositions.length; i++) {
     if (
-      draft[i].yCoord <
-      draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1])
+      threadsWithPositions[i].yCoord <
+      threadsWithPositions[i - 1].yCoord +
+        estimatedHeightOfThread(threadsWithPositions[i - 1])
     ) {
-      draft[i].yCoord =
-        draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1]);
+      threadsWithPositions[i].yCoord =
+        threadsWithPositions[i - 1].yCoord +
+        estimatedHeightOfThread(threadsWithPositions[i - 1]);
     }
   }
 
-  // console.log("----------");
-  for (let i = 1; i < draft.length; i++) {
+  for (let i = 1; i < threadsWithPositions.length; i++) {
     if (
-      draft[i].yCoord <
-      draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1])
+      threadsWithPositions[i].yCoord <
+      threadsWithPositions[i - 1].yCoord +
+        estimatedHeightOfThread(threadsWithPositions[i - 1])
     ) {
-      // console.log(
-      //   "collision!",
-      //   initialDraft[i].comments[0].content.slice(0, 10),
-      //   initialDraft[i].yCoord,
-      //   initialDraft[i - 1].comments[0].content.slice(0, 10),
-      //   initialDraft[i - 1].yCoord
-      // initialDraft[i].yCoord - initialDraft[i - 1].yCoord,
-      // veryRoughHeightOfThread(initialDraft[i - 1])
-      // );
-      if (draft[i].id === activeThreadId) {
-        draft[i - 1].yCoord =
-          draft[i].yCoord - estimatedHeightOfThread(draft[i - 1]);
+      if (threadsWithPositions[i].id === activeThreadId) {
+        threadsWithPositions[i - 1].yCoord =
+          threadsWithPositions[i].yCoord -
+          estimatedHeightOfThread(threadsWithPositions[i - 1]);
       } else {
-        draft[i].yCoord =
-          draft[i - 1].yCoord + estimatedHeightOfThread(draft[i - 1]);
+        threadsWithPositions[i].yCoord =
+          threadsWithPositions[i - 1].yCoord +
+          estimatedHeightOfThread(threadsWithPositions[i - 1]);
       }
     }
   }
 
-  return draft;
+  return threadsWithPositions;
 };
 
 export const useScrollPosition = () => {
@@ -321,3 +327,44 @@ export function arraysAreEqual<T>(a: T[], b: T[]): boolean {
   }
   return true;
 }
+
+// A React hook that gets the comment threads for the doc w/ positions
+// and manages caching.
+export const useThreadsWithPositions = ({
+  doc,
+  view,
+  activeThreadId,
+}: {
+  doc: MarkdownDoc;
+  view: EditorView;
+  activeThreadId: string;
+}) => {
+  // We first get integer positions for each thread and cache that.
+  const threads = useMemo(
+    () => (doc ? getThreadsForUI(doc, activeThreadId) : []),
+    [doc, activeThreadId]
+  );
+
+  // Next we get the vertical position for each thread.
+
+  // It may be inefficient to rerender comments sidebar on each scroll but
+  // it's fine for now and it lets us reposition comments as the user scrolls.
+  // (Notably we're not literally repositioning comments in JS;
+  // we just use CodeMirror to compute position, and it doesn't tell us position
+  // of comments that are way off-screen. That's why we need this scroll handler
+  // to catch when things come near the screen)
+  const scrollPosition = useScrollPosition();
+
+  const threadsWithPositions = useMemo(
+    () =>
+      view
+        ? getVisibleTheadsWithPos({ threads, doc, view, activeThreadId })
+        : [],
+
+    // the scrollPosition dependency is implicit so the linter thinks it's not needed;
+    // but actually it's critical for making comments appear correctly as scrolling happens
+    [doc, view, activeThreadId, scrollPosition]
+  );
+
+  return threadsWithPositions;
+};
