@@ -108,7 +108,9 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
             onMouseLeave={handleMouseLeave}
           >
             <div className="mb-2 text-sm">
-              There was an unexpected error connecting to the sync server.
+              There was an unexpected error connecting to the sync server. Don't
+              worry, your changes are saved locally. Please try reloading and
+              see if that fixes the issue.
             </div>
             <dl className="text-sm text-gray-600">
               <div>
@@ -175,7 +177,10 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
                 {isSynced ? (
                   "No unsynced changes"
                 ) : (
-                  <span className="text-red-500">Unsynced changes (*)</span>
+                  <span className="text-red-500">
+                    You have unsynced changes. They are saved locally and will
+                    sync next time you have internet and you open the app.
+                  </span>
                 )}
               </dd>
             </div>
