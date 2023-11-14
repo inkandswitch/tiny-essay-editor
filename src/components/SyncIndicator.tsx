@@ -10,25 +10,30 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getRelativeTimeString } from "@/utils";
+import { useRef } from "react";
 
 // if we are connected to the sync server and have outstanding changes we should switch to the error mode if we haven't received a sync message in a while
 // this variable specifies this timeout duration
 const SYNC_TIMEOUT = 3000;
 
 // wait initially if we haven't connnected to the sync server yet
-const INITIAL_CONNECTION_WAIT = 2000;
+const INITIAL_CONNECTION_WAIT = 3000;
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
-  const { isSynced, lastSyncUpdate } = useSyncStateOfServer(handle);
-  const isOnline = useIsOnline();
+  const { isSynced, lastSyncUpdate, syncTimeoutTimestamp } =
+    useSyncStateOfServer(handle);
+  const onlineState = useIsOnline();
   const isConnectedToServer = useIsConnectedToServer();
   const hasSyncTimedOut = useHasTimedOut({
     duration: SYNC_TIMEOUT,
-    timestamp: lastSyncUpdate,
+    // when we come back online we want to timeout starting from the time we're back online and not the time we last synced
+    timestamp: Math.max(syncTimeoutTimestamp, onlineState.timestamp),
     isActive: !isSynced,
   });
   const hasInitialConnectionWaitTimedOut = useHasTimedOut({
     duration: INITIAL_CONNECTION_WAIT,
+    timestamp: onlineState.timestamp,
+    isActive: onlineState.isOnline,
   });
   const [isHovered, setIsHovered] = useState(false);
 
@@ -40,7 +45,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     setIsHovered(false);
   };
 
-  if (isOnline) {
+  if (onlineState.isOnline) {
     if (
       (isConnectedToServer || !hasInitialConnectionWaitTimedOut) &&
       (isSynced || !hasSyncTimedOut)
@@ -193,9 +198,9 @@ function useHasTimedOut({
   duration,
   timestamp,
   isActive = true,
-}: TimeoutConfig) : boolean {
+}: TimeoutConfig): boolean {
   const [hasTimedOut, setHasTimedOut] = useState(
-    getHasTimedOut(timestamp, duration)
+    isActive && getHasTimedOut(timestamp, duration)
   );
 
   useEffect(() => {
@@ -230,9 +235,8 @@ function useHasTimedOut({
     };
   }, [isActive, timestamp, duration]);
 
-
   if (!isActive) {
-    return false
+    return false;
   }
 
   return hasTimedOut;
@@ -244,7 +248,12 @@ function getHasTimedOut(timestamp: number, timeoutDuration: number): boolean {
 
 interface SyncState {
   isSynced: boolean;
-  lastSyncUpdate: number;
+  lastSyncUpdate: number; // when was the last time we received a sync from the server
+
+  // timestamp from which we should start a sync timeout
+  // - gets updated on each sync message
+  // - when we start to switch from previously synced to unsynced we also reset it
+  syncTimeoutTimestamp: number;
 }
 
 function useSyncStateOfServer(handle: DocHandle<unknown>): SyncState {
@@ -252,25 +261,42 @@ function useSyncStateOfServer(handle: DocHandle<unknown>): SyncState {
     A.getHeads(handle.docSync())
   );
   const [syncedHeads, setSyncedHeads] = useState([]);
-  const [lastSyncUpdate, setLastSyncUpdate] = useState(Date.now()); // initialize to now, so we don't go into an error state before first sync
+  // initialize lastSyncUpdate and syncTimeoutTimestamp to now, so we don't go into an error state before first sync
+  const [lastSyncUpdate, setLastSyncUpdate] = useState(Date.now());
+  const [syncTimeoutTimestamp, setSyncTimeoutTimestamp] = useState(Date.now());
+  const isSynced = arraysAreEqual(currentHeads, syncedHeads);
+  const isSyncedRef = useRef(isSynced);
+  isSyncedRef.current = isSynced;
 
   useEffect(() => {
     handle.on("change", () => {
-      setCurrentHeads(A.getHeads(handle.docSync()));
+      const wasInSync = isSyncedRef.current;
+      const newHeads = A.getHeads(handle.docSync());
+
+      setCurrentHeads(newHeads);
+
+      // need to access isSynced through ref because otherwise we constantly need to reregister the event handlers
+      if (wasInSync) {
+        setSyncTimeoutTimestamp(Date.now());
+      }
     });
 
     handle.on("remote-heads", ({ peerId, heads }) => {
       if (peerId.match(SYNC_SERVER_PREFIX)) {
         // todo: should add date to sync state
-        setLastSyncUpdate(Date.now());
+
+        const now = Date.now();
+        setLastSyncUpdate(now);
+        setSyncTimeoutTimestamp(now);
         setSyncedHeads(heads);
       }
     });
   }, [handle]);
 
   return {
-    isSynced: arraysAreEqual(currentHeads, syncedHeads),
+    isSynced,
     lastSyncUpdate,
+    syncTimeoutTimestamp,
   };
 }
 
@@ -300,16 +326,24 @@ function useIsConnectedToServer() {
   return isConnected;
 }
 
-function useIsOnline() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+interface OnlineState {
+  isOnline: boolean;
+  timestamp: number; // when the state (offline/online) was entered
+}
+
+function useIsOnline(): OnlineState {
+  const [isOnlineState, setIsOnlineState] = useState<OnlineState>({
+    isOnline: navigator.onLine,
+    timestamp: Date.now(),
+  });
 
   useEffect(() => {
     const onOnline = () => {
-      setIsOnline(true);
+      setIsOnlineState({ isOnline: true, timestamp: Date.now() });
     };
 
     const onOffline = () => {
-      setIsOnline(false);
+      setIsOnlineState({ isOnline: false, timestamp: Date.now() });
     };
 
     window.addEventListener("online", onOnline);
@@ -321,5 +355,5 @@ function useIsOnline() {
     };
   }, []);
 
-  return isOnline;
+  return isOnlineState;
 }
