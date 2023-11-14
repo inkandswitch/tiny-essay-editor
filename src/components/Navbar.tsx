@@ -49,16 +49,16 @@ const initials = (name: string) => {
 
 type TentativeUser =
   | {
-    _type: "existing";
-    id: string;
-  }
+      _type: "existing";
+      id: string;
+    }
   | {
-    _type: "new";
-    name: string;
-  }
+      _type: "new";
+      name: string;
+    }
   | {
-    _type: "unknown";
-  };
+      _type: "unknown";
+    };
 
 export const Navbar = ({
   handle,
@@ -67,7 +67,7 @@ export const Navbar = ({
   session,
   setSession,
 }: {
-  handle: DocHandle<MarkdownDoc>
+  handle: DocHandle<MarkdownDoc>;
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
@@ -165,14 +165,12 @@ export const Navbar = ({
         </Button>
         <Dialog>
           <DialogTrigger>
-            <Button variant="ghost" className="px-2 py-0">
-              <Avatar>
-                {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
-                <AvatarFallback>
-                  {sessionUser ? initials(sessionUser.name) : <UserIcon />}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+            <Avatar>
+              {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
+              <AvatarFallback>
+                {sessionUser ? initials(sessionUser.name) : <UserIcon />}
+              </AvatarFallback>
+            </Avatar>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -196,7 +194,7 @@ export const Navbar = ({
                     >
                       {tentativeUser._type === "existing"
                         ? doc.users.find((user) => user.id === tentativeUser.id)
-                          ?.name
+                            ?.name
                         : "Select user..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
