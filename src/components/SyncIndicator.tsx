@@ -74,7 +74,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
               <div>
                 <dt className="font-bold inline mr-1">Sync status:</dt>
                 <dd className="inline">
-                  {isSynced ? "Up to date" : "Unsynced changes"}
+                  {isSynced ? "Up to date" : "Syncing..."}
                 </dd>
               </div>
             </dl>
@@ -119,7 +119,11 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
               <div>
                 <dt className="font-bold inline mr-1">Sync status:</dt>
                 <dd className="inline">
-                  {isSynced ? "Up to date" : "Unsynced changes"}
+                  {isSynced ? (
+                    "No unsynced changes"
+                  ) : (
+                    <span className="text-red-500">Unsynced changes (*)</span>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -140,7 +144,9 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
               size={"20px"}
               className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
             />
-            {!isSynced && <div className="inline text-xs">*</div>}
+            {!isSynced && (
+              <div className="inline text-xs font-bold text-red-600">*</div>
+            )}
           </div>
         </PopoverTrigger>
         <PopoverContent
@@ -160,8 +166,12 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
             </div>
             <div>
               <dt className="font-bold inline mr-1">Sync status:</dt>
-              <dd className="inline text-red-500">
-                {isSynced ? "No unsynced changes" : "Unsynced changes"}
+              <dd className="inline">
+                {isSynced ? (
+                  "No unsynced changes"
+                ) : (
+                  <span className="text-red-500">Unsynced changes (*)</span>
+                )}
               </dd>
             </div>
           </dl>
