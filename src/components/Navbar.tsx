@@ -37,6 +37,8 @@ import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
+import { DocHandle } from "@automerge/automerge-repo";
+import { SyncIndicator } from "./SyncIndicator";
 
 const initials = (name: string) => {
   return name
@@ -59,11 +61,13 @@ type TentativeUser =
     };
 
 export const Navbar = ({
+  handle,
   doc,
   changeDoc,
   session,
   setSession,
 }: {
+  handle: DocHandle<MarkdownDoc>;
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
@@ -140,10 +144,13 @@ export const Navbar = ({
         className="h-8 my-2 ml-2"
         src="../assets/logo-favicon-310x310-transparent.png"
       />
+
       <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
         {title}
       </div>
-      <div className="ml-auto px-8 py-1 flex gap-2">
+
+      <div className="ml-auto px-8 py-1 flex gap-2 items-center">
+        <SyncIndicator handle={handle} />
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
@@ -158,14 +165,12 @@ export const Navbar = ({
         </Button>
         <Dialog>
           <DialogTrigger>
-            <Button variant="ghost" className="px-2 py-0">
-              <Avatar>
-                {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
-                <AvatarFallback>
-                  {sessionUser ? initials(sessionUser.name) : <UserIcon />}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+            <Avatar>
+              {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
+              <AvatarFallback>
+                {sessionUser ? initials(sessionUser.name) : <UserIcon />}
+              </AvatarFallback>
+            </Avatar>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
