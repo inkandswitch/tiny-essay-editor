@@ -18,13 +18,15 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   const {isSynced, lastSyncUpdate} = useSyncStateOfServer(handle);
   const isOnline = useIsOnline();
   const isConnectedToServer = useIsConnectedToServer();
-  const hasSyncTimedOut = useHasTimedOut(SYNC_TIMEOUT, lastSyncUpdate)
-  const hasConnectionWaitTimedOut = useHasTimedOut(INITIAL_CONNECTION_WAIT)
-
-  console.log({isSynced, hasSyncTimedOut})
+  const hasSyncTimedOut = useHasTimedOut({ 
+    duration: SYNC_TIMEOUT,   
+    timestamp: lastSyncUpdate,
+    isActive: !isSynced
+  })
+  const hasInitialConnectionWaitTimedOut = useHasTimedOut({ duration: INITIAL_CONNECTION_WAIT })
 
   if (isOnline) {
-    if ((isConnectedToServer || !hasConnectionWaitTimedOut)  && (isSynced || !hasSyncTimedOut)) {
+    if ((isConnectedToServer || !hasInitialConnectionWaitTimedOut)  && (isSynced || !hasSyncTimedOut)) {
       return (
         <div className="text-gray-500">
           <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
@@ -51,10 +53,21 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
 
 const SYNC_SERVER_PREFIX = "storage-server-";
 
-function useHasTimedOut (duration: number, timestamp?: number) {
+interface TimeoutConfig {
+  duration: number
+  timestamp?: number,
+  isActive?: boolean
+}
+
+function useHasTimedOut ({ duration, timestamp, isActive = true } : TimeoutConfig) {
   const [hasTimedOut, setHasTimedOut] = useState(getHasTimedOut(timestamp, duration))
 
   useEffect(() => {
+    if (!isActive) {
+      setHasTimedOut(false)
+      return
+    }
+
     if (timestamp === undefined) {
       timestamp = Date.now()
     }
@@ -76,7 +89,7 @@ function useHasTimedOut (duration: number, timestamp?: number) {
       setHasTimedOut(getHasTimedOut(timestamp, duration))
       clearTimeout(timeout)
     }
-  }, [timestamp, duration])
+  }, [isActive, timestamp, duration])
 
 
   return hasTimedOut
