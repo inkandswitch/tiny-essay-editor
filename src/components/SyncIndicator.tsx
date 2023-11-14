@@ -3,6 +3,7 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { useState, useEffect } from "react";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { WifiIcon, WifiOffIcon } from "lucide-react";
+import { arraysAreEqual } from "@/utils";
 import {
   Popover,
   PopoverContent,
@@ -18,9 +19,6 @@ const SYNC_TIMEOUT = 3000;
 const INITIAL_CONNECTION_WAIT = 2000;
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
-  // todo: sync shouldn't flicker. It should be based on if we are making progress syncing the changes.
-  // While a user is actively editing the document their heads will never match the synced heads
-  // is is fine and shouldn't be counted as out of sync as long as they are not lagging behind the sync server by too much
   const { isSynced, lastSyncUpdate } = useSyncStateOfServer(handle);
   const isOnline = useIsOnline();
   const isConnectedToServer = useIsConnectedToServer();
@@ -178,14 +176,14 @@ const SYNC_SERVER_PREFIX = "storage-server-";
 interface TimeoutConfig {
   duration: number;
   timestamp?: number;
-  isActive?: boolean;
+  isActive?: boolean; // set a condition, when it's false the timeout becomes never true
 }
 
 function useHasTimedOut({
   duration,
   timestamp,
   isActive = true,
-}: TimeoutConfig) {
+}: TimeoutConfig) : boolean {
   const [hasTimedOut, setHasTimedOut] = useState(
     getHasTimedOut(timestamp, duration)
   );
@@ -222,6 +220,11 @@ function useHasTimedOut({
     };
   }, [isActive, timestamp, duration]);
 
+
+  if (!isActive) {
+    return false
+  }
+
   return hasTimedOut;
 }
 
@@ -256,17 +259,9 @@ function useSyncStateOfServer(handle: DocHandle<unknown>): SyncState {
   }, [handle]);
 
   return {
-    isSynced: arraysEqual(currentHeads, syncedHeads),
+    isSynced: arraysAreEqual(currentHeads, syncedHeads),
     lastSyncUpdate,
   };
-}
-
-export function arraysEqual(a, b) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
 }
 
 function useIsConnectedToServer() {
