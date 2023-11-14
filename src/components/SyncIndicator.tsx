@@ -8,6 +8,9 @@ import { WifiIcon, WifiOffIcon } from "lucide-react";
 // this variable specifies this timeout duration
 const SYNC_TIMEOUT = 3000 
 
+// wait initially if we haven't connnected to the sync server yet
+const INITIAL_CONNECTION_WAIT = 2000
+
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   // todo: sync shouldn't flicker. It should be based on if we are making progress syncing the changes.
   // While a user is actively editing the document their heads will never match the synced heads
@@ -15,10 +18,13 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   const {isSynced, lastSyncUpdate} = useSyncStateOfServer(handle);
   const isOnline = useIsOnline();
   const isConnectedToServer = useIsConnectedToServer();
-  const isTimedOut = useIsTimedOut(lastSyncUpdate, SYNC_TIMEOUT)
+  const hasSyncTimedOut = useHasTimedOut(SYNC_TIMEOUT, lastSyncUpdate)
+  const hasConnectionWaitTimedOut = useHasTimedOut(INITIAL_CONNECTION_WAIT)
+
+  console.log({isSynced, hasSyncTimedOut})
 
   if (isOnline) {
-    if (isConnectedToServer && (isSynced || !isTimedOut)) {
+    if ((isConnectedToServer || !hasConnectionWaitTimedOut)  && (isSynced || !hasSyncTimedOut)) {
       return (
         <div className="text-gray-500">
           <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
@@ -43,39 +49,40 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   }
 };
 
-
 const SYNC_SERVER_PREFIX = "storage-server-";
 
-function useIsTimedOut (timestamp: number, duration: number) {
-  const [isTimedOut, setIsTimedOut] = useState(getIsTimedOut(timestamp, duration))
+function useHasTimedOut (duration: number, timestamp?: number) {
+  const [hasTimedOut, setHasTimedOut] = useState(getHasTimedOut(timestamp, duration))
 
   useEffect(() => {
-    console.log(timestamp, duration, getIsTimedOut(timestamp, duration))
+    if (timestamp === undefined) {
+      timestamp = Date.now()
+    }
 
-    if (getIsTimedOut(timestamp, duration)) {
-      setIsTimedOut(true)
+    if (getHasTimedOut(timestamp, duration)) {
+      setHasTimedOut(true)
       return
     } 
 
-    setIsTimedOut(false)
+    setHasTimedOut(false)
 
     const timeoutCallback = () => {  
-      setIsTimedOut(true)
+      setHasTimedOut(true)
     }
 
     const timeout = setTimeout(timeoutCallback, duration - (Date.now() - timestamp))
 
     return () => {
-      setIsTimedOut(getIsTimedOut(timestamp, duration))
+      setHasTimedOut(getHasTimedOut(timestamp, duration))
       clearTimeout(timeout)
     }
   }, [timestamp, duration])
 
 
-  return isTimedOut
+  return hasTimedOut
 }
 
-function getIsTimedOut (timestamp: number, timeoutDuration: number) : boolean {
+function getHasTimedOut (timestamp: number, timeoutDuration: number) : boolean {
   return (Date.now() - timestamp) >= timeoutDuration
 }
 
