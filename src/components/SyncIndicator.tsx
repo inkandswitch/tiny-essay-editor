@@ -16,22 +16,22 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     if (isConnectedToServer) {
       return (
         <div className="text-gray-500">
-          <WifiIcon size={"20px"} className="mr-1 inline-block" />
+          <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
         </div>
       );
     } else {
       return (
-        <div className="text-red-500">
-          <WifiIcon size={"20px"} className="inline-block" />
-          {!isSynced && <div className="inline text-xs mr-1">*</div>}
-          Sync Error
+        <div className="text-red-500 flex items-center">
+          <WifiIcon size={"20px"} className={`inline-block ${isSynced ? "mr-[7px]" : ""}`} />
+          {!isSynced && <div className="inline text-xs">*</div>}
+          <div className="ml-1">Sync Error</div>
         </div>
       );
     }
   } else {
     return (
       <div className="text-gray-500">
-        <WifiOffIcon size={"20px"} className="inline-block" />
+        <WifiOffIcon size={"20px"} className={`inline-block ${isSynced ? "mr-[7px]" : ""}`} />
         {!isSynced && <div className="inline text-xs">*</div>}
       </div>
     );
