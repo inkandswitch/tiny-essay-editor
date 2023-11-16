@@ -112,6 +112,8 @@ const theme = EditorView.theme({
     fontFamily: '"Merriweather", serif',
     padding: "10px 0",
     margin: "0 var(--cm-padding-x)",
+    color: "var(--text-color)",
+    caretColor: "var(--text-color)",
     textAlign: "justify",
     lineHeight: "24px",
   },
@@ -122,14 +124,14 @@ const theme = EditorView.theme({
     backgroundColor: "inherit",
   },
   ".cm-comment-thread": {
-    backgroundColor: "rgb(255 249 194)",
+    backgroundColor: "var(--highlight-color)",
   },
   ".cm-comment-thread.active": {
-    backgroundColor: "rgb(255 227 135)",
+    backgroundColor: "var(--highlight-active-color)",
   },
   // active highlighting wins if it's inside another thread
   ".cm-comment-thread.active .cm-comment-thread": {
-    backgroundColor: "rgb(255 227 135)",
+    backgroundColor: "var(--highlight-active-color)",
   },
   ".frontmatter": {
     fontFamily: "monospace",

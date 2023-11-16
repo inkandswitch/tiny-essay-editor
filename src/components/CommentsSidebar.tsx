@@ -112,7 +112,7 @@ export const CommentsSidebar = ({
       {threadsWithPositions.map((thread) => (
         <div
           key={thread.id}
-          className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+          className={`bg-white dark:bg-slate-900 hover:border-gray-400  hover:bg-gray-50 dark:hover:bg-slate-800 p-4 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
             thread.id === activeThreadId
               ? "z-50 shadow-sm border-gray-500"
               : "z-0"
@@ -139,7 +139,9 @@ export const CommentsSidebar = ({
                     {getRelativeTimeString(comment.timestamp)}
                   </span>
                 </div>
-                <div className="cursor-default text-sm whitespace-pre-wrap">{comment.content}</div>
+                <div className="cursor-default text-sm whitespace-pre-wrap dark:text-white">
+                  {comment.content}
+                </div>
               </div>
             ))}
           </div>

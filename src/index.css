@@ -402,12 +402,28 @@ body {
 
   :root {
     --cm-padding-x: 60px;
-
+    --text-color: black;
+    --highlight-color: rgb(255 249 194)
+    --highlight-active-color: rgb(255 227 135)
   }
 
 
   @media (max-width: 1000px) {
     :root {
       --cm-padding-x: 10px;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    :root {
+      --cm-padding-x: 10px;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text-color: rgb(220, 220, 220);
+    --highlight-color: rgb(81, 76, 27);
+    --highlight-active-color: rgb(157, 132, 53);
     }
   }
