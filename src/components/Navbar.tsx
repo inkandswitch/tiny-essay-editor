@@ -139,7 +139,7 @@ export const Navbar = ({
   }
 
   return (
-    <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
+    <div className="h-12 w-screen bg-white dark:bg-slate-800 dark:text-slate-200 border-b border-gray-300 dark:border-gray-500 align-middle flex">
       <img
         className="h-8 my-2 ml-2"
         src="/assets/logo-favicon-310x310-transparent.png"
@@ -154,12 +154,16 @@ export const Navbar = ({
         <Button
           onClick={() => window.open("/", "_blank")}
           variant="ghost"
-          className="text-gray-500"
+          className="text-gray-500 dark:text-slate-200"
         >
           <Plus size={"20px"} className="mr-2" />{" "}
           <span className="hidden md:inline-block">New</span>
         </Button>
-        <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
+        <Button
+          onClick={downloadDoc}
+          variant="ghost"
+          className="text-gray-500 dark:text-slate-200"
+        >
           <Download size={"20px"} className="mr-2" />{" "}
           <div className="hidden md:inline-block">Download</div>
         </Button>
