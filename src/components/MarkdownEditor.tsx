@@ -113,12 +113,14 @@ const theme = EditorView.theme({
     padding: "10px 0",
     margin: "0 var(--cm-padding-x)",
     color: "var(--text-color)",
-    caretColor: "var(--text-color)",
     textAlign: "justify",
     lineHeight: "24px",
   },
   ".cm-content li": {
     marginBottom: 0,
+  },
+  ".cm-editor .cm-cursor": {
+    borderLeftColor: "var(--text-color)",
   },
   ".cm-activeLine": {
     backgroundColor: "inherit",

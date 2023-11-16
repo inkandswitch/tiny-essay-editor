@@ -422,7 +422,7 @@ body {
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --text-color: rgb(220, 220, 220);
+      --text-color: rgb(202, 202, 202);
     --highlight-color: rgb(81, 76, 27);
     --highlight-active-color: rgb(157, 132, 53);
     }
