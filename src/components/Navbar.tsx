@@ -146,7 +146,7 @@ export const Navbar = ({
       />
 
       <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
-        Title: {title}
+        {title}
       </div>
 
       <div className="ml-auto px-8 py-1 flex gap-2 items-center">
