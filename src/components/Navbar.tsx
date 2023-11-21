@@ -144,7 +144,7 @@ export const Navbar = ({
         className="h-8 my-2 ml-2"
         src={
           new URL(
-            "../../assets/logo-favicon-310x310-transparent.png",
+            "../assets/logo-favicon-310x310-transparent.png",
             import.meta.url
           ).href
         }
