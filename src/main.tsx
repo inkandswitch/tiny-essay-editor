@@ -5,9 +5,8 @@ import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as Automerge } from "@automerge/automerge";
 
-import App from "./components/App";
-import type { MarkdownDoc } from "./schema.ts";
-import { mount } from "./mount.ts"
+import type { MarkdownDoc } from "./schema.js";
+import { mount } from "./mount.js"
 import "./index.css";
 
 const repo = new Repo({
@@ -24,7 +23,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
   handle = repo.create<MarkdownDoc>();
-  const { init } = await import("./init.ts")
+  const { init } = await import("./init.js")
   handle.change(init);
 }
 
