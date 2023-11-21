@@ -30,7 +30,8 @@ import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
-import { isEqual, sortBy } from "lodash"
+import isEqual from 'lodash/isEqual'
+import sortBy from 'lodash/sortBy'
 import { Tree } from "@lezer/common";
 
 export type TextSelection = {
