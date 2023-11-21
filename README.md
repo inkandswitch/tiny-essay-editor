@@ -30,3 +30,10 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 `yarn`
 
 `yarn dev`
+
+## Dual deployment
+
+This app is designed for normal webapp deployment as well as experimental deployment to an internal I&S platform. The code is almost entirely shared but there are two entry points:
+
+- `src/main.tsx` is the normal app entry point
+- `src/index.ts` is an experimental entry point which just exports some functions to a host environment
