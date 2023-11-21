@@ -12,8 +12,8 @@ import {
 import { StateEffect, StateField, Range, EditorState } from "@codemirror/state";
 import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
-// import { languages } from "@codemirror/language-data";
-import {javascript} from "@codemirror/lang-javascript"
+import { languages } from "@codemirror/language-data";
+// import {javascript} from "@codemirror/lang-javascript"
 import {
   syntaxHighlighting,
   HighlightStyle,
@@ -30,6 +30,7 @@ import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
+import { isEqual, sortBy } from "lodash"
 import { Tree } from "@lezer/common";
 
 export type TextSelection = {
@@ -73,7 +74,7 @@ const threadDecorations = EditorView.decorations.compute(
     const commentThreads = state.field(threadsField);
 
     const decorations =
-      (commentThreads ?? []).sort((thread) => thread.from)?.flatMap(
+      sortBy(commentThreads ?? [], (thread) => thread.from)?.flatMap(
         (thread) => {
           const cmRange = amRangeToCMRange(thread);
           if (thread.to > thread.from) {
@@ -273,7 +274,7 @@ export function MarkdownEditor({
         EditorView.lineWrapping,
         theme,
         markdown({
-          // codeLanguages: languages,
+          codeLanguages: languages,
         }),
         keymap.of([indentWithTab]),
         indentUnit.of("    "),
@@ -661,7 +662,7 @@ class TableOfContentsWidget extends WidgetType {
   }
 
   eq(other: TableOfContentsWidget) {
-    return false // isEqual(other.headings, this.headings);
+    return isEqual(other.headings, this.headings);
   }
 
   ignoreEvent() {
