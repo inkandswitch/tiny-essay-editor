@@ -96,8 +96,8 @@ body {
   font-family: "Merriweather";
   font-style: normal;
   font-weight: 400;
-  src: local("Merriweather Regular"), local("Merriweather-Regular"), url("/assets/merriweather/merriweather-v20-latin-regular.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-v20-latin-regular.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Regular"), local("Merriweather-Regular"), url("./assets/merriweather/merriweather-v20-latin-regular.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-v20-latin-regular.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -105,8 +105,8 @@ body {
   font-family: "Merriweather";
   font-style: normal;
   font-weight: 700;
-  src: local("Merriweather Bold"), local("Merriweather-Bold"), url("/assets/merriweather/merriweather-v20-latin-700.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-v20-latin-700.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Bold"), local("Merriweather-Bold"), url("./assets/merriweather/merriweather-v20-latin-700.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-v20-latin-700.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -116,8 +116,8 @@ body {
   font-family: "Merriweather Sans";
   font-style: normal;
   font-weight: 300;
-  src: local("Merriweather Sans Light"), local("MerriweatherSans-Light"), url("/assets/merriweather/merriweather-sans-v10-latin-300.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-sans-v10-latin-300.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Sans Light"), local("MerriweatherSans-Light"), url("./assets/merriweather/merriweather-sans-v10-latin-300.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-sans-v10-latin-300.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -125,8 +125,8 @@ body {
   font-family: "Merriweather Sans";
   font-style: normal;
   font-weight: 400;
-  src: local("Merriweather Sans"), local("MerriweatherSans-Regular"), url("/assets/merriweather/merriweather-sans-v10-latin-regular.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-sans-v10-latin-regular.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Sans"), local("MerriweatherSans-Regular"), url("./assets/merriweather/merriweather-sans-v10-latin-regular.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-sans-v10-latin-regular.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -134,8 +134,8 @@ body {
   font-family: "Merriweather Sans";
   font-style: normal;
   font-weight: 700;
-  src: local("Merriweather Sans Bold"), local("MerriweatherSans-Bold"), url("/assets/merriweather/merriweather-sans-v10-latin-700.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-sans-v10-latin-700.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Sans Bold"), local("MerriweatherSans-Bold"), url("./assets/merriweather/merriweather-sans-v10-latin-700.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-sans-v10-latin-700.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -143,8 +143,8 @@ body {
   font-family: "Merriweather Sans";
   font-style: normal;
   font-weight: 300;
-  src: local("Merriweather Sans Light"), local("MerriweatherSans-Light"), url("/assets/merriweather/merriweather-sans-v10-latin-300.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  url("/assets/merriweather/merriweather-sans-v10-latin-300.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  src: local("Merriweather Sans Light"), local("MerriweatherSans-Light"), url("./assets/merriweather/merriweather-sans-v10-latin-300.woff2") format("woff2"), /* Chrome 26+, Opera 23+, Firefox 39+ */
+  url("./assets/merriweather/merriweather-sans-v10-latin-300.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   font-display: swap;
 }
 
@@ -199,7 +199,7 @@ body {
   }
 
   a {
-    background-image: url("/assets/splat-underline-2-default.svg");
+    background-image: url("./assets/splat-underline-2-default.svg");
     background-size: 100% 4px;
     background-position: bottom;
     background-repeat: no-repeat;
@@ -221,17 +221,17 @@ body {
     background-image: none;
   }
   a:hover{
-    background-image: url("/assets/splat-underline-2-hover.svg");
+    background-image: url("./assets/splat-underline-2-hover.svg");
     color: #D70A1B;
   }
 
   /* Should these use .outro instead of the less-clear p:last-of-type? */
   header p:last-of-type span a {
-    background-image: url("/assets/splat-underline-1-default.svg");
+    background-image: url("./assets/splat-underline-1-default.svg");
     padding-bottom: .1rem;
   }
   header p:last-of-type span a:hover{
-    background-image: url("/assets/splat-underline-1-hover.svg");
+    background-image: url("./assets/splat-underline-1-hover.svg");
   }
 
   /* This is bad for accessibility, and Safari / Chrome don't seem to respect it */
@@ -244,7 +244,7 @@ body {
   /* Separator ----------------------------------- */
 
   hr {
-    background-image: url("/assets/splat-separator-1.svg");
+    background-image: url("./assets/splat-separator-1.svg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% 5px;
