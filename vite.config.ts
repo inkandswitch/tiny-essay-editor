@@ -29,4 +29,21 @@ export default defineConfig({
       "@syntect/wasm",
     ],
   },
+
+  build: {
+    rollupOptions: {
+      output: {
+        // We put index.css in dist instead of dist/assets so that we can link to fonts
+        // using relative URLs like "./assets/font.woff2", which is the correct form
+        // for deployment to trailrunner.
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === "index.css") {
+            return "[name][extname]";
+          }
+          // For all other assets, keep the default behavior
+          return "assets/[name]-[hash][extname]";
+        },
+      },
+    },
+  },
 });
