@@ -8,7 +8,7 @@ export { mount } from "./mount.js";
 export { init } from "./init.js";
 
 // @ts-expect-error - set a window global for the logo image using browser standards
-window.logoImageURL = new URL(
+window.logoImageUrl = new URL(
   "./assets/logo-favicon-310x310-transparent.png",
   import.meta.url
 ).href;
