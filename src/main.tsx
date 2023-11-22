@@ -6,7 +6,7 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { next as Automerge } from "@automerge/automerge";
 
 import type { MarkdownDoc } from "./schema.js";
-import { mount } from "./mount.js"
+import { mount } from "./mount.js";
 import "./index.css";
 
 const repo = new Repo({
@@ -23,7 +23,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
   handle = repo.create<MarkdownDoc>();
-  const { init } = await import("./init.js")
+  const { init } = await import("./init.js");
   handle.change(init);
 }
 
@@ -37,4 +37,7 @@ window.repo = repo;
 // @ts-expect-error - adding property to window
 window.handle = handle; // we'll use this later for experimentation
 
-mount(document.getElementById("root"), { docUrl })
+// @ts-expect-error - adding property to window
+window.logoImageUrl = "/assets/logo-favicon-310x310-transparent.png";
+
+mount(document.getElementById("root"), { docUrl });
