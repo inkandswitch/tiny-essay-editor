@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { getRelativeTimeString } from "@/utils";
 import { useRef } from "react";
+import { createMachine, raise } from "xstate";
 
 // if we are connected to the sync server and have outstanding changes we should switch to the error mode if we haven't received a sync message in a while
 // this variable specifies this timeout duration
@@ -361,4 +362,111 @@ function useIsOnline(): OnlineState {
   }, []);
 
   return isOnlineState;
+}
+
+interface SyncIndicatorMachineConfig {
+  connectionInitTimeout: number;
+  allowedSyncMessageDelay: number;
+}
+
+export function getSyncIndicatorMachine({
+  connectionInitTimeout,
+  allowedSyncMessageDelay,
+}: SyncIndicatorMachineConfig) {
+  console.log(connectionInitTimeout);
+
+  return createMachine(
+    {
+      predictableActionArguments: true,
+      id: "syncIndicator",
+      type: "parallel",
+      states: {
+        internet: {
+          initial: "disconnected",
+          states: {
+            connected: {
+              after: {
+                [connectionInitTimeout]: {
+                  actions: "connectionInitTimeout",
+                },
+              },
+              on: {
+                INTERNET_DISCONNECTED: "disconnected",
+              },
+            },
+            disconnected: {
+              on: {
+                INTERNET_CONNECTED: "connected",
+              },
+            },
+          },
+        },
+        sync: {
+          initial: "unknown",
+          states: {
+            unknown: {
+              on: {
+                IS_OUT_OF_SYNC: "outOfSync",
+                IS_IN_SYNC: "inSync",
+              },
+            },
+            inSync: {
+              on: {
+                IS_OUT_OF_SYNC: "outOfSync",
+              },
+            },
+            outOfSync: {
+              initial: "ok",
+              after: {
+                // every time we re-enter the out of sync state the timeout gets reset
+                [allowedSyncMessageDelay]: {
+                  actions: "timeout",
+                  target: ".error",
+                  in: "internet.connected",
+                },
+              },
+              on: {
+                IS_IN_SYNC: "inSync",
+                RECEIVED_SYNC_MESSAGE: "outOfSync",
+                CONNECTION_INIT_TIMEOUT: "outOfSync",
+              },
+              states: {
+                ok: {},
+                error: {},
+              },
+            },
+          },
+        },
+        syncServer: {
+          initial: "disconnected",
+          states: {
+            connected: {
+              on: {
+                SYNC_SERVER_DISCONNECTED: "disconnected",
+              },
+            },
+            disconnected: {
+              initial: "ok",
+              on: {
+                SYNC_SERVER_CONNECTED: "connected",
+                CONNECTION_INIT_TIMEOUT: ".error",
+              },
+              states: {
+                ok: {},
+                error: {},
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      actions: {
+        timeout() {
+          console.log("timeout!!!!");
+        },
+        connectionInitTimeout: raise({ type: "CONNECTION_INIT_TIMEOUT" }),
+      },
+    }
+  );
 }
