@@ -1,41 +1,19 @@
 import { next as A } from "@automerge/automerge";
-import { DocHandle } from "@automerge/automerge-repo";
-import { useState, useEffect } from "react";
+import { DocHandle, StorageId, PeerId } from "@automerge/automerge-repo";
+import { useState, useEffect, useRef, useContext, createContext } from "react";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { WifiIcon, WifiOffIcon } from "lucide-react";
-import { arraysAreEqual } from "@/utils";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getRelativeTimeString } from "@/utils";
-import { useRef } from "react";
 import { createMachine, raise } from "xstate";
-
-// if we are connected to the sync server and have outstanding changes we should switch to the error mode if we haven't received a sync message in a while
-// this variable specifies this timeout duration
-const SYNC_TIMEOUT = 3000;
-
-// wait initially if we haven't connnected to the sync server yet
-const INITIAL_CONNECTION_WAIT = 3000;
+import { useMachine } from "@xstate/react";
+import { arraysAreEqual } from "@/utils";
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
-  const { isSynced, lastSyncUpdate, syncTimeoutTimestamp } =
-    useSyncStateOfServer(handle);
-  const onlineState = useIsOnline();
-  const isConnectedToServer = useIsConnectedToServer();
-  const hasSyncTimedOut = useHasTimedOut({
-    duration: SYNC_TIMEOUT,
-    // when we come back online we want to timeout starting from the time we're back online and not the time we last synced
-    timestamp: Math.max(syncTimeoutTimestamp, onlineState.timestamp),
-    isActive: !isSynced,
-  });
-  const hasInitialConnectionWaitTimedOut = useHasTimedOut({
-    duration: INITIAL_CONNECTION_WAIT,
-    timestamp: onlineState.timestamp,
-    isActive: onlineState.isOnline,
-  });
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseEnter = () => {
@@ -46,11 +24,18 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     setIsHovered(false);
   };
 
-  if (onlineState.isOnline) {
-    if (
-      (isConnectedToServer || !hasInitialConnectionWaitTimedOut) &&
-      (isSynced || !hasSyncTimedOut)
-    ) {
+  const {
+    lastSyncUpdate,
+    isInternetConnected,
+    syncState,
+    syncServerConnectionError,
+    syncServerResponseError,
+  } = useSyncIndicatorState(handle);
+
+  const isSynced = syncState === SyncState.InSync;
+
+  if (isInternetConnected) {
+    if (!syncServerConnectionError && !syncServerResponseError) {
       return (
         <Popover open={isHovered} onOpenChange={setIsHovered}>
           <PopoverTrigger
@@ -74,7 +59,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
               <div>
                 <dt className="font-bold inline mr-1">Last synced:</dt>
                 <dd className="inline">
-                  {getRelativeTimeString(lastSyncUpdate)}
+                  {lastSyncUpdate ? getRelativeTimeString(lastSyncUpdate) : "-"}
                 </dd>
               </div>
               <div>
@@ -116,18 +101,24 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
             <dl className="text-sm text-gray-600">
               <div>
                 <dt className="font-bold inline mr-1">Connection:</dt>
-                <dd className="inline text-red-500">Connection error</dd>
+                <dd className="inline text-red-500">
+                  {syncServerConnectionError
+                    ? "Server not connected"
+                    : "Server not responding"}
+                </dd>
               </div>
               <div>
                 <dt className="font-bold inline mr-1">Last synced:</dt>
                 <dd className="inline">
-                  {getRelativeTimeString(lastSyncUpdate)}
+                  {lastSyncUpdate ? getRelativeTimeString(lastSyncUpdate) : "-"}
                 </dd>
               </div>
               <div>
                 <dt className="font-bold inline mr-1">Sync status:</dt>
                 <dd className="inline">
-                  {isSynced ? (
+                  {syncState === SyncState.Unknown ? (
+                    "-"
+                  ) : syncState === SyncState.InSync ? (
                     "No unsynced changes"
                   ) : (
                     <span className="text-red-500">Unsynced changes (*)</span>
@@ -169,13 +160,15 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
             <div>
               <dt className="font-bold inline mr-1">Last synced:</dt>
               <dd className="inline">
-                {getRelativeTimeString(lastSyncUpdate)}
+                {lastSyncUpdate ? getRelativeTimeString(lastSyncUpdate) : "-"}
               </dd>
             </div>
             <div>
               <dt className="font-bold inline mr-1">Sync status:</dt>
               <dd className="inline">
-                {isSynced ? (
+                {syncState === SyncState.Unknown ? (
+                  "-"
+                ) : isSynced ? (
                   "No unsynced changes"
                 ) : (
                   <span className="text-red-500">
@@ -194,162 +187,49 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
 
 const SYNC_SERVER_PREFIX = "storage-server-";
 
-interface TimeoutConfig {
-  duration: number;
-  timestamp?: number;
-  isActive?: boolean; // set a condition, when it's false the timeout becomes never true
+enum SyncState {
+  InSync,
+  OutOfSync,
+  Unknown,
 }
 
-function useHasTimedOut({
-  duration,
-  timestamp,
-  isActive = true,
-}: TimeoutConfig): boolean {
-  const [hasTimedOut, setHasTimedOut] = useState(
-    isActive && getHasTimedOut(timestamp, duration)
-  );
-
-  useEffect(() => {
-    if (!isActive) {
-      setHasTimedOut(false);
-      return;
-    }
-
-    if (timestamp === undefined) {
-      timestamp = Date.now();
-    }
-
-    if (getHasTimedOut(timestamp, duration)) {
-      setHasTimedOut(true);
-      return;
-    }
-
-    setHasTimedOut(false);
-
-    const timeoutCallback = () => {
-      setHasTimedOut(true);
-    };
-
-    const timeout = setTimeout(
-      timeoutCallback,
-      duration - (Date.now() - timestamp)
-    );
-
-    return () => {
-      setHasTimedOut(getHasTimedOut(timestamp, duration));
-      clearTimeout(timeout);
-    };
-  }, [isActive, timestamp, duration]);
-
-  if (!isActive) {
-    return false;
-  }
-
-  return hasTimedOut;
+interface SyncIndicatorState {
+  lastSyncUpdate?: number;
+  isInternetConnected: boolean;
+  syncState: SyncState;
+  syncServerConnectionError: boolean;
+  syncServerResponseError: boolean;
 }
 
-function getHasTimedOut(timestamp: number, timeoutDuration: number): boolean {
-  return Date.now() - timestamp >= timeoutDuration;
-}
-
-interface SyncState {
-  isSynced: boolean;
-  lastSyncUpdate: number; // when was the last time we received a sync from the server
-
-  // timestamp from which we should start a sync timeout
-  // - gets updated on each sync message
-  // - when we start to switch from previously synced to unsynced we also reset it
-  syncTimeoutTimestamp: number;
-}
-
-function useSyncStateOfServer(handle: DocHandle<unknown>): SyncState {
-  const [currentHeads, setCurrentHeads] = useState(
-    A.getHeads(handle.docSync())
-  );
-  const [syncedHeads, setSyncedHeads] = useState([]);
-  // initialize lastSyncUpdate and syncTimeoutTimestamp to now, so we don't go into an error state before first sync
-  const [lastSyncUpdate, setLastSyncUpdate] = useState(Date.now());
-  const [syncTimeoutTimestamp, setSyncTimeoutTimestamp] = useState(Date.now());
-  const isSynced = arraysAreEqual(currentHeads, syncedHeads);
-  const isSyncedRef = useRef(isSynced);
-  isSyncedRef.current = isSynced;
-
-  useEffect(() => {
-    handle.on("change", () => {
-      const wasInSync = isSyncedRef.current;
-      const newHeads = A.getHeads(handle.docSync());
-
-      setCurrentHeads(newHeads);
-
-      // need to access isSynced through ref because otherwise we constantly need to reregister the event handlers
-      if (wasInSync) {
-        setSyncTimeoutTimestamp(Date.now());
-      }
-    });
-
-    handle.on("remote-heads", ({ peerId, heads }) => {
-      if (peerId.match(SYNC_SERVER_PREFIX)) {
-        // todo: should add date to sync state
-
-        const now = Date.now();
-        setLastSyncUpdate(now);
-        setSyncTimeoutTimestamp(now);
-        setSyncedHeads(heads);
-      }
-    });
-  }, [handle]);
-
-  return {
-    isSynced,
-    lastSyncUpdate,
-    syncTimeoutTimestamp,
-  };
-}
-
-function useIsConnectedToServer() {
+function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
-  const [isConnected, setIsConnected] = useState(() =>
-    repo.peers.some((p) => p.match(SYNC_SERVER_PREFIX))
+  const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
+
+  const syncServerPeerId = repo.peers.find((peerId) =>
+    peerId.startsWith(SYNC_SERVER_PREFIX)
   );
+  const syncServerStorageIdRef = useRef<StorageId>(undefined);
+  syncServerStorageIdRef.current = syncServerPeerId
+    ? repo.getStorageIdOfPeer(syncServerPeerId)
+    : undefined;
 
-  useEffect(() => {
-    const onPeerConnected = ({ peerId }) => {
-      if (peerId.match(SYNC_SERVER_PREFIX)) {
-        setIsConnected(true);
-      }
-    };
-
-    const onPeerDisconnnected = ({ peerId }) => {
-      if (peerId.match(SYNC_SERVER_PREFIX)) {
-        setIsConnected(false);
-      }
-    };
-
-    repo.networkSubsystem.on("peer", onPeerConnected);
-    repo.networkSubsystem.on("peer-disconnected", onPeerDisconnnected);
-  }, [repo]);
-
-  return isConnected;
-}
-
-interface OnlineState {
-  isOnline: boolean;
-  timestamp: number; // when the state (offline/online) was entered
-}
-
-function useIsOnline(): OnlineState {
-  const [isOnlineState, setIsOnlineState] = useState<OnlineState>({
-    isOnline: navigator.onLine,
-    timestamp: Date.now(),
+  const [machine, send] = useMachine(() => {
+    return getSyncIndicatorMachine({
+      connectionInitTimeout: 1000,
+      maxSyncMessageDelay: 1000,
+      isInternetConnected: navigator.onLine,
+      isSyncServerConnected: syncServerPeerId !== undefined,
+    });
   });
 
+  // online / offline listener
   useEffect(() => {
     const onOnline = () => {
-      setIsOnlineState({ isOnline: true, timestamp: Date.now() });
+      send("INTERNET_CONNECTED");
     };
 
     const onOffline = () => {
-      setIsOnlineState({ isOnline: false, timestamp: Date.now() });
+      send("INTERNET_DISCONNECTED");
     };
 
     window.addEventListener("online", onOnline);
@@ -359,22 +239,109 @@ function useIsOnline(): OnlineState {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, []);
+  }, [send]);
 
-  return isOnlineState;
+  // sync server connect / disconnect listener
+  useEffect(() => {
+    const onPeerConnected = ({
+      peerId,
+    }: {
+      peerId: PeerId;
+      storageId?: StorageId;
+    }) => {
+      if (peerId.startsWith(SYNC_SERVER_PREFIX)) {
+        send("SYNC_SERVER_CONNECTED");
+      }
+    };
+
+    const onPeerDisconnnected = ({ peerId }) => {
+      if (peerId.startsWith(SYNC_SERVER_PREFIX)) {
+        send("SYNC_SERVER_DISCONNECTED");
+      }
+    };
+
+    repo.networkSubsystem.on("peer", onPeerConnected);
+    repo.networkSubsystem.on("peer-disconnected", onPeerDisconnnected);
+  }, [send]);
+
+  // heads change listener
+  useEffect(() => {
+    if (machine.matches("sync.unknown") && syncServerStorageIdRef.current) {
+      const remoteHeads = handle.getRemoteHeads(syncServerStorageIdRef.current);
+
+      if (
+        remoteHeads &&
+        arraysAreEqual(remoteHeads, A.getHeads(handle.docSync()))
+      ) {
+        send("IS_IN_SYNC");
+      } else {
+        send("IS_OUT_OF_SYNC");
+      }
+    }
+
+    const onChange = () => {
+      send("IS_OUT_OF_SYNC");
+    };
+
+    const onRemoteHeads = ({ storageId, heads }) => {
+      if (storageId === syncServerStorageIdRef.current) {
+        if (arraysAreEqual(heads, A.getHeads(handle.docSync()))) {
+          send("IS_IN_SYNC");
+        } else {
+          send("IS_OUT_OF_SYNC");
+        }
+
+        setLastSyncUpdate(Date.now());
+      }
+    };
+
+    handle.on("change", onChange);
+    handle.on("remote-heads", onRemoteHeads);
+
+    return () => {
+      handle.off("change", onChange);
+      handle.off("remote-heads", onRemoteHeads);
+    };
+  }, [handle]);
+
+  return {
+    lastSyncUpdate,
+    isInternetConnected: machine.matches("internet.connected"),
+    syncState: machine.matches("sync.unknown")
+      ? SyncState.Unknown
+      : machine.matches("sync.inSync")
+      ? SyncState.InSync
+      : SyncState.OutOfSync,
+    syncServerConnectionError: machine.matches("syncServer.disconnected.error"),
+    syncServerResponseError: machine.matches("sync.outOfSync.error"),
+  };
 }
 
 interface SyncIndicatorMachineConfig {
+  // the duration we wait for the sync server to respond in the unsynced state before we show an error
+  // the timer starts once both internet.connected and sync.isOutOfSync become true
   connectionInitTimeout: number;
-  allowedSyncMessageDelay: number;
+
+  // the duration we wait for the sync server to respond in the unsynced state before we show an error
+  // the timer starts once both internet.connected and sync.isOutOfSync become true
+  maxSyncMessageDelay: number;
+
+  // initial internet connection state
+  isInternetConnected?: boolean;
+
+  // initial sync server connection state
+  isSyncServerConnected?: boolean;
+
+  // initial is sync state
+  isInSync?: boolean;
 }
 
 export function getSyncIndicatorMachine({
   connectionInitTimeout,
-  allowedSyncMessageDelay,
+  maxSyncMessageDelay,
+  isInternetConnected = false,
+  isSyncServerConnected = false,
 }: SyncIndicatorMachineConfig) {
-  console.log(connectionInitTimeout);
-
   return createMachine(
     {
       predictableActionArguments: true,
@@ -382,7 +349,7 @@ export function getSyncIndicatorMachine({
       type: "parallel",
       states: {
         internet: {
-          initial: "disconnected",
+          initial: isInternetConnected ? "connected" : "disconnected",
           states: {
             connected: {
               after: {
@@ -419,8 +386,7 @@ export function getSyncIndicatorMachine({
               initial: "ok",
               after: {
                 // every time we re-enter the out of sync state the timeout gets reset
-                [allowedSyncMessageDelay]: {
-                  actions: "timeout",
+                [maxSyncMessageDelay]: {
                   target: ".error",
                   in: "internet.connected",
                 },
@@ -438,11 +404,11 @@ export function getSyncIndicatorMachine({
           },
         },
         syncServer: {
-          initial: "disconnected",
+          initial: isSyncServerConnected ? "connected" : "disconnected",
           states: {
             connected: {
               on: {
-                SYNC_SERVER_DISCONNECTED: "disconnected",
+                SYNC_SERVER_DISCONNECTED: "disconnected.error",
               },
             },
             disconnected: {
@@ -462,9 +428,6 @@ export function getSyncIndicatorMachine({
     },
     {
       actions: {
-        timeout() {
-          console.log("timeout!!!!");
-        },
         connectionInitTimeout: raise({ type: "CONNECTION_INIT_TIMEOUT" }),
       },
     }

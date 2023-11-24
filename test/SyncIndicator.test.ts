@@ -4,7 +4,7 @@ import { getSyncIndicatorMachine } from "../src/components/SyncIndicator";
 import { interpret } from "xstate";
 
 const CONNECTION_INIT_TIMEOUT = 100;
-const ALLOWED_SYNC_MESSAGE_DELAY = 100;
+const MAX_SYNC_MESSAGE_DELAY = 100;
 
 describe("SyncIndicator", () => {
   describe("syncIndicatorMachine Tests", () => {
@@ -114,7 +114,7 @@ describe("SyncIndicator", () => {
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
 
-      await pause(CONNECTION_INIT_TIMEOUT + ALLOWED_SYNC_MESSAGE_DELAY + 10);
+      await pause(CONNECTION_INIT_TIMEOUT + MAX_SYNC_MESSAGE_DELAY + 10);
 
       state = service.getSnapshot();
       assert(state.matches("internet.connected"));
@@ -134,7 +134,7 @@ describe("SyncIndicator", () => {
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.disconnected"));
 
-      await pause(ALLOWED_SYNC_MESSAGE_DELAY + 10);
+      await pause(MAX_SYNC_MESSAGE_DELAY + 10);
 
       state = service.getSnapshot();
       assert(state.matches("internet.disconnected"));
@@ -143,7 +143,7 @@ describe("SyncIndicator", () => {
 
       service.send("INTERNET_CONNECTED");
 
-      await pause(CONNECTION_INIT_TIMEOUT + ALLOWED_SYNC_MESSAGE_DELAY + 10);
+      await pause(CONNECTION_INIT_TIMEOUT + MAX_SYNC_MESSAGE_DELAY + 10);
 
       state = service.getSnapshot();
       assert(state.matches("internet.connected"));
@@ -168,19 +168,44 @@ describe("SyncIndicator", () => {
       assert(state.matches("syncServer.connected"));
 
       service.send("RECEIVED_SYNC_MESSAGE");
-      await pause(ALLOWED_SYNC_MESSAGE_DELAY / 2);
+      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
 
       service.send("RECEIVED_SYNC_MESSAGE");
-      await pause(ALLOWED_SYNC_MESSAGE_DELAY / 2);
+      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
 
       service.send("RECEIVED_SYNC_MESSAGE");
-      await pause(ALLOWED_SYNC_MESSAGE_DELAY / 2);
+      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
 
       state = service.getSnapshot();
       console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
+
+      service.stop();
+    });
+
+    it("should not switch into syncServer error state if the sync server disconnects ", async () => {
+      const service = getSyncIndicatorService();
+
+      service.send("INTERNET_CONNECTED");
+      service.send("SYNC_SERVER_CONNECTED");
+      service.send("IS_OUT_OF_SYNC");
+
+      let state = service.getSnapshot();
+
+      console.log(state.value);
+      assert(state.matches("internet.connected"));
+      assert(state.matches("sync.outOfSync.ok"));
+      assert(state.matches("syncServer.connected"));
+
+      service.send("SYNC_SERVER_DISCONNECTED");
+
+      state = service.getSnapshot();
+      console.log(state.value);
+      assert(state.matches("internet.connected"));
+      assert(state.matches("sync.outOfSync.ok"));
+      assert(state.matches("syncServer.disconnected.error"));
 
       service.stop();
     });
@@ -195,7 +220,7 @@ function getSyncIndicatorService() {
   return interpret(
     getSyncIndicatorMachine({
       connectionInitTimeout: CONNECTION_INIT_TIMEOUT,
-      allowedSyncMessageDelay: ALLOWED_SYNC_MESSAGE_DELAY,
+      maxSyncMessageDelay: MAX_SYNC_MESSAGE_DELAY,
     })
   ).start();
 }
