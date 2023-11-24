@@ -72,7 +72,6 @@ describe("SyncIndicator", () => {
 
       state = service.getSnapshot();
 
-      console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.unknown"));
       assert(state.matches("syncServer.disconnected.error"));
@@ -162,7 +161,6 @@ describe("SyncIndicator", () => {
 
       let state = service.getSnapshot();
 
-      console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
@@ -177,7 +175,6 @@ describe("SyncIndicator", () => {
       await pause(MAX_SYNC_MESSAGE_DELAY / 2);
 
       state = service.getSnapshot();
-      console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
@@ -194,7 +191,6 @@ describe("SyncIndicator", () => {
 
       let state = service.getSnapshot();
 
-      console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
@@ -202,7 +198,6 @@ describe("SyncIndicator", () => {
       service.send("SYNC_SERVER_DISCONNECTED");
 
       state = service.getSnapshot();
-      console.log(state.value);
       assert(state.matches("internet.connected"));
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.disconnected.error"));

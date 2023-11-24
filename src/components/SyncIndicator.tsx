@@ -262,6 +262,11 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
 
     repo.networkSubsystem.on("peer", onPeerConnected);
     repo.networkSubsystem.on("peer-disconnected", onPeerDisconnnected);
+
+    return () => {
+      repo.networkSubsystem.off("peer", onPeerConnected);
+      repo.networkSubsystem.off("peer-disconnected", onPeerDisconnnected);
+    };
   }, [send]);
 
   // heads change listener
