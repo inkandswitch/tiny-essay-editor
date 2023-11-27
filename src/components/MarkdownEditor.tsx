@@ -27,7 +27,7 @@ import {
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
-import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
+import { amRangeToCMRange, jsxToHtmlElement } from "@/utils";
 import isEqual from "lodash/isEqual";
 import sortBy from "lodash/sortBy";
 import { Tree } from "@lezer/common";
@@ -56,8 +56,8 @@ export type EditorProps = {
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
-  activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
+  threadsWithPositions: CommentThreadForUI[];
 };
 
 const setThreadsEffect = StateEffect.define<CommentThreadForUI[]>();
@@ -254,24 +254,19 @@ export function MarkdownEditor({
   path,
   setSelection,
   setView,
-  activeThreadId,
   setActiveThreadId,
+  threadsWithPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
 
-  const getThreadsForDecorations = useCallback(
-    () => getThreadsForUI(handle.docSync(), editorRoot.current, activeThreadId),
-    [activeThreadId, handle]
-  );
-
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(getThreadsForDecorations()),
+      effects: setThreadsEffect.of(threadsWithPositions),
     });
-  }, [activeThreadId, getThreadsForDecorations]);
+  }, [threadsWithPositions]);
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -318,13 +313,13 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
       ],
-      dispatch(transaction) {
+      dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           const newSelection = transaction.newSelection.ranges[0];
           if (transaction.newSelection !== view.state.selection) {
             // set the active thread id if our selection is in a thread
-            for (const thread of getThreadsForDecorations()) {
+            for (const thread of view.state.field(threadsField)) {
               if (
                 thread.from <= newSelection.from &&
                 thread.to >= newSelection.to
@@ -367,17 +362,8 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
-    view.dispatch({
-      effects: setThreadsEffect.of(getThreadsForDecorations()),
-    });
-
     const handleChange = () => {
       semaphore.reconcile(handle, view);
-
-      // TODO: is this the right place to update the threads field? not sure.
-      view.dispatch({
-        effects: setThreadsEffect.of(getThreadsForDecorations()),
-      });
     };
 
     handle.addListener("change", handleChange);

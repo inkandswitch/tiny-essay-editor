@@ -19,6 +19,8 @@ export type CommentThreadForUI = CommentThread & {
   active: boolean;
 };
 
+export type CommentThreadWithPosition = CommentThreadForUI & { yCoord: number };
+
 export type User = {
   id: string;
   name: string;

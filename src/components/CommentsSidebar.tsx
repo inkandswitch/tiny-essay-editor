@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Comment, CommentThread, LocalSession, MarkdownDoc } from "../schema";
+import {
+  Comment,
+  CommentThread,
+  CommentThreadWithPosition,
+  LocalSession,
+  MarkdownDoc,
+} from "../schema";
 
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,29 +18,23 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
-import {
-  useScrollPosition,
-  getVisibleTheadsWithPos,
-  getRelativeTimeString,
-  cmRangeToAMRange,
-} from "../utils";
+import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
   selection,
-  view,
   session,
+  threadsWithPositions,
   activeThreadId,
   setActiveThreadId,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  view: EditorView | undefined;
   session: LocalSession;
+  threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
@@ -49,18 +49,6 @@ export const CommentsSidebar = ({
   useEffect(() => {
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
-
-  // It may be inefficient to rerender comments sidebar on each scroll but
-  // it's fine for now and it lets us reposition comments as the user scrolls.
-  // (Notably we're not literally repositioning comments in JS;
-  // we just use CodeMirror to compute position, and it doesn't tell us position
-  // of comments that are way off-screen. That's why we need this scroll handler
-  // to catch when things come near the screen)
-  useScrollPosition();
-
-  const threadsWithPositions = view
-    ? getVisibleTheadsWithPos(doc, view, activeThreadId)
-    : [];
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
@@ -139,7 +127,9 @@ export const CommentsSidebar = ({
                     {getRelativeTimeString(comment.timestamp)}
                   </span>
                 </div>
-                <div className="cursor-default text-sm whitespace-pre-wrap">{comment.content}</div>
+                <div className="cursor-default text-sm whitespace-pre-wrap">
+                  {comment.content}
+                </div>
               </div>
             ))}
           </div>

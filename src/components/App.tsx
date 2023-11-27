@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
+import { useThreadsWithPositions } from "../utils";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -34,6 +35,12 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     setSessionInMemory(session);
   };
 
+  const threadsWithPositions = useThreadsWithPositions({
+    doc,
+    view,
+    activeThreadId,
+  });
+
   if (!doc || !session) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
@@ -57,19 +64,19 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
             path={["content"]}
             setSelection={setSelection}
             setView={setView}
-            activeThreadId={activeThreadId}
+            threadsWithPositions={threadsWithPositions}
             setActiveThreadId={setActiveThreadId}
           />
         </div>
         <div className="flex-grow bg-gray-50">
           <CommentsSidebar
-            view={view}
             session={session}
             doc={doc}
             changeDoc={changeDoc}
             selection={selection}
             activeThreadId={activeThreadId}
             setActiveThreadId={setActiveThreadId}
+            threadsWithPositions={threadsWithPositions}
           />
         </div>
       </div>
