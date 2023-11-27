@@ -12,11 +12,6 @@ import {
   drawSelection,
   highlightActiveLine,
   dropCursor,
-  rectangularSelection,
-  crosshairCursor,
-  lineNumbers,
-  highlightActiveLineGutter,
-  scrollPastEnd,
 } from "@codemirror/view";
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
@@ -36,12 +31,9 @@ import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
 import isEqual from "lodash/isEqual";
 import sortBy from "lodash/sortBy";
 import { Tree } from "@lezer/common";
-import { EditorState } from "@codemirror/state";
 import {
-  defaultHighlightStyle,
   syntaxHighlighting,
   indentOnInput,
-  bracketMatching,
   foldGutter,
   foldKeymap,
   HighlightStyle,
@@ -50,12 +42,7 @@ import {
 } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import {
-  autocompletion,
-  completionKeymap,
-  closeBrackets,
-  closeBracketsKeymap,
-} from "@codemirror/autocomplete";
+import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 
 export type TextSelection = {
