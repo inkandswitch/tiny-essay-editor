@@ -8,18 +8,21 @@ import {
   DecorationSet,
   ViewUpdate,
   keymap,
+  highlightSpecialChars,
+  drawSelection,
+  highlightActiveLine,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  lineNumbers,
+  highlightActiveLineGutter,
+  scrollPastEnd,
 } from "@codemirror/view";
-import { StateEffect, StateField, Range, EditorState } from "@codemirror/state";
-import { basicSetup } from "codemirror";
+import { StateEffect, StateField, Range } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 // import {javascript} from "@codemirror/lang-javascript"
-import {
-  syntaxHighlighting,
-  HighlightStyle,
-  ensureSyntaxTree,
-  indentUnit,
-} from "@codemirror/language";
+
 import { tags } from "@lezer/highlight";
 import { Prop } from "@automerge/automerge";
 import {
@@ -30,9 +33,30 @@ import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import { amRangeToCMRange, getThreadsForUI, jsxToHtmlElement } from "@/utils";
-import isEqual from 'lodash/isEqual'
-import sortBy from 'lodash/sortBy'
+import isEqual from "lodash/isEqual";
+import sortBy from "lodash/sortBy";
 import { Tree } from "@lezer/common";
+import { EditorState } from "@codemirror/state";
+import {
+  defaultHighlightStyle,
+  syntaxHighlighting,
+  indentOnInput,
+  bracketMatching,
+  foldGutter,
+  foldKeymap,
+  HighlightStyle,
+  ensureSyntaxTree,
+  indentUnit,
+} from "@codemirror/language";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import {
+  autocompletion,
+  completionKeymap,
+  closeBrackets,
+  closeBracketsKeymap,
+} from "@codemirror/autocomplete";
+import { lintKeymap } from "@codemirror/lint";
 
 export type TextSelection = {
   from: number;
@@ -265,21 +289,40 @@ export function MarkdownEditor({
   useEffect(() => {
     const doc = handle.docSync();
     const source = doc.content; // this should use path
-    const plugin = amgPlugin(doc, path);
-    const semaphore = new PatchSemaphore(plugin);
+    const automergePlugin = amgPlugin(doc, path);
+    const semaphore = new PatchSemaphore(automergePlugin);
     const view = new EditorView({
       doc: source,
       extensions: [
-        basicSetup,
-        plugin,
+        // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
+        // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
+        highlightSpecialChars(),
+        history(),
+        foldGutter(),
+        drawSelection(),
+        dropCursor(),
+        indentOnInput(),
+        highlightActiveLine(),
+        highlightSelectionMatches(),
+        keymap.of([
+          ...defaultKeymap,
+          ...searchKeymap,
+          ...historyKeymap,
+          ...foldKeymap,
+          ...completionKeymap,
+          ...lintKeymap,
+          indentWithTab,
+        ]),
         EditorView.lineWrapping,
         theme,
         markdown({
           codeLanguages: languages,
         }),
-        keymap.of([indentWithTab]),
         indentUnit.of("    "),
         syntaxHighlighting(markdownStyles),
+
+        // Now our custom stuff: Automerge collab, comment threads, etc.
+        automergePlugin,
         frontmatterPlugin,
         threadsField,
         threadDecorations,
