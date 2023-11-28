@@ -345,16 +345,19 @@ export function MarkdownEditor({
   const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
   // const [fromHeads, setFromHeads] = React.useState<Heads>([])
 
-  const computePatches = useCallback(() => {
-    const doc = handle.docSync();
-    const allChanges = getAllChanges(doc);
+  const computePatches = useCallback(
+    (fromHeads) => {
+      const doc = handle.docSync();
+      // const allChanges = getAllChanges(doc);
 
-    // current thing: show a diff from the original creation change
-    const prevHeads = [decodeChange(allChanges[1]).hash];
-    const patches = diff(doc, prevHeads, getHeads(doc));
+      // current thing: show a diff from the original creation change
+      // const prevHeads = [decodeChange(allChanges[1]).hash];
+      const patches = diff(doc, fromHeads, getHeads(doc));
 
-    return patches;
-  }, [handle]);
+      return patches;
+    },
+    [handle]
+  );
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -363,7 +366,6 @@ export function MarkdownEditor({
     });
   }, [threadsWithPositions]);
 
-  const patches = computePatches();
   // Propagate patches into the codemirror
   // useEffect(() => {
   //   editorRoot.current?.dispatch({
@@ -467,15 +469,20 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
-    const patches = computePatches();
+    const fromHeads = handle.docSync()?.uiState?.fromHeads ?? [
+      decodeChange(getAllChanges(handle.docSync())[1]).hash,
+    ];
+    const patches = computePatches(fromHeads);
     view.dispatch({ effects: setPatchesEffect.of(patches) });
 
     const handleChange = () => {
       semaphore.reconcile(handle, view);
 
-      // this is now handled in useEffect
-      // const patches = computePatches();
-      // view.dispatch({ effects: setPatchesEffect.of(patches) });
+      const fromHeads = handle.docSync()?.uiState?.fromHeads ?? [
+        decodeChange(getAllChanges(handle.docSync())[1]).hash,
+      ];
+      const patches = computePatches(fromHeads);
+      view.dispatch({ effects: setPatchesEffect.of(patches) });
     };
 
     handle.addListener("change", handleChange);

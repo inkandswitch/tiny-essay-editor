@@ -1,3 +1,5 @@
+import { Heads } from "@automerge/automerge";
+
 export type Comment = {
   id: string;
   content: string;
@@ -30,6 +32,7 @@ export type MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
+  uiState: { fromHeads: Heads };
 };
 
 export type LocalSession = {

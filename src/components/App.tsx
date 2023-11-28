@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { useThreadsWithPositions } from "../utils";
+import { decodeChange, getAllChanges } from "@automerge/automerge";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -57,7 +58,26 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         />
       </div>
 
-      <div className="flex bg-gray-50 mt-12">
+      <div className="mt-12">
+        <span>Diff from:</span>
+        <select
+          onChange={(e) => {
+            handle.change((doc) => {
+              if (doc.uiState === undefined) {
+                doc.uiState = { fromHeads: [] };
+              }
+              doc.uiState.fromHeads = [e.target.value];
+            });
+          }}
+        >
+          {getAllChanges(handle.docSync()).map((change, index) => (
+            <option key={index} value={decodeChange(change).hash}>
+              {decodeChange(change).hash}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex bg-gray-50">
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
           <MarkdownEditor
             handle={handle}
