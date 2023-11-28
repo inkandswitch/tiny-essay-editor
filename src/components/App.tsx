@@ -58,24 +58,22 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         />
       </div>
 
-      <div className="mt-12">
+      <div className="mt-16">
         <span>Diff from:</span>
-        <select
+        <input
+          type="range"
+          min="0"
+          max={getAllChanges(handle.docSync()).length - 1}
           onChange={(e) => {
+            const change = getAllChanges(handle.docSync())[e.target.value];
             handle.change((doc) => {
               if (doc.uiState === undefined) {
                 doc.uiState = { fromHeads: [] };
               }
-              doc.uiState.fromHeads = [e.target.value];
+              doc.uiState.fromHeads = [decodeChange(change).hash];
             });
           }}
-        >
-          {getAllChanges(handle.docSync()).map((change, index) => (
-            <option key={index} value={decodeChange(change).hash}>
-              {decodeChange(change).hash}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       <div className="flex bg-gray-50">
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
