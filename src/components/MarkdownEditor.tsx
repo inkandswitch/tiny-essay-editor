@@ -18,15 +18,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
 import { tags } from "@lezer/highlight";
-import {
-  decodeChange,
-  diff,
-  getAllChanges,
-  getHeads,
-  Heads,
-  Patch,
-  Prop,
-} from "@automerge/automerge/next";
+import { diff, getHeads, Heads, Patch, Prop } from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -60,6 +52,7 @@ export type TextSelection = {
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
+  diffHeads: Heads;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
@@ -339,6 +332,7 @@ export function MarkdownEditor({
   setView,
   setActiveThreadId,
   threadsWithPositions,
+  diffHeads,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -346,17 +340,13 @@ export function MarkdownEditor({
   // const [fromHeads, setFromHeads] = React.useState<Heads>([])
 
   const computePatches = useCallback(
-    (fromHeads) => {
+    (diffHeads) => {
       const doc = handle.docSync();
-      // const allChanges = getAllChanges(doc);
-
-      // current thing: show a diff from the original creation change
-      // const prevHeads = [decodeChange(allChanges[1]).hash];
-      const patches = diff(doc, fromHeads, getHeads(doc));
+      const patches = diff(doc, diffHeads, getHeads(doc));
 
       return patches;
     },
-    [handle]
+    [handle, handle.docSync()] // rethink this useCallback caching
   );
 
   // Propagate activeThreadId into the codemirror
@@ -367,11 +357,12 @@ export function MarkdownEditor({
   }, [threadsWithPositions]);
 
   // Propagate patches into the codemirror
-  // useEffect(() => {
-  //   editorRoot.current?.dispatch({
-  //     effects: setPatchesEffect.of(patches),
-  //   });
-  // }, [patches]);
+  useEffect(() => {
+    const patches = computePatches(diffHeads);
+    editorRoot.current?.dispatch({
+      effects: setPatchesEffect.of(patches),
+    });
+  }, [diffHeads, computePatches]);
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -469,20 +460,8 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
-    const fromHeads = handle.docSync()?.uiState?.fromHeads ?? [
-      decodeChange(getAllChanges(handle.docSync())[1]).hash,
-    ];
-    const patches = computePatches(fromHeads);
-    view.dispatch({ effects: setPatchesEffect.of(patches) });
-
     const handleChange = () => {
       semaphore.reconcile(handle, view);
-
-      const fromHeads = handle.docSync()?.uiState?.fromHeads ?? [
-        decodeChange(getAllChanges(handle.docSync())[1]).hash,
-      ];
-      const patches = computePatches(fromHeads);
-      view.dispatch({ effects: setPatchesEffect.of(patches) });
     };
 
     handle.addListener("change", handleChange);

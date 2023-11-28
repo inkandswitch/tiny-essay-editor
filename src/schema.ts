@@ -32,7 +32,6 @@ export type MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
-  uiState: { fromHeads: Heads };
 };
 
 export type LocalSession = {

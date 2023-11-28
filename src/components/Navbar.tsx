@@ -139,7 +139,7 @@ export const Navbar = ({
   }
 
   return (
-    <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
+    <div className="h-12 w-full bg-white border-b border-gray-300 align-middle flex">
       <img
         className="h-8 my-2 ml-2"
         // @ts-expect-error window global set in entrypoint file
