@@ -23,6 +23,7 @@ import {
   diff,
   getAllChanges,
   getHeads,
+  Heads,
   Patch,
   Prop,
 } from "@automerge/automerge/next";
@@ -137,8 +138,8 @@ class DeletionMarker extends WidgetType {
     const box = document.createElement("div");
     box.style.display = "inline-block";
     box.style.padding = "0 2px";
-    box.style.backgroundColor = "red";
-    box.innerText = "\u232b";
+    box.style.backgroundColor = "rgb(255 0 0 / 10%)";
+    box.innerText = "➰";
     return box;
   }
 
@@ -164,7 +165,6 @@ const patchDecorations = EditorView.decorations.compute(
     const patches = state
       .field(patchesField)
       .filter((patch) => patch.path[0] === "content");
-    console.log("patches for decorations", patches);
 
     const decorations = patches.flatMap((patch) => {
       switch (patch.action) {
@@ -343,6 +343,18 @@ export function MarkdownEditor({
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
+  // const [fromHeads, setFromHeads] = React.useState<Heads>([])
+
+  const computePatches = useCallback(() => {
+    const doc = handle.docSync();
+    const allChanges = getAllChanges(doc);
+
+    // current thing: show a diff from the original creation change
+    const prevHeads = [decodeChange(allChanges[1]).hash];
+    const patches = diff(doc, prevHeads, getHeads(doc));
+
+    return patches;
+  }, [handle]);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -350,6 +362,14 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
+
+  const patches = computePatches();
+  // Propagate patches into the codemirror
+  // useEffect(() => {
+  //   editorRoot.current?.dispatch({
+  //     effects: setPatchesEffect.of(patches),
+  //   });
+  // }, [patches]);
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -447,27 +467,15 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
-    const computePatches = () => {
-      const doc = handle.docSync();
-      const allChanges = getAllChanges(doc);
-      console.log({ allChanges });
-      // const prevHeads = [
-      //   decodeChange(allChanges[Math.max(0, allChanges.length - 10)]).hash,
-      // ];
-      const prevHeads = [decodeChange(allChanges[1]).hash];
-      const patches = diff(doc, prevHeads, getHeads(doc));
-
-      return patches;
-    };
-
     const patches = computePatches();
     view.dispatch({ effects: setPatchesEffect.of(patches) });
 
     const handleChange = () => {
       semaphore.reconcile(handle, view);
 
-      const patches = computePatches();
-      view.dispatch({ effects: setPatchesEffect.of(patches) });
+      // this is now handled in useEffect
+      // const patches = computePatches();
+      // view.dispatch({ effects: setPatchesEffect.of(patches) });
     };
 
     handle.addListener("change", handleChange);
