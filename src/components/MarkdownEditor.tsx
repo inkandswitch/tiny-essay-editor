@@ -16,10 +16,16 @@ import {
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-// import {javascript} from "@codemirror/lang-javascript"
 
 import { tags } from "@lezer/highlight";
-import { Prop } from "@automerge/automerge";
+import {
+  decodeChange,
+  diff,
+  getAllChanges,
+  getHeads,
+  Patch,
+  Prop,
+} from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -105,6 +111,80 @@ const threadDecorations = EditorView.decorations.compute(
   }
 );
 
+// Stuff for patches decoration
+
+const setPatchesEffect = StateEffect.define<Patch[]>();
+const patchesField = StateField.define<Patch[]>({
+  create() {
+    return [];
+  },
+  update(patches, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setPatchesEffect)) {
+        return e.value;
+      }
+    }
+    return patches;
+  },
+});
+
+class DeletionMarker extends WidgetType {
+  constructor() {
+    super();
+  }
+
+  toDOM(): HTMLElement {
+    const box = document.createElement("div");
+    box.style.display = "inline-block";
+    box.style.padding = "0 2px";
+    box.style.backgroundColor = "red";
+    box.innerText = "\u232b";
+    return box;
+  }
+
+  eq() {
+    // todo: i think this is right for now until we show hover of del text etc
+    return true;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
+const deleteDecoration = Decoration.widget({
+  widget: new DeletionMarker(),
+  side: 1,
+});
+
+const patchDecorations = EditorView.decorations.compute(
+  [patchesField],
+  (state) => {
+    const patches = state
+      .field(patchesField)
+      .filter((patch) => patch.path[0] === "content");
+    console.log("patches for decorations", patches);
+
+    const decorations = patches.flatMap((patch) => {
+      switch (patch.action) {
+        case "splice": {
+          const from = patch.path[1];
+          const length = patch.value.length;
+          return [spliceDecoration.range(from, from + length)];
+        }
+        case "del": {
+          const from = patch.path[1];
+          return [deleteDecoration.range(from)];
+        }
+      }
+      return [];
+    });
+
+    return Decoration.set(decorations);
+  }
+);
+
 const theme = EditorView.theme({
   "&": {},
   "&.cm-editor.cm-focused": {
@@ -135,6 +215,9 @@ const theme = EditorView.theme({
   },
   ".cm-comment-thread": {
     backgroundColor: "rgb(255 249 194)",
+  },
+  ".cm-patch-splice": {
+    backgroundColor: "rgb(0 255 0 / 20%)",
   },
   ".cm-comment-thread.active": {
     backgroundColor: "rgb(255 227 135)",
@@ -308,6 +391,8 @@ export function MarkdownEditor({
         frontmatterPlugin,
         threadsField,
         threadDecorations,
+        patchesField,
+        patchDecorations,
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
@@ -362,8 +447,27 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
+    const computePatches = () => {
+      const doc = handle.docSync();
+      const allChanges = getAllChanges(doc);
+      console.log({ allChanges });
+      // const prevHeads = [
+      //   decodeChange(allChanges[Math.max(0, allChanges.length - 10)]).hash,
+      // ];
+      const prevHeads = [decodeChange(allChanges[1]).hash];
+      const patches = diff(doc, prevHeads, getHeads(doc));
+
+      return patches;
+    };
+
+    const patches = computePatches();
+    view.dispatch({ effects: setPatchesEffect.of(patches) });
+
     const handleChange = () => {
       semaphore.reconcile(handle, view);
+
+      const patches = computePatches();
+      view.dispatch({ effects: setPatchesEffect.of(patches) });
     };
 
     handle.addListener("change", handleChange);
