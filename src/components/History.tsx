@@ -102,7 +102,7 @@ export const History: React.FC<{
       <div className="p-2 border-t border-b border-gray-300">
         <div className="text-xs mb-1">
           Showing changes from{" "}
-          <span className="font-bold">{diffHeads[0].substring(0, 6)}</span> to
+          <span className="font-bold">{diffHeads[0]?.substring(0, 6)}</span> to
           current
         </div>
         <input
