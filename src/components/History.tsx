@@ -1,6 +1,7 @@
 import { MarkdownDoc } from "../schema";
 import { DocHandle } from "@automerge/automerge-repo";
 import {
+  Doc,
   Heads,
   Patch,
   decodeChange,
@@ -10,7 +11,7 @@ import {
   view,
 } from "@automerge/automerge/next";
 import { Viewport } from "./App";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 type DocLine = {
   text: string;
@@ -26,7 +27,7 @@ type Snapshot = {
   diffFromPrevious: Patch[];
 };
 
-const snapshotsFromDoc = (doc: MarkdownDoc): Snapshot[] => {
+const snapshotsFromDoc = (doc: Doc<MarkdownDoc>): Snapshot[] => {
   const changes = getAllChanges(doc);
   const snapshots: Snapshot[] = [
     {
@@ -72,7 +73,7 @@ export const History: React.FC<{
   viewport: Viewport;
 }> = ({ handle, diffHeads, setDiffHeads, viewport }) => {
   const doc = handle.docSync();
-  const changes = getAllChanges(doc);
+  const changes = useMemo(() => getAllChanges(doc), [doc]);
 
   useEffect(() => {
     const snapshots = snapshotsFromDoc(doc);
@@ -80,7 +81,10 @@ export const History: React.FC<{
   }, []);
 
   // TODO: pass in patches from above, don't duplicate diff work
-  const patches = diff(doc, diffHeads, getHeads(doc));
+  const patches = useMemo(
+    () => diff(doc, diffHeads, getHeads(doc)),
+    [doc, diffHeads]
+  );
 
   return (
     <div>
