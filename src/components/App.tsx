@@ -96,6 +96,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           handle={handle}
           diffHeads={diffHeads}
           setDiffHeads={setDiffHeads}
+          codemirrorView={view}
         />
       </div>
     </div>
