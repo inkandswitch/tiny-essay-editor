@@ -61,6 +61,8 @@ export const History: React.FC<{
   // For now only compute the snapshots one time; TODO make live
   const snapshots = useMemo(() => snapshotsFromDoc(doc, snapshotStepSize), []);
 
+  console.log({ snapshots });
+
   // TODO: pass in patches from above, don't duplicate diff work?
   const patches = useMemo(
     () => diff(doc, diffHeads, getHeads(doc)),
@@ -107,7 +109,7 @@ export const History: React.FC<{
         </div>
       )}
       <div
-        className={`absolute top-[150px] right-20 bg-black bg-opacity-50 p-4 transition-all ${
+        className={`absolute top-[60px] right-20 bg-black bg-opacity-50 p-4 transition-all ${
           expanded ? " scale-x-100" : "scale-x-0 translate-x-[600px]"
         }`}
       >
@@ -121,7 +123,7 @@ export const History: React.FC<{
           </div>
           {snapshots.map((snapshot, i) => (
             <div
-              className="group m-2 opacity-90 hover:opacity-100"
+              className=" m-2 opacity-80 hover:opacity-100"
               onMouseEnter={() => setSnapshot(snapshot)}
             >
               <div className="text-white text-sm">
@@ -196,7 +198,7 @@ const MinimapWithDiff: React.FC<{
   const lines: DocLine[] = [].concat(...linesNested);
 
   return (
-    <div className="p-2 bg-white w-36 text-[3px]  group-hover:w-64 group-hover:text-[5px] border border-gray-400 inline-block  transition-all ease-in-out">
+    <div className="p-2 bg-white w-36 text-[3px]  border border-gray-400 inline-block  transition-all ease-in-out">
       {lines.map((line, i) => {
         const isHeading =
           line.text.startsWith("## ") || line.text.startsWith("# ");
@@ -209,7 +211,7 @@ const MinimapWithDiff: React.FC<{
                 ? "bg-red-200"
                 : ""
             } ${line.visible ? "opacity-100" : "opacity-50"} ${
-              isHeading ? "font-medium h-[10px]" : "h-[4px] group-hover:h-[6px]"
+              isHeading ? "font-medium h-[10px]" : "h-[4px]"
             }`}
             key={i}
           >
