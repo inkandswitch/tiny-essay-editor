@@ -43,10 +43,10 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     activeThreadId,
   });
 
-  // useEffect(() => {
-  //   if (!doc) return;
-  //   setDiffHeads([decodeChange(getAllChanges(doc)[1]).hash]);
-  // }, [doc]);
+  useEffect(() => {
+    if (!doc) return;
+    setDiffHeads([decodeChange(getAllChanges(doc)[1]).hash]);
+  }, [doc === undefined]);
 
   if (!doc || !session) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
