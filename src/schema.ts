@@ -1,4 +1,4 @@
-import { Heads } from "@automerge/automerge";
+import { Doc, Heads, Patch } from "@automerge/automerge";
 
 export type Comment = {
   id: string;
@@ -36,4 +36,11 @@ export type MarkdownDoc = {
 
 export type LocalSession = {
   userId: string | null;
+};
+
+export type Snapshot = {
+  heads: Heads;
+  doc: Doc<MarkdownDoc>;
+  previous: Snapshot | null;
+  diffFromPrevious: Patch[];
 };

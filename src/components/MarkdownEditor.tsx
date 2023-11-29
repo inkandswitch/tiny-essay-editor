@@ -18,7 +18,14 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
 import { tags } from "@lezer/highlight";
-import { diff, getHeads, Heads, Patch, Prop } from "@automerge/automerge/next";
+import {
+  diff,
+  Doc,
+  getHeads,
+  Heads,
+  Patch,
+  Prop,
+} from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -51,6 +58,9 @@ export type TextSelection = {
 };
 
 export type EditorProps = {
+  /* The reason we pass this doc in addition to the handle is that we
+     use it to show older versions of the doc which were already computed elsewhere */
+  doc: Doc<MarkdownDoc>;
   handle: DocHandle<MarkdownDoc>;
   diffHeads: Heads;
   path: Prop[];
@@ -327,6 +337,7 @@ const markdownStyles = HighlightStyle.define([
 
 export function MarkdownEditor({
   handle,
+  doc,
   path,
   setSelection,
   setView,

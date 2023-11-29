@@ -2,9 +2,17 @@ import {
   CommentThreadForUI,
   CommentThreadWithPosition,
   MarkdownDoc,
+  Snapshot,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
-import { next as A } from "@automerge/automerge";
+import {
+  next as A,
+  Doc,
+  decodeChange,
+  diff,
+  getAllChanges,
+  view,
+} from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 
@@ -367,4 +375,29 @@ export const useThreadsWithPositions = ({
   );
 
   return threadsWithPositions;
+};
+
+export const snapshotsFromDoc = (
+  doc: Doc<MarkdownDoc>,
+  changesPerSnapshot: number = 500
+): Snapshot[] => {
+  console.log({ changesPerSnapshot });
+  const changes = getAllChanges(doc);
+  const snapshots: Snapshot[] = [];
+
+  for (let i = 1; i < changes.length; i += changesPerSnapshot) {
+    const change = decodeChange(changes[i]);
+    const heads = [change.hash];
+    const docAtHeads = view(doc, heads);
+    const previous = snapshots[snapshots.length - 1] ?? null;
+    const diffFromPrevious = previous ? diff(doc, previous.heads, heads) : [];
+    snapshots.push({
+      heads,
+      doc: docAtHeads,
+      previous,
+      diffFromPrevious,
+    });
+  }
+
+  return snapshots;
 };

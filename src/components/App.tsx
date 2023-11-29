@@ -2,7 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { LocalSession, MarkdownDoc } from "../schema";
+import { LocalSession, MarkdownDoc, Snapshot } from "../schema";
 import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { useEffect, useRef, useState } from "react";
@@ -28,6 +28,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     visibleEndPos: 0,
   });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot>(null);
 
   useEffect(() => {
     scrollerRef.current?.addEventListener("scroll", (e) => {
@@ -75,6 +76,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     activeThreadId,
   });
 
+  // Just set some diff heads on initial load
   useEffect(() => {
     if (!doc) return;
     setDiffHeads([decodeChange(getAllChanges(doc)[1]).hash]);
@@ -128,6 +130,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           diffHeads={diffHeads}
           setDiffHeads={setDiffHeads}
           viewport={viewport}
+          setSnapshot={setSnapshot}
         />
       </div>
     </div>

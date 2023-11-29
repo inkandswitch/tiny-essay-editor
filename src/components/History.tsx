@@ -1,53 +1,24 @@
-import { MarkdownDoc } from "../schema";
+import { MarkdownDoc, Snapshot } from "../schema";
 import { DocHandle } from "@automerge/automerge-repo";
 import {
-  Doc,
   Heads,
   Patch,
   decodeChange,
   diff,
   getAllChanges,
   getHeads,
-  view,
 } from "@automerge/automerge/next";
 import { Viewport } from "./App";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { truncate } from "lodash";
+import { snapshotsFromDoc } from "../utils";
 
 type DocLine = {
   text: string;
   start: number;
   type: "inserted" | "deleted" | "unchanged";
   visible: boolean;
-};
-
-type Snapshot = {
-  heads: Heads;
-  doc: Doc<MarkdownDoc>;
-  previous: Snapshot | null;
-  diffFromPrevious: Patch[];
-};
-
-const snapshotsFromDoc = (doc: Doc<MarkdownDoc>): Snapshot[] => {
-  const changes = getAllChanges(doc);
-  const snapshots: Snapshot[] = [];
-
-  for (let i = 1; i < changes.length; i += 500) {
-    const change = decodeChange(changes[i]);
-    const heads = [change.hash];
-    const docAtHeads = view(doc, heads);
-    const previous = snapshots[snapshots.length - 1] ?? null;
-    const diffFromPrevious = previous ? diff(doc, previous.heads, heads) : [];
-    snapshots.push({
-      heads,
-      doc: docAtHeads,
-      previous,
-      diffFromPrevious,
-    });
-  }
-
-  return snapshots;
 };
 
 function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
@@ -80,13 +51,15 @@ export const History: React.FC<{
   diffHeads: Heads;
   setDiffHeads: (heads: Heads) => void;
   viewport: Viewport;
-}> = ({ handle, diffHeads, setDiffHeads, viewport }) => {
+  setSnapshot: (snapshot: Snapshot) => void;
+}> = ({ handle, diffHeads, setDiffHeads, viewport, setSnapshot }) => {
   const doc = handle.docSync();
   const changes = useMemo(() => getAllChanges(doc), [doc]);
+  const snapshotStepSize = changes ? Math.floor(changes.length / 8) : 100;
   const [expanded, setExpanded] = useState(false);
 
   // For now only compute the snapshots one time; TODO make live
-  const snapshots = useMemo(() => snapshotsFromDoc(doc), []);
+  const snapshots = useMemo(() => snapshotsFromDoc(doc, snapshotStepSize), []);
 
   // TODO: pass in patches from above, don't duplicate diff work?
   const patches = useMemo(
@@ -100,7 +73,7 @@ export const History: React.FC<{
         Version Control
       </div>
       <div className="p-2 border-t border-b border-gray-300">
-        <div className="text-xs mb-1">
+        <div className={`text-xs mb-1 ${expanded ? "opacity-30" : ""}`}>
           Showing changes from{" "}
           <span className="font-bold">{diffHeads[0]?.substring(0, 6)}</span> to
           current
@@ -110,7 +83,7 @@ export const History: React.FC<{
           type="range"
           min="0"
           max={changes.length - 1}
-          step="500"
+          step={snapshotStepSize}
           onChange={(e) => {
             const change = changes[e.target.value];
             setDiffHeads([decodeChange(change).hash]);
@@ -147,7 +120,10 @@ export const History: React.FC<{
             <ChevronRight />
           </div>
           {snapshots.map((snapshot, i) => (
-            <div className="m-2">
+            <div
+              className="group m-2 opacity-90 hover:opacity-100"
+              onMouseEnter={() => setSnapshot(snapshot)}
+            >
               <div className="text-white text-sm">
                 {snapshot.heads[0].substring(0, 6)}
               </div>
@@ -220,7 +196,7 @@ const MinimapWithDiff: React.FC<{
   const lines: DocLine[] = [].concat(...linesNested);
 
   return (
-    <div className="p-2 bg-white w-36 text-[3px] border border-gray-400 inline-block">
+    <div className="p-2 bg-white w-36 text-[3px]  group-hover:w-64 group-hover:text-[5px] border border-gray-400 inline-block  transition-all ease-in-out">
       {lines.map((line, i) => {
         const isHeading =
           line.text.startsWith("## ") || line.text.startsWith("# ");
@@ -233,7 +209,7 @@ const MinimapWithDiff: React.FC<{
                 ? "bg-red-200"
                 : ""
             } ${line.visible ? "opacity-100" : "opacity-50"} ${
-              isHeading ? "font-medium h-[10px]" : "h-[4px]"
+              isHeading ? "font-medium h-[10px]" : "h-[4px] group-hover:h-[6px]"
             }`}
             key={i}
           >

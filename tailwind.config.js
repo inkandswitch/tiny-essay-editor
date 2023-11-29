@@ -16,6 +16,9 @@ module.exports = {
       },
     },
     extend: {
+      width: ["group-hover"],
+      textColor: ["group-hover"],
+      fontSize: ["group-hover"],
       colors: {
         customGray: "#F2F2F2",
         border: "hsl(var(--border))",
