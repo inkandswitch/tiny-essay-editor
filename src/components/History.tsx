@@ -61,8 +61,6 @@ export const History: React.FC<{
   // For now only compute the snapshots one time; TODO make live
   const snapshots = useMemo(() => snapshotsFromDoc(doc, snapshotStepSize), []);
 
-  console.log({ snapshots });
-
   // TODO: pass in patches from above, don't duplicate diff work?
   const patches = useMemo(
     () => diff(doc, diffHeads, getHeads(doc)),
