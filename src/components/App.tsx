@@ -30,17 +30,30 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    scrollerRef.current?.addEventListener("scroll", () => {
-      // TODO: this code is terrible, needs fixing.
-      // visibleRanges isn't actually the right thing, and it only works if the console.log is here.
-      // must be ripped out and replaced.
-      console.log("scroll");
-      if (view) {
-        const { from, to } = view.visibleRanges[0];
-        setViewport({ visibleStartPos: from, visibleEndPos: to });
-      }
+    console.log("effect", scrollerRef.current);
+    scrollerRef.current?.addEventListener("scroll", (e) => {
+      const target = e.target as HTMLDivElement;
+
+      const scrollTop = target.scrollTop;
+      const scrollBottom = scrollTop + target.clientHeight;
+
+      const visibleStartPos = view?.posAtCoords({ x: 0, y: scrollTop }) ?? 0;
+      const visibleEndPos =
+        view?.posAtCoords(
+          {
+            x: 0,
+            y: scrollBottom,
+          },
+          false
+        ) ?? 0;
+      console.log({ scrollTop, scrollBottom, visibleStartPos, visibleEndPos });
+
+      setViewport({
+        visibleStartPos,
+        visibleEndPos,
+      });
     });
-  }, [scrollerRef]);
+  }, [scrollerRef.current]);
 
   const localStorageKey = `LocalSession-${docUrl}`;
 
