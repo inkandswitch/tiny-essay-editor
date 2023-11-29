@@ -337,7 +337,6 @@ export function MarkdownEditor({
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
-  // const [fromHeads, setFromHeads] = React.useState<Heads>([])
 
   const computePatches = useCallback(
     (diffHeads) => {

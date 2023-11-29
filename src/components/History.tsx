@@ -2,17 +2,19 @@ import { MarkdownDoc } from "../schema";
 import { DocHandle } from "@automerge/automerge-repo";
 import {
   Heads,
+  Patch,
   decodeChange,
   diff,
   getAllChanges,
   getHeads,
 } from "@automerge/automerge/next";
-import { EditorView } from "@codemirror/view";
+import { Viewport } from "./App";
 
 type DocLine = {
   text: string;
   start: number;
   type: "inserted" | "deleted" | "unchanged";
+  visible: boolean;
 };
 
 function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
@@ -29,8 +31,8 @@ export const History: React.FC<{
   handle: DocHandle<MarkdownDoc>;
   diffHeads: Heads;
   setDiffHeads: (heads: Heads) => void;
-  codemirrorView: EditorView;
-}> = ({ handle, diffHeads, setDiffHeads }) => {
+  viewport: Viewport;
+}> = ({ handle, diffHeads, setDiffHeads, viewport }) => {
   const doc = handle.docSync();
   const changes = getAllChanges(doc);
 
@@ -44,7 +46,9 @@ export const History: React.FC<{
         text,
         start: currentIndex,
         type: "unchanged",
+        visible: false,
       };
+
       for (const patch of patches) {
         if (
           !(
@@ -57,8 +61,6 @@ export const History: React.FC<{
         if (
           patchOverlapsLine(currentIndex, currentIndex + text.length, patch)
         ) {
-          console.log("in here!");
-          console.log({ patch });
           if (patch.action === "splice") {
             lineObject.type = "inserted";
           } else if (patch.action === "del" && lineObject.type !== "inserted") {
@@ -66,6 +68,14 @@ export const History: React.FC<{
           }
         }
       }
+
+      if (
+        currentIndex >= viewport.visibleStartPos &&
+        currentIndex <= viewport.visibleEndPos
+      ) {
+        lineObject.visible = true;
+      }
+
       currentIndex += text.length;
       return lineObject;
     });
@@ -93,16 +103,16 @@ export const History: React.FC<{
           )}
         />
       </div>
-      <div className="p-2">
+      <div className="p-2 bg-white w-48">
         {lines.map((line, i) => (
           <div
-            className={`text-[4px] h-[6px] w-48 ${
+            className={` select-none cursor-default text-[4px] h-[6px] w-full ${
               line.type === "inserted"
                 ? "bg-green-200"
                 : line.type === "deleted"
                 ? "bg-red-200"
                 : ""
-            }`}
+            } ${line.visible ? "opacity-100" : "opacity-50"}`}
             key={i}
           >
             {line.text}

@@ -5,13 +5,15 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 import { LocalSession, MarkdownDoc } from "../schema";
 import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { History } from "./History";
 import { useThreadsWithPositions } from "../utils";
 import { decodeChange, getAllChanges } from "@automerge/automerge/next";
+
+export type Viewport = { visibleStartPos: number; visibleEndPos: number };
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -21,6 +23,24 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
   const [diffHeads, setDiffHeads] = useState<string[]>([]);
+  const [viewport, setViewport] = useState({
+    visibleStartPos: 0,
+    visibleEndPos: 0,
+  });
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    scrollerRef.current?.addEventListener("scroll", () => {
+      // TODO: this code is terrible, needs fixing.
+      // visibleRanges isn't actually the right thing, and it only works if the console.log is here.
+      // must be ripped out and replaced.
+      console.log("scroll");
+      if (view) {
+        const { from, to } = view.visibleRanges[0];
+        setViewport({ visibleStartPos: from, visibleEndPos: to });
+      }
+    });
+  }, [scrollerRef]);
 
   const localStorageKey = `LocalSession-${docUrl}`;
 
@@ -55,7 +75,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
   return (
     <div className="flex flex-row h-screen">
-      <div className="flex-grow overflow-y-scroll">
+      <div className="flex-grow overflow-y-scroll" ref={scrollerRef}>
         <div className="sticky z-50 top-0 w-full">
           <Navbar
             handle={handle}
@@ -96,7 +116,7 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           handle={handle}
           diffHeads={diffHeads}
           setDiffHeads={setDiffHeads}
-          codemirrorView={view}
+          viewport={viewport}
         />
       </div>
     </div>
