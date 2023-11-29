@@ -30,7 +30,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    console.log("effect", scrollerRef.current);
     scrollerRef.current?.addEventListener("scroll", (e) => {
       const target = e.target as HTMLDivElement;
 
@@ -46,7 +45,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           },
           false
         ) ?? 0;
-      console.log({ scrollTop, scrollBottom, visibleStartPos, visibleEndPos });
 
       setViewport({
         visibleStartPos,
