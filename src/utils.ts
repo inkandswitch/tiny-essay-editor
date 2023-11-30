@@ -381,7 +381,6 @@ export const snapshotsFromDoc = (
   doc: Doc<MarkdownDoc>,
   changesPerSnapshot: number = 500
 ): Snapshot[] => {
-  console.log({ changesPerSnapshot });
   const changes = getAllChanges(doc);
   const snapshots: Snapshot[] = [];
 

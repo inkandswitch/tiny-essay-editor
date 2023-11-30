@@ -55,7 +55,7 @@ export const History: React.FC<{
 }> = ({ handle, diffHeads, setDiffHeads, viewport, setSnapshot }) => {
   const doc = handle.docSync();
   const changes = useMemo(() => getAllChanges(doc), [doc]);
-  const snapshotStepSize = changes ? Math.floor(changes.length / 8) : 100;
+  const snapshotStepSize = changes ? Math.ceil(changes.length / 8) : 100;
   const [expanded, setExpanded] = useState(false);
 
   // For now only compute the snapshots one time; TODO make live
