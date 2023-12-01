@@ -82,4 +82,7 @@ module.exports = {
     },
   },
   plugins: [require("tailwindcss-animate")],
+  corePlugins: {
+    scrollbarHide: true,
+  },
 };

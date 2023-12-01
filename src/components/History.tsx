@@ -11,13 +11,29 @@ import {
   diff,
   getAllChanges,
   getHeads,
+  view,
 } from "@automerge/automerge/next";
 import { Viewport } from "./App";
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { reverse, truncate, uniq } from "lodash";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CheckCheck,
+  CheckCircle,
+  CheckIcon,
+  ChevronLeft,
+  ChevronRight,
+  Edit2Icon,
+  EditIcon,
+  EyeIcon,
+  PencilIcon,
+  TimerResetIcon,
+  Undo2Icon,
+} from "lucide-react";
+import { isEqual, truncate } from "lodash";
 import { snapshotsFromDoc } from "../utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { summarizeChanges } from "@/llm";
+import Markdown from "react-markdown";
+import { Button } from "./ui/button";
 
 type DocLine = {
   text: string;
@@ -52,6 +68,7 @@ function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
 }
 
 type ChangeGroup = {
+  id: string;
   changes: DecodedChange[];
   actorIds: ActorId[];
   charsAdded: number;
@@ -65,10 +82,24 @@ const groupChanges = (changes: Change[], doc: Doc<MarkdownDoc>) => {
 
   let currentGroup: ChangeGroup | null = null;
 
-  for (const change of reversedChanges) {
+  const pushCurrentGroup = () => {
+    currentGroup.diff = diff(
+      doc,
+      [currentGroup.changes[0].hash],
+      [currentGroup.changes[currentGroup.changes.length - 1].hash]
+    );
+    changeGroups.push(currentGroup);
+  };
+
+  for (let i = 0; i < reversedChanges.length; i++) {
+    const change = reversedChanges[i];
     const decodedChange = decodeChange(change);
 
-    if (currentGroup && currentGroup.actorIds[0] === decodedChange.actor) {
+    if (
+      currentGroup &&
+      currentGroup.actorIds[0] === decodedChange.actor &&
+      currentGroup.changes.length < 1000
+    ) {
       currentGroup.changes.push(decodedChange);
       currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
         return op.action === "set" && op.insert === true ? total + 1 : total;
@@ -78,14 +109,10 @@ const groupChanges = (changes: Change[], doc: Doc<MarkdownDoc>) => {
       }, 0);
     } else {
       if (currentGroup) {
-        currentGroup.diff = diff(
-          doc,
-          [currentGroup.changes[0].hash],
-          [currentGroup.changes[currentGroup.changes.length - 1].hash]
-        );
-        changeGroups.push(currentGroup);
+        pushCurrentGroup();
       }
       currentGroup = {
+        id: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
         charsAdded: decodedChange.ops.reduce((total, op) => {
@@ -100,12 +127,7 @@ const groupChanges = (changes: Change[], doc: Doc<MarkdownDoc>) => {
   }
 
   if (currentGroup) {
-    currentGroup.diff = diff(
-      doc,
-      [currentGroup.changes[0].hash],
-      [currentGroup.changes[currentGroup.changes.length - 1].hash]
-    );
-    changeGroups.push(currentGroup);
+    pushCurrentGroup();
   }
 
   return changeGroups;
@@ -158,6 +180,46 @@ export const History: React.FC<{
     () => groupChanges(changes, doc),
     [changes, doc]
   );
+  const [changeGroupDescriptions, setChangeGroupDescriptions] = useState<{
+    [key: string]: string;
+  }>({});
+  const [reviewedGroupIds, setReviewedGroupIds] = useState<string[]>([]);
+
+  // this is a demo hack: auto mark the last 4 changes in the list as reviewed
+  useEffect(() => {
+    const lastFiveChanges = groupedChanges.slice(-4);
+    const lastFiveChangeIds = lastFiveChanges.map((change) => change.id);
+    setReviewedGroupIds([...reviewedGroupIds, ...lastFiveChangeIds]);
+  }, [groupedChanges]);
+
+  const unreviewedGroupIds = groupedChanges
+    .filter((group) => !reviewedGroupIds.includes(group.id))
+    .map((group) => group.id);
+
+  const summarizeChangesWithLLM = async () => {
+    for (const group of groupedChanges) {
+      console.log("CALCULATING!!!", group.id);
+      const afterDoc = view(doc, [group.changes[0].hash]);
+      const beforeDoc = view(doc, [
+        group.changes[group.changes.length - 1].hash,
+      ]);
+
+      setChangeGroupDescriptions((prev) => ({
+        ...prev,
+        [group.id]: "*🪄 Autofilling...*",
+      }));
+
+      const summary = await summarizeChanges(
+        beforeDoc.content ?? "Empty document",
+        afterDoc.content,
+        group.diff
+      );
+      setChangeGroupDescriptions((prev) => ({
+        ...prev,
+        [group.id]: summary,
+      }));
+    }
+  };
 
   const snapshotStepSize = changes ? Math.ceil(changes.length / 8) : 100;
   const [expanded, setExpanded] = useState(false);
@@ -171,12 +233,27 @@ export const History: React.FC<{
     [doc, diffHeads]
   );
 
+  const activeGroupIds = useMemo(() => {
+    if (isEqual(diffHeads, getHeads(doc))) return [];
+
+    const result = [];
+    for (const group of groupedChanges) {
+      result.push(group.id);
+      // short circuit out of the loop once we find the group that has the diff heads
+      if (group.changes.some((change) => diffHeads.includes(change.hash))) {
+        break;
+      }
+    }
+
+    return result;
+  }, [groupedChanges, diffHeads, doc]);
+
   return (
     <div>
       <div className="p-4 text-gray-500 uppercase font-medium text-sm">
         Version Control
       </div>
-      <Tabs defaultValue="account" className="w-[400px]">
+      <Tabs defaultValue="account" className="w-[460px]">
         <TabsList>
           <TabsTrigger value="minimap">Minimap</TabsTrigger>
           <TabsTrigger value="changelog">Changelog</TabsTrigger>
@@ -257,24 +334,104 @@ export const History: React.FC<{
           </div>
         </TabsContent>
         <TabsContent value="changelog">
-          <div className="w-64 relative">
+          <Button
+            variant="outline"
+            size="sm"
+            className="m-2"
+            onClick={() => summarizeChangesWithLLM()}
+          >
+            🪄 Autofill descriptions
+          </Button>
+          <div className="text-xs p-2">
+            {activeGroupIds.length === 0 && unreviewedGroupIds.length === 0 && (
+              <div className="text-gray-500">No unreviewed layers</div>
+            )}
+            {activeGroupIds.length === 0 && unreviewedGroupIds.length > 0 && (
+              <div>
+                <span className="mr-2">
+                  {unreviewedGroupIds.length} unreviewed layers
+                </span>
+                <span
+                  className="font-bold hover:cursor-pointer text-gray-500 underline mr-2"
+                  onClick={() => {
+                    const lastUnreviewedGroupId =
+                      unreviewedGroupIds[unreviewedGroupIds.length - 1];
+                    const lastUnreviewedGroup = groupedChanges.find(
+                      (group) => group.id === lastUnreviewedGroupId
+                    );
+                    setDiffHeads([lastUnreviewedGroup.changes[0].hash]);
+                  }}
+                >
+                  <EyeIcon className="inline-block h-4 w-4" /> Catch me up
+                </span>
+              </div>
+            )}
+            {activeGroupIds.length > 0 && (
+              <div>
+                <span className="mr-2">
+                  Showing changes from {activeGroupIds.length} layers
+                </span>
+                <span
+                  className="font-bold hover:cursor-pointer text-gray-500 underline mr-2"
+                  onClick={() => {
+                    setReviewedGroupIds((prev) => [...prev, ...activeGroupIds]);
+                    setDiffHeads(getHeads(doc));
+                  }}
+                >
+                  <CheckCircle className="inline-block h-4 w-4" /> Mark Reviewed
+                </span>
+                <span
+                  className="font-bold hover:cursor-pointer text-gray-500 underline"
+                  onClick={() => setDiffHeads(getHeads(doc))}
+                >
+                  <Undo2Icon className="inline-block h-4 w-4" />
+                  Reset
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="w-4/5 relative">
             {groupedChanges.map((changeGroup) => (
-              <div className="group m-2 p-2 border border-gray-300 w-full overflow-hidden cursor-default hover:bg-gray-200">
-                <div className="text-xs text-gray-500">
-                  {changeGroup.changes[0].hash.substring(0, 6)} ~{" "}
-                  {changeGroup.changes[
-                    changeGroup.changes.length - 1
-                  ].hash.substring(0, 6)}
+              <div
+                className={` group px-4 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent hover:border-l-gray-500 border-b border-gray-200 ${
+                  activeGroupIds.includes(changeGroup.id) ? "bg-blue-100" : ""
+                }`}
+                data-id={changeGroup.id}
+                onClick={() =>
+                  setDiffHeads([
+                    changeGroup.changes[changeGroup.changes.length - 1].hash,
+                  ])
+                }
+              >
+                <div className="absolute top-0 left-[-176px] hidden group-hover:block bg-gray-500 bg-opacity-30 p-4">
+                  <MinimapWithDiff
+                    doc={view(doc, [changeGroup.changes[0].hash])}
+                    patches={changeGroup.diff}
+                    viewport={{
+                      visibleStartPos: 0,
+                      visibleEndPos: doc.content.length,
+                    }}
+                  />
                 </div>
-                <div>
-                  <span className="text-green-600 text-sm mr-2">
-                    +{changeGroup.charsAdded}
-                  </span>
-                  <span className="text-red-600 text-sm">
-                    -{changeGroup.charsDeleted}
-                  </span>
+
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <span className="text-green-600 font-bold mr-2">
+                      +{changeGroup.charsAdded}
+                    </span>
+                    <span className="text-red-600 font-bold">
+                      -{changeGroup.charsDeleted}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400 text-right">
+                    {changeGroup.changes[0].hash.substring(0, 6)}
+                    {reviewedGroupIds.includes(changeGroup.id) && (
+                      <CheckCircle className="inline-block h-4 w-4 ml-1" />
+                    )}
+                  </div>
                 </div>
-                <div>
+                {/* todo: show who did the change. (hardcode..?) */}
+                {/* <div>
                   Actors:{" "}
                   <ul>
                     {changeGroup.actorIds.map((actorId) => (
@@ -283,16 +440,16 @@ export const History: React.FC<{
                       </li>
                     ))}
                   </ul>
-                </div>
-                <div className="absolute top-0 left-[-150px] hidden group-hover:block">
-                  <MinimapWithDiff
-                    doc={doc}
-                    patches={changeGroup.diff}
-                    viewport={{
-                      visibleStartPos: 0,
-                      visibleEndPos: doc.content.length,
-                    }}
-                  />
+                </div> */}
+                <div className="text-xs">
+                  {changeGroupDescriptions[changeGroup.id] && (
+                    <Markdown>
+                      {changeGroupDescriptions[changeGroup.id]}
+                    </Markdown>
+                  )}
+                  {!changeGroupDescriptions[changeGroup.id] && (
+                    <div className="text-gray-500">No description</div>
+                  )}
                 </div>
               </div>
             ))}
