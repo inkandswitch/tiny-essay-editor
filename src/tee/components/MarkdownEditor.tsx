@@ -69,6 +69,8 @@ export function MarkdownEditor({
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
 
+  const handleReady = handle.isReady();
+
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
@@ -77,6 +79,9 @@ export function MarkdownEditor({
   }, [threadsWithPositions]);
 
   useEffect(() => {
+    if (!handleReady) {
+      return;
+    }
     const doc = handle.docSync();
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
@@ -182,7 +187,7 @@ export function MarkdownEditor({
       handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [handle]);
+  }, [handle, handleReady]);
 
   if (editorCrashed) {
     return (
@@ -210,6 +215,10 @@ export function MarkdownEditor({
         onKeyDown={(evt) => {
           // Let cmd-s thru for saving the doc
           if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
+            return;
+          }
+          // Let cmd-\ thru for toggling the sidebar
+          if (evt.key === "\\" && (evt.metaKey || evt.ctrlKey)) {
             return;
           }
           evt.stopPropagation();

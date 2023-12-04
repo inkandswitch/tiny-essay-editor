@@ -3,14 +3,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { arraysAreEqual, getRelativeTimeString } from "@/utils";
+// TODO move these utils
+import { arraysAreEqual, getRelativeTimeString } from "../../tee/utils";
 import { next as A } from "@automerge/automerge";
-import { DocHandle, StorageId } from "@automerge/automerge-repo";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AutomergeUrl, DocHandle, StorageId } from "@automerge/automerge-repo";
+import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { useMachine } from "@xstate/react";
 import { WifiIcon, WifiOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createMachine, raise } from "xstate";
+
+export const SyncIndicatorWrapper = ({ docUrl }: { docUrl: AutomergeUrl }) => {
+  const handle = useHandle(docUrl);
+  if (!handle) {
+    return null;
+  }
+  return <SyncIndicator handle={handle} />;
+};
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   const {
@@ -48,10 +57,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     if (!syncServerConnectionError && !syncServerResponseError) {
       return (
         <Popover>
-          <PopoverTrigger className="hover:bg-gray-100 p-2 rounded-md">
-            <div className="text-gray-500">
-              <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
-            </div>
+          <PopoverTrigger className=" p-1 rounded-md text-gray-500 hover:text-gray-900 align-top">
+            <WifiIcon size={"20px"} />
           </PopoverTrigger>
           <PopoverContent className="flex flex-col gap-1.5 pb-2">
             <dl className="text-sm text-gray-600">
@@ -249,12 +256,13 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
       setSyncServerHeads(syncServerHeads ?? []); // initialize to empty heads if we have no state
 
       handle.doc().then((doc) => {
-        setOwnHeads(A.getHeads(doc));
+        setOwnHeads(doc ? A.getHeads(doc) : []);
       });
     }
 
     const onChange = () => {
-      setOwnHeads(A.getHeads(handle.docSync()));
+      const doc = handle.docSync();
+      setOwnHeads(doc ? A.getHeads(doc) : []);
     };
 
     const onRemoteHeads = ({ storageId, heads }) => {

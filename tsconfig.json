@@ -16,7 +16,7 @@
 
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
 
     /* Linting */
     // "strict": true,

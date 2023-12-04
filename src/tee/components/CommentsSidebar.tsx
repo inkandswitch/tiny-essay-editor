@@ -19,8 +19,8 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
-import { useCurrentAccount } from "../account";
-import { ContactAvatar } from "./generic/ContactAvatar";
+import { useCurrentAccount } from "@/knapsack/account";
+import { ContactAvatar } from "@/knapsack/components/ContactAvatar";
 
 export const CommentsSidebar = ({
   doc,
@@ -205,7 +205,9 @@ export const CommentsSidebar = ({
             className="mb-4"
             value={pendingCommentText}
             onChange={(event) => setPendingCommentText(event.target.value)}
-            // todo: figure out how to close the popover upon cmd-enter submit
+            // GL Nov: figure out how to close the popover upon cmd-enter submit
+            // GL 12/14: the answer here is going to be to control Popover open
+            // state ourselves as we now do elsewhere in the codebase
             // onKeyDown={(event) => {
             //   if (event.key === "Enter" && event.metaKey) {
             //     startCommentThreadAtSelection(pendingCommentText);

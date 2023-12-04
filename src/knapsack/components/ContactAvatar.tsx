@@ -1,4 +1,4 @@
-import { ContactDoc, RegisteredContactDoc } from "../../account";
+import { ContactDoc, RegisteredContactDoc } from "../account";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { VariantProps } from "class-variance-authority";
@@ -8,7 +8,7 @@ import {
   AvatarImage,
   avatarVariants,
 } from "@/components/ui/avatar";
-import { useBlobUrl } from "../../utils";
+import { useBlobUrl } from "../../tee/utils";
 import { useMemo } from "react";
 import { User as UserIcon } from "lucide-react";
 
@@ -17,6 +17,7 @@ interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
   showName?: boolean;
   name?: string;
   avatar?: File;
+  size: "default" | "sm" | "lg";
 }
 
 const initials = (name: string) => {

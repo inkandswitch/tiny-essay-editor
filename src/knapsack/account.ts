@@ -9,10 +9,20 @@ import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
 import { useEffect, useReducer, useState } from "react";
-import { uploadFile } from "./utils";
+import { uploadFile } from "../tee/utils";
+import { ChangeFn } from "@automerge/automerge/next";
+
+export type DocType = "essay"; // | ... | future other types
+
+export type DocLink = {
+  name: string;
+  type: DocType;
+  url: AutomergeUrl;
+};
 
 export interface AccountDoc {
   contactUrl: AutomergeUrl;
+  rootFolderUrl: AutomergeUrl;
 }
 
 export interface AnonymousContactDoc {
@@ -26,6 +36,10 @@ export interface RegisteredContactDoc {
 }
 
 export type ContactDoc = AnonymousContactDoc | RegisteredContactDoc;
+
+export type FolderDoc = {
+  docs: DocLink[];
+};
 
 interface AccountEvents {
   change: () => void;
@@ -105,16 +119,7 @@ class Account extends EventEmitter<AccountEvents> {
   }
 
   async logOut() {
-    const accountHandle = this.#repo.create<AccountDoc>();
-    const contactHandle = this.#repo.create<ContactDoc>();
-
-    accountHandle.change((account) => {
-      account.contactUrl = contactHandle.url;
-    });
-
-    contactHandle.change((contact) => {
-      contact.type = "anonymous";
-    });
+    const { accountHandle, contactHandle } = createAccount(this.#repo);
 
     localStorage.setItem(ACCOUNT_URL_STORAGE_KEY, accountHandle.url);
 
@@ -167,22 +172,40 @@ async function getAccount(repo: Repo) {
   }
 
   // ... otherwise create a new one
-  const accountHandle = repo.create<AccountDoc>();
-  const contactHandle = repo.create<ContactDoc>();
-
-  accountHandle.change((account) => {
-    account.contactUrl = contactHandle.url;
-  });
-
-  contactHandle.change((contact) => {
-    contact.type = "anonymous";
-  });
+  const { accountHandle, contactHandle } = createAccount(repo);
 
   localStorage.setItem(ACCOUNT_URL_STORAGE_KEY, accountHandle.url);
   const newAccount = new Account(repo, accountHandle, contactHandle);
   CURRENT_ACCOUNT = Promise.resolve(newAccount);
   return newAccount;
 }
+
+const createAccount = (
+  repo: Repo
+): {
+  accountHandle: DocHandle<AccountDoc>;
+  contactHandle: DocHandle<ContactDoc>;
+  rootFolderHandle: DocHandle<FolderDoc>;
+} => {
+  const accountHandle = repo.create<AccountDoc>();
+  const contactHandle = repo.create<ContactDoc>();
+  const rootFolderHandle = repo.create<FolderDoc>();
+
+  contactHandle.change((contact) => {
+    contact.type = "anonymous";
+  });
+
+  rootFolderHandle.change((rootFolder) => {
+    rootFolder.docs = [];
+  });
+
+  accountHandle.change((account) => {
+    account.contactUrl = contactHandle.url;
+    account.rootFolderUrl = rootFolderHandle.url;
+  });
+
+  return { accountHandle, contactHandle, rootFolderHandle };
+};
 
 function useForceUpdate() {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -192,6 +215,9 @@ function useForceUpdate() {
 export function useCurrentAccount(): Account | undefined {
   const repo = useRepo();
   const [account, setAccount] = useState<Account | undefined>(undefined);
+
+  // @ts-expect-error useful for debugging
+  window.currentAccount = account;
 
   const forceUpdate = useForceUpdate();
 
@@ -214,14 +240,30 @@ export function useCurrentAccount(): Account | undefined {
   return account;
 }
 
-function useCurrentAccountDoc(): AccountDoc {
+export function useCurrentAccountDoc(): [
+  AccountDoc,
+  (changeFn: ChangeFn<AccountDoc>) => void
+] {
   const account = useCurrentAccount();
-  const [accountDoc] = useDocument<AccountDoc>(account?.handle.url);
-  return accountDoc;
+  const [accountDoc, changeAccountDoc] = useDocument<AccountDoc>(
+    account?.handle.url
+  );
+  return [accountDoc, changeAccountDoc];
+}
+
+export function useCurrentRootFolderDoc(): [
+  FolderDoc,
+  (changeFn: ChangeFn<FolderDoc>) => void
+] {
+  const [accountDoc] = useCurrentAccountDoc();
+  const [rootFolderDoc, changeRootFolderDoc] = useDocument<FolderDoc>(
+    accountDoc?.rootFolderUrl
+  );
+  return [rootFolderDoc, changeRootFolderDoc];
 }
 
 export function useSelf(): ContactDoc {
-  const accountDoc = useCurrentAccountDoc();
+  const [accountDoc] = useCurrentAccountDoc();
   const [contactDoc] = useDocument<ContactDoc>(accountDoc?.contactUrl);
 
   return contactDoc;

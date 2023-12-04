@@ -4,8 +4,8 @@ import css from "./index.css";
 // @ts-expect-error - i don't know why this works but it does
 document.adoptedStyleSheets.push(css);
 
-export { mount } from "./mount.js";
-export { init } from "./init.js";
+export { mount } from "./tee/mount.js";
+export { init } from "./tee/datatype.js";
 
 // @ts-expect-error - set a window global for the logo image using browser standards
 window.logoImageUrl = new URL(

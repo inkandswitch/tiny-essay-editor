@@ -5,7 +5,7 @@ import {
   useSelf,
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
-} from "../../account";
+} from "../account";
 import { ChangeEvent, useEffect, useState } from "react";
 
 import {
@@ -43,7 +43,13 @@ enum AccountPickerTab {
 
 type AccountTokenToLoginStatus = null | "valid" | "malformed" | "not-found";
 
-export const AccountPicker = () => {
+export const AccountPicker = ({
+  showName,
+  size,
+}: {
+  showName?: boolean;
+  size?: "default" | "sm" | "lg";
+}) => {
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
@@ -134,24 +140,28 @@ export const AccountPicker = () => {
   return (
     <Dialog>
       <DialogTrigger>
-        <ContactAvatar url={currentAccount?.contactHandle.url} />
+        <div className="flex flex-row  text-sm text-gray-600 hover:text-gray-800 ">
+          <ContactAvatar
+            url={currentAccount?.contactHandle.url}
+            size={size ?? "default"}
+          />
+          {showName && name && <div className="ml-2 py-2">{name}</div>}
+          {showName && !name && <div className="ml-2 py-2">Sign in</div>}
+        </div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader className="items-center">
           {isLoggedIn ? (
             <ContactAvatar
-              size="lg"
+              size="default"
               url={currentAccount?.contactHandle.url}
               name={name}
               avatar={avatar}
-            ></ContactAvatar>
+            />
           ) : activeTab === "signUp" ? (
             <ContactAvatar name={name} avatar={avatar} size={"lg"} />
           ) : (
-            <ContactAvatar
-              url={accountToLogin?.contactUrl}
-              size="lg"
-            ></ContactAvatar>
+            <ContactAvatar url={accountToLogin?.contactUrl} size="lg" />
           )}
         </DialogHeader>
 
