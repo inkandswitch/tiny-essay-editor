@@ -2,6 +2,10 @@ import React from "react";
 import ReactDom from "react-dom/client";
 import App from "./components/App.js";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+// import css from "./index.module.css";
+
+// @ts-ignore
+// document.adoptedStyleSheets = [...document.adoptedStyleSheets, css];
 
 export function mount(node, params) {
   // workaround different conventions for documentUrl

@@ -12,12 +12,13 @@ import "./index.css";
 const repo = new Repo({
   network: [
     new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+    new BrowserWebSocketClientAdapter("ws://localhost:3030"),
+    //  new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
   ],
   storage: new IndexedDBStorageAdapter(),
 });
 
-const rootDocUrl = `${document.location.hash.substr(1)}`;
+const rootDocUrl = `${document.location.hash.slice(1)}`;
 let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);

@@ -185,7 +185,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   }
 };
 
-const SYNC_SERVER_PREFIX = "storage-server-";
+const SYNC_SERVER_STORAGE_ID =
+  "37915c96-8df9-4fa6-8058-1360edd2ebe2" as StorageId;
 
 enum SyncState {
   InSync,
@@ -205,20 +206,16 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
   const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
 
-  const syncServerPeerId = repo.peers.find((peerId) =>
-    peerId.startsWith(SYNC_SERVER_PREFIX)
-  );
-  const syncServerStorageIdRef = useRef<StorageId>(undefined);
-  syncServerStorageIdRef.current = syncServerPeerId
-    ? repo.getStorageIdOfPeer(syncServerPeerId)
-    : undefined;
+  useEffect(() => {
+    repo.subscribeToRemotes([SYNC_SERVER_STORAGE_ID]);
+  }, [repo]);
 
   const [machine, send] = useMachine(() => {
     return getSyncIndicatorMachine({
       connectionInitTimeout: 1000,
       maxSyncMessageDelay: 1000,
       isInternetConnected: navigator.onLine,
-      isSyncServerConnected: syncServerPeerId !== undefined,
+      isSyncServerConnected: true,
     });
   });
 
@@ -241,38 +238,13 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
     };
   }, [send]);
 
-  // sync server connect / disconnect listener
-  useEffect(() => {
-    const onPeerConnected = ({
-      peerId,
-    }: {
-      peerId: PeerId;
-      storageId?: StorageId;
-    }) => {
-      if (peerId.startsWith(SYNC_SERVER_PREFIX)) {
-        send("SYNC_SERVER_CONNECTED");
-      }
-    };
-
-    const onPeerDisconnnected = ({ peerId }) => {
-      if (peerId.startsWith(SYNC_SERVER_PREFIX)) {
-        send("SYNC_SERVER_DISCONNECTED");
-      }
-    };
-
-    repo.networkSubsystem.on("peer", onPeerConnected);
-    repo.networkSubsystem.on("peer-disconnected", onPeerDisconnnected);
-
-    return () => {
-      repo.networkSubsystem.off("peer", onPeerConnected);
-      repo.networkSubsystem.off("peer-disconnected", onPeerDisconnnected);
-    };
-  }, [send]);
+  // sync server connect / disconnect handling
+  // todo: need reachability information for that
 
   // heads change listener
   useEffect(() => {
-    if (machine.matches("sync.unknown") && syncServerStorageIdRef.current) {
-      const remoteHeads = handle.getRemoteHeads(syncServerStorageIdRef.current);
+    if (machine.matches("sync.unknown")) {
+      const remoteHeads = handle.getRemoteHeads(SYNC_SERVER_STORAGE_ID);
 
       if (
         remoteHeads &&
@@ -289,7 +261,7 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
     };
 
     const onRemoteHeads = ({ storageId, heads }) => {
-      if (storageId === syncServerStorageIdRef.current) {
+      if (storageId === SYNC_SERVER_STORAGE_ID) {
         if (arraysAreEqual(heads, A.getHeads(handle.docSync()))) {
           send("IS_IN_SYNC");
         } else {
@@ -317,6 +289,8 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
       : machine.matches("sync.inSync")
       ? SyncState.InSync
       : SyncState.OutOfSync,
+
+    // todo: add reachability check, currently this value will be always true
     syncServerConnectionError: machine.matches("syncServer.disconnected.error"),
     syncServerResponseError: machine.matches("sync.outOfSync.error"),
   };
