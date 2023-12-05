@@ -186,7 +186,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
 };
 
 const SYNC_SERVER_STORAGE_ID =
-  "37915c96-8df9-4fa6-8058-1360edd2ebe2" as StorageId;
+  "3760df37-a4c6-4f66-9ecd-732039a9385d" as StorageId;
 
 enum SyncState {
   InSync,
@@ -205,6 +205,8 @@ interface SyncIndicatorState {
 function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
   const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
+  const [syncServerHeads, setSyncServerHeads] = useState();
+  const [ownHeads, setOwnHeads] = useState();
 
   useEffect(() => {
     repo.subscribeToRemotes([SYNC_SERVER_STORAGE_ID]);
@@ -244,30 +246,22 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   // heads change listener
   useEffect(() => {
     if (machine.matches("sync.unknown")) {
-      const remoteHeads = handle.getRemoteHeads(SYNC_SERVER_STORAGE_ID);
+      const syncServerHeads = handle.getRemoteHeads(SYNC_SERVER_STORAGE_ID);
+      setSyncServerHeads(syncServerHeads ?? []); // initialize to empty heads if we have no state
 
-      if (
-        remoteHeads &&
-        arraysAreEqual(remoteHeads, A.getHeads(handle.docSync()))
-      ) {
-        send("IS_IN_SYNC");
-      } else {
-        send("IS_OUT_OF_SYNC");
-      }
+      handle.doc().then((doc) => {
+        setOwnHeads(A.getHeads(doc));
+      });
     }
 
     const onChange = () => {
-      send("IS_OUT_OF_SYNC");
+      setOwnHeads(A.getHeads(handle.docSync()));
     };
 
     const onRemoteHeads = ({ storageId, heads }) => {
       if (storageId === SYNC_SERVER_STORAGE_ID) {
-        if (arraysAreEqual(heads, A.getHeads(handle.docSync()))) {
-          send("IS_IN_SYNC");
-        } else {
-          send("IS_OUT_OF_SYNC");
-        }
-
+        send("RECEIVED_SYNC_MESSAGE");
+        setSyncServerHeads(heads);
         setLastSyncUpdate(Date.now());
       }
     };
@@ -280,6 +274,19 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
       handle.off("remote-heads", onRemoteHeads);
     };
   }, [handle]);
+
+  useEffect(() => {
+    console.log(ownHeads, syncServerHeads);
+    if (!ownHeads || !syncServerHeads) {
+      return;
+    }
+
+    if (arraysAreEqual(ownHeads, syncServerHeads)) {
+      send("IS_IN_SYNC");
+    } else {
+      send("IS_OUT_OF_SYNC");
+    }
+  }, [ownHeads, syncServerHeads]);
 
   return {
     lastSyncUpdate,

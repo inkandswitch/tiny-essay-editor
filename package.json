@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
-    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
+    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc --automergeDocUrl automerge:Sk1ddpZBr1D51mnn32pYeMZgHQL",
     "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
     "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
     "export:static": "node -e \"require('fs').cpSync('public', 'tsc', { recursive: true });\"",
@@ -16,13 +16,13 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@automerge/automerge": "^2.1.7",
+    "@automerge/automerge": "^2.1.8-alpha.1",
+    "@automerge/automerge-repo": "^1.1.0-alpha.2",
     "@automerge/automerge-codemirror": "^0.0.7",
-    "@automerge/automerge-repo": "^1.0.18",
-    "@automerge/automerge-repo-network-broadcastchannel": "^1.0.18",
-    "@automerge/automerge-repo-network-websocket": "^1.0.18",
-    "@automerge/automerge-repo-react-hooks": "^1.0.18",
-    "@automerge/automerge-repo-storage-indexeddb": "^1.0.18",
+    "@automerge/automerge-repo-network-broadcastchannel": "^1.1.0-alpha.2",
+    "@automerge/automerge-repo-network-websocket": "^1.1.0-alpha.2",
+    "@automerge/automerge-repo-react-hooks": "^1.1.0-alpha.2",
+    "@automerge/automerge-repo-storage-indexeddb": "^1.1.0-alpha.2",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -72,5 +72,6 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vitest": "^0.34.6"
-  }
+  },
+  "module": "index.js"
 }
