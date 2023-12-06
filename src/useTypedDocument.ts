@@ -32,9 +32,9 @@ export function useTypedDocument<T extends S.Schema<any>>(
 
     handle.doc().then((v) => {
       const parseResult = parseSchema(v);
-      // GL 12/6/23: in the future we should actually do something more with this error.
-      // For now I'm just logging it to the console for awareness of how parsing works.
-      // There seems to be something wrong with how I'm handling maps.
+      // GL 12/6/23:
+      // For now I'm just logging parse errors to the console for awareness.
+      // In the future: surface this error, and play with transforms.
       if (isLeft(parseResult)) {
         console.error(
           "WARNING: document loaded from repo does not match schema"

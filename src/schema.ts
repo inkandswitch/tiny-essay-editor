@@ -43,9 +43,20 @@ export type LocalSession = {
 
 export const MarkdownDoc = S.struct({
   content: S.string,
-  commentThreads: S.readonlyMap(S.string, CommentThread),
+
+  // GL 12/6/23: For some reason the schema parser doesn't like it
+  // when I use this correctly narrower type,
+  // for now I'm working around by using a too-wide type.
+  // commentThreads: S.readonlyMap(S.string, CommentThread),
+  commentThreads: S.object,
+
   users: S.array(User),
-  forkedFrom: S.nullable(S.string),
+
+  // GL 12/6/23: We should move this out to a generic forkable trait...
+  forkMetadata: S.struct({
+    forkedFrom: S.nullable(S.string),
+    knownForks: S.array(S.string),
+  }),
 });
 
 export type MarkdownDoc = S.Schema.To<typeof MarkdownDoc>;
