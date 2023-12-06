@@ -40,11 +40,18 @@ window.handle = handle; // we'll use this later for experimentation
 // @ts-expect-error - adding property to window
 window.logoImageUrl = "/assets/logo-favicon-310x310-transparent.png";
 
+// GL 12/6/23: Sometimes we need to wait a bit before navigating to a new doc,
+// e.g. when making a fork the repo seems to not be ready if we go immediately.
+// investigate this and remove the timeout.
 // @ts-expect-error - set a window global
 window.openDocumentInNewTab = (docUrl) => {
-  window.open(
-    `${document.location.origin}${document.location.pathname}#${docUrl}`,
-    "_blank"
+  setTimeout(
+    () =>
+      window.open(
+        `${document.location.origin}${document.location.pathname}#${docUrl}`,
+        "_blank"
+      ),
+    500
   );
 };
 

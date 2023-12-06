@@ -86,6 +86,7 @@ export const Navbar = ({
   showDiff: boolean;
   setShowDiff: React.Dispatch<SetStateAction<boolean>>;
 }) => {
+  console.log("navbar");
   const repo = useRepo();
   const [namePickerOpen, setNamePickerOpen] = useState(false);
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
@@ -159,11 +160,8 @@ export const Navbar = ({
       };
     });
 
-    // GL 12/6/23: If we don't wait before opening the clone, it's not ready yet sometimes.
-    // Figure out why we need this timeout and how to get rid of it!
-    setTimeout(() => {
-      window.openDocumentInNewTab(clone.url);
-    }, 500);
+    // @ts-expect-error window global
+    window.openDocumentInNewTab(clone.url);
   }, [repo, handle]);
 
   const goToParent = () => {
@@ -293,7 +291,6 @@ export const Navbar = ({
                 disabled={!doc?.forkMetadata?.parent}
                 onClick={() => {
                   shareToParent();
-                  goToParent();
                 }}
               >
                 Share fork to parent
@@ -302,7 +299,6 @@ export const Navbar = ({
                 disabled={!doc?.forkMetadata?.parent}
                 onClick={() => {
                   mergeToParent();
-                  goToParent();
                 }}
               >
                 Merge to parent
@@ -469,6 +465,7 @@ export const Navbar = ({
                           name: tentativeUser.name,
                         };
                         changeDoc((doc) => {
+                          // @ts-expect-error need to figure out how to make the type mutable in change blocks
                           doc.users.push(user);
                         });
                         setSession({ userId: user.id });

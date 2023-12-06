@@ -24,6 +24,8 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
   const localStorageKey = `LocalSession-${docUrl}`;
 
+  console.log(doc);
+
   useEffect(() => {
     const session = localStorage.getItem(localStorageKey);
     if (session) {
@@ -75,7 +77,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
           <MarkdownEditor
             handle={handle}
-            doc={doc}
             diffHeads={diffHeads}
             path={["content"]}
             setSelection={setSelection}

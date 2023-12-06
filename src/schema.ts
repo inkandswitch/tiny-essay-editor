@@ -30,7 +30,7 @@ export type CommentThreadWithPosition = CommentThreadForUI & { yCoord: number };
 
 const User = S.struct({
   id: S.string,
-  name: S.DateFromString,
+  name: S.string,
 });
 
 export type User = S.Schema.To<typeof User>;
