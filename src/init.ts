@@ -23,7 +23,7 @@ export function init(doc: any) {
     doc.users.push(user);
   }
   doc.forkMetadata = {
-    forkedFrom: null,
+    parent: null,
     knownForks: [],
   };
 }

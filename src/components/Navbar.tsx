@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, MutableMarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangeFn, save } from "@automerge/automerge/next";
+import { ChangeFn, getHeads, save } from "@automerge/automerge/next";
 import { Check, ChevronsUpDown, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -145,7 +145,10 @@ export const Navbar = ({
     const clone = repo.clone(handle);
     clone.change((doc) => {
       // @ts-expect-error need to figure out how to make the type mutable in change blocks
-      doc.forkMetadata.forkedFrom = handle.url;
+      doc.forkMetadata.parent = {
+        url: handle.url,
+        forkedAtHeads: getHeads(doc),
+      };
     });
     const cloneUrl = `${window.location.origin}/#${clone.url}`;
 

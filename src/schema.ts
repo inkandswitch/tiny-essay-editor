@@ -54,12 +54,29 @@ export const MarkdownDoc = S.struct({
 
   // GL 12/6/23: We should move this out to a generic forkable trait...
   forkMetadata: S.struct({
-    forkedFrom: S.nullable(S.string),
+    parent: S.nullable(
+      S.struct({
+        url: S.string,
+        forkedAtHeads: S.array(S.string),
+      })
+    ),
     knownForks: S.array(S.string),
   }),
 });
 
 export type MarkdownDoc = S.Schema.To<typeof MarkdownDoc>;
+
+export type DeepMutable<T> = {
+  -readonly [K in keyof T]: T[K] extends (infer R)[]
+    ? DeepMutable<R>[]
+    : T[K] extends ReadonlyArray<infer R>
+    ? DeepMutable<R>[]
+    : T[K] extends object
+    ? DeepMutable<T[K]>
+    : T[K];
+};
+
+export type MutableMarkdownDoc = DeepMutable<MarkdownDoc>;
 
 export type Snapshot = {
   heads: Heads;

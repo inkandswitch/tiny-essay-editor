@@ -4,9 +4,15 @@ import {
   MarkdownDoc,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
-import { next as A } from "@automerge/automerge";
+import {
+  diff,
+  getHeads,
+  getCursorPosition,
+  Patch,
+} from "@automerge/automerge/next";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
+import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -82,8 +88,8 @@ export const getThreadsForUI = (
       let from = 0;
       let to = 0;
       try {
-        from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
-        to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+        from = getCursorPosition(doc, ["content"], thread.fromCursor);
+        to = getCursorPosition(doc, ["content"], thread.toCursor);
       } catch (e) {
         if (e instanceof RangeError) {
           // If the cursor isn't found in the content string, hide the comment.
@@ -367,4 +373,27 @@ export const useThreadsWithPositions = ({
   );
 
   return threadsWithPositions;
+};
+
+export const computeDiffForFork = (doc: MarkdownDoc): Patch[] => {
+  if (!doc || !doc.forkMetadata || !doc.forkMetadata.parent) {
+    return [];
+  }
+  if (!isValidAutomergeUrl(doc.forkMetadata.parent.url)) {
+    console.error("forkedFrom URL is invalid");
+    return;
+  }
+
+  // GL 12/6/23: if we wanted to show diff against *latest* parent,
+  // we'd need to do a speculative rebase here,
+  // but for now we're just diffing against the point at which we forked.
+
+  // The diff from the ForkedFrom to the rebased doc is what we want to show.
+  const oldHeads = doc.forkMetadata.parent.forkedAtHeads;
+  const newHeads = getHeads(doc);
+  const patches = diff(doc, oldHeads, newHeads).filter(
+    (p) => p.path[0] === "content"
+  );
+
+  return patches;
 };
