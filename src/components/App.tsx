@@ -1,5 +1,5 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { LocalSession, MarkdownDoc } from "../schema";
@@ -10,9 +10,10 @@ import { useEffect, useState } from "react";
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { useThreadsWithPositions } from "../utils";
+import { useTypedDocument } from "@/useTypedDocument";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc, changeDoc] = useTypedDocument(docUrl, MarkdownDoc); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();

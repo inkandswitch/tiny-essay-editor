@@ -627,6 +627,11 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
+"@effect/schema@^0.52.0":
+  version "0.52.0"
+  resolved "https://registry.yarnpkg.com/@effect/schema/-/schema-0.52.0.tgz#5dc612e895c9f691f379a15679b6dffc0c1d087c"
+  integrity sha512-x6SmSdoL6PeZVAaK895NoRkKF8D/w+XyO8i17cUsQYFJBHNyUTi9Y1H2wrO8TkxhTmC93ejburpM+35/OKCi2Q==
+
 "@esbuild/android-arm64@0.18.20":
   version "0.18.20"
   resolved "https://registry.yarnpkg.com/@esbuild/android-arm64/-/android-arm64-0.18.20.tgz#984b4f9c8d0377443cc2dfcef266d02244593622"
@@ -2178,6 +2183,11 @@ doctrine@^3.0.0:
   integrity sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==
   dependencies:
     esutils "^2.0.2"
+
+effect@^2.0.0-next.59:
+  version "2.0.0-next.59"
+  resolved "https://registry.yarnpkg.com/effect/-/effect-2.0.0-next.59.tgz#312bb6c70a8adf29b857414e42af118faf26fcab"
+  integrity sha512-EE87vFl0/zIN5lKDtFccU3YCnbPqjxg9rY72obNN65/GE4JOJsXciyX8XC4pIDr3lE6KeJ0le8IXf+A7d92ntQ==
 
 electron-to-chromium@^1.4.535:
   version "1.4.557"
