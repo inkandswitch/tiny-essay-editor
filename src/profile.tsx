@@ -1,8 +1,12 @@
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  avatarVariants,
+} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, Copy } from "lucide-react";
 import {
   AutomergeUrl,
   DocHandle,
@@ -10,8 +14,8 @@ import {
   isValidAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { User as UserIcon } from "lucide-react";
 import { EventEmitter } from "eventemitter3";
+import { Copy, Eye, EyeOff, User as UserIcon } from "lucide-react";
 
 import {
   Dialog,
@@ -22,13 +26,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState, ChangeEvent, useMemo } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { type VariantProps } from "class-variance-authority";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 interface ProfileDoc {
   contactUrl: AutomergeUrl;
@@ -85,7 +90,7 @@ class Profile extends EventEmitter<ProfileEvents> {
 
     this.#contactHandle.change((oldContact: AnonymousContactDoc) => {
       if (oldContact.type === "anonymous") {
-        oldContact.claimedBy = profileUrl;
+        oldContact.claimedBy = newProfile.#contactHandle.url;
       }
     });
 
@@ -171,6 +176,10 @@ async function getProfile(repo: Repo) {
     profile.contactUrl = contactHandle.url;
   });
 
+  contactHandle.change((contact) => {
+    contact.type = "anonymous";
+  });
+
   const promise = new Promise<Profile>(async (resolve) => {
     await repo.storageSubsystem.save(
       NAMESPACE,
@@ -184,7 +193,7 @@ async function getProfile(repo: Repo) {
   return promise;
 }
 
-function useProfile(): Profile | undefined {
+export function useProfile(): Profile | undefined {
   const repo = useRepo();
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
 
@@ -217,7 +226,7 @@ function useProfileDoc(): ProfileDoc {
   return profileDoc;
 }
 
-function useSelf(): ContactDoc {
+export function useSelf(): ContactDoc {
   const profileDoc = useProfileDoc();
   const [contactDoc] = useDocument<ContactDoc>(profileDoc?.contactUrl);
 
@@ -231,11 +240,16 @@ const initials = (name: string) => {
     .join("");
 };
 
-interface AvatarProps {
+interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
   url: AutomergeUrl;
+  showName?: boolean;
 }
 
-export const ContactAvatar = ({ url }: AvatarProps) => {
+export const ContactAvatar = ({
+  url,
+  showName = false,
+  size,
+}: ContactAvatarProps) => {
   const [maybeAnonymousContact] = useDocument<ContactDoc>(url);
   const [registeredContact] = useDocument<RegisteredContactDoc>(
     maybeAnonymousContact?.type === "anonymous"
@@ -251,12 +265,16 @@ export const ContactAvatar = ({ url }: AvatarProps) => {
   const avatarUrl = useBlobUrl(contact?.avatarUrl);
 
   return (
-    <Avatar>
-      <AvatarImage src={avatarUrl} alt={contact?.name} />
-      <AvatarFallback>
-        {contact && contact.name ? initials(contact.name) : <UserIcon />}
-      </AvatarFallback>
-    </Avatar>
+    <div className="flex items-center gap-1.5">
+      <Avatar size={size}>
+        <AvatarImage src={avatarUrl} alt={contact?.name} />
+        <AvatarFallback>
+          {contact && contact.name ? initials(contact.name) : <UserIcon />}
+        </AvatarFallback>
+      </Avatar>
+
+      {showName && <b>{contact?.name ?? "Anonymous"}</b>}
+    </div>
   );
 };
 

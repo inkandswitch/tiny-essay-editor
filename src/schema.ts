@@ -1,7 +1,10 @@
+import { AutomergeUrl } from "@automerge/automerge-repo";
+
 export type Comment = {
   id: string;
   content: string;
-  userId: string | null;
+  userId: string | null; // keep user id for backwards compatability
+  contactUrl?: AutomergeUrl;
   timestamp: number;
 };
 
