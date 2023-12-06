@@ -86,7 +86,6 @@ export const Navbar = ({
   showDiff: boolean;
   setShowDiff: React.Dispatch<SetStateAction<boolean>>;
 }) => {
-  console.log("navbar");
   const repo = useRepo();
   const [namePickerOpen, setNamePickerOpen] = useState(false);
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({

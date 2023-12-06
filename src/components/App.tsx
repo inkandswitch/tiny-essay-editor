@@ -24,8 +24,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
 
   const localStorageKey = `LocalSession-${docUrl}`;
 
-  console.log(doc);
-
   useEffect(() => {
     const session = localStorage.getItem(localStorageKey);
     if (session) {
