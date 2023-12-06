@@ -43,6 +43,7 @@ import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
 import { SyncIndicator } from "./SyncIndicator";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
 
 const initials = (name: string) => {
   return name
@@ -77,6 +78,7 @@ export const Navbar = ({
   session: LocalSession;
   setSession: (session: LocalSession) => void;
 }) => {
+  const repo = useRepo();
   const [namePickerOpen, setNamePickerOpen] = useState(false);
   const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
     _type: "unknown",
@@ -137,6 +139,18 @@ export const Navbar = ({
   useEffect(() => {
     document.title = title;
   }, [title]);
+
+  // fork and open clone in new tab
+  const forkDoc = useCallback(() => {
+    const clone = repo.clone(handle);
+    const cloneUrl = `${window.location.origin}/#${clone.url}`;
+
+    // GL 12/6/23: If we don't wait before opening the clone, it's not ready yet sometimes.
+    // Figure out why we need this timeout and how to get rid of it!
+    setTimeout(() => {
+      window.open(cloneUrl, "_blank");
+    }, 500);
+  }, [repo, handle]);
 
   if (!doc) {
     return <></>;
@@ -204,7 +218,7 @@ export const Navbar = ({
               >
                 Open
               </MenubarItem>
-              <MenubarItem>Fork</MenubarItem>
+              <MenubarItem onClick={() => forkDoc()}>Fork</MenubarItem>
               <MenubarSeparator />
               <MenubarItem
                 onClick={() => {
