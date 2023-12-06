@@ -35,6 +35,9 @@ import {
   MenubarMenu,
   MenubarSeparator,
   MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
@@ -42,7 +45,7 @@ import { Label } from "@/components/ui/label";
 import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
-import { DocHandle } from "@automerge/automerge-repo";
+import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import { SyncIndicator } from "./SyncIndicator";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 
@@ -155,14 +158,45 @@ export const Navbar = ({
         forkedAtHeads: getHeads(doc),
       };
     });
-    const cloneUrl = `${window.location.origin}/#${clone.url}`;
 
     // GL 12/6/23: If we don't wait before opening the clone, it's not ready yet sometimes.
     // Figure out why we need this timeout and how to get rid of it!
     setTimeout(() => {
-      window.open(cloneUrl, "_blank");
+      window.openDocumentInNewTab(clone.url);
     }, 500);
   }, [repo, handle]);
+
+  const goToParent = () => {
+    if (!doc?.forkMetadata?.parent) return;
+
+    // @ts-expect-error using window global
+    window.openDocumentInNewTab(doc.forkMetadata.parent.url);
+  };
+
+  const shareToParent = () => {
+    const parentUrl = doc?.forkMetadata?.parent?.url;
+    if (!parentUrl || !isValidAutomergeUrl(parentUrl)) {
+      return;
+    }
+    const parent = repo.find<MarkdownDoc>(parentUrl);
+    parent.change((doc) => {
+      if (!doc.forkMetadata.knownForks.includes(handle.url)) {
+        // @ts-expect-error need to figure out how to make the type mutable in change blocks
+        doc.forkMetadata.knownForks.push(handle.url);
+      }
+    });
+  };
+
+  const mergeToParent = () => {
+    const parentUrl = doc?.forkMetadata?.parent?.url;
+    if (!parentUrl || !isValidAutomergeUrl(parentUrl)) {
+      return;
+    }
+    const parent = repo.find<MarkdownDoc>(parentUrl);
+    parent.merge(handle);
+  };
+
+  const knownForks = doc?.forkMetadata?.knownForks ?? [];
 
   if (!doc) {
     return <></>;
@@ -225,23 +259,53 @@ export const Navbar = ({
                     return;
                   }
                   const newUrl = `${document.location.origin}${document.location.pathname}#${automergeURLToOpen}`;
-                  window.open(newUrl, "_blank");
+                  // @ts-expect-error window global
+                  window.openDocumentInNewTab(newUrl);
                 }}
               >
                 Open
               </MenubarItem>
               <MenubarSeparator />
               <MenubarItem onClick={() => forkDoc()}>Fork</MenubarItem>
+              <MenubarSub>
+                <MenubarSubTrigger>Go to fork</MenubarSubTrigger>
+                <MenubarSubContent>
+                  {knownForks.length === 0 && (
+                    <MenubarItem disabled>No known forks</MenubarItem>
+                  )}
+                  {knownForks.map((forkUrl) => (
+                    <MenubarItem
+                      // @ts-expect-error window global
+                      onClick={() => window.openDocumentInNewTab(forkUrl)}
+                    >
+                      {forkUrl}
+                    </MenubarItem>
+                  ))}
+                </MenubarSubContent>
+              </MenubarSub>
               <MenubarItem
                 disabled={!doc?.forkMetadata?.parent}
-                onClick={() =>
-                  doc?.forkMetadata?.parent?.url &&
-                  window.open(
-                    `${document.location.origin}${document.location.pathname}#${doc.forkMetadata.parent.url}`
-                  )
-                }
+                onClick={() => goToParent()}
               >
                 Go to parent
+              </MenubarItem>
+              <MenubarItem
+                disabled={!doc?.forkMetadata?.parent}
+                onClick={() => {
+                  shareToParent();
+                  goToParent();
+                }}
+              >
+                Share fork to parent
+              </MenubarItem>
+              <MenubarItem
+                disabled={!doc?.forkMetadata?.parent}
+                onClick={() => {
+                  mergeToParent();
+                  goToParent();
+                }}
+              >
+                Merge to parent
               </MenubarItem>
               <MenubarSeparator />
               <MenubarItem

@@ -40,4 +40,12 @@ window.handle = handle; // we'll use this later for experimentation
 // @ts-expect-error - adding property to window
 window.logoImageUrl = "/assets/logo-favicon-310x310-transparent.png";
 
+// @ts-expect-error - set a window global
+window.openDocumentInNewTab = (docUrl) => {
+  window.open(
+    `${document.location.origin}${document.location.pathname}#${docUrl}`,
+    "_blank"
+  );
+};
+
 mount(document.getElementById("root"), { docUrl });
