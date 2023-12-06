@@ -1,5 +1,5 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AutomergeUrl } from "@automerge/automerge-repo";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { LocalSession, MarkdownDoc } from "../schema";
