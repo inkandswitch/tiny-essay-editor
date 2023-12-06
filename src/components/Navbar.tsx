@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LocalSession, MarkdownDoc, MutableMarkdownDoc, User } from "../schema";
+import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChangeFn, getHeads, save } from "@automerge/automerge/next";
 import { Check, ChevronsUpDown, User as UserIcon } from "lucide-react";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Menubar,
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
@@ -38,7 +39,7 @@ import {
 } from "@/components/ui/menubar";
 
 import { Label } from "@/components/ui/label";
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
 import { uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
@@ -71,12 +72,16 @@ export const Navbar = ({
   changeDoc,
   session,
   setSession,
+  showDiff,
+  setShowDiff,
 }: {
   handle: DocHandle<MarkdownDoc>;
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   session: LocalSession;
   setSession: (session: LocalSession) => void;
+  showDiff: boolean;
+  setShowDiff: React.Dispatch<SetStateAction<boolean>>;
 }) => {
   const repo = useRepo();
   const [namePickerOpen, setNamePickerOpen] = useState(false);
@@ -248,7 +253,12 @@ export const Navbar = ({
           <MenubarMenu>
             <MenubarTrigger>View</MenubarTrigger>
             <MenubarContent>
-              <MenubarItem>Show Changes</MenubarItem>
+              <MenubarCheckboxItem
+                checked={showDiff}
+                onClick={() => setShowDiff((prev) => !prev)}
+              >
+                Show changes
+              </MenubarCheckboxItem>
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
