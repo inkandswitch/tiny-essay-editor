@@ -34,13 +34,21 @@ interface ProfileDoc {
   contactUrl: AutomergeUrl;
 }
 
-interface ContactDoc {
-  name?: string;
+interface AnonymousContactDoc {
+  type: "anonymous";
+  claimedBy?: AutomergeUrl;
+}
+
+interface RegisteredContactDoc {
+  type: "registered";
+  name: string;
   avatarUrl?: AutomergeUrl;
 }
 
+type ContactDoc = AnonymousContactDoc | RegisteredContactDoc;
+
 interface ProfileEvents {
-  logOut: (profile: Profile) => void;
+  changeProfile: (profile: Profile) => void;
 }
 
 interface ContactProps {
@@ -65,7 +73,24 @@ class Profile extends EventEmitter<ProfileEvents> {
     this.#contactHandle = contactHandle;
   }
 
-  async logIn() {}
+  async logIn(profileUrl: AutomergeUrl) {
+    // override old profileUrl
+    await this.#repo.storageSubsystem.save(
+      NAMESPACE,
+      "profileUrl",
+      new TextEncoder().encode(profileUrl)
+    );
+
+    const newProfile = await getProfile(this.#repo);
+
+    this.#contactHandle.change((oldContact: AnonymousContactDoc) => {
+      if (oldContact.type === "anonymous") {
+        oldContact.claimedBy = profileUrl;
+      }
+    });
+
+    this.emit("changeProfile", newProfile);
+  }
 
   async signUp({ name, avatar }: ContactProps) {
     let avatarUrl: AutomergeUrl;
@@ -73,9 +98,13 @@ class Profile extends EventEmitter<ProfileEvents> {
       avatarUrl = await uploadFile(this.#repo, avatar);
     }
 
-    this.contactHandle.change((contact) => {
+    this.contactHandle.change((contact: RegisteredContactDoc) => {
+      contact.type = "registered";
       contact.name = name;
-      contact.avatarUrl = avatarUrl;
+
+      if (avatarUrl) {
+        contact.avatarUrl = avatarUrl;
+      }
     });
   }
 
@@ -86,7 +115,7 @@ class Profile extends EventEmitter<ProfileEvents> {
     // replace with current profile with new anonymous
     const anonymousProfile = await getProfile(this.#repo);
 
-    this.emit("logOut", anonymousProfile);
+    this.emit("changeProfile", anonymousProfile);
   }
 
   get handle() {
@@ -172,10 +201,10 @@ function useProfile(): Profile | undefined {
       setProfile(profile);
     };
 
-    profile.on("logOut", onLogout);
+    profile.on("changeProfile", onLogout);
 
     return () => {
-      profile.off("logOut", onLogout);
+      profile.off("changeProfile", onLogout);
     };
   }, [profile]);
 
@@ -190,7 +219,6 @@ function useProfileDoc(): ProfileDoc {
 
 function useSelf(): ContactDoc {
   const profileDoc = useProfileDoc();
-
   const [contactDoc] = useDocument<ContactDoc>(profileDoc?.contactUrl);
 
   return contactDoc;
@@ -208,7 +236,18 @@ interface AvatarProps {
 }
 
 export const ContactAvatar = ({ url }: AvatarProps) => {
-  const [contact] = useDocument<ContactDoc>(url);
+  const [maybeAnonymousContact] = useDocument<ContactDoc>(url);
+  const [registeredContact] = useDocument<RegisteredContactDoc>(
+    maybeAnonymousContact?.type === "anonymous"
+      ? maybeAnonymousContact.claimedBy
+      : undefined
+  );
+
+  const contact: RegisteredContactDoc =
+    maybeAnonymousContact?.type === "registered"
+      ? maybeAnonymousContact
+      : registeredContact;
+
   const avatarUrl = useBlobUrl(contact?.avatarUrl);
 
   return (
@@ -238,9 +277,9 @@ export const ProfilePicker = () => {
   const [showProfileUrl, setShowProfileUrl] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
 
-  // initialize values
+  // initialize form values if already logged in
   useEffect(() => {
-    if (self?.name && name === "") {
+    if (self && self.type === "registered" && name === "") {
       setName(self.name);
     }
   }, [self]);
@@ -248,7 +287,7 @@ export const ProfilePicker = () => {
   const onSubmit = () => {
     switch (activeTab) {
       case ProfilePickerTab.LogIn:
-        console.log("log in", profileUrl);
+        profile.logIn(profileUrl as AutomergeUrl);
         break;
 
       case ProfilePickerTab.SignUp:
@@ -285,7 +324,7 @@ export const ProfilePicker = () => {
       profileUrl &&
       isValidAutomergeUrl(profileUrl));
 
-  const isLoggedIn = self?.name;
+  const isLoggedIn = self?.type === "registered";
 
   return (
     <Dialog>
