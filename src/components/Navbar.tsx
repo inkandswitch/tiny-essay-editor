@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LocalSession, MarkdownDoc, User } from "../schema";
+import { LocalSession, MarkdownDoc, MutableMarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChangeFn, save } from "@automerge/automerge/next";
 import { Check, ChevronsUpDown, User as UserIcon } from "lucide-react";
@@ -143,6 +143,10 @@ export const Navbar = ({
   // fork and open clone in new tab
   const forkDoc = useCallback(() => {
     const clone = repo.clone(handle);
+    clone.change((doc) => {
+      // @ts-expect-error need to figure out how to make the type mutable in change blocks
+      doc.forkMetadata.forkedFrom = handle.url;
+    });
     const cloneUrl = `${window.location.origin}/#${clone.url}`;
 
     // GL 12/6/23: If we don't wait before opening the clone, it's not ready yet sometimes.
