@@ -204,6 +204,8 @@ export const Navbar = ({
               >
                 Open
               </MenubarItem>
+              <MenubarItem>Fork</MenubarItem>
+              <MenubarSeparator />
               <MenubarItem
                 onClick={() => {
                   navigator.clipboard.writeText(handle.url);
@@ -214,7 +216,6 @@ export const Navbar = ({
               <MenubarItem onClick={downloadDoc}>
                 Download <MenubarShortcut>⌘ S</MenubarShortcut>
               </MenubarItem>
-              <MenubarSeparator />
               <MenubarItem
                 disabled
                 onClick={() => alert("Not implemented yet.")}
