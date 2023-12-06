@@ -2,6 +2,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, EyeOff, Copy } from "lucide-react";
 import {
   AutomergeUrl,
   DocHandle,
@@ -22,6 +23,12 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState, ChangeEvent, useMemo } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProfileDoc {
   contactUrl: AutomergeUrl;
@@ -228,6 +235,8 @@ export const ProfilePicker = () => {
   const [activeTab, setActiveTab] = useState<ProfilePickerTab>(
     ProfilePickerTab.SignUp
   );
+  const [showProfileUrl, setShowProfileUrl] = useState(false);
+  const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
 
   // initialize values
   useEffect(() => {
@@ -254,6 +263,20 @@ export const ProfilePicker = () => {
 
   const onFilesChanged = (e: ChangeEvent<HTMLInputElement>) => {
     setAvatar(!e.target.files ? undefined : e.target.files[0]);
+  };
+
+  const onToggleShowProfileUrl = () => {
+    setShowProfileUrl((showProfileUrl) => !showProfileUrl);
+  };
+
+  const onCopy = () => {
+    navigator.clipboard.writeText(profile.handle.url);
+
+    setIsCopyTooltipOpen(true);
+
+    setTimeout(() => {
+      setIsCopyTooltipOpen(false);
+    }, 1000);
   };
 
   const isSubmittable =
@@ -293,11 +316,22 @@ export const ProfilePicker = () => {
                   onChange={(evt) => setName(evt.target.value)}
                 />
               </div>
+
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="picture">Avatar</Label>
+                <Input
+                  id="avatar"
+                  type="file"
+                  accept="image/*"
+                  onChange={onFilesChanged}
+                />
+              </div>
             </TabsContent>
             <TabsContent value={ProfilePickerTab.LogIn}>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
                 <Label htmlFor="profileUrl">Profile Url</Label>
                 <Input
+                  className="cursor-"
                   id="profileUrl"
                   value={profileUrl}
                   onChange={(evt) => {
@@ -328,6 +362,41 @@ export const ProfilePicker = () => {
                 accept="image/*"
                 onChange={onFilesChanged}
               />
+            </div>
+
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="picture">Profile URL</Label>
+              <div className="flex gap-1.5">
+                <Input
+                  onFocus={(e) => e.target.select()}
+                  value={profile.handle.url}
+                  id="avatar"
+                  type={showProfileUrl ? "text" : "password"}
+                  accept="image/*"
+                  onChange={onFilesChanged}
+                />
+
+                <Button variant="ghost" onClick={onToggleShowProfileUrl}>
+                  {showProfileUrl ? <Eye /> : <EyeOff />}
+                </Button>
+
+                <TooltipProvider>
+                  <Tooltip open={isCopyTooltipOpen}>
+                    <TooltipTrigger>
+                      <Button
+                        variant="ghost"
+                        onClick={onCopy}
+                        onBlur={() => setIsCopyTooltipOpen(false)}
+                      >
+                        <Copy />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copied</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </>
         )}
