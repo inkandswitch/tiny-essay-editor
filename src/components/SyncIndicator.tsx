@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { getRelativeTimeString } from "@/utils";
 import { useRef } from "react";
+import { MenubarContent, MenubarMenu, MenubarTrigger } from "./ui/menubar";
 
 // if we are connected to the sync server and have outstanding changes we should switch to the error mode if we haven't received a sync message in a while
 // this variable specifies this timeout duration
@@ -35,135 +36,64 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     timestamp: onlineState.timestamp,
     isActive: onlineState.isOnline,
   });
-  const [isHovered, setIsHovered] = useState(false);
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
+  let icon = <div></div>;
+  let details = <div> </div>;
 
   if (onlineState.isOnline) {
     if (
       (isConnectedToServer || !hasInitialConnectionWaitTimedOut) &&
       (isSynced || !hasSyncTimedOut)
     ) {
-      return (
-        <Popover open={isHovered} onOpenChange={setIsHovered}>
-          <PopoverTrigger
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className="outline-none focus:outline-none cursor-default"
-          >
-            <div className="text-gray-500">
-              <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            <dl className="text-sm text-gray-600">
-              <div>
-                <dt className="font-bold inline mr-1">Connection:</dt>
-                <dd className="inline">Connected to server</dd>
-              </div>
-              <div>
-                <dt className="font-bold inline mr-1">Last synced:</dt>
-                <dd className="inline">
-                  {getRelativeTimeString(lastSyncUpdate)}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-bold inline mr-1">Sync status:</dt>
-                <dd className="inline">
-                  {isSynced ? "Up to date" : "Syncing..."}
-                </dd>
-              </div>
-            </dl>
-          </PopoverContent>
-        </Popover>
+      icon = (
+        <div className="flex items-center text-sm">
+          <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
+        </div>
       );
-    } else {
-      return (
-        <Popover open={isHovered} onOpenChange={setIsHovered}>
-          <PopoverTrigger
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className="outline-none focus:outline-none cursor-default"
-          >
-            <div className="text-red-500 flex items-center text-sm">
-              <WifiIcon
-                size={"20px"}
-                className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
-              />
-              {!isSynced && <div className="inline text-xs">*</div>}
-              <div className="ml-1">Sync Error</div>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            <div className="mb-2 text-sm">
-              There was an unexpected error connecting to the sync server. Don't
-              worry, your changes are saved locally. Please try reloading and
-              see if that fixes the issue.
-            </div>
-            <dl className="text-sm text-gray-600">
-              <div>
-                <dt className="font-bold inline mr-1">Connection:</dt>
-                <dd className="inline text-red-500">Connection error</dd>
-              </div>
-              <div>
-                <dt className="font-bold inline mr-1">Last synced:</dt>
-                <dd className="inline">
-                  {getRelativeTimeString(lastSyncUpdate)}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-bold inline mr-1">Sync status:</dt>
-                <dd className="inline">
-                  {isSynced ? (
-                    "No unsynced changes"
-                  ) : (
-                    <span className="text-red-500">Unsynced changes (*)</span>
-                  )}
-                </dd>
-              </div>
-            </dl>
-          </PopoverContent>
-        </Popover>
-      );
-    }
-  } else {
-    return (
-      <Popover open={isHovered} onOpenChange={setIsHovered}>
-        <PopoverTrigger
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="outline-none focus:outline-none cursor-default"
-        >
-          <div className="text-gray-500">
-            <WifiOffIcon
-              size={"20px"}
-              className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
-            />
-            {!isSynced && (
-              <div className="inline text-xs font-bold text-red-600">*</div>
-            )}
-          </div>
-        </PopoverTrigger>
-        <PopoverContent
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+      details = (
+        <div>
           <dl className="text-sm text-gray-600">
             <div>
               <dt className="font-bold inline mr-1">Connection:</dt>
-              <dd className="inline">Offline</dd>
+              <dd className="inline">Connected to server</dd>
+            </div>
+            <div>
+              <dt className="font-bold inline mr-1">Last synced:</dt>
+              <dd className="inline">
+                {getRelativeTimeString(lastSyncUpdate)}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold inline mr-1">Sync status:</dt>
+              <dd className="inline">
+                {isSynced ? "Up to date" : "Syncing..."}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      );
+    } else {
+      icon = (
+        <div className="text-red-500 flex items-center text-sm">
+          <WifiIcon
+            size={"20px"}
+            className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
+          />
+          {!isSynced && <div className="inline text-xs">*</div>}
+          <div className="ml-1">Sync Error</div>
+        </div>
+      );
+      details = (
+        <div>
+          <div className="mb-2 text-sm">
+            There was an unexpected error connecting to the sync server. Don't
+            worry, your changes are saved locally. Please try reloading and see
+            if that fixes the issue.
+          </div>
+          <dl className="text-sm text-gray-600">
+            <div>
+              <dt className="font-bold inline mr-1">Connection:</dt>
+              <dd className="inline text-red-500">Connection error</dd>
             </div>
             <div>
               <dt className="font-bold inline mr-1">Last synced:</dt>
@@ -177,18 +107,63 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
                 {isSynced ? (
                   "No unsynced changes"
                 ) : (
-                  <span className="text-red-500">
-                    You have unsynced changes. They are saved locally and will
-                    sync next time you have internet and you open the app.
-                  </span>
+                  <span className="text-red-500">Unsynced changes (*)</span>
                 )}
               </dd>
             </div>
           </dl>
-        </PopoverContent>
-      </Popover>
+        </div>
+      );
+    }
+  } else {
+    icon = (
+      <div className="text-gray-500">
+        <WifiOffIcon
+          size={"20px"}
+          className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
+        />
+        {!isSynced && (
+          <div className="inline text-xs font-bold text-red-600">*</div>
+        )}
+      </div>
+    );
+    details = (
+      <div>
+        <dl className="text-sm text-gray-600">
+          <div>
+            <dt className="font-bold inline mr-1">Connection:</dt>
+            <dd className="inline">Offline</dd>
+          </div>
+          <div>
+            <dt className="font-bold inline mr-1">Last synced:</dt>
+            <dd className="inline">{getRelativeTimeString(lastSyncUpdate)}</dd>
+          </div>
+          <div>
+            <dt className="font-bold inline mr-1">Sync status:</dt>
+            <dd className="inline">
+              {isSynced ? (
+                "No unsynced changes"
+              ) : (
+                <span className="text-red-500">
+                  You have unsynced changes. They are saved locally and will
+                  sync next time you have internet and you open the app.
+                </span>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </div>
     );
   }
+
+  return (
+    <MenubarMenu>
+      <MenubarTrigger className="px-2 mr-[-10px]">{icon}</MenubarTrigger>
+      <MenubarContent>
+        <div className="w-64 p-2">{details}</div>
+      </MenubarContent>
+    </MenubarMenu>
+  );
 };
 
 const SYNC_SERVER_PREFIX = "storage-server-";

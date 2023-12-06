@@ -12,3 +12,8 @@ window.logoImageUrl = new URL(
   "./assets/logo-favicon-310x310-transparent.png",
   import.meta.url
 ).href;
+
+// @ts-expect-error - set a window global
+window.openDocumentInNewTab = (docUrl) => {
+  alert("Not implemented yet");
+};

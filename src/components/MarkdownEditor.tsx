@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 import {
   EditorView,
@@ -16,10 +16,9 @@ import {
 import { StateEffect, StateField, Range } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-// import {javascript} from "@codemirror/lang-javascript"
 
 import { tags } from "@lezer/highlight";
-import { Prop } from "@automerge/automerge";
+import { diff, getHeads, Heads, Patch, Prop } from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -53,6 +52,7 @@ export type TextSelection = {
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
+  diffHeads: Heads | null;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
@@ -101,6 +101,92 @@ const threadDecorations = EditorView.decorations.compute(
         }
       ) ?? [];
 
+    if (decorations.length === 0) {
+      return Decoration.none;
+    }
+
+    return Decoration.set(decorations);
+  }
+);
+
+// Stuff for patches decoration
+
+const setPatchesEffect = StateEffect.define<Patch[]>();
+const patchesField = StateField.define<Patch[]>({
+  create() {
+    return [];
+  },
+  update(patches, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setPatchesEffect)) {
+        return e.value;
+      }
+    }
+    return patches;
+  },
+});
+
+class DeletionMarker extends WidgetType {
+  constructor() {
+    super();
+  }
+
+  toDOM(): HTMLElement {
+    const box = document.createElement("div");
+    box.style.display = "inline-block";
+    box.style.color = "#ff5353";
+    box.style.fontSize = "0.8em";
+    box.style.marginTop = "0.3em";
+    box.style.verticalAlign = "top";
+    box.innerText = "⌫";
+    return box;
+  }
+
+  eq() {
+    // todo: i think this is right for now until we show hover of del text etc
+    return true;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
+const deleteDecoration = Decoration.widget({
+  widget: new DeletionMarker(),
+  side: 1,
+});
+
+const patchDecorations = EditorView.decorations.compute(
+  [patchesField],
+  (state) => {
+    const patches = state
+      .field(patchesField)
+      .filter((patch) => patch.path[0] === "content");
+
+    const decorations = patches.flatMap((patch) => {
+      switch (patch.action) {
+        case "splice": {
+          const from = patch.path[1];
+          const length = patch.value.length;
+          if (length === 0) {
+            return [];
+          }
+          return [spliceDecoration.range(from, from + length)];
+        }
+        case "del": {
+          const from = patch.path[1];
+          return [deleteDecoration.range(from)];
+        }
+      }
+      return [];
+    });
+
+    if (decorations.length === 0) {
+      return Decoration.none;
+    }
+
     return Decoration.set(decorations);
   }
 );
@@ -135,6 +221,9 @@ const theme = EditorView.theme({
   },
   ".cm-comment-thread": {
     backgroundColor: "rgb(255 249 194)",
+  },
+  ".cm-patch-splice": {
+    backgroundColor: "rgb(0 255 0 / 20%)",
   },
   ".cm-comment-thread.active": {
     backgroundColor: "rgb(255 227 135)",
@@ -256,6 +345,7 @@ export function MarkdownEditor({
   setView,
   setActiveThreadId,
   threadsWithPositions,
+  diffHeads,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -267,6 +357,21 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
+
+  const doc = handle.docSync();
+  const view = editorRoot.current;
+
+  // // Propagate patches into the codemirror
+  useEffect(() => {
+    const doc = handle.docSync();
+    if (!diffHeads) {
+      return;
+    }
+    const patches = diff(doc, diffHeads, getHeads(doc));
+    editorRoot.current?.dispatch({
+      effects: setPatchesEffect.of(patches),
+    });
+  }, [handle, doc, diffHeads, view]);
 
   useEffect(() => {
     const doc = handle.docSync();
@@ -308,6 +413,8 @@ export function MarkdownEditor({
         frontmatterPlugin,
         threadsField,
         threadDecorations,
+        patchesField,
+        patchDecorations,
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,

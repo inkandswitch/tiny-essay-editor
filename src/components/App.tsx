@@ -1,23 +1,26 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { LocalSession, MarkdownDoc } from "../schema";
 import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { useThreadsWithPositions } from "../utils";
+import { useTypedDocument } from "@/useTypedDocument";
+import { Heads, getHeads } from "@automerge/automerge/next";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc, changeDoc] = useTypedDocument(docUrl, MarkdownDoc); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
+  const [showDiff, setShowDiff] = useState(false);
 
   const localStorageKey = `LocalSession-${docUrl}`;
 
@@ -41,6 +44,15 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     activeThreadId,
   });
 
+  const diffHeads: Heads | null = useMemo(() => {
+    if (!doc) return [];
+    if (doc?.forkMetadata?.parent && showDiff) {
+      return [...doc.forkMetadata.parent.forkedAtHeads];
+    } else {
+      return null;
+    }
+  }, [doc, showDiff]);
+
   if (!doc || !session) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
@@ -54,13 +66,16 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
           changeDoc={changeDoc}
           session={session}
           setSession={setSession}
+          showDiff={showDiff}
+          setShowDiff={setShowDiff}
         />
       </div>
 
-      <div className="flex bg-gray-50 mt-12">
+      <div className="flex bg-gray-50 mt-11">
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
           <MarkdownEditor
             handle={handle}
+            diffHeads={diffHeads}
             path={["content"]}
             setSelection={setSelection}
             setView={setView}

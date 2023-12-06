@@ -11,7 +11,7 @@ const LAB_USERS = [
   "Alex Good",
   "Orion Henry",
   "Mary Rose Cook",
-].sort()
+].sort();
 
 export function init(doc: any) {
   doc.content = "# Untitled\n\n";
@@ -22,4 +22,8 @@ export function init(doc: any) {
     const user = { id: idStr, name };
     doc.users.push(user);
   }
+  doc.forkMetadata = {
+    parent: null,
+    knownForks: [],
+  };
 }
