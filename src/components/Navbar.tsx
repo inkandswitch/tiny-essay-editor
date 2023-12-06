@@ -2,13 +2,7 @@ import { Button } from "@/components/ui/button";
 import { LocalSession, MarkdownDoc, User } from "../schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChangeFn, save } from "@automerge/automerge/next";
-import {
-  Check,
-  ChevronsUpDown,
-  Download,
-  Plus,
-  User as UserIcon,
-} from "lucide-react";
+import { Check, ChevronsUpDown, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Command,
@@ -33,6 +27,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
+
 import { Label } from "@/components/ui/label";
 import { useCallback, useEffect, useState } from "react";
 import { getTitle, saveFile } from "../utils";
@@ -139,151 +143,249 @@ export const Navbar = ({
   }
 
   return (
-    <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
-      <img
-        className="h-8 my-2 ml-2"
-        // @ts-expect-error window global set in entrypoint file
-        src={window.logoImageUrl}
-      />
-
-      <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
-        {title}
-      </div>
-
-      <div className="ml-auto px-8 py-1 flex gap-2 items-center">
-        <SyncIndicator handle={handle} />
-        <Button
-          onClick={() => window.open("/", "_blank")}
-          variant="ghost"
-          className="text-gray-500"
-        >
-          <Plus size={"20px"} className="mr-2" />{" "}
-          <span className="hidden md:inline-block">New</span>
-        </Button>
-        <Button onClick={downloadDoc} variant="ghost" className="text-gray-500">
-          <Download size={"20px"} className="mr-2" />{" "}
-          <div className="hidden md:inline-block">Download</div>
-        </Button>
-        <Dialog>
-          <DialogTrigger>
-            <Avatar>
-              {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
-              <AvatarFallback>
-                {sessionUser ? initials(sessionUser.name) : <UserIcon />}
-              </AvatarFallback>
-            </Avatar>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit profile</DialogTitle>
-              <DialogDescription>
-                Log in as existing user, or sign up with your name
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Log in:
-                </Label>
-                <Popover open={namePickerOpen} onOpenChange={setNamePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={namePickerOpen}
-                      className="justify-between col-span-3"
-                    >
-                      {tentativeUser._type === "existing"
-                        ? doc.users.find((user) => user.id === tentativeUser.id)
-                            ?.name
-                        : "Select user..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0">
-                    <Command>
-                      <CommandInput placeholder="Search users..." />
-                      <CommandEmpty>No user found.</CommandEmpty>
-                      <CommandGroup>
-                        {users.map((user) => (
-                          <CommandItem
-                            key={user.id}
-                            onSelect={() => {
-                              if (user.id !== sessionUser?.id) {
-                                setTentativeUser({
-                                  _type: "existing",
-                                  id: user.id,
-                                });
-                              }
-                              setNamePickerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                session.userId === user.id
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                            />
-                            {user.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="text-center text-sm text-gray-400">or</div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Sign up:
-                </Label>
-                <Input
-                  placeholder="Your name here"
-                  className="col-span-3"
-                  value={
-                    tentativeUser._type === "new" ? tentativeUser.name : ""
+    <div>
+      <div className="h-11 w-screen border-b border-gray-300 bg-white align-middle flex text-gray-800">
+        <Menubar className="border-none bg-none">
+          <MenubarMenu>
+            <MenubarTrigger className="px-2 mr-[-10px]">
+              <img
+                className="h-6"
+                // @ts-expect-error window global set in entrypoint file
+                src={window.logoImageUrl}
+              />{" "}
+            </MenubarTrigger>
+            <MenubarContent>
+              <MenubarItem onClick={() => alert("not implemented yet")}>
+                About this OS
+              </MenubarItem>
+              <MenubarSeparator />
+              <MenubarItem onClick={() => alert("not implemented yet")}>
+                System Settings
+              </MenubarItem>
+              <MenubarSeparator />
+              <MenubarItem onClick={() => alert("not implemented yet")}>
+                Log out
+              </MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+          <MenubarMenu>
+            <MenubarTrigger className="font-bold px-2">
+              Tiny Essay Editor
+            </MenubarTrigger>
+            <MenubarContent>
+              <MenubarItem onClick={() => alert("not implemented yet")}>
+                About Tiny Essay Editor
+              </MenubarItem>
+              <MenubarSeparator />
+              <MenubarItem onClick={() => alert("not implemented yet")}>
+                Settings
+              </MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+          <MenubarMenu>
+            <MenubarTrigger>File</MenubarTrigger>
+            <MenubarContent>
+              {/* TODO: this approach to making a new doc doesn't work for TEE/TR */}
+              <MenubarItem onClick={() => window.open("/", "_blank")}>
+                New
+              </MenubarItem>
+              <MenubarItem
+                onClick={() => {
+                  const automergeURLToOpen = prompt("Automerge URL:");
+                  if (
+                    automergeURLToOpen === null ||
+                    automergeURLToOpen === ""
+                  ) {
+                    return;
                   }
-                  onFocus={() => {
-                    setTentativeUser({ _type: "new", name: "" });
-                    setNamePickerOpen(false);
-                  }}
-                  onChange={(e) => {
-                    setTentativeUser({
-                      _type: "new",
-                      name: e.target.value,
-                    });
-                  }}
-                ></Input>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogTrigger asChild>
-                <Button
-                  type="submit"
-                  onClick={() => {
-                    if (tentativeUser._type === "existing") {
-                      setSession({ userId: tentativeUser.id });
-                    } else if (tentativeUser._type === "new") {
-                      const user = {
-                        id: uuid(),
-                        name: tentativeUser.name,
-                      };
-                      changeDoc((doc) => {
-                        doc.users.push(user);
-                      });
-                      setSession({ userId: user.id });
+                  const newUrl = `${document.location.origin}${document.location.pathname}#${automergeURLToOpen}`;
+                  window.open(newUrl, "_blank");
+                }}
+              >
+                Open
+              </MenubarItem>
+              <MenubarItem
+                onClick={() => {
+                  navigator.clipboard.writeText(handle.url);
+                }}
+              >
+                Copy Automerge Doc URL
+              </MenubarItem>
+              <MenubarItem onClick={downloadDoc}>
+                Download <MenubarShortcut>⌘ S</MenubarShortcut>
+              </MenubarItem>
+              <MenubarSeparator />
+              <MenubarItem
+                disabled
+                onClick={() => alert("Not implemented yet.")}
+              >
+                Share
+              </MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+          <MenubarMenu>
+            <MenubarTrigger>View</MenubarTrigger>
+            <MenubarContent>
+              <MenubarItem>Show Changes</MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+          <MenubarMenu>
+            <MenubarTrigger>Help</MenubarTrigger>
+            <MenubarContent>
+              <MenubarItem
+                onClick={() =>
+                  window.open(
+                    "https://github.com/inkandswitch/tiny-essay-editor",
+                    "_blank"
+                  )
+                }
+              >
+                GitHub Repo
+              </MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+        <div className="ml-auto px-8 py-1 flex gap-2 items-center">
+          <Menubar className="border-none bg-none">
+            <SyncIndicator handle={handle} />
+          </Menubar>
+
+          {/* TODO: make the user dialog into a menu more consistent with rest */}
+          <Dialog>
+            <DialogTrigger>
+              <Avatar className="h-8">
+                <AvatarFallback>
+                  {sessionUser ? initials(sessionUser.name) : <UserIcon />}
+                </AvatarFallback>
+              </Avatar>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Edit profile</DialogTitle>
+                <DialogDescription>
+                  Log in as existing user, or sign up with your name
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Log in:
+                  </Label>
+                  <Popover
+                    open={namePickerOpen}
+                    onOpenChange={setNamePickerOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={namePickerOpen}
+                        className="justify-between col-span-3"
+                      >
+                        {tentativeUser._type === "existing"
+                          ? doc.users.find(
+                              (user) => user.id === tentativeUser.id
+                            )?.name
+                          : "Select user..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Command>
+                        <CommandInput placeholder="Search users..." />
+                        <CommandEmpty>No user found.</CommandEmpty>
+                        <CommandGroup>
+                          {users.map((user) => (
+                            <CommandItem
+                              key={user.id}
+                              onSelect={() => {
+                                if (user.id !== sessionUser?.id) {
+                                  setTentativeUser({
+                                    _type: "existing",
+                                    id: user.id,
+                                  });
+                                }
+                                setNamePickerOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  session.userId === user.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {user.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="text-center text-sm text-gray-400">or</div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Sign up:
+                  </Label>
+                  <Input
+                    placeholder="Your name here"
+                    className="col-span-3"
+                    value={
+                      tentativeUser._type === "new" ? tentativeUser.name : ""
                     }
-                  }}
-                >
-                  Save changes
-                </Button>
-              </DialogTrigger>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                    onFocus={() => {
+                      setTentativeUser({ _type: "new", name: "" });
+                      setNamePickerOpen(false);
+                    }}
+                    onChange={(e) => {
+                      setTentativeUser({
+                        _type: "new",
+                        name: e.target.value,
+                      });
+                    }}
+                  ></Input>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogTrigger asChild>
+                  <Button
+                    type="submit"
+                    onClick={() => {
+                      if (tentativeUser._type === "existing") {
+                        setSession({ userId: tentativeUser.id });
+                      } else if (tentativeUser._type === "new") {
+                        const user = {
+                          id: uuid(),
+                          name: tentativeUser.name,
+                        };
+                        changeDoc((doc) => {
+                          doc.users.push(user);
+                        });
+                        setSession({ userId: user.id });
+                      }
+                    }}
+                  >
+                    Save changes
+                  </Button>
+                </DialogTrigger>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+      {/* <div className="h-12 w-screen bg-white border-b border-gray-300 align-middle flex">
+        <img
+          className="h-8 my-2 ml-2"
+          // @ts-expect-error window global set in entrypoint file
+          src={window.logoImageUrl}
+        />
+
+        <div className="text-md my-3 select-none overflow-hidden overflow-ellipsis whitespace-nowrap">
+          {title}
+        </div>
+      </div> */}
     </div>
   );
 };
