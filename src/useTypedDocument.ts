@@ -39,6 +39,7 @@ export function useTypedDocument<T extends S.Schema<any>>(
         console.error(
           "WARNING: document loaded from repo does not match schema"
         );
+        console.error(v);
         console.error(String(parseResult.left));
       }
       setDoc(v);

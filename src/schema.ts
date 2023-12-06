@@ -45,6 +45,7 @@ export const MarkdownDoc = S.struct({
   content: S.string,
   commentThreads: S.readonlyMap(S.string, CommentThread),
   users: S.array(User),
+  forkedFrom: S.nullable(S.string),
 });
 
 export type MarkdownDoc = S.Schema.To<typeof MarkdownDoc>;
