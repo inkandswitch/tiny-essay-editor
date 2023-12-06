@@ -230,7 +230,19 @@ export const Navbar = ({
               >
                 Open
               </MenubarItem>
+              <MenubarSeparator />
               <MenubarItem onClick={() => forkDoc()}>Fork</MenubarItem>
+              <MenubarItem
+                disabled={!doc?.forkMetadata?.parent}
+                onClick={() =>
+                  doc?.forkMetadata?.parent?.url &&
+                  window.open(
+                    `${document.location.origin}${document.location.pathname}#${doc.forkMetadata.parent.url}`
+                  )
+                }
+              >
+                Go to parent
+              </MenubarItem>
               <MenubarSeparator />
               <MenubarItem
                 onClick={() => {
