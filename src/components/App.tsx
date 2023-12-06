@@ -11,7 +11,7 @@ import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import { useThreadsWithPositions } from "../utils";
 import { useTypedDocument } from "@/useTypedDocument";
-import { getHeads } from "@automerge/automerge/next";
+import { Heads, getHeads } from "@automerge/automerge/next";
 
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useTypedDocument(docUrl, MarkdownDoc); // used to trigger re-rendering when the doc loads
@@ -44,12 +44,12 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     activeThreadId,
   });
 
-  const diffHeads = useMemo(() => {
+  const diffHeads: Heads | null = useMemo(() => {
     if (!doc) return [];
     if (doc?.forkMetadata?.parent && showDiff) {
       return [...doc.forkMetadata.parent.forkedAtHeads];
     } else {
-      return getHeads(doc);
+      return null;
     }
   }, [doc, showDiff]);
 

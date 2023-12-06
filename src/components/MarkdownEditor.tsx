@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 import {
   EditorView,
@@ -18,14 +18,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
 import { tags } from "@lezer/highlight";
-import {
-  diff,
-  Doc,
-  getHeads,
-  Heads,
-  Patch,
-  Prop,
-} from "@automerge/automerge/next";
+import { diff, getHeads, Heads, Patch, Prop } from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -59,7 +52,7 @@ export type TextSelection = {
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
-  diffHeads: Heads;
+  diffHeads: Heads | null;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
@@ -107,6 +100,10 @@ const threadDecorations = EditorView.decorations.compute(
           }
         }
       ) ?? [];
+
+    if (decorations.length === 0) {
+      return Decoration.none;
+    }
 
     return Decoration.set(decorations);
   }
@@ -173,6 +170,9 @@ const patchDecorations = EditorView.decorations.compute(
         case "splice": {
           const from = patch.path[1];
           const length = patch.value.length;
+          if (length === 0) {
+            return [];
+          }
           return [spliceDecoration.range(from, from + length)];
         }
         case "del": {
@@ -182,6 +182,10 @@ const patchDecorations = EditorView.decorations.compute(
       }
       return [];
     });
+
+    if (decorations.length === 0) {
+      return Decoration.none;
+    }
 
     return Decoration.set(decorations);
   }
@@ -360,6 +364,9 @@ export function MarkdownEditor({
   // // Propagate patches into the codemirror
   useEffect(() => {
     const doc = handle.docSync();
+    if (!diffHeads) {
+      return;
+    }
     const patches = diff(doc, diffHeads, getHeads(doc));
     editorRoot.current?.dispatch({
       effects: setPatchesEffect.of(patches),
