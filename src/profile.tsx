@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent, useMemo } from "react";
 
 interface ProfileDoc {
   contactUrl: AutomergeUrl;
@@ -29,10 +29,16 @@ interface ProfileDoc {
 
 interface ContactDoc {
   name?: string;
+  avatarUrl?: AutomergeUrl;
 }
 
 interface ProfileEvents {
   logOut: (profile: Profile) => void;
+}
+
+interface ContactProps {
+  name: string;
+  avatar: File;
 }
 
 class Profile extends EventEmitter<ProfileEvents> {
@@ -52,11 +58,17 @@ class Profile extends EventEmitter<ProfileEvents> {
     this.#contactHandle = contactHandle;
   }
 
-  async logIn(profileUrl: string) {}
+  async logIn() {}
 
-  async signUp(name: string) {
+  async signUp({ name, avatar }: ContactProps) {
+    let avatarUrl: AutomergeUrl;
+    if (avatar) {
+      avatarUrl = await uploadFile(this.#repo, avatar);
+    }
+
     this.contactHandle.change((contact) => {
       contact.name = name;
+      contact.avatarUrl = avatarUrl;
     });
   }
 
@@ -141,7 +153,6 @@ function useProfile(): Profile | undefined {
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
 
   useEffect(() => {
-    console.log("trigger set profile");
     getProfile(repo).then(setProfile);
   }, [repo]);
 
@@ -167,9 +178,6 @@ function useProfile(): Profile | undefined {
 function useProfileDoc(): ProfileDoc {
   const profile = useProfile();
   const [profileDoc] = useDocument<ProfileDoc>(profile?.handle.url);
-
-  console.log("useProfile", profile?.handle.url);
-
   return profileDoc;
 }
 
@@ -188,6 +196,24 @@ const initials = (name: string) => {
     .join("");
 };
 
+interface AvatarProps {
+  url: AutomergeUrl;
+}
+
+export const ContactAvatar = ({ url }: AvatarProps) => {
+  const [contact] = useDocument<ContactDoc>(url);
+  const avatarUrl = useBlobUrl(contact?.avatarUrl);
+
+  return (
+    <Avatar>
+      <AvatarImage src={avatarUrl} alt={contact?.name} />
+      <AvatarFallback>
+        {contact && contact.name ? initials(contact.name) : <UserIcon />}
+      </AvatarFallback>
+    </Avatar>
+  );
+};
+
 enum ProfilePickerTab {
   LogIn = "logIn",
   SignUp = "signUp",
@@ -197,6 +223,7 @@ export const ProfilePicker = () => {
   const profile = useProfile();
   const self = useSelf();
   const [name, setName] = useState<string>("");
+  const [avatar, setAvatar] = useState<File>();
   const [profileUrl, setProfileUrl] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ProfilePickerTab>(
     ProfilePickerTab.SignUp
@@ -209,8 +236,6 @@ export const ProfilePicker = () => {
     }
   }, [self]);
 
-  console.log("self", self);
-
   const onSubmit = () => {
     switch (activeTab) {
       case ProfilePickerTab.LogIn:
@@ -218,13 +243,17 @@ export const ProfilePicker = () => {
         break;
 
       case ProfilePickerTab.SignUp:
-        profile.signUp(name);
+        profile.signUp({ name, avatar });
         break;
     }
   };
 
   const onLogout = () => {
     profile.logOut();
+  };
+
+  const onFilesChanged = (e: ChangeEvent<HTMLInputElement>) => {
+    setAvatar(!e.target.files ? undefined : e.target.files[0]);
   };
 
   const isSubmittable =
@@ -238,11 +267,7 @@ export const ProfilePicker = () => {
   return (
     <Dialog>
       <DialogTrigger>
-        <Avatar>
-          <AvatarFallback>
-            {self && self.name ? initials(self.name) : <UserIcon />}
-          </AvatarFallback>
-        </Avatar>
+        <ContactAvatar url={profile?.contactHandle.url} />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -253,7 +278,6 @@ export const ProfilePicker = () => {
           <Tabs
             defaultValue={ProfilePickerTab.SignUp}
             className="w-full"
-            onChange={(...args) => console.log(args)}
             onValueChange={(tab) => setActiveTab(tab as ProfilePickerTab)}
           >
             <TabsList className="grid w-full grid-cols-2">
@@ -286,14 +310,26 @@ export const ProfilePicker = () => {
         )}
 
         {isLoggedIn && (
-          <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(evt) => setName(evt.target.value)}
-            />
-          </div>
+          <>
+            <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(evt) => setName(evt.target.value)}
+              />
+            </div>
+
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="picture">Avatar</Label>
+              <Input
+                id="avatar"
+                type="file"
+                accept="image/*"
+                onChange={onFilesChanged}
+              />
+            </div>
+          </>
         )}
         <DialogFooter>
           {isLoggedIn && (
@@ -314,4 +350,44 @@ export const ProfilePicker = () => {
       </DialogContent>
     </Dialog>
   );
+};
+
+interface FileDoc {
+  type: string;
+  data: ArrayBuffer;
+}
+
+const uploadFile = async (repo: Repo, file: File): Promise<AutomergeUrl> => {
+  const reader = new FileReader();
+  const fileDocHandle = repo.create<FileDoc>();
+
+  const isLoaded = new Promise((resolve) => {
+    reader.onload = (event) => {
+      fileDocHandle.change((fileDoc) => {
+        fileDoc.type = file.type;
+        fileDoc.data = new Uint8Array(event.target.result as ArrayBuffer);
+      });
+
+      resolve(true);
+    };
+  });
+
+  reader.readAsArrayBuffer(file);
+
+  await isLoaded;
+  return fileDocHandle.url;
+};
+
+const useBlobUrl = (url: AutomergeUrl) => {
+  const [file] = useDocument<FileDoc>(url);
+
+  return useMemo(() => {
+    if (!file || !file.data || !file.type) {
+      return;
+    }
+
+    const blob = new Blob([file.data], { type: file.type });
+    const url = URL.createObjectURL(blob);
+    return url;
+  }, [file?.data, file?.type]);
 };
