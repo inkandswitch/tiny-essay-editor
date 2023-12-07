@@ -12,8 +12,7 @@ import "./index.css";
 const repo = new Repo({
   network: [
     new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("ws://localhost:3030"),
-    //  new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
   ],
   storage: new IndexedDBStorageAdapter(),
 });

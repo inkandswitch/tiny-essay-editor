@@ -1,28 +1,20 @@
-import { next as A } from "@automerge/automerge";
-import { DocHandle, StorageId, PeerId } from "@automerge/automerge-repo";
-import { useState, useEffect, useRef, useContext, createContext } from "react";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { WifiIcon, WifiOffIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { getRelativeTimeString } from "@/utils";
-import { createMachine, raise } from "xstate";
+import { arraysAreEqual, getRelativeTimeString } from "@/utils";
+import { next as A } from "@automerge/automerge";
+import { DocHandle, StorageId } from "@automerge/automerge-repo";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { useMachine } from "@xstate/react";
-import { arraysAreEqual } from "@/utils";
+import { ChevronDown, ChevronUp, WifiIcon, WifiOffIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createMachine, raise } from "xstate";
+import { Button } from "./ui/button";
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
+  const [showDetails, setShowDetails] = useState(false);
 
   const {
     lastSyncUpdate,
@@ -30,27 +22,62 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     syncState,
     syncServerConnectionError,
     syncServerResponseError,
+    syncServerHeads,
+    ownHeads,
   } = useSyncIndicatorState(handle);
 
   const isSynced = syncState === SyncState.InSync;
 
+  const headsView = showDetails ? (
+    <>
+      <div className="whitespace-nowrap flex">
+        <dt className="font-bold inline mr-1">Server heads:</dt>
+        <dd className="inline text-ellipsis flex-shrink overflow-hidden min-w-0">
+          {JSON.stringify(
+            (syncServerHeads ?? []).map((part) => part.slice(0, 4))
+          )}
+        </dd>
+      </div>
+      <div className="whitespace-nowrap flex">
+        <dt className="font-bold inline mr-1">Local heads:</dt>
+        <dd className="inline text-ellipsis flex-shrink overflow-hidden min-w-0">
+          {JSON.stringify((ownHeads ?? []).map((part) => part.slice(0, 4)))}
+        </dd>
+      </div>
+      <div className="flex justify-center mt-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowDetails(false)}
+          className="p-1"
+        >
+          <ChevronUp className="text-gray-500" />
+        </Button>
+      </div>
+    </>
+  ) : (
+    <div className="flex justify-center mt-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setShowDetails(true)}
+        className="p-1"
+      >
+        <ChevronDown className="text-gray-500" />
+      </Button>
+    </div>
+  );
+
   if (isInternetConnected) {
     if (!syncServerConnectionError && !syncServerResponseError) {
       return (
-        <Popover open={isHovered} onOpenChange={setIsHovered}>
-          <PopoverTrigger
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className="outline-none focus:outline-none cursor-default"
-          >
+        <Popover>
+          <PopoverTrigger className="outline-none focus:outline-none cursor-default">
             <div className="text-gray-500">
               <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
             </div>
           </PopoverTrigger>
-          <PopoverContent
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
+          <PopoverContent className="flex flex-col gap-1.5 pb-2">
             <dl className="text-sm text-gray-600">
               <div>
                 <dt className="font-bold inline mr-1">Connection:</dt>
@@ -68,18 +95,15 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
                   {isSynced ? "Up to date" : "Syncing..."}
                 </dd>
               </div>
+              {headsView}
             </dl>
           </PopoverContent>
         </Popover>
       );
     } else {
       return (
-        <Popover open={isHovered} onOpenChange={setIsHovered}>
-          <PopoverTrigger
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className="outline-none focus:outline-none cursor-default"
-          >
+        <Popover>
+          <PopoverTrigger className="outline-none focus:outline-none cursor-default">
             <div className="text-red-500 flex items-center text-sm">
               <WifiIcon
                 size={"20px"}
@@ -89,10 +113,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
               <div className="ml-1">Sync Error</div>
             </div>
           </PopoverTrigger>
-          <PopoverContent
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
+          <PopoverContent className="flex flex-col gap-1.5 pb-2">
             <div className="mb-2 text-sm">
               There was an unexpected error connecting to the sync server. Don't
               worry, your changes are saved locally. Please try reloading and
@@ -124,6 +145,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
                     <span className="text-red-500">Unsynced changes (*)</span>
                   )}
                 </dd>
+                {headsView}
               </div>
             </dl>
           </PopoverContent>
@@ -132,12 +154,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     }
   } else {
     return (
-      <Popover open={isHovered} onOpenChange={setIsHovered}>
-        <PopoverTrigger
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="outline-none focus:outline-none cursor-default"
-        >
+      <Popover>
+        <PopoverTrigger className="outline-none focus:outline-none cursor-default">
           <div className="text-gray-500">
             <WifiOffIcon
               size={"20px"}
@@ -148,10 +166,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
             )}
           </div>
         </PopoverTrigger>
-        <PopoverContent
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+        <PopoverContent>
           <dl className="text-sm text-gray-600">
             <div>
               <dt className="font-bold inline mr-1">Connection:</dt>
@@ -178,6 +193,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
                 )}
               </dd>
             </div>
+            {headsView}
           </dl>
         </PopoverContent>
       </Popover>
@@ -195,6 +211,8 @@ enum SyncState {
 }
 
 interface SyncIndicatorState {
+  syncServerHeads: A.Heads;
+  ownHeads: A.Heads;
   lastSyncUpdate?: number;
   isInternetConnected: boolean;
   syncState: SyncState;
@@ -214,7 +232,7 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
 
   const [machine, send] = useMachine(() => {
     return getSyncIndicatorMachine({
-      connectionInitTimeout: 1000,
+      connectionInitTimeout: 2000,
       maxSyncMessageDelay: 1000,
       isInternetConnected: navigator.onLine,
       isSyncServerConnected: true,
@@ -289,6 +307,8 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   }, [ownHeads, syncServerHeads]);
 
   return {
+    ownHeads,
+    syncServerHeads,
     lastSyncUpdate,
     isInternetConnected: machine.matches("internet.connected"),
     syncState: machine.matches("sync.unknown")
