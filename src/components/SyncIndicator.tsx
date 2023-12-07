@@ -294,7 +294,6 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   }, [handle]);
 
   useEffect(() => {
-    console.log(ownHeads, syncServerHeads);
     if (!ownHeads || !syncServerHeads) {
       return;
     }

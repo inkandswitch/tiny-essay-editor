@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
-    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc --automergeDocUrl automerge:Sk1ddpZBr1D51mnn32pYeMZgHQL",
+    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
     "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
     "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
     "export:static": "node -e \"require('fs').cpSync('public', 'tsc', { recursive: true });\"",
