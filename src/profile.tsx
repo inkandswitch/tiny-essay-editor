@@ -247,13 +247,6 @@ export function useProfile(): Profile | undefined {
 function useProfileDoc(): ProfileDoc {
   const profile = useProfile();
   const [profileDoc] = useDocument<ProfileDoc>(profile?.handle.url);
-
-  console.log(
-    "profileDoc",
-    profileDoc && JSON.parse(JSON.stringify(profileDoc)),
-    profile?.handle.url
-  );
-
   return profileDoc;
 }
 
