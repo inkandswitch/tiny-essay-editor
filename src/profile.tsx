@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AutomergeUrl,
   DocHandle,
+  DocumentId,
   Repo,
-  isValidAutomergeUrl,
+  stringifyAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
@@ -33,7 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { type VariantProps } from "class-variance-authority";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useReducer, useState } from "react";
 
 interface ProfileDoc {
   contactUrl: AutomergeUrl;
@@ -53,7 +54,7 @@ interface RegisteredContactDoc {
 type ContactDoc = AnonymousContactDoc | RegisteredContactDoc;
 
 interface ProfileEvents {
-  changeProfile: (profile: Profile) => void;
+  change: () => void;
 }
 
 interface ContactProps {
@@ -73,6 +74,8 @@ class Profile extends EventEmitter<ProfileEvents> {
   ) {
     super();
 
+    console.log("create profile");
+
     this.#repo = repo;
     this.#handle = handle;
     this.#contactHandle = contactHandle;
@@ -80,21 +83,21 @@ class Profile extends EventEmitter<ProfileEvents> {
 
   async logIn(profileUrl: AutomergeUrl) {
     // override old profileUrl
-    await this.#repo.storageSubsystem.save(
-      NAMESPACE,
-      "profileUrl",
-      new TextEncoder().encode(profileUrl)
-    );
+    localStorage.setItem(PROFILE_URL, profileUrl);
 
-    const newProfile = await getProfile(this.#repo);
+    const profileHandle = this.#repo.find<ProfileDoc>(profileUrl);
+    const profileDoc = await profileHandle.doc();
+    const contactHandle = this.#repo.find<ContactDoc>(profileDoc.contactUrl);
 
     this.#contactHandle.change((oldContact: AnonymousContactDoc) => {
       if (oldContact.type === "anonymous") {
-        oldContact.claimedBy = newProfile.#contactHandle.url;
+        oldContact.claimedBy = contactHandle.url;
       }
     });
 
-    this.emit("changeProfile", newProfile);
+    this.#contactHandle = contactHandle;
+    this.#handle = profileHandle;
+    this.emit("change");
   }
 
   async signUp({ name, avatar }: ContactProps) {
@@ -114,13 +117,23 @@ class Profile extends EventEmitter<ProfileEvents> {
   }
 
   async logOut() {
-    // delete old profile id
-    await this.#repo.storageSubsystem.save(NAMESPACE, "profileUrl", null);
+    const profileHandle = this.#repo.create<ProfileDoc>();
+    const contactHandle = this.#repo.create<ContactDoc>();
 
-    // replace with current profile with new anonymous
-    const anonymousProfile = await getProfile(this.#repo);
+    profileHandle.change((profile) => {
+      profile.contactUrl = contactHandle.url;
+    });
 
-    this.emit("changeProfile", anonymousProfile);
+    contactHandle.change((contact) => {
+      contact.type = "anonymous";
+    });
+
+    localStorage.setItem(PROFILE_URL, profileHandle.url);
+
+    this.#handle = profileHandle;
+    this.#contactHandle = contactHandle;
+
+    this.emit("change");
   }
 
   get handle() {
@@ -132,31 +145,31 @@ class Profile extends EventEmitter<ProfileEvents> {
   }
 }
 
-const NAMESPACE = "TinyEssayEditor";
+const PROFILE_URL = "tinyEssayEditor:profileUrl";
 
-let currentProfilesMap = new WeakMap<Repo, Promise<Profile>>();
+let CURRENT_PROFILE: Promise<Profile>;
+
+window.addEventListener("storage", (event) => {
+  console.log(event);
+});
 
 async function getProfile(repo: Repo) {
   if (!repo.storageSubsystem) {
     throw new Error("cannot create profile without storage");
   }
 
-  const rawProfileUrl = await repo.storageSubsystem.load(
-    NAMESPACE,
-    "profileUrl"
-  );
-
-  const currentProfile = await currentProfilesMap.get(repo);
-
-  // try to load existing profile
-  if (rawProfileUrl) {
-    const profileUrl = new TextDecoder().decode(rawProfileUrl) as AutomergeUrl;
-
-    if (currentProfile && currentProfile.handle.url === profileUrl) {
+  if (CURRENT_PROFILE) {
+    const currentProfile = await CURRENT_PROFILE;
+    if (currentProfile) {
       return currentProfile;
     }
+  }
 
-    const promise = new Promise<Profile>(async (resolve) => {
+  const profileUrl = localStorage.getItem(PROFILE_URL) as AutomergeUrl;
+
+  // try to load existing profile
+  if (profileUrl) {
+    CURRENT_PROFILE = new Promise<Profile>(async (resolve) => {
       const profileHandle = repo.find<ProfileDoc>(profileUrl);
       const contactHandle = repo.find<ContactDoc>(
         (await profileHandle.doc()).contactUrl
@@ -164,8 +177,7 @@ async function getProfile(repo: Repo) {
       resolve(new Profile(repo, profileHandle, contactHandle));
     });
 
-    currentProfilesMap.set(repo, promise);
-    return promise;
+    return CURRENT_PROFILE;
   }
 
   // ... otherwise create a new one
@@ -180,22 +192,22 @@ async function getProfile(repo: Repo) {
     contact.type = "anonymous";
   });
 
-  const promise = new Promise<Profile>(async (resolve) => {
-    await repo.storageSubsystem.save(
-      NAMESPACE,
-      "profileUrl",
-      new TextEncoder().encode(profileHandle.url)
-    );
-    resolve(new Profile(repo, profileHandle, contactHandle));
-  });
+  localStorage.setItem(PROFILE_URL, profileHandle.url);
+  const newProfile = new Profile(repo, profileHandle, contactHandle);
+  CURRENT_PROFILE = Promise.resolve(newProfile);
+  return newProfile;
+}
 
-  currentProfilesMap.set(repo, promise);
-  return promise;
+function useForceUpdate() {
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  return forceUpdate;
 }
 
 export function useProfile(): Profile | undefined {
   const repo = useRepo();
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
+
+  const forceUpdate = useForceUpdate();
 
   useEffect(() => {
     getProfile(repo).then(setProfile);
@@ -206,14 +218,10 @@ export function useProfile(): Profile | undefined {
       return;
     }
 
-    const onLogout = (profile: Profile) => {
-      setProfile(profile);
-    };
-
-    profile.on("changeProfile", onLogout);
+    profile.on("change", forceUpdate);
 
     return () => {
-      profile.off("changeProfile", onLogout);
+      profile.off("change", forceUpdate);
     };
   }, [profile]);
 
@@ -223,6 +231,13 @@ export function useProfile(): Profile | undefined {
 function useProfileDoc(): ProfileDoc {
   const profile = useProfile();
   const [profileDoc] = useDocument<ProfileDoc>(profile?.handle.url);
+
+  console.log(
+    "profileDoc",
+    profileDoc && JSON.parse(JSON.stringify(profileDoc)),
+    profile?.handle.url
+  );
+
   return profileDoc;
 }
 
@@ -267,7 +282,10 @@ export const ContactAvatar = ({
   return (
     <div className="flex items-center gap-1.5">
       <Avatar size={size}>
-        <AvatarImage src={avatarUrl} alt={contact?.name} />
+        <AvatarImage
+          src={contact?.avatarUrl ? avatarUrl : undefined}
+          alt={contact?.name}
+        />
         <AvatarFallback>
           {contact && contact.name ? initials(contact.name) : <UserIcon />}
         </AvatarFallback>
@@ -285,10 +303,11 @@ enum ProfilePickerTab {
 
 export const ProfilePicker = () => {
   const profile = useProfile();
+
   const self = useSelf();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
-  const [profileUrl, setProfileUrl] = useState<string>("");
+  const [profileDocId, setProfileDocId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ProfilePickerTab>(
     ProfilePickerTab.SignUp
   );
@@ -305,7 +324,7 @@ export const ProfilePicker = () => {
   const onSubmit = () => {
     switch (activeTab) {
       case ProfilePickerTab.LogIn:
-        profile.logIn(profileUrl as AutomergeUrl);
+        profile.logIn(stringifyAutomergeUrl(profileDocId as DocumentId));
         break;
 
       case ProfilePickerTab.SignUp:
@@ -338,9 +357,7 @@ export const ProfilePicker = () => {
 
   const isSubmittable =
     (activeTab === ProfilePickerTab.SignUp && name) ||
-    (activeTab === ProfilePickerTab.LogIn &&
-      profileUrl &&
-      isValidAutomergeUrl(profileUrl));
+    (activeTab === ProfilePickerTab.LogIn && profileDocId);
 
   const isLoggedIn = self?.type === "registered";
 
@@ -390,9 +407,9 @@ export const ProfilePicker = () => {
                 <Input
                   className="cursor-"
                   id="profileUrl"
-                  value={profileUrl}
+                  value={profileDocId}
                   onChange={(evt) => {
-                    setProfileUrl(evt.target.value);
+                    setProfileDocId(evt.target.value);
                   }}
                 />
               </div>
