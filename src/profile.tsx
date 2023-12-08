@@ -74,11 +74,31 @@ class Profile extends EventEmitter<ProfileEvents> {
   ) {
     super();
 
-    console.log("create profile");
-
     this.#repo = repo;
     this.#handle = handle;
     this.#contactHandle = contactHandle;
+
+    // listen for changed profileUrl caused by other tabs
+    window.addEventListener("storage", async (event) => {
+      if (event.key === PROFILE_URL) {
+        const newProfileUrl = event.newValue as AutomergeUrl;
+
+        // try to see if profile is already loaded
+        const profileHandle = this.#repo.find<ProfileDoc>(newProfileUrl);
+        const profileDoc = await profileHandle.doc();
+        if (profileDoc.contactUrl) {
+          this.logIn(newProfileUrl);
+          return;
+        }
+
+        // ... otherwise wait until contactUrl of profile is loaded
+        profileHandle.on("change", ({ doc }) => {
+          if (doc.contactUrl) {
+            this.logIn(newProfileUrl);
+          }
+        });
+      }
+    });
   }
 
   async logIn(profileUrl: AutomergeUrl) {
@@ -148,10 +168,6 @@ class Profile extends EventEmitter<ProfileEvents> {
 const PROFILE_URL = "tinyEssayEditor:profileUrl";
 
 let CURRENT_PROFILE: Promise<Profile>;
-
-window.addEventListener("storage", (event) => {
-  console.log(event);
-});
 
 async function getProfile(repo: Repo) {
   if (!repo.storageSubsystem) {
@@ -346,7 +362,7 @@ export const ProfilePicker = () => {
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(profile.handle.url);
+    navigator.clipboard.writeText(profile.handle.documentId);
 
     setIsCopyTooltipOpen(true);
 
@@ -403,7 +419,14 @@ export const ProfilePicker = () => {
             </TabsContent>
             <TabsContent value={ProfilePickerTab.LogIn}>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-                <Label htmlFor="profileUrl">Profile Url</Label>
+                <p className="text-gray-500 text-justify pb-2">
+                  To log into an existing profile on this device, please paste
+                  the profile's secrete code below. <br />
+                  You can find the secret code by accessing the profile dialog
+                  on any device where you are currently logged into the profile.
+                </p>
+
+                <Label htmlFor="profileUrl">Secrete Code</Label>
                 <Input
                   className="cursor-"
                   id="profileUrl"
@@ -439,11 +462,21 @@ export const ProfilePicker = () => {
             </div>
 
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Profile URL</Label>
+              <Label htmlFor="picture">Secrete Code</Label>
+
+              <p className="text-gray-500 text-justify pt-2">
+                To access your profile on a different device, you need to copy
+                the secrete code and paste it into the login dialog on the new
+                device.
+                <br />
+                Don't share your secrete code with other people otherwise they
+                will have access to your profile.
+              </p>
+
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
-                  value={profile.handle.url}
+                  value={profile.handle.documentId}
                   id="avatar"
                   type={showProfileUrl ? "text" : "password"}
                   accept="image/*"
