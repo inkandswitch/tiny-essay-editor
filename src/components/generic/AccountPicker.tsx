@@ -33,6 +33,9 @@ import {
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
 
+// 1MB in bytes
+const MAX_AVATAR_SIZE = 1024 * 1024;
+
 enum AccountPickerTab {
   LogIn = "logIn",
   SignUp = "signUp",
@@ -96,7 +99,13 @@ export const AccountPicker = () => {
   };
 
   const onFilesChanged = (e: ChangeEvent<HTMLInputElement>) => {
-    setAvatar(!e.target.files ? undefined : e.target.files[0]);
+    const avatarFile = !e.target.files ? undefined : e.target.files[0];
+    if (avatarFile.size > MAX_AVATAR_SIZE) {
+      alert("Avatar is too large. Please choose a file under 1MB.");
+      e.target.value = "";
+      return;
+    }
+    setAvatar(avatarFile);
   };
 
   const onToggleShowAccountUrl = () => {
