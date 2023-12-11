@@ -1,4 +1,4 @@
-import { ContactDoc, ProfileDoc, useProfile, useSelf } from "../../profile";
+import { ContactDoc, AccountDoc, useAccount, useSelf } from "../../account";
 import { DocumentId, stringifyAutomergeUrl } from "@automerge/automerge-repo";
 import { isValidDocumentId } from "@automerge/automerge-repo/dist/AutomergeUrl"; // todo: get this properly exported from automerge-repo
 import { ChangeEvent, useEffect, useState } from "react";
@@ -28,29 +28,29 @@ import {
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
 
-enum ProfilePickerTab {
+enum AccountPickerTab {
   LogIn = "logIn",
   SignUp = "signUp",
 }
 
-export const ProfilePicker = () => {
-  const profile = useProfile();
+export const AccountPicker = () => {
+  const account = useAccount();
 
   const self = useSelf();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
-  const [profileDocId, setProfileDocId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<ProfilePickerTab>(
-    ProfilePickerTab.SignUp
+  const [accountDocId, setAccountDocId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<AccountPickerTab>(
+    AccountPickerTab.SignUp
   );
-  const [showProfileUrl, setShowProfileUrl] = useState(false);
+  const [showAccountUrl, setShowAccountUrl] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
-  const [profileToLogin] = useDocument<ProfileDoc>(
-    profileDocId &&
-      isValidDocumentId(profileDocId) &&
-      stringifyAutomergeUrl(profileDocId)
+  const [accountToLogin] = useDocument<AccountDoc>(
+    accountDocId &&
+      isValidDocumentId(accountDocId) &&
+      stringifyAutomergeUrl(accountDocId)
   );
-  const [contactToLogin] = useDocument<ContactDoc>(profileToLogin?.contactUrl);
+  const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
 
   // initialize form values if already logged in
   useEffect(() => {
@@ -61,30 +61,30 @@ export const ProfilePicker = () => {
 
   const onSubmit = () => {
     switch (activeTab) {
-      case ProfilePickerTab.LogIn:
-        profile.logIn(stringifyAutomergeUrl(profileDocId as DocumentId));
+      case AccountPickerTab.LogIn:
+        account.logIn(stringifyAutomergeUrl(accountDocId as DocumentId));
         break;
 
-      case ProfilePickerTab.SignUp:
-        profile.signUp({ name, avatar });
+      case AccountPickerTab.SignUp:
+        account.signUp({ name, avatar });
         break;
     }
   };
 
   const onLogout = () => {
-    profile.logOut();
+    account.logOut();
   };
 
   const onFilesChanged = (e: ChangeEvent<HTMLInputElement>) => {
     setAvatar(!e.target.files ? undefined : e.target.files[0]);
   };
 
-  const onToggleShowProfileUrl = () => {
-    setShowProfileUrl((showProfileUrl) => !showProfileUrl);
+  const onToggleShowAccountUrl = () => {
+    setShowAccountUrl((showAccountUrl) => !showAccountUrl);
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(profile.handle.documentId);
+    navigator.clipboard.writeText(account.handle.documentId);
 
     setIsCopyTooltipOpen(true);
 
@@ -94,10 +94,10 @@ export const ProfilePicker = () => {
   };
 
   const isSubmittable =
-    (activeTab === ProfilePickerTab.SignUp && name) ||
-    (activeTab === ProfilePickerTab.LogIn &&
-      profileDocId &&
-      profileToLogin?.contactUrl &&
+    (activeTab === AccountPickerTab.SignUp && name) ||
+    (activeTab === AccountPickerTab.LogIn &&
+      accountDocId &&
+      accountToLogin?.contactUrl &&
       contactToLogin?.type === "registered");
 
   const isLoggedIn = self?.type === "registered";
@@ -105,14 +105,14 @@ export const ProfilePicker = () => {
   return (
     <Dialog>
       <DialogTrigger>
-        <ContactAvatar url={profile?.contactHandle.url} />
+        <ContactAvatar url={account?.contactHandle.url} />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader className="items-center">
           {isLoggedIn ? (
             <ContactAvatar
               size="lg"
-              url={profile?.contactHandle.url}
+              url={account?.contactHandle.url}
               name={name}
               avatar={avatar}
             ></ContactAvatar>
@@ -120,7 +120,7 @@ export const ProfilePicker = () => {
             <ContactAvatar name={name} avatar={avatar} size={"lg"} />
           ) : (
             <ContactAvatar
-              url={profileToLogin?.contactUrl}
+              url={accountToLogin?.contactUrl}
               size="lg"
             ></ContactAvatar>
           )}
@@ -128,16 +128,16 @@ export const ProfilePicker = () => {
 
         {!isLoggedIn && (
           <Tabs
-            defaultValue={ProfilePickerTab.SignUp}
+            defaultValue={AccountPickerTab.SignUp}
             className="w-full"
-            onValueChange={(tab) => setActiveTab(tab as ProfilePickerTab)}
+            onValueChange={(tab) => setActiveTab(tab as AccountPickerTab)}
             value={activeTab}
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value={ProfilePickerTab.SignUp}>Sign up</TabsTrigger>
-              <TabsTrigger value={ProfilePickerTab.LogIn}>Log in</TabsTrigger>
+              <TabsTrigger value={AccountPickerTab.SignUp}>Sign up</TabsTrigger>
+              <TabsTrigger value={AccountPickerTab.LogIn}>Log in</TabsTrigger>
             </TabsList>
-            <TabsContent value={ProfilePickerTab.SignUp}>
+            <TabsContent value={AccountPickerTab.SignUp}>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -157,33 +157,33 @@ export const ProfilePicker = () => {
                 />
               </div>
             </TabsContent>
-            <TabsContent value={ProfilePickerTab.LogIn}>
+            <TabsContent value={AccountPickerTab.LogIn}>
               <form className="grid w-full max-w-sm items-center gap-1.5 py-4">
-                <p className="text-gray-500 text-justify pb-2 text-sm">
-                  To login, paste your secret login token.
-                </p>
-                <p className="text-gray-500 text-justify pb-2 text-sm mb-2">
-                  You can find your token by accessing the profile dialog on any
-                  device where you are currently logged in.
-                </p>
-
-                <Label htmlFor="profileUrl">Secret login token</Label>
+                <Label htmlFor="accountUrl">Account token</Label>
 
                 <div className="flex gap-1.5">
                   <Input
                     className="cursor-"
-                    id="profileUrl"
-                    value={profileDocId}
+                    id="accountUrl"
+                    value={accountDocId}
                     onChange={(evt) => {
-                      setProfileDocId(evt.target.value);
+                      setAccountDocId(evt.target.value);
                     }}
-                    type={showProfileUrl ? "text" : "password"}
+                    type={showAccountUrl ? "text" : "password"}
                     autoComplete="current-password"
                   />
-                  <Button variant="ghost" onClick={onToggleShowProfileUrl}>
-                    {showProfileUrl ? <Eye /> : <EyeOff />}
+                  <Button variant="ghost" onClick={onToggleShowAccountUrl}>
+                    {showAccountUrl ? <Eye /> : <EyeOff />}
                   </Button>
                 </div>
+
+                <p className="text-gray-500 text-justify pb-2 text-sm">
+                  To login, paste your account token.
+                </p>
+                <p className="text-gray-500 text-justify pb-2 text-sm mb-2">
+                  You can find your token by accessing the account dialog on any
+                  device where you are currently logged in.
+                </p>
               </form>
             </TabsContent>
           </Tabs>
@@ -211,21 +211,21 @@ export const ProfilePicker = () => {
             </div>
 
             <form className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Secret login token</Label>
+              <Label htmlFor="picture">Account token</Label>
 
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
-                  value={profile.handle.documentId}
-                  id="profileUrl"
-                  type={showProfileUrl ? "text" : "password"}
+                  value={account.handle.documentId}
+                  id="accountUrl"
+                  type={showAccountUrl ? "text" : "password"}
                   accept="image/*"
                   onChange={onFilesChanged}
                   autoComplete="off"
                 />
 
-                <Button variant="ghost" onClick={onToggleShowProfileUrl}>
-                  {showProfileUrl ? <Eye /> : <EyeOff />}
+                <Button variant="ghost" onClick={onToggleShowAccountUrl}>
+                  {showAccountUrl ? <Eye /> : <EyeOff />}
                 </Button>
 
                 <TooltipProvider>
@@ -244,11 +244,12 @@ export const ProfilePicker = () => {
               </div>
 
               <p className="text-gray-500 text-justify pt-2 text-sm">
-                To log in on another device, copy your secret login token and
-                paste it into the login screen on the other device.
+                To log in on another device, copy your account token and paste
+                it into the login screen on the other device.
               </p>
               <p className="text-gray-500 text-justify pt-2 text-sm">
-                ⚠️ Keep your token secret from others!
+                ⚠️ WARNING: this app has limited security, don't use it for
+                private docs.
               </p>
             </form>
           </>

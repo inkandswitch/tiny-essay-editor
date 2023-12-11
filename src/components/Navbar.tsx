@@ -7,7 +7,7 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { useCallback, useEffect } from "react";
 import { getTitle, saveFile } from "../utils";
 import { SyncIndicator } from "./generic/SyncIndicator";
-import { ProfilePicker } from "./generic/ProfilePicker";
+import { AccountPicker } from "./generic/AccountPicker";
 
 export const Navbar = ({
   handle,
@@ -91,7 +91,7 @@ export const Navbar = ({
           <Download size={"20px"} className="mr-2" />{" "}
           <div className="hidden md:inline-block">Download</div>
         </Button>
-        <ProfilePicker />
+        <AccountPicker />
       </div>
     </div>
   );

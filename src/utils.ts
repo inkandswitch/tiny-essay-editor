@@ -303,8 +303,8 @@ export const getTitle = (content: string) => {
   const frontmatterMatch = content.match(frontmatterRegex);
   const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
 
-  const titleRegex = /title:\s\"(.+?)\"/;
-  const subtitleRegex = /subtitle:\s\"(.+?)\"/;
+  const titleRegex = /title:\s"(.+?)"/;
+  const subtitleRegex = /subtitle:\s"(.+?)"/;
 
   const titleMatch = frontmatter.match(titleRegex);
   const subtitleMatch = frontmatter.match(subtitleRegex);

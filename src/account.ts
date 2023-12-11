@@ -1,0 +1,227 @@
+import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import { EventEmitter } from "eventemitter3";
+
+import { useEffect, useReducer, useState } from "react";
+import { uploadFile } from "./utils";
+
+export interface AccountDoc {
+  contactUrl: AutomergeUrl;
+}
+
+export interface AnonymousContactDoc {
+  type: "anonymous";
+  claimedBy?: AutomergeUrl;
+}
+
+export interface RegisteredContactDoc {
+  type: "registered";
+  name: string;
+  avatarUrl?: AutomergeUrl;
+}
+
+export type ContactDoc = AnonymousContactDoc | RegisteredContactDoc;
+
+interface AccountEvents {
+  change: () => void;
+}
+
+interface ContactProps {
+  name: string;
+  avatar: File;
+}
+
+class Account extends EventEmitter<AccountEvents> {
+  #repo: Repo;
+  #handle: DocHandle<AccountDoc>;
+  #contactHandle: DocHandle<ContactDoc>;
+
+  constructor(
+    repo: Repo,
+    handle: DocHandle<AccountDoc>,
+    contactHandle: DocHandle<ContactDoc>
+  ) {
+    super();
+
+    this.#repo = repo;
+    this.#handle = handle;
+    this.#contactHandle = contactHandle;
+
+    // listen for changed accountUrl caused by other tabs
+    window.addEventListener("storage", async (event) => {
+      if (event.key === ACCOUNT_URL) {
+        const newAccountUrl = event.newValue as AutomergeUrl;
+
+        // try to see if account is already loaded
+        const accountHandle = this.#repo.find<AccountDoc>(newAccountUrl);
+        const accountDoc = await accountHandle.doc();
+        if (accountDoc.contactUrl) {
+          this.logIn(newAccountUrl);
+          return;
+        }
+
+        // ... otherwise wait until contactUrl of account is loaded
+        accountHandle.on("change", ({ doc }) => {
+          if (doc.contactUrl) {
+            this.logIn(newAccountUrl);
+          }
+        });
+      }
+    });
+  }
+
+  async logIn(accountUrl: AutomergeUrl) {
+    // override old accountUrl
+    localStorage.setItem(ACCOUNT_URL, accountUrl);
+
+    const accountHandle = this.#repo.find<AccountDoc>(accountUrl);
+    const accountDoc = await accountHandle.doc();
+    const contactHandle = this.#repo.find<ContactDoc>(accountDoc.contactUrl);
+
+    this.#contactHandle.change((oldContact: AnonymousContactDoc) => {
+      if (oldContact.type === "anonymous") {
+        oldContact.claimedBy = contactHandle.url;
+      }
+    });
+
+    this.#contactHandle = contactHandle;
+    this.#handle = accountHandle;
+    this.emit("change");
+  }
+
+  async signUp({ name, avatar }: ContactProps) {
+    let avatarUrl: AutomergeUrl;
+    if (avatar) {
+      avatarUrl = await uploadFile(this.#repo, avatar);
+    }
+
+    this.contactHandle.change((contact: RegisteredContactDoc) => {
+      contact.type = "registered";
+      contact.name = name;
+
+      if (avatarUrl) {
+        contact.avatarUrl = avatarUrl;
+      }
+    });
+  }
+
+  async logOut() {
+    const accountHandle = this.#repo.create<AccountDoc>();
+    const contactHandle = this.#repo.create<ContactDoc>();
+
+    accountHandle.change((account) => {
+      account.contactUrl = contactHandle.url;
+    });
+
+    contactHandle.change((contact) => {
+      contact.type = "anonymous";
+    });
+
+    localStorage.setItem(ACCOUNT_URL, accountHandle.url);
+
+    this.#handle = accountHandle;
+    this.#contactHandle = contactHandle;
+
+    this.emit("change");
+  }
+
+  get handle() {
+    return this.#handle;
+  }
+
+  get contactHandle() {
+    return this.#contactHandle;
+  }
+}
+
+const ACCOUNT_URL = "tinyEssayEditor:accountUrl";
+
+let CURRENT_ACCOUNT: Promise<Account>;
+
+async function getAccount(repo: Repo) {
+  if (!repo.storageSubsystem) {
+    throw new Error("cannot create account without storage");
+  }
+
+  if (CURRENT_ACCOUNT) {
+    const currentAccount = await CURRENT_ACCOUNT;
+    if (currentAccount) {
+      return currentAccount;
+    }
+  }
+
+  const accountUrl = localStorage.getItem(ACCOUNT_URL) as AutomergeUrl;
+
+  // try to load existing account
+  if (accountUrl) {
+    CURRENT_ACCOUNT = new Promise<Account>(async (resolve) => {
+      const accountHandle = repo.find<AccountDoc>(accountUrl);
+      const contactHandle = repo.find<ContactDoc>(
+        (await accountHandle.doc()).contactUrl
+      );
+      resolve(new Account(repo, accountHandle, contactHandle));
+    });
+
+    return CURRENT_ACCOUNT;
+  }
+
+  // ... otherwise create a new one
+  const accountHandle = repo.create<AccountDoc>();
+  const contactHandle = repo.create<ContactDoc>();
+
+  accountHandle.change((account) => {
+    account.contactUrl = contactHandle.url;
+  });
+
+  contactHandle.change((contact) => {
+    contact.type = "anonymous";
+  });
+
+  localStorage.setItem(ACCOUNT_URL, accountHandle.url);
+  const newAccount = new Account(repo, accountHandle, contactHandle);
+  CURRENT_ACCOUNT = Promise.resolve(newAccount);
+  return newAccount;
+}
+
+function useForceUpdate() {
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  return forceUpdate;
+}
+
+export function useAccount(): Account | undefined {
+  const repo = useRepo();
+  const [account, setAccount] = useState<Account | undefined>(undefined);
+
+  const forceUpdate = useForceUpdate();
+
+  useEffect(() => {
+    getAccount(repo).then(setAccount);
+  }, [repo]);
+
+  useEffect(() => {
+    if (!account) {
+      return;
+    }
+
+    account.on("change", forceUpdate);
+
+    return () => {
+      account.off("change", forceUpdate);
+    };
+  }, [account]);
+
+  return account;
+}
+
+function useAccountDoc(): AccountDoc {
+  const account = useAccount();
+  const [accountDoc] = useDocument<AccountDoc>(account?.handle.url);
+  return accountDoc;
+}
+
+export function useSelf(): ContactDoc {
+  const accountDoc = useAccountDoc();
+  const [contactDoc] = useDocument<ContactDoc>(accountDoc?.contactUrl);
+
+  return contactDoc;
+}

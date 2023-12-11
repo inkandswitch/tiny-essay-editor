@@ -19,7 +19,7 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
-import { useProfile } from "../profile";
+import { useAccount } from "../account";
 import { ContactAvatar } from "./generic/ContactAvatar";
 
 export const CommentsSidebar = ({
@@ -37,7 +37,7 @@ export const CommentsSidebar = ({
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
-  const profile = useProfile();
+  const profile = useAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
