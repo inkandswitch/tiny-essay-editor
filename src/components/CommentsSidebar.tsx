@@ -19,7 +19,8 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
-import { ContactAvatar, useProfile } from "@/profile";
+import { useProfile } from "../profile";
+import { ContactAvatar } from "./ContactAvatar";
 
 export const CommentsSidebar = ({
   doc,

@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { ChangeFn, save } from "@automerge/automerge/next";
+import { save } from "@automerge/automerge/next";
 import { Download, Plus } from "lucide-react";
 import { MarkdownDoc } from "../schema";
 
 import { DocHandle } from "@automerge/automerge-repo";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { getTitle, saveFile } from "../utils";
 import { SyncIndicator } from "./SyncIndicator";
-import { ProfilePicker } from "../profile";
+import { ProfilePicker } from "./ProfilePicker";
 
 export const Navbar = ({
   handle,
