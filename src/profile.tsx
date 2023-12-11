@@ -12,6 +12,7 @@ import {
   DocHandle,
   DocumentId,
   Repo,
+  isValidAutomergeUrl,
   stringifyAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { type VariantProps } from "class-variance-authority";
 import { ChangeEvent, useEffect, useMemo, useReducer, useState } from "react";
+import { isValidDocumentId } from "@automerge/automerge-repo/dist/AutomergeUrl";
 
 interface ProfileDoc {
   contactUrl: AutomergeUrl;
@@ -332,7 +334,9 @@ export const ProfilePicker = () => {
   const [showProfileUrl, setShowProfileUrl] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
   const [profileToLogin] = useDocument<ProfileDoc>(
-    profileDocId && stringifyAutomergeUrl(profileDocId as DocumentId)
+    profileDocId &&
+      isValidDocumentId(profileDocId) &&
+      stringifyAutomergeUrl(profileDocId)
   );
   const [contactToLogin] = useDocument<ContactDoc>(profileToLogin?.contactUrl);
 
@@ -442,7 +446,7 @@ export const ProfilePicker = () => {
               </div>
             </TabsContent>
             <TabsContent value={ProfilePickerTab.LogIn}>
-              <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+              <form className="grid w-full max-w-sm items-center gap-1.5 py-4">
                 <p className="text-gray-500 text-justify pb-2 text-sm">
                   To login, paste your secret login token.
                 </p>
@@ -462,12 +466,13 @@ export const ProfilePicker = () => {
                       setProfileDocId(evt.target.value);
                     }}
                     type={showProfileUrl ? "text" : "password"}
+                    autoComplete="current-password"
                   />
                   <Button variant="ghost" onClick={onToggleShowProfileUrl}>
                     {showProfileUrl ? <Eye /> : <EyeOff />}
                   </Button>
                 </div>
-              </div>
+              </form>
             </TabsContent>
           </Tabs>
         )}
@@ -493,17 +498,18 @@ export const ProfilePicker = () => {
               />
             </div>
 
-            <div className="grid w-full max-w-sm items-center gap-1.5">
+            <form className="grid w-full max-w-sm items-center gap-1.5">
               <Label htmlFor="picture">Secret login token</Label>
 
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
                   value={profile.handle.documentId}
-                  id="avatar"
+                  id="profileUrl"
                   type={showProfileUrl ? "text" : "password"}
                   accept="image/*"
                   onChange={onFilesChanged}
+                  autoComplete="off"
                 />
 
                 <Button variant="ghost" onClick={onToggleShowProfileUrl}>
@@ -532,7 +538,7 @@ export const ProfilePicker = () => {
               <p className="text-gray-500 text-justify pt-2 text-sm">
                 ⚠️ Keep your token secret from others!
               </p>
-            </div>
+            </form>
           </>
         )}
         <DialogFooter className="gap-1.5">
