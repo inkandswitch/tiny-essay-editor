@@ -1,4 +1,4 @@
-import { ContactDoc, ProfileDoc, useProfile, useSelf } from "@/profile";
+import { ContactDoc, ProfileDoc, useProfile, useSelf } from "../../profile";
 import { DocumentId, stringifyAutomergeUrl } from "@automerge/automerge-repo";
 import { isValidDocumentId } from "@automerge/automerge-repo/dist/AutomergeUrl"; // todo: get this properly exported from automerge-repo
 import { ChangeEvent, useEffect, useState } from "react";

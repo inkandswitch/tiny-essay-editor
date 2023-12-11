@@ -20,7 +20,7 @@ import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { useProfile } from "../profile";
-import { ContactAvatar } from "./ContactAvatar";
+import { ContactAvatar } from "./generic/ContactAvatar";
 
 export const CommentsSidebar = ({
   doc,

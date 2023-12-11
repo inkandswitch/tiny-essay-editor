@@ -4,8 +4,8 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
 import { Navbar } from "./Navbar";
-import { LoadingScreen } from "./LoadingScreen";
-import { useEffect, useState } from "react";
+import { LoadingScreen } from "./generic/LoadingScreen";
+import { useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";

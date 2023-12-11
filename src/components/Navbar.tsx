@@ -6,8 +6,8 @@ import { MarkdownDoc } from "../schema";
 import { DocHandle } from "@automerge/automerge-repo";
 import { useCallback, useEffect } from "react";
 import { getTitle, saveFile } from "../utils";
-import { SyncIndicator } from "./SyncIndicator";
-import { ProfilePicker } from "./ProfilePicker";
+import { SyncIndicator } from "./generic/SyncIndicator";
+import { ProfilePicker } from "./generic/ProfilePicker";
 
 export const Navbar = ({
   handle,
