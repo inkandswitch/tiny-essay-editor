@@ -11,7 +11,7 @@ export const avatarVariants = cva(
       size: {
         default: "h-9 w-9",
         sm: "h-6 w-6",
-        lg: "h-15 w-15",
+        lg: "h-[64px] w-[64px] text-xl",
       },
     },
     defaultVariants: {

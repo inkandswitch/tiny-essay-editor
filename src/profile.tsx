@@ -23,7 +23,6 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -265,11 +264,15 @@ const initials = (name: string) => {
 };
 
 interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
-  url: AutomergeUrl;
+  url?: AutomergeUrl;
   showName?: boolean;
+  name?: string;
+  avatar?: File;
 }
 
 export const ContactAvatar = ({
+  name: nameOverride,
+  avatar: avatarOverride,
   url,
   showName = false,
   size,
@@ -286,21 +289,27 @@ export const ContactAvatar = ({
       ? maybeAnonymousContact
       : registeredContact;
 
-  const avatarUrl = useBlobUrl(contact?.avatarUrl);
+  const avatarBlobUrl = useBlobUrl(contact?.avatarUrl);
+  const avatarOverrideUrl = useMemo(
+    () => avatarOverride && URL.createObjectURL(avatarOverride),
+    [avatarOverride]
+  );
+
+  const avatarUrl = avatarOverrideUrl
+    ? avatarOverrideUrl
+    : url && contact?.avatarUrl
+    ? avatarBlobUrl
+    : undefined;
+  const name = nameOverride ?? contact?.name;
 
   return (
     <div className="flex items-center gap-1.5">
       <Avatar size={size}>
-        <AvatarImage
-          src={contact?.avatarUrl ? avatarUrl : undefined}
-          alt={contact?.name}
-        />
-        <AvatarFallback>
-          {contact && contact.name ? initials(contact.name) : <UserIcon />}
-        </AvatarFallback>
+        <AvatarImage src={avatarUrl} alt={name} />
+        <AvatarFallback>{name ? initials(name) : <UserIcon />}</AvatarFallback>
       </Avatar>
 
-      {showName && <b>{contact?.name ?? "Anonymous"}</b>}
+      {showName && <b>{name ?? "Anonymous"}</b>}
     </div>
   );
 };
@@ -322,6 +331,10 @@ export const ProfilePicker = () => {
   );
   const [showProfileUrl, setShowProfileUrl] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
+  const [profileToLogin] = useDocument<ProfileDoc>(
+    profileDocId && stringifyAutomergeUrl(profileDocId as DocumentId)
+  );
+  const [contactToLogin] = useDocument<ContactDoc>(profileToLogin?.contactUrl);
 
   // initialize form values if already logged in
   useEffect(() => {
@@ -366,7 +379,10 @@ export const ProfilePicker = () => {
 
   const isSubmittable =
     (activeTab === ProfilePickerTab.SignUp && name) ||
-    (activeTab === ProfilePickerTab.LogIn && profileDocId);
+    (activeTab === ProfilePickerTab.LogIn &&
+      profileDocId &&
+      profileToLogin?.contactUrl &&
+      contactToLogin?.type === "registered");
 
   const isLoggedIn = self?.type === "registered";
 
@@ -376,8 +392,22 @@ export const ProfilePicker = () => {
         <ContactAvatar url={profile?.contactHandle.url} />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Profile</DialogTitle>
+        <DialogHeader className="items-center">
+          {isLoggedIn ? (
+            <ContactAvatar
+              size="lg"
+              url={profile?.contactHandle.url}
+              name={name}
+              avatar={avatar}
+            ></ContactAvatar>
+          ) : activeTab === "signUp" ? (
+            <ContactAvatar name={name} avatar={avatar} size={"lg"} />
+          ) : (
+            <ContactAvatar
+              url={profileToLogin?.contactUrl}
+              size="lg"
+            ></ContactAvatar>
+          )}
         </DialogHeader>
 
         {!isLoggedIn && (
@@ -385,6 +415,7 @@ export const ProfilePicker = () => {
             defaultValue={ProfilePickerTab.SignUp}
             className="w-full"
             onValueChange={(tab) => setActiveTab(tab as ProfilePickerTab)}
+            value={activeTab}
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value={ProfilePickerTab.SignUp}>Sign up</TabsTrigger>
@@ -415,19 +446,26 @@ export const ProfilePicker = () => {
                 <p className="text-gray-500 text-justify pb-2">
                   To log into an existing profile on this device, please paste
                   the profile's secrete code below. <br />
-                  You can find the secret code by accessing the profile dialog
-                  on any device where you are currently logged into the profile.
+                  You can find the secret by accessing the profile dialog on any
+                  device where you are currently logged into the profile.
                 </p>
 
-                <Label htmlFor="profileUrl">Secrete Code</Label>
-                <Input
-                  className="cursor-"
-                  id="profileUrl"
-                  value={profileDocId}
-                  onChange={(evt) => {
-                    setProfileDocId(evt.target.value);
-                  }}
-                />
+                <Label htmlFor="profileUrl">Secrete</Label>
+
+                <div className="flex gap-1.5">
+                  <Input
+                    className="cursor-"
+                    id="profileUrl"
+                    value={profileDocId}
+                    onChange={(evt) => {
+                      setProfileDocId(evt.target.value);
+                    }}
+                    type={showProfileUrl ? "text" : "password"}
+                  />
+                  <Button variant="ghost" onClick={onToggleShowProfileUrl}>
+                    {showProfileUrl ? <Eye /> : <EyeOff />}
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -455,15 +493,15 @@ export const ProfilePicker = () => {
             </div>
 
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Secrete Code</Label>
+              <Label htmlFor="picture">Secrete</Label>
 
               <p className="text-gray-500 text-justify pt-2">
                 To access your profile on a different device, you need to copy
-                the secrete code and paste it into the login dialog on the new
+                the secrete and paste it into the login dialog on the new
                 device.
                 <br />
-                Don't share your secrete code with other people otherwise they
-                will have access to your profile.
+                Don't share your secrete with other people otherwise they will
+                have access to your profile.
               </p>
 
               <div className="flex gap-1.5">
@@ -482,14 +520,11 @@ export const ProfilePicker = () => {
 
                 <TooltipProvider>
                   <Tooltip open={isCopyTooltipOpen}>
-                    <TooltipTrigger>
-                      <Button
-                        variant="ghost"
-                        onClick={onCopy}
-                        onBlur={() => setIsCopyTooltipOpen(false)}
-                      >
-                        <Copy />
-                      </Button>
+                    <TooltipTrigger
+                      onClick={onCopy}
+                      onBlur={() => setIsCopyTooltipOpen(false)}
+                    >
+                      <Copy />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Copied</p>
@@ -500,10 +535,12 @@ export const ProfilePicker = () => {
             </div>
           </>
         )}
-        <DialogFooter>
+        <DialogFooter className="gap-1.5">
           {isLoggedIn && (
             <DialogTrigger asChild>
-              <Button onClick={onLogout}>Log out</Button>
+              <Button onClick={onLogout} variant="secondary">
+                Sign out
+              </Button>
             </DialogTrigger>
           )}
           <DialogTrigger asChild>
@@ -512,7 +549,11 @@ export const ProfilePicker = () => {
                 ? "Save"
                 : activeTab === "signUp"
                 ? "Sign up"
-                : "Log in"}
+                : `Log in${
+                    contactToLogin && contactToLogin.type === "registered"
+                      ? ` as ${contactToLogin.name}`
+                      : ""
+                  }`}
             </Button>
           </DialogTrigger>
         </DialogFooter>
