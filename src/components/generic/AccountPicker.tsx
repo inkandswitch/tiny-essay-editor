@@ -6,7 +6,6 @@ import {
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
 } from "../../account";
-import { DocumentId, stringifyAutomergeUrl } from "@automerge/automerge-repo";
 import { ChangeEvent, useEffect, useState } from "react";
 
 import {
@@ -57,6 +56,7 @@ export const AccountPicker = () => {
   const accountAutomergeUrlToLogin = accountTokenToLogin
     ? accountTokenToAutomergeUrl(accountTokenToLogin)
     : undefined;
+
   const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
 
@@ -82,9 +82,7 @@ export const AccountPicker = () => {
   const onSubmit = () => {
     switch (activeTab) {
       case AccountPickerTab.LogIn:
-        currentAccount.logIn(
-          stringifyAutomergeUrl(accountTokenToLogin as DocumentId)
-        );
+        currentAccount.logIn(accountAutomergeUrlToLogin);
         break;
 
       case AccountPickerTab.SignUp:
