@@ -68,7 +68,7 @@ export const AccountPicker = () => {
     return "valid";
   })();
 
-  const accountToken = currentAccount
+  const currentAccountToken = currentAccount
     ? automergeUrlToAccountToken(currentAccount.handle.url, name)
     : null;
 
@@ -104,7 +104,7 @@ export const AccountPicker = () => {
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(accountToken);
+    navigator.clipboard.writeText(currentAccountToken);
 
     setIsCopyTooltipOpen(true);
 
@@ -251,7 +251,7 @@ export const AccountPicker = () => {
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
-                  value={accountToken}
+                  value={currentAccountToken}
                   id="accountUrl"
                   type={showAccountUrl ? "text" : "password"}
                   accept="image/*"
