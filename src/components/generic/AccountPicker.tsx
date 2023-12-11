@@ -1,6 +1,12 @@
-import { ContactDoc, AccountDoc, useAccount, useSelf } from "../../account";
+import {
+  ContactDoc,
+  AccountDoc,
+  useCurrentAccount,
+  useSelf,
+  automergeUrlToAccountToken,
+  accountTokenToAutomergeUrl,
+} from "../../account";
 import { DocumentId, stringifyAutomergeUrl } from "@automerge/automerge-repo";
-import { isValidDocumentId } from "@automerge/automerge-repo/dist/AutomergeUrl"; // todo: get this properly exported from automerge-repo
 import { ChangeEvent, useEffect, useState } from "react";
 
 import {
@@ -33,24 +39,38 @@ enum AccountPickerTab {
   SignUp = "signUp",
 }
 
+type AccountTokenToLoginStatus = null | "valid" | "malformed" | "not-found";
+
 export const AccountPicker = () => {
-  const account = useAccount();
+  const currentAccount = useCurrentAccount();
 
   const self = useSelf();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
-  const [accountDocId, setAccountDocId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
     AccountPickerTab.SignUp
   );
   const [showAccountUrl, setShowAccountUrl] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
-  const [accountToLogin] = useDocument<AccountDoc>(
-    accountDocId &&
-      isValidDocumentId(accountDocId) &&
-      stringifyAutomergeUrl(accountDocId)
-  );
+
+  const [accountTokenToLogin, setAccountTokenToLogin] = useState<string>("");
+  const accountAutomergeUrlToLogin = accountTokenToLogin
+    ? accountTokenToAutomergeUrl(accountTokenToLogin)
+    : undefined;
+  const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
+
+  const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
+    if (!accountTokenToLogin || accountTokenToLogin === "") return null;
+    if (!accountAutomergeUrlToLogin) return "malformed";
+    if (!accountToLogin) return "not-found";
+    if (!contactToLogin) return "not-found";
+    return "valid";
+  })();
+
+  const accountToken = currentAccount
+    ? automergeUrlToAccountToken(currentAccount.handle.url, name)
+    : null;
 
   // initialize form values if already logged in
   useEffect(() => {
@@ -62,17 +82,19 @@ export const AccountPicker = () => {
   const onSubmit = () => {
     switch (activeTab) {
       case AccountPickerTab.LogIn:
-        account.logIn(stringifyAutomergeUrl(accountDocId as DocumentId));
+        currentAccount.logIn(
+          stringifyAutomergeUrl(accountTokenToLogin as DocumentId)
+        );
         break;
 
       case AccountPickerTab.SignUp:
-        account.signUp({ name, avatar });
+        currentAccount.signUp({ name, avatar });
         break;
     }
   };
 
   const onLogout = () => {
-    account.logOut();
+    currentAccount.logOut();
   };
 
   const onFilesChanged = (e: ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +106,7 @@ export const AccountPicker = () => {
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(account.handle.documentId);
+    navigator.clipboard.writeText(accountToken);
 
     setIsCopyTooltipOpen(true);
 
@@ -96,7 +118,7 @@ export const AccountPicker = () => {
   const isSubmittable =
     (activeTab === AccountPickerTab.SignUp && name) ||
     (activeTab === AccountPickerTab.LogIn &&
-      accountDocId &&
+      accountTokenToLogin &&
       accountToLogin?.contactUrl &&
       contactToLogin?.type === "registered");
 
@@ -105,14 +127,14 @@ export const AccountPicker = () => {
   return (
     <Dialog>
       <DialogTrigger>
-        <ContactAvatar url={account?.contactHandle.url} />
+        <ContactAvatar url={currentAccount?.contactHandle.url} />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader className="items-center">
           {isLoggedIn ? (
             <ContactAvatar
               size="lg"
-              url={account?.contactHandle.url}
+              url={currentAccount?.contactHandle.url}
               name={name}
               avatar={avatar}
             ></ContactAvatar>
@@ -163,11 +185,15 @@ export const AccountPicker = () => {
 
                 <div className="flex gap-1.5">
                   <Input
-                    className="cursor-"
+                    className={`${
+                      accountTokenToLoginStatus === "valid"
+                        ? "bg-green-100"
+                        : ""
+                    }`}
                     id="accountUrl"
-                    value={accountDocId}
+                    value={accountTokenToLogin}
                     onChange={(evt) => {
-                      setAccountDocId(evt.target.value);
+                      setAccountTokenToLogin(evt.target.value);
                     }}
                     type={showAccountUrl ? "text" : "password"}
                     autoComplete="current-password"
@@ -175,6 +201,17 @@ export const AccountPicker = () => {
                   <Button variant="ghost" onClick={onToggleShowAccountUrl}>
                     {showAccountUrl ? <Eye /> : <EyeOff />}
                   </Button>
+                </div>
+
+                <div className="h-8 text-sm text-red-500">
+                  {accountTokenToLoginStatus === "malformed" && (
+                    <div>
+                      Not a valid account token, try copy-pasting again.
+                    </div>
+                  )}
+                  {accountTokenToLoginStatus === "not-found" && (
+                    <div>Account not found</div>
+                  )}
                 </div>
 
                 <p className="text-gray-500 text-justify pb-2 text-sm">
@@ -216,7 +253,7 @@ export const AccountPicker = () => {
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
-                  value={account.handle.documentId}
+                  value={accountToken}
                   id="accountUrl"
                   type={showAccountUrl ? "text" : "password"}
                   accept="image/*"

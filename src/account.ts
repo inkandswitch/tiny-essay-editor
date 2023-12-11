@@ -1,4 +1,10 @@
-import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  Repo,
+  isValidAutomergeUrl,
+  parseAutomergeUrl,
+} from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
@@ -188,7 +194,7 @@ function useForceUpdate() {
   return forceUpdate;
 }
 
-export function useAccount(): Account | undefined {
+export function useCurrentAccount(): Account | undefined {
   const repo = useRepo();
   const [account, setAccount] = useState<Account | undefined>(undefined);
 
@@ -213,15 +219,43 @@ export function useAccount(): Account | undefined {
   return account;
 }
 
-function useAccountDoc(): AccountDoc {
-  const account = useAccount();
+function useCurrentAccountDoc(): AccountDoc {
+  const account = useCurrentAccount();
   const [accountDoc] = useDocument<AccountDoc>(account?.handle.url);
   return accountDoc;
 }
 
 export function useSelf(): ContactDoc {
-  const accountDoc = useAccountDoc();
+  const accountDoc = useCurrentAccountDoc();
   const [contactDoc] = useDocument<ContactDoc>(accountDoc?.contactUrl);
 
   return contactDoc;
+}
+
+// Helpers to convert an automerge URL to/from an Account Token that the user can
+// paste in to login on another device.
+// The doc ID is the only part of the URL actually used by the system,
+// the rest is just for humans to understand what this string is for.
+export function automergeUrlToAccountToken(
+  url: AutomergeUrl,
+  name: string
+): string {
+  const { documentId } = parseAutomergeUrl(url);
+  return `account:${encodeURIComponent(name)}/${documentId}`;
+}
+
+// returns undefined if the token can't be parsed as an automerge URL
+export function accountTokenToAutomergeUrl(
+  token: string
+): AutomergeUrl | undefined {
+  const match = token.match(/^account:([^/]+)\/(.+)$/);
+  if (!match || !match[2]) {
+    return undefined;
+  }
+  const documentId = match[2];
+  const url = `automerge:${documentId}`;
+  if (!isValidAutomergeUrl(url)) {
+    return undefined;
+  }
+  return url;
 }

@@ -19,7 +19,7 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
-import { useAccount } from "../account";
+import { useCurrentAccount } from "../account";
 import { ContactAvatar } from "./generic/ContactAvatar";
 
 export const CommentsSidebar = ({
@@ -37,7 +37,7 @@ export const CommentsSidebar = ({
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
-  const profile = useAccount();
+  const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
@@ -62,7 +62,7 @@ export const CommentsSidebar = ({
       id: uuid(),
       content: commentText,
       userId: null,
-      contactUrl: profile?.contactHandle.url,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
@@ -86,7 +86,7 @@ export const CommentsSidebar = ({
       id: uuid(),
       content: pendingCommentText,
       userId: null,
-      contactUrl: profile?.contactHandle.url,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
