@@ -55,7 +55,7 @@ class Account extends EventEmitter<AccountEvents> {
 
     // listen for changed accountUrl caused by other tabs
     window.addEventListener("storage", async (event) => {
-      if (event.key === ACCOUNT_URL) {
+      if (event.key === ACCOUNT_URL_STORAGE_KEY) {
         const newAccountUrl = event.newValue as AutomergeUrl;
 
         // try to see if account is already loaded
@@ -78,7 +78,7 @@ class Account extends EventEmitter<AccountEvents> {
 
   async logIn(accountUrl: AutomergeUrl) {
     // override old accountUrl
-    localStorage.setItem(ACCOUNT_URL, accountUrl);
+    localStorage.setItem(ACCOUNT_URL_STORAGE_KEY, accountUrl);
 
     const accountHandle = this.#repo.find<AccountDoc>(accountUrl);
     const accountDoc = await accountHandle.doc();
@@ -123,7 +123,7 @@ class Account extends EventEmitter<AccountEvents> {
       contact.type = "anonymous";
     });
 
-    localStorage.setItem(ACCOUNT_URL, accountHandle.url);
+    localStorage.setItem(ACCOUNT_URL_STORAGE_KEY, accountHandle.url);
 
     this.#handle = accountHandle;
     this.#contactHandle = contactHandle;
@@ -140,7 +140,7 @@ class Account extends EventEmitter<AccountEvents> {
   }
 }
 
-const ACCOUNT_URL = "tinyEssayEditor:accountUrl";
+const ACCOUNT_URL_STORAGE_KEY = "tinyEssayEditor:accountUrl";
 
 let CURRENT_ACCOUNT: Promise<Account>;
 
@@ -156,7 +156,9 @@ async function getAccount(repo: Repo) {
     }
   }
 
-  const accountUrl = localStorage.getItem(ACCOUNT_URL) as AutomergeUrl;
+  const accountUrl = localStorage.getItem(
+    ACCOUNT_URL_STORAGE_KEY
+  ) as AutomergeUrl;
 
   // try to load existing account
   if (accountUrl) {
@@ -183,7 +185,7 @@ async function getAccount(repo: Repo) {
     contact.type = "anonymous";
   });
 
-  localStorage.setItem(ACCOUNT_URL, accountHandle.url);
+  localStorage.setItem(ACCOUNT_URL_STORAGE_KEY, accountHandle.url);
   const newAccount = new Account(repo, accountHandle, contactHandle);
   CURRENT_ACCOUNT = Promise.resolve(newAccount);
   return newAccount;
