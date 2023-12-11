@@ -443,14 +443,15 @@ export const ProfilePicker = () => {
             </TabsContent>
             <TabsContent value={ProfilePickerTab.LogIn}>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-                <p className="text-gray-500 text-justify pb-2">
-                  To log into an existing profile on this device, please paste
-                  the profile's secrete code below. <br />
-                  You can find the secret by accessing the profile dialog on any
-                  device where you are currently logged into the profile.
+                <p className="text-gray-500 text-justify pb-2 text-sm">
+                  To login, paste your secret login token.
+                </p>
+                <p className="text-gray-500 text-justify pb-2 text-sm mb-2">
+                  You can find your token by accessing the profile dialog on any
+                  device where you are currently logged in.
                 </p>
 
-                <Label htmlFor="profileUrl">Secrete</Label>
+                <Label htmlFor="profileUrl">Secret login token</Label>
 
                 <div className="flex gap-1.5">
                   <Input
@@ -493,16 +494,7 @@ export const ProfilePicker = () => {
             </div>
 
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Secrete</Label>
-
-              <p className="text-gray-500 text-justify pt-2">
-                To access your profile on a different device, you need to copy
-                the secrete and paste it into the login dialog on the new
-                device.
-                <br />
-                Don't share your secrete with other people otherwise they will
-                have access to your profile.
-              </p>
+              <Label htmlFor="picture">Secret login token</Label>
 
               <div className="flex gap-1.5">
                 <Input
@@ -532,6 +524,14 @@ export const ProfilePicker = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
+
+              <p className="text-gray-500 text-justify pt-2 text-sm">
+                To log in on another device, copy your secret login token and
+                paste it into the login screen on the other device.
+              </p>
+              <p className="text-gray-500 text-justify pt-2 text-sm">
+                ⚠️ Keep your token secret from others!
+              </p>
             </div>
           </>
         )}
