@@ -3,7 +3,6 @@ import {
   Comment,
   CommentThread,
   CommentThreadWithPosition,
-  LocalSession,
   MarkdownDoc,
 } from "../schema";
 
@@ -26,7 +25,6 @@ export const CommentsSidebar = ({
   doc,
   changeDoc,
   selection,
-  session,
   threadsWithPositions,
   activeThreadId,
   setActiveThreadId,
@@ -34,7 +32,6 @@ export const CommentsSidebar = ({
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  session: LocalSession;
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ChangeFn, save } from "@automerge/automerge/next";
 import { Download, Plus } from "lucide-react";
-import { LocalSession, MarkdownDoc, User } from "../schema";
+import { MarkdownDoc } from "../schema";
 
 import { DocHandle } from "@automerge/automerge-repo";
 import { useCallback, useEffect, useState } from "react";
@@ -9,41 +9,13 @@ import { getTitle, saveFile } from "../utils";
 import { SyncIndicator } from "./SyncIndicator";
 import { ProfilePicker } from "../profile";
 
-type TentativeUser =
-  | {
-      _type: "existing";
-      id: string;
-    }
-  | {
-      _type: "new";
-      name: string;
-    }
-  | {
-      _type: "unknown";
-    };
-
 export const Navbar = ({
   handle,
   doc,
-  changeDoc,
-  session,
-  setSession,
 }: {
   handle: DocHandle<MarkdownDoc>;
   doc: MarkdownDoc;
-  changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
-  session: LocalSession;
-  setSession: (session: LocalSession) => void;
 }) => {
-  const [namePickerOpen, setNamePickerOpen] = useState(false);
-  const [tentativeUser, setTentativeUser] = useState<TentativeUser>({
-    _type: "unknown",
-  });
-  const users = doc.users;
-  const sessionUser: User | undefined = users?.find(
-    (user) => user.id === session?.userId
-  );
-
   const downloadDoc = useCallback(() => {
     const file = new Blob([doc.content], { type: "text/markdown" });
     saveFile(file, "index.md", [
@@ -82,13 +54,6 @@ export const Navbar = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [downloadDoc]);
-
-  // sync session user to the local user state for the login process
-  useEffect(() => {
-    if (sessionUser) {
-      setTentativeUser({ _type: "existing", id: sessionUser.id });
-    }
-  }, [sessionUser]);
 
   const title = getTitle(doc?.content ?? "");
 

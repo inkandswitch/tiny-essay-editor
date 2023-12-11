@@ -2,7 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { LocalSession, MarkdownDoc } from "../schema";
+import { MarkdownDoc } from "../schema";
 import { Navbar } from "./Navbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { useEffect, useState } from "react";
@@ -14,26 +14,9 @@ import { useThreadsWithPositions } from "../utils";
 function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [session, setSessionInMemory] = useState<LocalSession>();
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
-
-  const localStorageKey = `LocalSession-${docUrl}`;
-
-  useEffect(() => {
-    const session = localStorage.getItem(localStorageKey);
-    if (session) {
-      setSessionInMemory(JSON.parse(session));
-    } else {
-      setSessionInMemory({ userId: null });
-    }
-  }, [localStorageKey]);
-
-  const setSession = (session: LocalSession) => {
-    localStorage.setItem(localStorageKey, JSON.stringify(session));
-    setSessionInMemory(session);
-  };
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,
@@ -41,20 +24,14 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
     activeThreadId,
   });
 
-  if (!doc || !session) {
+  if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
   return (
     <div>
       <div className="fixed z-50 top-0">
-        <Navbar
-          handle={handle}
-          doc={doc}
-          changeDoc={changeDoc}
-          session={session}
-          setSession={setSession}
-        />
+        <Navbar handle={handle} doc={doc} />
       </div>
 
       <div className="flex bg-gray-50 mt-12">
@@ -70,7 +47,6 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
         </div>
         <div className="flex-grow bg-gray-50">
           <CommentsSidebar
-            session={session}
             doc={doc}
             changeDoc={changeDoc}
             selection={selection}

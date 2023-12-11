@@ -34,7 +34,3 @@ export type MarkdownDoc = {
   commentThreads: { [key: string]: CommentThread };
   users: User[];
 };
-
-export type LocalSession = {
-  userId: string | null;
-};
