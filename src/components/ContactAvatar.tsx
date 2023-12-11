@@ -65,7 +65,7 @@ export const ContactAvatar = ({
         <AvatarFallback>{name ? initials(name) : <UserIcon />}</AvatarFallback>
       </Avatar>
 
-      {showName && <b>{name ?? "Anonymous"}</b>}
+      {showName && <span>{name ?? "Anonymous"}</span>}
     </div>
   );
 };
