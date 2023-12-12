@@ -17,7 +17,6 @@ export interface AccountDoc {
 
 export interface AnonymousContactDoc {
   type: "anonymous";
-  claimedBy?: AutomergeUrl;
 }
 
 export interface RegisteredContactDoc {
@@ -83,12 +82,6 @@ class Account extends EventEmitter<AccountEvents> {
     const accountHandle = this.#repo.find<AccountDoc>(accountUrl);
     const accountDoc = await accountHandle.doc();
     const contactHandle = this.#repo.find<ContactDoc>(accountDoc.contactUrl);
-
-    this.#contactHandle.change((oldContact: AnonymousContactDoc) => {
-      if (oldContact.type === "anonymous") {
-        oldContact.claimedBy = contactHandle.url;
-      }
-    });
 
     this.#contactHandle = contactHandle;
     this.#handle = accountHandle;
