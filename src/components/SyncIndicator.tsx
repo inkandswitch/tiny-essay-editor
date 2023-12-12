@@ -181,8 +181,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   }
 };
 
-const SYNC_SERVER_STORAGE_ID =
-  "3760df37-a4c6-4f66-9ecd-732039a9385d" as StorageId;
+const SYNC_SERVER_STORAGE_ID = (import.meta.env.VITE_SYNC_SERVER_STORAGE_ID ??
+  "3760df37-a4c6-4f66-9ecd-732039a9385d") as StorageId;
 
 enum SyncState {
   InSync,

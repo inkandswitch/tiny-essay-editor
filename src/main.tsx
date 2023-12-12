@@ -9,10 +9,13 @@ import type { MarkdownDoc } from "./schema.js";
 import { mount } from "./mount.js";
 import "./index.css";
 
+const SYNC_SERVER_URL =
+  import.meta.env.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
+
 const repo = new Repo({
   network: [
     new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+    new BrowserWebSocketClientAdapter(SYNC_SERVER_URL),
   ],
   storage: new IndexedDBStorageAdapter(),
 });
