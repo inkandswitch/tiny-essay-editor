@@ -85,7 +85,6 @@ export const CommentsSidebar = ({
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
-      userId: null,
       contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
@@ -118,7 +117,7 @@ export const CommentsSidebar = ({
           <div>
             {thread.comments.map((comment) => {
               const legacyUserName =
-                doc.users.find((user) => user.id === comment.userId)?.name ??
+                doc.users?.find((user) => user.id === comment.userId)?.name ??
                 "Anonymous";
 
               return (
