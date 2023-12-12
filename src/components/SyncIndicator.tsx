@@ -8,14 +8,11 @@ import { next as A } from "@automerge/automerge";
 import { DocHandle, StorageId } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { useMachine } from "@xstate/react";
-import { ChevronDown, ChevronUp, WifiIcon, WifiOffIcon } from "lucide-react";
+import { WifiIcon, WifiOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createMachine, raise } from "xstate";
-import { Button } from "./ui/button";
 
 export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
-  const [showDetails, setShowDetails] = useState(false);
-
   const {
     lastSyncUpdate,
     isInternetConnected,
@@ -28,8 +25,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
 
   const isSynced = syncState === SyncState.InSync;
 
-  const headsView = showDetails ? (
-    <>
+  const headsView = (
+    <div className="mt-2 pt-2 border-t border-gray-300">
       <div className="whitespace-nowrap flex">
         <dt className="font-bold inline mr-1">Server heads:</dt>
         <dd className="inline text-ellipsis flex-shrink overflow-hidden min-w-0">
@@ -44,27 +41,6 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
           {JSON.stringify((ownHeads ?? []).map((part) => part.slice(0, 4)))}
         </dd>
       </div>
-      <div className="flex justify-center mt-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowDetails(false)}
-          className="p-1"
-        >
-          <ChevronUp className="text-gray-500" />
-        </Button>
-      </div>
-    </>
-  ) : (
-    <div className="flex justify-center mt-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowDetails(true)}
-        className="p-1"
-      >
-        <ChevronDown className="text-gray-500" />
-      </Button>
     </div>
   );
 
@@ -72,7 +48,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     if (!syncServerConnectionError && !syncServerResponseError) {
       return (
         <Popover>
-          <PopoverTrigger className="outline-none focus:outline-none cursor-default">
+          <PopoverTrigger className="hover:bg-gray-100 p-2 rounded-md">
             <div className="text-gray-500">
               <WifiIcon size={"20px"} className="inline-block mr-[7px]" />
             </div>
@@ -103,21 +79,25 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
     } else {
       return (
         <Popover>
-          <PopoverTrigger className="outline-none focus:outline-none cursor-default">
+          <PopoverTrigger className="bg-red-50 border border-red-100 hover:bg-red-100 p-2 rounded-md">
             <div className="text-red-500 flex items-center text-sm">
               <WifiIcon
                 size={"20px"}
                 className={`inline-block ${isSynced ? "mr-[7px]" : ""}`}
               />
               {!isSynced && <div className="inline text-xs">*</div>}
-              <div className="ml-1">Sync Error</div>
             </div>
           </PopoverTrigger>
           <PopoverContent className="flex flex-col gap-1.5 pb-2">
             <div className="mb-2 text-sm">
-              There was an unexpected error connecting to the sync server. Don't
-              worry, your changes are saved locally. Please try reloading and
-              see if that fixes the issue.
+              <p>
+                There was an unexpected error connecting to the sync server.
+                Don't worry, your changes are saved locally.
+              </p>
+              <p className="mt-2">
+                Please try reloading and see if that fixes the issue. If not,
+                drop a note in the lab Discord with a screenshot.
+              </p>
             </div>
             <dl className="text-sm text-gray-600">
               <div>
@@ -155,7 +135,7 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   } else {
     return (
       <Popover>
-        <PopoverTrigger className="outline-none focus:outline-none cursor-default">
+        <PopoverTrigger className="hover:bg-gray-100 p-2 rounded-md">
           <div className="text-gray-500">
             <WifiOffIcon
               size={"20px"}
