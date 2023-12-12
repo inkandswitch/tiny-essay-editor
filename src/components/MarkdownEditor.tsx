@@ -44,6 +44,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
+import { awesome_line_wrapping_plugin } from "./LineWrapping";
 
 export type TextSelection = {
   from: number;
@@ -119,12 +120,16 @@ const theme = EditorView.theme({
   ".cm-gutters": {
     display: "none",
   },
+  ".cm-lineWrapping": {
+    wordBreak: "break-all",
+  },
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
     padding: "10px 0",
     margin: "0 var(--cm-padding-x)",
-    textAlign: "justify",
+    textAlign: "left",
+
     lineHeight: "24px",
   },
   ".cm-content li": {
@@ -312,6 +317,7 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
+        awesome_line_wrapping_plugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
