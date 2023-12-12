@@ -6,6 +6,15 @@ import { interpret } from "xstate";
 const CONNECTION_INIT_TIMEOUT = 100;
 const MAX_SYNC_MESSAGE_DELAY = 100;
 
+function getSyncIndicatorService() {
+  return interpret(
+    getSyncIndicatorMachine({
+      connectionInitTimeout: CONNECTION_INIT_TIMEOUT,
+      maxSyncMessageDelay: MAX_SYNC_MESSAGE_DELAY,
+    })
+  ).start();
+}
+
 describe("SyncIndicator", () => {
   describe("syncIndicatorMachine Tests", () => {
     it("should start in initial state", () => {
@@ -209,13 +218,4 @@ describe("SyncIndicator", () => {
 
 function pause(t = 0) {
   return new Promise<void>((resolve) => setTimeout(() => resolve(), t));
-}
-
-function getSyncIndicatorService() {
-  return interpret(
-    getSyncIndicatorMachine({
-      connectionInitTimeout: CONNECTION_INIT_TIMEOUT,
-      maxSyncMessageDelay: MAX_SYNC_MESSAGE_DELAY,
-    })
-  ).start();
 }
