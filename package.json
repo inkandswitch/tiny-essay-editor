@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "module": "index.js",
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
@@ -35,11 +36,14 @@
     "@radix-ui/react-popover": "^1.0.7",
     "@radix-ui/react-progress": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-tooltip": "^1.0.7",
     "@xstate/react": "^3.2.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
     "codemirror": "^6.0.1",
+    "eventemitter3": "^5.0.1",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
@@ -72,6 +76,5 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vitest": "^0.34.6"
-  },
-  "module": "index.js"
+  }
 }

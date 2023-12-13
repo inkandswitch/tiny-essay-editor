@@ -1,8 +1,15 @@
+import { AutomergeUrl } from "@automerge/automerge-repo";
+
 export type Comment = {
   id: string;
   content: string;
-  userId: string | null;
+  contactUrl?: AutomergeUrl;
   timestamp: number;
+
+  // A legacy field for backwards compatibility.
+  // Was used to point to user objects in the doc itself.
+  // Now superceded by contactUrl.
+  userId?: string | null;
 };
 
 export type CommentThread = {
@@ -19,6 +26,8 @@ export type CommentThreadForUI = CommentThread & {
   active: boolean;
 };
 
+export type CommentThreadWithPosition = CommentThreadForUI & { yCoord: number };
+
 export type User = {
   id: string;
   name: string;
@@ -28,8 +37,4 @@ export type MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
-};
-
-export type LocalSession = {
-  userId: string | null;
 };

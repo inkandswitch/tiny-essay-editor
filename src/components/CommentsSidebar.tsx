@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Comment, CommentThread, LocalSession, MarkdownDoc } from "../schema";
+import {
+  Comment,
+  CommentThread,
+  CommentThreadWithPosition,
+  MarkdownDoc,
+} from "../schema";
 
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,32 +17,27 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
-import {
-  useScrollPosition,
-  getVisibleTheadsWithPos,
-  getRelativeTimeString,
-  cmRangeToAMRange,
-} from "../utils";
+import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
+import { useCurrentAccount } from "../account";
+import { ContactAvatar } from "./generic/ContactAvatar";
 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
   selection,
-  view,
-  session,
+  threadsWithPositions,
   activeThreadId,
   setActiveThreadId,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  view: EditorView | undefined;
-  session: LocalSession;
+  threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
+  const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
@@ -50,18 +50,6 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
-  // It may be inefficient to rerender comments sidebar on each scroll but
-  // it's fine for now and it lets us reposition comments as the user scrolls.
-  // (Notably we're not literally repositioning comments in JS;
-  // we just use CodeMirror to compute position, and it doesn't tell us position
-  // of comments that are way off-screen. That's why we need this scroll handler
-  // to catch when things come near the screen)
-  useScrollPosition();
-
-  const threadsWithPositions = view
-    ? getVisibleTheadsWithPos(doc, view, activeThreadId)
-    : [];
-
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
 
@@ -73,7 +61,8 @@ export const CommentsSidebar = ({
     const comment: Comment = {
       id: uuid(),
       content: commentText,
-      userId: session?.userId ?? null,
+      userId: null,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
@@ -96,7 +85,7 @@ export const CommentsSidebar = ({
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
-      userId: session?.userId ?? null,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
@@ -126,22 +115,36 @@ export const CommentsSidebar = ({
           }}
         >
           <div>
-            {thread.comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
-              >
-                <div className="text-xs text-gray-600 mb-1 cursor-default">
-                  {doc.users.find((user) => user.id === comment.userId)?.name ??
-                    "Anonymous"}
+            {thread.comments.map((comment) => {
+              const legacyUserName =
+                doc.users?.find((user) => user.id === comment.userId)?.name ??
+                "Anonymous";
 
-                  <span className="ml-2 text-gray-400">
-                    {getRelativeTimeString(comment.timestamp)}
-                  </span>
+              return (
+                <div
+                  key={comment.id}
+                  className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
+                >
+                  <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+                    {comment.contactUrl ? (
+                      <ContactAvatar
+                        url={comment.contactUrl}
+                        showName={true}
+                        size="sm"
+                      />
+                    ) : (
+                      legacyUserName
+                    )}
+                    <span className="ml-2 text-gray-400">
+                      {getRelativeTimeString(comment.timestamp)}
+                    </span>
+                  </div>
+                  <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
+                    {comment.content}
+                  </div>
                 </div>
-                <div className="cursor-default text-sm whitespace-pre-wrap">{comment.content}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-2">
             <Popover>

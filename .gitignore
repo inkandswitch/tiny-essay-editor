@@ -24,3 +24,4 @@ tsc
 *.njsproj
 *.sln
 *.sw?
+.env
