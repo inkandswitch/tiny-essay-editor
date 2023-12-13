@@ -3,7 +3,6 @@ import {
   Comment,
   CommentThread,
   CommentThreadWithPosition,
-  LocalSession,
   MarkdownDoc,
 } from "../schema";
 
@@ -20,12 +19,13 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
+import { useCurrentAccount } from "../account";
+import { ContactAvatar } from "./generic/ContactAvatar";
 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
   selection,
-  session,
   threadsWithPositions,
   activeThreadId,
   setActiveThreadId,
@@ -33,11 +33,11 @@ export const CommentsSidebar = ({
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  session: LocalSession;
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
 }) => {
+  const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
 
   // suppress showing the button immediately after adding a thread
@@ -61,7 +61,8 @@ export const CommentsSidebar = ({
     const comment: Comment = {
       id: uuid(),
       content: commentText,
-      userId: session?.userId ?? null,
+      userId: null,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
@@ -84,7 +85,7 @@ export const CommentsSidebar = ({
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
-      userId: session?.userId ?? null,
+      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
     };
 
@@ -114,24 +115,36 @@ export const CommentsSidebar = ({
           }}
         >
           <div>
-            {thread.comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
-              >
-                <div className="text-xs text-gray-600 mb-1 cursor-default">
-                  {doc.users.find((user) => user.id === comment.userId)?.name ??
-                    "Anonymous"}
+            {thread.comments.map((comment) => {
+              const legacyUserName =
+                doc.users?.find((user) => user.id === comment.userId)?.name ??
+                "Anonymous";
 
-                  <span className="ml-2 text-gray-400">
-                    {getRelativeTimeString(comment.timestamp)}
-                  </span>
+              return (
+                <div
+                  key={comment.id}
+                  className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
+                >
+                  <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+                    {comment.contactUrl ? (
+                      <ContactAvatar
+                        url={comment.contactUrl}
+                        showName={true}
+                        size="sm"
+                      />
+                    ) : (
+                      legacyUserName
+                    )}
+                    <span className="ml-2 text-gray-400">
+                      {getRelativeTimeString(comment.timestamp)}
+                    </span>
+                  </div>
+                  <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
+                    {comment.content}
+                  </div>
                 </div>
-                <div className="cursor-default text-sm whitespace-pre-wrap">
-                  {comment.content}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-2">
             <Popover>

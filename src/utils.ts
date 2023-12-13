@@ -7,6 +7,8 @@ import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
+import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -301,8 +303,8 @@ export const getTitle = (content: string) => {
   const frontmatterMatch = content.match(frontmatterRegex);
   const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
 
-  const titleRegex = /title:\s\"(.+?)\"/;
-  const subtitleRegex = /subtitle:\s\"(.+?)\"/;
+  const titleRegex = /title:\s"(.+?)"/;
+  const subtitleRegex = /subtitle:\s"(.+?)"/;
 
   const titleMatch = frontmatter.match(titleRegex);
   const subtitleMatch = frontmatter.match(subtitleRegex);
@@ -367,4 +369,47 @@ export const useThreadsWithPositions = ({
   );
 
   return threadsWithPositions;
+};
+
+export interface FileDoc {
+  type: string;
+  data: ArrayBuffer;
+}
+
+export const uploadFile = async (
+  repo: Repo,
+  file: File
+): Promise<AutomergeUrl> => {
+  const reader = new FileReader();
+  const fileDocHandle = repo.create<FileDoc>();
+
+  const isLoaded = new Promise((resolve) => {
+    reader.onload = (event) => {
+      fileDocHandle.change((fileDoc) => {
+        fileDoc.type = file.type;
+        fileDoc.data = new Uint8Array(event.target.result as ArrayBuffer);
+      });
+
+      resolve(true);
+    };
+  });
+
+  reader.readAsArrayBuffer(file);
+
+  await isLoaded;
+  return fileDocHandle.url;
+};
+
+export const useBlobUrl = (url: AutomergeUrl) => {
+  const [file] = useDocument<FileDoc>(url);
+
+  return useMemo(() => {
+    if (!file || !file.data || !file.type) {
+      return;
+    }
+
+    const blob = new Blob([file.data], { type: file.type });
+    const url = URL.createObjectURL(blob);
+    return url;
+  }, [file?.data, file?.type]);
 };
