@@ -52,28 +52,38 @@ export const AccountPicker = () => {
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
     AccountPickerTab.SignUp
   );
-  const [showAccountUrl, setShowAccountUrl] = useState(false);
+  const [showAccountKeys, setShowAccountKeys] = useState(false);
   const [isCopyTooltipOpen, setIsCopyTooltipOpen] = useState(false);
 
-  const [accountTokenToLogin, setAccountTokenToLogin] = useState<string>("");
-  const accountAutomergeUrlToLogin = accountTokenToLogin
-    ? accountTokenToAutomergeUrl(accountTokenToLogin)
-    : undefined;
+  const [accountFileStringToLogin, setAccountFileStringToLogin] =
+    useState<string>("");
+  const accountFileToLogin = (() => {
+    let accountFile;
+    try {
+      accountFile = JSON.parse(accountFileStringToLogin);
+    } catch (err) {
+      console.warn("invalid account file");
+    }
 
-  const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
-  const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
-
-  const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
-    if (!accountTokenToLogin || accountTokenToLogin === "") return null;
-    if (!accountAutomergeUrlToLogin) return "malformed";
-    if (!accountToLogin) return "not-found";
-    if (!contactToLogin) return "not-found";
-    return "valid";
+    return accountFile;
   })();
 
-  const currentAccountToken = currentAccount
-    ? automergeUrlToAccountToken(currentAccount.accountHandle.url, name)
-    : null;
+  const [accountToLogin] = useDocument<AccountDoc>(
+    accountFileToLogin?.accountUrl
+  );
+  const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
+
+  const accountFileToLoginStatus: AccountTokenToLoginStatus = "valid";
+  // todo: adjust validation for account file
+  /*(() => {
+        if (!accountTokenToLogin || accountTokenToLogin === "") return null;
+    if (!accountAutomergeUrlToLogin) return "malformed";
+    if (!accountToLogin) return "not-found"; 
+    if (!contactToLogin) return "not-found"; 
+    return "valid";
+  })(); */
+
+  const currentAccountFile = currentAccount ? currentAccount.serialize() : null;
 
   // initialize form values if already logged in
   useEffect(() => {
@@ -85,7 +95,7 @@ export const AccountPicker = () => {
   const onSubmit = () => {
     switch (activeTab) {
       case AccountPickerTab.LogIn:
-        currentAccount.logIn(accountAutomergeUrlToLogin);
+        currentAccount.logIn(accountFileToLogin);
         break;
 
       case AccountPickerTab.SignUp:
@@ -109,11 +119,11 @@ export const AccountPicker = () => {
   };
 
   const onToggleShowAccountUrl = () => {
-    setShowAccountUrl((showAccountUrl) => !showAccountUrl);
+    setShowAccountKeys((showAccountUrl) => !showAccountUrl);
   };
 
   const onCopy = () => {
-    navigator.clipboard.writeText(currentAccountToken);
+    navigator.clipboard.writeText(currentAccountFile);
 
     setIsCopyTooltipOpen(true);
 
@@ -125,7 +135,7 @@ export const AccountPicker = () => {
   const isSubmittable =
     (activeTab === AccountPickerTab.SignUp && name) ||
     (activeTab === AccountPickerTab.LogIn &&
-      accountTokenToLogin &&
+      accountFileStringToLogin &&
       accountToLogin?.contactUrl &&
       contactToLogin?.type === "registered");
 
@@ -188,45 +198,43 @@ export const AccountPicker = () => {
             </TabsContent>
             <TabsContent value={AccountPickerTab.LogIn}>
               <form className="grid w-full max-w-sm items-center gap-1.5 py-4">
-                <Label htmlFor="accountUrl">Account token</Label>
+                <Label htmlFor="accountUrl">Account file</Label>
 
                 <div className="flex gap-1.5">
                   <Input
                     className={`${
-                      accountTokenToLoginStatus === "valid"
-                        ? "bg-green-100"
-                        : ""
+                      accountFileToLoginStatus === "valid" ? "bg-green-100" : ""
                     }`}
                     id="accountUrl"
-                    value={accountTokenToLogin}
+                    value={accountFileStringToLogin}
                     onChange={(evt) => {
-                      setAccountTokenToLogin(evt.target.value);
+                      setAccountFileStringToLogin(evt.target.value);
                     }}
-                    type={showAccountUrl ? "text" : "password"}
+                    type={showAccountKeys ? "text" : "password"}
                     autoComplete="current-password"
                   />
                   <Button variant="ghost" onClick={onToggleShowAccountUrl}>
-                    {showAccountUrl ? <Eye /> : <EyeOff />}
+                    {showAccountKeys ? <Eye /> : <EyeOff />}
                   </Button>
                 </div>
 
                 <div className="h-8 text-sm text-red-500">
-                  {accountTokenToLoginStatus === "malformed" && (
+                  {accountFileToLoginStatus === "malformed" && (
                     <div>
                       Not a valid account token, try copy-pasting again.
                     </div>
                   )}
-                  {accountTokenToLoginStatus === "not-found" && (
+                  {accountFileToLoginStatus === "not-found" && (
                     <div>Account not found</div>
                   )}
                 </div>
 
                 <p className="text-gray-500 text-justify pb-2 text-sm">
-                  To login, paste your account token.
+                  To login, paste your account file.
                 </p>
                 <p className="text-gray-500 text-justify pb-2 text-sm mb-2">
-                  You can find your token by accessing the account dialog on any
-                  device where you are currently logged in.
+                  You can find your account file by accessing the account dialog
+                  on any device where you are currently logged in.
                 </p>
               </form>
             </TabsContent>
@@ -255,21 +263,21 @@ export const AccountPicker = () => {
             </div>
 
             <form className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Account token</Label>
+              <Label htmlFor="picture">Account file</Label>
 
               <div className="flex gap-1.5">
                 <Input
                   onFocus={(e) => e.target.select()}
-                  value={currentAccountToken}
+                  value={currentAccountFile}
                   id="accountUrl"
-                  type={showAccountUrl ? "text" : "password"}
+                  type={showAccountKeys ? "text" : "password"}
                   accept="image/*"
                   onChange={onFilesChanged}
                   autoComplete="off"
                 />
 
                 <Button variant="ghost" onClick={onToggleShowAccountUrl}>
-                  {showAccountUrl ? <Eye /> : <EyeOff />}
+                  {showAccountKeys ? <Eye /> : <EyeOff />}
                 </Button>
 
                 <TooltipProvider>
@@ -288,8 +296,8 @@ export const AccountPicker = () => {
               </div>
 
               <p className="text-gray-500 text-justify pt-2 text-sm">
-                To log in on another device, copy your account token and paste
-                it into the login screen on the other device.
+                To log in on another device, copy your account file and paste it
+                into the login screen on the other device.
               </p>
               <p className="text-gray-500 text-justify pt-2 text-sm">
                 ⚠️ WARNING: this app has limited security, don't use it for

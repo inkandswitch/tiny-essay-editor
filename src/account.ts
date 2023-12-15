@@ -55,6 +55,9 @@ class Account extends EventEmitter<AccountEvents> {
   #accountHandle: DocHandle<AccountDoc>;
   #contactHandle: DocHandle<ContactDoc>;
   #authProvider: AuthProvider;
+  #user: Auth.UserWithSecrets;
+  #device: Auth.DeviceWithSecrets;
+  #team: Auth.Team;
 
   constructor({
     repo,
@@ -69,6 +72,9 @@ class Account extends EventEmitter<AccountEvents> {
     this.#repo = repo;
     this.#accountHandle = accountHandle;
     this.#contactHandle = contactHandle;
+    this.#user = user;
+    this.#device = device;
+    this.#team = team;
 
     const authProvider = (this.#authProvider = new AuthProvider({
       user,
@@ -111,7 +117,17 @@ class Account extends EventEmitter<AccountEvents> {
     }); */
   }
 
-  async logIn(accountUrl: AutomergeUrl) {
+  async logIn(accountData: AccountData) {
+    localStorage.setItem(
+      LOGGED_IN_ACCOUNT_DATA_KEY,
+      serializeAccountData(accountData)
+    );
+    storage.removeRange(["AuthProvider"]);
+
+    // hack: currently there isn't a proper way to switch user so we just reload the page
+    location.reload();
+
+    /*
     // override old accountUrl
     localStorage.setItem(LOGGED_IN_ACCOUNT, accountUrl);
 
@@ -121,7 +137,7 @@ class Account extends EventEmitter<AccountEvents> {
 
     this.#contactHandle = contactHandle;
     this.#accountHandle = accountHandle;
-    this.emit("change");
+    this.emit("change"); */
   }
 
   async signUp({ name, avatar }: ContactProps) {
@@ -141,6 +157,13 @@ class Account extends EventEmitter<AccountEvents> {
   }
 
   async logOut() {
+    localStorage.removeItem(LOGGED_IN_ACCOUNT_DATA_KEY);
+    storage.removeRange(["AuthProvider"]);
+
+    // hack: currently there isn't a proper way to switch user so we just reload the page
+    location.reload();
+
+    /*
     const accountHandle = this.#repo.create<AccountDoc>();
     const contactHandle = this.#repo.create<ContactDoc>();
 
@@ -157,7 +180,16 @@ class Account extends EventEmitter<AccountEvents> {
     this.#accountHandle = accountHandle;
     this.#contactHandle = contactHandle;
 
-    this.emit("change");
+    this.emit("change"); */
+  }
+
+  serialize(): string {
+    return serializeAccountData({
+      accountUrl: this.#accountHandle.url,
+      user: this.#user,
+      device: this.#device,
+      team: this.#team,
+    });
   }
 
   get accountHandle() {
@@ -196,9 +228,19 @@ async function getAccount(repo: Repo) {
       const contactHandle = repo.find<ContactDoc>(
         (await accountHandle.doc()).contactUrl
       );
-      resolve(
-        new Account({ repo, accountHandle, contactHandle, user, device, team })
-      );
+
+      const account = new Account({
+        repo,
+        accountHandle,
+        contactHandle,
+        user,
+        device,
+        team,
+      });
+
+      (window as any).account = account;
+
+      resolve(account);
     });
 
     return CURRENT_ACCOUNT;
@@ -247,9 +289,18 @@ async function getAccount(repo: Repo) {
       team,
     });
 
-    resolve(
-      new Account({ repo, accountHandle, contactHandle, user, device, team })
-    );
+    const account = new Account({
+      repo,
+      accountHandle,
+      contactHandle,
+      user,
+      device,
+      team,
+    });
+
+    (window as any).account = account;
+
+    resolve(account);
   });
   return CURRENT_ACCOUNT;
 }
@@ -293,13 +344,20 @@ function loadLoggedInAccountData(): AccountData | undefined {
   }
 }
 
-function storeLoggedInAccountData({
+function storeLoggedInAccountData(accountData: AccountData) {
+  localStorage.setItem(
+    LOGGED_IN_ACCOUNT_DATA_KEY,
+    serializeAccountData(accountData)
+  );
+}
+
+function serializeAccountData({
   accountUrl,
   user,
   device,
   team,
-}: AccountData) {
-  const rawAccountData: RawAccountData = {
+}: AccountData): string {
+  return JSON.stringify({
     accountUrl,
     user,
     device,
@@ -307,12 +365,7 @@ function storeLoggedInAccountData({
       serializedGraph: team.save(),
       keyring: team.teamKeyring(),
     },
-  };
-
-  localStorage.setItem(
-    LOGGED_IN_ACCOUNT_DATA_KEY,
-    JSON.stringify(rawAccountData)
-  );
+  });
 }
 
 function useForceUpdate() {
