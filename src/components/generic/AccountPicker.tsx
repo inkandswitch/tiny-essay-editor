@@ -72,7 +72,7 @@ export const AccountPicker = () => {
   })();
 
   const currentAccountToken = currentAccount
-    ? automergeUrlToAccountToken(currentAccount.handle.url, name)
+    ? automergeUrlToAccountToken(currentAccount.accountHandle.url, name)
     : null;
 
   // initialize form values if already logged in

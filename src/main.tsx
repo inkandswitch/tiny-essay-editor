@@ -1,20 +1,19 @@
 import { isValidAutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
+import { AuthProvider } from "@localfirst//auth-provider-automerge-repo";
 
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as Automerge } from "@automerge/automerge";
+import { storage } from "./storage";
 
 import type { MarkdownDoc } from "./schema.js";
 import { mount } from "./mount.js";
 import "./index.css";
 
 const repo = new Repo({
-  network: [
-    new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
-  ],
-  storage: new IndexedDBStorageAdapter(),
+  network: [],
+  storage,
 });
 
 const rootDocUrl = `${document.location.hash.substr(1)}`;

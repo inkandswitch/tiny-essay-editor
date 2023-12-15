@@ -413,3 +413,8 @@ export const useBlobUrl = (url: AutomergeUrl) => {
     return url;
   }, [file?.data, file?.type]);
 };
+
+export const objectToUint8Array = (obj: Record<number, number>): Uint8Array => {
+  const arr = Object.values(obj);
+  return new Uint8Array(arr);
+};
