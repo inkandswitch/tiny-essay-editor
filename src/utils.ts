@@ -5,7 +5,14 @@ import {
 } from "./schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
-import { ReactElement, useEffect, useMemo, useState } from "react";
+import {
+  ReactElement,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import ReactDOMServer from "react-dom/server";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
@@ -412,4 +419,24 @@ export const useBlobUrl = (url: AutomergeUrl) => {
     const url = URL.createObjectURL(blob);
     return url;
   }, [file?.data, file?.type]);
+};
+
+/**
+ * Creates a constant reference for the given function.
+ * Always returns the same function.
+ *
+ * @remarks
+ *
+ * `useCallback` closes over the deps at the time they're passed in, whereas `useStaticCallback`
+ * always calls the latest callback. This is generally a good thing, but it's worth noting that it
+ * could result in a race condition.
+ */
+
+export const useStaticCallback = <T extends (...args: any[]) => any>(
+  callback: T
+): T => {
+  const cb = useRef<T>(callback);
+  cb.current = callback;
+
+  return useCallback((...args: any[]) => cb.current(...args), []) as T;
 };

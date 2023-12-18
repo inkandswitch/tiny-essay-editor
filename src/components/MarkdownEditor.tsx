@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   EditorView,
@@ -13,10 +13,11 @@ import {
   highlightActiveLine,
   dropCursor,
 } from "@codemirror/view";
-import { StateEffect, StateField, Range } from "@codemirror/state";
+import { StateEffect, StateField, Range, EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 // import {javascript} from "@codemirror/lang-javascript"
+import { YRemoteCaretWidget } from "@/remote-cursors";
 
 import { tags } from "@lezer/highlight";
 import { Prop } from "@automerge/automerge";
@@ -27,7 +28,7 @@ import {
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
-import { amRangeToCMRange, jsxToHtmlElement } from "@/utils";
+import { amRangeToCMRange, jsxToHtmlElement, useStaticCallback } from "@/utils";
 import isEqual from "lodash/isEqual";
 import sortBy from "lodash/sortBy";
 import { Tree } from "@lezer/common";
@@ -44,6 +45,11 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
+import {
+  useLocalAwareness,
+  useRemoteAwareness,
+} from "@automerge/automerge-repo-react-hooks";
+import { useCurrentAccount, useSelf } from "@/account";
 
 export type TextSelection = {
   from: number;
@@ -150,6 +156,62 @@ const theme = EditorView.theme({
     fontWeight: "normal",
     lineHeight: "0.8em",
   },
+
+  // cursor
+  ".cm-ySelection": {},
+  ".cm-yLineSelection": {
+    padding: 0,
+    margin: "0px 2px 0px 4px",
+  },
+  ".cm-ySelectionCaret": {
+    position: "relative",
+    borderLeft: "1px solid black",
+    borderRight: "1px solid black",
+    marginLeft: "-1px",
+    marginRight: "-1px",
+    boxSizing: "border-box",
+    display: "inline",
+  },
+  ".cm-ySelectionCaretDot": {
+    borderRadius: "50%",
+    position: "absolute",
+    width: ".4em",
+    height: ".4em",
+    top: "-.2em",
+    left: "-.2em",
+    backgroundColor: "inherit",
+    transition: "transform .3s ease-in-out",
+    boxSizing: "border-box",
+  },
+  ".cm-ySelectionCaret:hover > .cm-ySelectionCaretDot": {
+    transformOrigin: "bottom center",
+    transform: "scale(0)",
+  },
+  ".cm-ySelectionInfo": {
+    position: "absolute",
+    top: "-1.05em",
+    left: "-1px",
+    fontSize: ".75em",
+    fontFamily: "serif",
+    fontStyle: "normal",
+    fontWeight: "normal",
+    lineHeight: "normal",
+    userSelect: "none",
+    color: "white",
+    paddingLeft: "2px",
+    paddingRight: "2px",
+    zIndex: 101,
+    transition: "opacity .3s ease-in-out",
+    backgroundColor: "inherit",
+    // these should be separate
+    opacity: 0,
+    transitionDelay: "0s",
+    whiteSpace: "nowrap",
+  },
+  ".cm-ySelectionCaret:hover > .cm-ySelectionInfo": {
+    opacity: 1,
+    transitionDelay: "0s",
+  },
 });
 
 const baseHeadingStyles = {
@@ -249,6 +311,57 @@ const markdownStyles = HighlightStyle.define([
   { tag: tags.definition(tags.propertyName), ...baseCodeStyles, color: "#00c" },
 ]);
 
+interface Cursor {
+  name: string;
+  position: number | undefined;
+}
+
+const setCursorsEffect = StateEffect.define<Cursor[]>();
+const cursorsField = StateField.define<Cursor[]>({
+  create() {
+    return [];
+  },
+  update(highlights, tr) {
+    for (let e of tr.effects) {
+      if (e.is(setCursorsEffect)) {
+        return e.value;
+      }
+    }
+
+    return highlights;
+    return highlights.map(
+      (cursor): Cursor => ({
+        ...cursor,
+        position: tr.changes.mapPos(cursor.position),
+      })
+    );
+  },
+});
+
+const cursorDecorations = EditorView.decorations.compute(
+  [cursorsField],
+  (state) => {
+    const cursors = state.field(cursorsField);
+
+    const decorations = [];
+
+    cursors.forEach((cursor) => {
+      if (cursor.position !== undefined) {
+        decorations.push(
+          Decoration.widget({
+            side: 1,
+            widget: new YRemoteCaretWidget("red", cursor.name),
+          }).range(cursor.position)
+        );
+      }
+    });
+
+    console.log("decorations", decorations, cursors);
+
+    return Decoration.set(decorations);
+  }
+);
+
 export function MarkdownEditor({
   handle,
   path,
@@ -260,6 +373,56 @@ export function MarkdownEditor({
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = React.useState<boolean>(false);
+
+  const self = useSelf();
+  const name = !self || self.type === "anonymous" ? "anonymous" : self.name;
+  const [cursorPosition, setCursorPosition] = useState(0);
+
+  const account = useCurrentAccount();
+
+  /*useEffect(() => {
+    if (!editorRoot.current) {
+      return;
+    }
+
+    console.log("set");
+
+    editorRoot.current.dispatch({
+      effects: setCursorsEffect.of([
+        {
+          position: 10,
+          name: "bob",
+        },
+      ]),
+    });
+  }, [editorRoot.current]); */
+
+  const [_, setCursor] = useLocalAwareness({
+    handle,
+    userId: account?.contactHandle.url,
+    initialState: undefined,
+  });
+
+  useEffect(() => {
+    setCursor({ name, position: cursorPosition });
+  }, [cursorPosition, name]);
+
+  const [peerStates] = useRemoteAwareness({
+    handle,
+    localUserId: account?.contactHandle.url,
+  });
+
+  useEffect(() => {
+    if (!editorRoot.current) {
+      return;
+    }
+
+    const activeCursors: Cursor[] = Object.values(peerStates);
+
+    editorRoot.current.dispatch({
+      effects: setCursorsEffect.of(activeCursors),
+    });
+  }, [peerStates, editorRoot.current]);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -312,8 +475,18 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
+        cursorsField,
+        cursorDecorations,
       ],
       dispatch(transaction, view) {
+        if (transaction.selection) {
+          setTimeout(() => {
+            setCursorPosition(
+              editorRoot.current.state.selection.ranges[0].from
+            );
+          });
+        }
+
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           const newSelection = transaction.newSelection.ranges[0];
