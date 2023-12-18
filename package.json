@@ -44,6 +44,7 @@
     "cmdk": "^0.2.0",
     "codemirror": "^6.0.1",
     "eventemitter3": "^5.0.1",
+    "lib0": "^0.2.88",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
