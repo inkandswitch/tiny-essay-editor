@@ -268,13 +268,18 @@ export const AccountPicker = () => {
                   autoComplete="off"
                 />
 
-                <Button variant="ghost" onClick={onToggleShowAccountUrl}>
+                <Button
+                  variant="ghost"
+                  onClick={onToggleShowAccountUrl}
+                  type="button"
+                >
                   {showAccountUrl ? <Eye /> : <EyeOff />}
                 </Button>
 
                 <TooltipProvider>
                   <Tooltip open={isCopyTooltipOpen}>
                     <TooltipTrigger
+                      type="button"
                       onClick={onCopy}
                       onBlur={() => setIsCopyTooltipOpen(false)}
                     >
