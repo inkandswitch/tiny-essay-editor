@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 
 import {
   EditorView,
@@ -20,7 +20,7 @@ import { languages } from "@codemirror/language-data";
 import { YRemoteCaretWidget } from "@/remote-cursors";
 
 import { tags } from "@lezer/highlight";
-import { Prop } from "@automerge/automerge";
+import { next as A, Prop } from "@automerge/automerge";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -46,6 +46,7 @@ import { searchKeymap } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 import {
+  useDocument,
   useLocalAwareness,
   useRemoteAwareness,
 } from "@automerge/automerge-repo-react-hooks";
@@ -58,8 +59,10 @@ export type TextSelection = {
 };
 
 export type EditorProps = {
+  doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
   path: Prop[];
+  selection: TextSelection;
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
   setActiveThreadId: (threadId: string | null) => void;
@@ -311,13 +314,18 @@ const markdownStyles = HighlightStyle.define([
   { tag: tags.definition(tags.propertyName), ...baseCodeStyles, color: "#00c" },
 ]);
 
-interface Cursor {
+interface RemoteCursor {
   name: string;
-  position: number | undefined;
+  cursor: A.Cursor;
 }
 
-const setCursorsEffect = StateEffect.define<Cursor[]>();
-const cursorsField = StateField.define<Cursor[]>({
+interface ResolvedRemoteCursor {
+  name: string;
+  position: number;
+}
+
+const setCursorsEffect = StateEffect.define<ResolvedRemoteCursor[]>();
+const cursorsField = StateField.define<ResolvedRemoteCursor[]>({
   create() {
     return [];
   },
@@ -329,12 +337,6 @@ const cursorsField = StateField.define<Cursor[]>({
     }
 
     return highlights;
-    return highlights.map(
-      (cursor): Cursor => ({
-        ...cursor,
-        position: tr.changes.mapPos(cursor.position),
-      })
-    );
   },
 });
 
@@ -356,16 +358,16 @@ const cursorDecorations = EditorView.decorations.compute(
       }
     });
 
-    console.log("decorations", decorations, cursors);
-
     return Decoration.set(decorations);
   }
 );
 
 export function MarkdownEditor({
+  doc,
   handle,
   path,
   setSelection,
+  selection,
   setView,
   setActiveThreadId,
   threadsWithPositions,
@@ -376,38 +378,32 @@ export function MarkdownEditor({
 
   const self = useSelf();
   const name = !self || self.type === "anonymous" ? "anonymous" : self.name;
-  const [cursorPosition, setCursorPosition] = useState(0);
 
   const account = useCurrentAccount();
+  const activeCursors = useRef<RemoteCursor[]>([]);
 
-  /*useEffect(() => {
-    if (!editorRoot.current) {
-      return;
-    }
+  const cursor = useMemo(
+    () =>
+      doc && selection && selection.from && doc
+        ? A.getCursor(doc, path, selection.from)
+        : undefined,
+    [selection, doc]
+  );
 
-    console.log("set");
-
-    editorRoot.current.dispatch({
-      effects: setCursorsEffect.of([
-        {
-          position: 10,
-          name: "bob",
-        },
-      ]),
+  useEffect(() => {
+    setOwnCursor({
+      cursor,
+      name,
     });
-  }, [editorRoot.current]); */
+  }, [cursor, name]);
 
-  const [_, setCursor] = useLocalAwareness({
+  const [_, setOwnCursor] = useLocalAwareness({
     handle,
     userId: account?.contactHandle.url,
     initialState: undefined,
   });
 
-  useEffect(() => {
-    setCursor({ name, position: cursorPosition });
-  }, [cursorPosition, name]);
-
-  const [peerStates] = useRemoteAwareness({
+  const [remoteCursors] = useRemoteAwareness({
     handle,
     localUserId: account?.contactHandle.url,
   });
@@ -417,12 +413,19 @@ export function MarkdownEditor({
       return;
     }
 
-    const activeCursors: Cursor[] = Object.values(peerStates);
+    activeCursors.current = Object.values(remoteCursors);
 
     editorRoot.current.dispatch({
-      effects: setCursorsEffect.of(activeCursors),
+      effects: setCursorsEffect.of(
+        activeCursors.current.map((remoteCursor: RemoteCursor) => ({
+          name: remoteCursor.name,
+          position: remoteCursor.cursor
+            ? A.getCursorPosition(doc, ["content"], remoteCursor.cursor)
+            : undefined,
+        }))
+      ),
     });
-  }, [peerStates, editorRoot.current]);
+  }, [remoteCursors, editorRoot.current]);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -478,14 +481,6 @@ export function MarkdownEditor({
         cursorDecorations,
       ],
       dispatch(transaction, view) {
-        if (transaction.selection) {
-          setTimeout(() => {
-            setCursorPosition(
-              editorRoot.current.state.selection.ranges[0].from
-            );
-          });
-        }
-
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           const newSelection = transaction.newSelection.ranges[0];
@@ -516,6 +511,19 @@ export function MarkdownEditor({
               from: selection.from,
               to: selection.to,
               yCoord: -1 * boundingClientRect.top + viewCords.top,
+            });
+          }
+
+          if (transaction.docChanged) {
+            editorRoot.current.dispatch({
+              effects: setCursorsEffect.of(
+                activeCursors.current.map((remoteCursor: RemoteCursor) => ({
+                  name: remoteCursor.name,
+                  position: remoteCursor.cursor
+                    ? A.getCursorPosition(doc, ["content"], remoteCursor.cursor)
+                    : undefined,
+                }))
+              ),
             });
           }
         } catch (e) {

@@ -37,9 +37,11 @@ function App({ docUrl }: { docUrl: AutomergeUrl }) {
       <div className="flex bg-gray-50 mt-12">
         <div className="w-full md:w-3/5 lg:w-4/5 max-w-[776px] bg-white md:my-4 md:ml-8 lg:ml-16 xl:ml-48 md:mr-4 border border-gray-200 p-4 rounded-sm">
           <MarkdownEditor
+            doc={doc}
             handle={handle}
             path={["content"]}
             setSelection={setSelection}
+            selection={selection}
             setView={setView}
             threadsWithPositions={threadsWithPositions}
             setActiveThreadId={setActiveThreadId}
