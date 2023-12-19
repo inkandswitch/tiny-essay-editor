@@ -506,13 +506,19 @@ export function MarkdownEditor({
           view.update([transaction]);
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          setSelection({
-            from: selection.from,
-            to: selection.to,
-            yCoord:
-              -1 * view.scrollDOM.getBoundingClientRect().top +
-              view.coordsAtPos(selection.from).top,
-          });
+
+          const boundingClientRect = view.scrollDOM.getBoundingClientRect();
+
+          // on hot reload boundClientRect might not be defined
+          if (boundingClientRect.top) {
+            const viewCords = view.coordsAtPos(selection.from);
+
+            setSelection({
+              from: selection.from,
+              to: selection.to,
+              yCoord: -1 * boundingClientRect.top + viewCords.top,
+            });
+          }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.
