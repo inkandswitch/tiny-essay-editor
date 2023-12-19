@@ -42,7 +42,7 @@ import {
   indentUnit,
 } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import { searchKeymap } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 import {
@@ -448,7 +448,6 @@ export function MarkdownEditor({
         dropCursor(),
         indentOnInput(),
         highlightActiveLine(),
-        highlightSelectionMatches(),
         keymap.of([
           ...defaultKeymap,
           ...searchKeymap,
