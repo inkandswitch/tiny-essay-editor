@@ -10,7 +10,7 @@ import { mount } from "./mount.js";
 import "./index.css";
 
 const SYNC_SERVER_URL =
-  import.meta?.env.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
+  import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
 
 const repo = new Repo({
   network: [
