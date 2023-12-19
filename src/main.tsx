@@ -9,15 +9,18 @@ import type { MarkdownDoc } from "./schema.js";
 import { mount } from "./mount.js";
 import "./index.css";
 
+const SYNC_SERVER_URL =
+  import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
+
 const repo = new Repo({
   network: [
     new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
+    new BrowserWebSocketClientAdapter(SYNC_SERVER_URL),
   ],
   storage: new IndexedDBStorageAdapter(),
 });
 
-const rootDocUrl = `${document.location.hash.substr(1)}`;
+const rootDocUrl = `${document.location.hash.slice(1)}`;
 let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
