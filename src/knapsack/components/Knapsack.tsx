@@ -40,6 +40,10 @@ export const Knapsack: React.FC = () => {
     const newDocHandle = repo.create<MarkdownDoc>();
     newDocHandle.change(init);
 
+    if (!rootFolderDoc) {
+      return;
+    }
+
     changeRootFolderDoc((doc) =>
       doc.docs.unshift({
         type: "essay",
@@ -54,6 +58,9 @@ export const Knapsack: React.FC = () => {
   // Add an existing doc to our collection
   const openDocFromUrl = useCallback(
     (docUrl: AutomergeUrl) => {
+      if (!rootFolderDoc) {
+        return;
+      }
       // TODO: validate the doc's data schema here before adding to our collection
       if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
         changeRootFolderDoc((doc) =>

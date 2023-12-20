@@ -256,13 +256,15 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
       setSyncServerHeads(syncServerHeads ?? []); // initialize to empty heads if we have no state
 
       handle.doc().then((doc) => {
-        setOwnHeads(doc ? A.getHeads(doc) : []);
+        setOwnHeads(A.getHeads(doc));
       });
     }
 
     const onChange = () => {
       const doc = handle.docSync();
-      setOwnHeads(doc ? A.getHeads(doc) : []);
+      if (doc) {
+        setOwnHeads(A.getHeads(doc));
+      }
     };
 
     const onRemoteHeads = ({ storageId, heads }) => {

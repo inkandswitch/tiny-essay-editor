@@ -5,7 +5,11 @@ import {
   isValidAutomergeUrl,
   parseAutomergeUrl,
 } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
 import { useEffect, useReducer, useState } from "react";
@@ -259,6 +263,7 @@ export function useCurrentRootFolderDoc(): [
   const [rootFolderDoc, changeRootFolderDoc] = useDocument<FolderDoc>(
     accountDoc?.rootFolderUrl
   );
+
   return [rootFolderDoc, changeRootFolderDoc];
 }
 
