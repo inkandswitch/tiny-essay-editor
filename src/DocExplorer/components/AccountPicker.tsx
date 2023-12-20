@@ -45,7 +45,7 @@ type AccountTokenToLoginStatus = null | "valid" | "malformed" | "not-found";
 
 export const AccountPicker = ({
   showName,
-  size,
+  size = "default",
 }: {
   showName?: boolean;
   size?: "default" | "sm" | "lg";
@@ -141,10 +141,7 @@ export const AccountPicker = ({
     <Dialog>
       <DialogTrigger>
         <div className="flex flex-row  text-sm text-gray-600 hover:text-gray-800 ">
-          <ContactAvatar
-            url={currentAccount?.contactHandle.url}
-            size={size ?? "default"}
-          />
+          <ContactAvatar url={currentAccount?.contactHandle.url} size={size} />
           {showName && name && <div className="ml-2 py-2">{name}</div>}
           {showName && !name && <div className="ml-2 py-2">Sign in</div>}
         </div>

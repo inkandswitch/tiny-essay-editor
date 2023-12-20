@@ -13,10 +13,8 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
-import { LoadingScreen } from "./LoadingScreen";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
-  /* This node instance can do many things. See the API reference. */
   return (
     <div
       style={style}
@@ -27,21 +25,12 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
           : "text-gray-600 hover:bg-gray-200"
       }`}
     >
-      {node.isLeaf ? (
-        <Text
-          size={12}
-          className={`${
-            node.isSelected ? "text-gray-800" : "text-gray-500"
-          } inline-block align-top mt-[3px] ml-2 mx-2`}
-        />
-      ) : (
-        <Folder
-          size={10}
-          className={`${
-            node.isSelected ? "text-gray-800" : "text-gray-500"
-          } inline-block align-top mt-[3px] ml-2 mx-2`}
-        />
-      )}
+      <Text
+        size={12}
+        className={`${
+          node.isSelected ? "text-gray-800" : "text-gray-500"
+        } inline-block align-top mt-[3px] ml-2 mx-2`}
+      />
       {node.data.name}
     </div>
   );
@@ -65,7 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
 
   // state related to open popover
-  const [openPopoverOpen, setOpenPopoverOpen] = useState(false);
+  const [openNewDocPopoverVisible, setOpenNewDocPopoverVisible] =
+    useState(false);
   const [openUrlInput, setOpenUrlInput] = useState("");
   const automergeUrlMatch = openUrlInput.match(/(automerge:[a-zA-Z0-9]*)/);
   const automergeUrlToOpen =
@@ -108,10 +98,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div
           className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-          onClick={() => setOpenPopoverOpen(true)}
+          onClick={() => setOpenNewDocPopoverVisible(true)}
         >
           {/* todo: extract a component for this */}
-          <Popover open={openPopoverOpen} onOpenChange={setOpenPopoverOpen}>
+          <Popover
+            open={openNewDocPopoverVisible}
+            onOpenChange={setOpenNewDocPopoverVisible}
+          >
             <PopoverTrigger>
               <FolderInput
                 size={14}
@@ -128,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   if (e.key === "Enter" && automergeUrlToOpen) {
                     openDocFromUrl(automergeUrlToOpen);
                     setOpenUrlInput("");
-                    setOpenPopoverOpen(false);
+                    setOpenNewDocPopoverVisible(false);
                   }
                 }}
                 className={`outline-none ${

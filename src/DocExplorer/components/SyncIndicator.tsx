@@ -4,7 +4,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 // TODO move these utils
-import { arraysAreEqual, getRelativeTimeString } from "../../tee/utils";
+import { arraysAreEqual, getRelativeTimeString } from "../utils";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle, StorageId } from "@automerge/automerge-repo";
 import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";

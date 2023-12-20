@@ -1,4 +1,6 @@
-// This is a helper component copied from the react-arborist library
+// This is a helper component copied from the react-arborist library.
+// It provides a width/height value for filling a flex layout parent.
+// These values can then be passed down to a child component.
 
 import React, { ReactElement } from "react";
 import useResizeObserver from "use-resize-observer";

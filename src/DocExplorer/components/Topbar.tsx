@@ -18,7 +18,8 @@ import { asMarkdownFile, markCopy } from "../../tee/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { MarkdownDoc } from "@/tee/schema";
-import { getTitle, saveFile } from "@/tee/utils";
+import { getTitle } from "@/tee/datatype";
+import { saveFile } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
 
 import {

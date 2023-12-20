@@ -5,15 +5,11 @@ import {
   isValidAutomergeUrl,
   parseAutomergeUrl,
 } from "@automerge/automerge-repo";
-import {
-  useDocument,
-  useHandle,
-  useRepo,
-} from "@automerge/automerge-repo-react-hooks";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
 import { useEffect, useReducer, useState } from "react";
-import { uploadFile } from "../tee/utils";
+import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
 
 export type DocType = "essay"; // | ... | future other types

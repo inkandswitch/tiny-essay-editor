@@ -6,7 +6,7 @@ import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
 import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/utils";
+import { getTitle } from "@/tee/datatype";
 import {
   DocType,
   useCurrentAccount,
@@ -18,7 +18,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 
-export const Knapsack: React.FC = () => {
+export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
@@ -114,7 +114,7 @@ export const Knapsack: React.FC = () => {
 
   // update tab title to be the selected doc
   useEffect(() => {
-    document.title = selectedDocName ?? "Knapsack";
+    document.title = selectedDocName ?? "Essay Editor"; // TODO: generalize beyond TEE
   }, [selectedDocName]);
 
   // toggle the sidebar open/closed when the user types cmd-backslash
@@ -133,7 +133,7 @@ export const Knapsack: React.FC = () => {
     };
   }, []);
 
-  const deleteFromAccountDocList = (id: string) => {
+  const deleteFromRootFolder = (id: string) => {
     const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id);
     if (itemIndex >= 0) {
       if (itemIndex < rootFolderDoc?.docs.length - 1) {
@@ -183,7 +183,7 @@ export const Knapsack: React.FC = () => {
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}
             selectDoc={selectDoc}
-            deleteFromAccountDocList={deleteFromAccountDocList}
+            deleteFromAccountDocList={deleteFromRootFolder}
           />
           <div className="flex-grow overflow-auto">
             {!selectedDocUrl && (

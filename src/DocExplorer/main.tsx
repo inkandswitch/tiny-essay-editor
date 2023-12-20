@@ -22,6 +22,6 @@ window.Automerge = Automerge;
 window.repo = repo;
 
 // Unlike other uses of mount, here we don't pass any doc URL.
-// That's because Knapsack internally expects to manage the URL hash itself.
+// That's because DocExplorer internally expects to manage the URL hash itself.
 
 mount(document.getElementById("root"), {});

@@ -3,7 +3,7 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
-import { LoadingScreen } from "../../knapsack/components/LoadingScreen";
+import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useState } from "react";
 
 import { EditorView } from "@codemirror/view";
@@ -27,7 +27,7 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
     activeThreadId,
   });
 
-  // todo: remove from this component and move up to knapsack?
+  // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
