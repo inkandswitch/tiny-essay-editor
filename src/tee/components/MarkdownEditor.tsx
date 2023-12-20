@@ -175,6 +175,8 @@ export function MarkdownEditor({
     // pass the view up to the parent so it can use it too
     setView(view);
 
+    view.focus();
+
     const handleChange = () => {
       semaphore.reconcile(handle, view);
     };

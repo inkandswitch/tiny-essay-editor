@@ -32,28 +32,31 @@ export const DocExplorer: React.FC = () => {
     (doc) => doc.url === selectedDocUrl
   )?.name;
 
-  const addNewDocument = ({ type }: { type: DocType }) => {
-    if (type !== "essay") {
-      throw new Error("Only essays are supported right now");
-    }
+  const addNewDocument = useCallback(
+    ({ type }: { type: DocType }) => {
+      if (type !== "essay") {
+        throw new Error("Only essays are supported right now");
+      }
 
-    const newDocHandle = repo.create<MarkdownDoc>();
-    newDocHandle.change(init);
+      const newDocHandle = repo.create<MarkdownDoc>();
+      newDocHandle.change(init);
 
-    if (!rootFolderDoc) {
-      return;
-    }
+      if (!rootFolderDoc) {
+        return;
+      }
 
-    changeRootFolderDoc((doc) =>
-      doc.docs.unshift({
-        type: "essay",
-        name: "Untitled document",
-        url: newDocHandle.url,
-      })
-    );
+      changeRootFolderDoc((doc) =>
+        doc.docs.unshift({
+          type: "essay",
+          name: "Untitled document",
+          url: newDocHandle.url,
+        })
+      );
 
-    selectDoc(newDocHandle.url);
-  };
+      selectDoc(newDocHandle.url);
+    },
+    [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
+  );
 
   // Add an existing doc to our collection
   const openDocFromUrl = useCallback(
@@ -117,11 +120,17 @@ export const DocExplorer: React.FC = () => {
     document.title = selectedDocName ?? "Essay Editor"; // TODO: generalize beyond TEE
   }, [selectedDocName]);
 
-  // toggle the sidebar open/closed when the user types cmd-backslash
+  // keyboard shortcuts
   useEffect(() => {
     const keydownHandler = (event: KeyboardEvent) => {
+      // toggle the sidebar open/closed when the user types cmd-backslash
       if (event.key === "\\" && event.metaKey) {
         setShowSidebar((prev) => !prev);
+      }
+
+      // if there's no document selected and the user hits enter, make a new document
+      if (!selectedDocUrl && event.key === "Enter") {
+        addNewDocument({ type: "essay" });
       }
     };
 
@@ -131,7 +140,7 @@ export const DocExplorer: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", keydownHandler);
     };
-  }, []);
+  }, [addNewDocument, selectedDocUrl]);
 
   const deleteFromRootFolder = (id: string) => {
     const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id);
@@ -196,8 +205,8 @@ export const DocExplorer: React.FC = () => {
                     onClick={() => addNewDocument({ type: "essay" })}
                     variant="outline"
                   >
-                    <PlusIcon size={18} />
                     Create new document
+                    <span className="ml-2">(&#9166;)</span>
                   </Button>
                 </div>
               </div>
