@@ -165,6 +165,7 @@ async function getAccount(repo: Repo) {
       const contactHandle = repo.find<ContactDoc>(
         (await accountHandle.doc()).contactUrl
       );
+
       resolve(new Account(repo, accountHandle, contactHandle));
     });
 
@@ -235,6 +236,21 @@ export function useCurrentAccount(): Account | undefined {
     return () => {
       account.off("change", forceUpdate);
     };
+  }, [account]);
+
+  // Add a root folder to an old account doc that doesn't have one yet.
+  // In the future, replace this with a more principled schema migration system.
+  useEffect(() => {
+    const doc = account?.handle.docSync();
+    if (doc && doc.rootFolderUrl === undefined) {
+      const rootFolderHandle = repo.create<FolderDoc>();
+      rootFolderHandle.change((rootFolder) => {
+        rootFolder.docs = [];
+      });
+      account.handle.change((account) => {
+        account.rootFolderUrl = rootFolderHandle.url;
+      });
+    }
   }, [account]);
 
   return account;

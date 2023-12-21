@@ -1,6 +1,6 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useState } from "react";
-import { ChevronsLeft, Folder, FolderInput, Plus, Text } from "lucide-react";
+import { ChevronsLeft, FolderInput, Plus, Text } from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";

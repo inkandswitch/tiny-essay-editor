@@ -1,6 +1,5 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useState } from "react";
-import { PlusIcon } from "lucide-react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { init } from "../../tee/datatype";
@@ -26,7 +25,8 @@ export const DocExplorer: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc();
+  const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
+    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
 
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -56,31 +56,6 @@ export const DocExplorer: React.FC = () => {
       selectDoc(newDocHandle.url);
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
-  );
-
-  // Add an existing doc to our collection
-  const openDocFromUrl = useCallback(
-    (docUrl: AutomergeUrl) => {
-      if (!rootFolderDoc) {
-        return;
-      }
-      // TODO: validate the doc's data schema here before adding to our collection
-      if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
-        changeRootFolderDoc((doc) =>
-          doc.docs.unshift({
-            type: "essay",
-            name: "Unknown document", // TODO: sync up the name once we load the data
-            url: docUrl,
-          })
-        );
-
-        selectDoc(docUrl);
-        return;
-      }
-
-      selectDoc(docUrl);
-    },
-    [changeRootFolderDoc, rootFolderDoc?.docs, selectDoc]
   );
 
   // sync doc names up from TEE docs to the sidebar list.
@@ -166,6 +141,7 @@ export const DocExplorer: React.FC = () => {
       />
     );
   }
+
   return (
     <div className="flex flex-row w-screen h-screen overflow-hidden">
       <div
@@ -227,7 +203,7 @@ export const DocExplorer: React.FC = () => {
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
-const useSelectedDoc = () => {
+const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
   const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
 
@@ -239,6 +215,28 @@ const useSelectedDoc = () => {
     }
   };
 
+  // Add an existing doc to our collection
+  const openDocFromUrl = useCallback(
+    (docUrl: AutomergeUrl) => {
+      if (!rootFolderDoc) {
+        return;
+      }
+      // TODO: validate the doc's data schema here before adding to our collection
+      if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
+        changeRootFolderDoc((doc) =>
+          doc.docs.unshift({
+            type: "essay",
+            name: "Unknown document", // TODO: sync up the name once we load the data
+            url: docUrl,
+          })
+        );
+      }
+
+      setSelectedDocUrl(docUrl);
+    },
+    [rootFolderDoc, changeRootFolderDoc, selectDoc]
+  );
+
   // observe the URL hash to change the selected document
   useEffect(() => {
     const hashChangeHandler = () => {
@@ -249,7 +247,7 @@ const useSelectedDoc = () => {
           console.error(`Invalid Automerge URL in URL: ${docUrl}`);
           return;
         }
-        setSelectedDocUrl(docUrl);
+        openDocFromUrl(docUrl);
       }
     };
 
@@ -262,11 +260,12 @@ const useSelectedDoc = () => {
     return () => {
       window.removeEventListener("hashchange", hashChangeHandler, false);
     };
-  }, []);
+  }, [openDocFromUrl]);
 
   return {
     selectedDocUrl,
     selectedDoc,
     selectDoc,
+    openDocFromUrl,
   };
 };
