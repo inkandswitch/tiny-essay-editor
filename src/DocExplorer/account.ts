@@ -251,7 +251,7 @@ export function useCurrentAccount(): Account | undefined {
         account.rootFolderUrl = rootFolderHandle.url;
       });
     }
-  }, [account]);
+  }, [account?.handle.docSync()]);
 
   return account;
 }
