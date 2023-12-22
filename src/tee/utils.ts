@@ -7,8 +7,6 @@ import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
-import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
-import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -235,58 +233,6 @@ export const amRangeToCMRange = (range: { from: number; to: number }) => ({
   to: range.to + 1,
 });
 
-// taken from https://web.dev/patterns/files/save-a-file
-export const saveFile = async (blob, suggestedName, types) => {
-  // Feature detection. The API needs to be supported
-  // and the app not run in an iframe.
-  const supportsFileSystemAccess =
-    "showSaveFilePicker" in window &&
-    (() => {
-      try {
-        return window.self === window.top;
-      } catch {
-        return false;
-      }
-    })();
-  // If the File System Access API is supported…
-  if (supportsFileSystemAccess) {
-    try {
-      // Show the file save dialog.
-      // @ts-expect-error showSaveFilePicker is not in the TS types
-      const handle = await showSaveFilePicker({
-        suggestedName,
-        types,
-      });
-      // Write the blob to the file.
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err) {
-      // Fail silently if the user has simply canceled the dialog.
-      if (err.name === "AbortError") {
-        return;
-      }
-    }
-  }
-  // Fallback if the File System Access API is not supported…
-  // Create the blob URL.
-  const blobURL = URL.createObjectURL(blob);
-  // Create the `<a download>` element and append it invisibly.
-  const a = document.createElement("a");
-  a.href = blobURL;
-  a.download = suggestedName;
-  a.style.display = "none";
-  document.body.append(a);
-  // Programmatically click the element.
-  a.click();
-  // Revoke the blob URL and remove the element.
-  setTimeout(() => {
-    URL.revokeObjectURL(blobURL);
-    a.remove();
-  }, 1000);
-};
-
 // Helper for making HTML Elements in codemirror editor
 export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
   const htmlString = ReactDOMServer.renderToStaticMarkup(jsx);
@@ -294,41 +240,6 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
   div.innerHTML = htmlString;
   return div.firstElementChild as HTMLElement;
 };
-
-// Helper to get the title of one of our markdown docs.
-// looks first for yaml frontmatter from the i&s essay format;
-// then looks for the first H1.
-export const getTitle = (content: string) => {
-  const frontmatterRegex = /---\n([\s\S]+?)\n---/;
-  const frontmatterMatch = content.match(frontmatterRegex);
-  const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
-
-  const titleRegex = /title:\s"(.+?)"/;
-  const subtitleRegex = /subtitle:\s"(.+?)"/;
-
-  const titleMatch = frontmatter.match(titleRegex);
-  const subtitleMatch = frontmatter.match(subtitleRegex);
-
-  let title = titleMatch ? titleMatch[1] : null;
-  const subtitle = subtitleMatch ? subtitleMatch[1] : "";
-
-  // If title not found in frontmatter, find first markdown heading
-  if (!title) {
-    const titleFallbackRegex = /(^|\n)#\s(.+)/;
-    const titleFallbackMatch = content.match(titleFallbackRegex);
-    title = titleFallbackMatch ? titleFallbackMatch[2] : "Untitled";
-  }
-
-  return `${title} ${subtitle && `: ${subtitle}`}`;
-};
-
-export function arraysAreEqual<T>(a: T[], b: T[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
 
 // A React hook that gets the comment threads for the doc w/ positions
 // and manages caching.
@@ -369,47 +280,4 @@ export const useThreadsWithPositions = ({
   );
 
   return threadsWithPositions;
-};
-
-export interface FileDoc {
-  type: string;
-  data: ArrayBuffer;
-}
-
-export const uploadFile = async (
-  repo: Repo,
-  file: File
-): Promise<AutomergeUrl> => {
-  const reader = new FileReader();
-  const fileDocHandle = repo.create<FileDoc>();
-
-  const isLoaded = new Promise((resolve) => {
-    reader.onload = (event) => {
-      fileDocHandle.change((fileDoc) => {
-        fileDoc.type = file.type;
-        fileDoc.data = new Uint8Array(event.target.result as ArrayBuffer);
-      });
-
-      resolve(true);
-    };
-  });
-
-  reader.readAsArrayBuffer(file);
-
-  await isLoaded;
-  return fileDocHandle.url;
-};
-
-export const useBlobUrl = (url: AutomergeUrl) => {
-  const [file] = useDocument<FileDoc>(url);
-
-  return useMemo(() => {
-    if (!file || !file.data || !file.type) {
-      return;
-    }
-
-    const blob = new Blob([file.data], { type: file.type });
-    const url = URL.createObjectURL(blob);
-    return url;
-  }, [file?.data, file?.type]);
 };
