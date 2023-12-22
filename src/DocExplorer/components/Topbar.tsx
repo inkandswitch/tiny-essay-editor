@@ -173,8 +173,8 @@ export const Topbar: React.FC<TopbarProps> = ({
         </DropdownMenu>
       </div>
 
-      <div className="mr-6 mt-1">
-        <AccountPicker size={"sm"} />
+      <div className="mr-4 mt-1">
+        <AccountPicker />
       </div>
     </div>
   );
