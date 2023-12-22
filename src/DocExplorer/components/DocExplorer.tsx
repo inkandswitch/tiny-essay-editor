@@ -66,14 +66,6 @@ export const DocExplorer: React.FC = () => {
 
     const title = getTitle(selectedDoc.content);
 
-    // NOTE: this guard is necessary because otherwise we try to call changeRootFolderDoc
-    // before the corresponding handle is ready. This feels like something that should be
-    // handled better by the underlying useDocument hook -- if you try to change a doc
-    // that has a not-ready handle, queue up the change until the handle is ready..? Or reject?
-    if (!rootFolderDoc) {
-      return;
-    }
-
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(
         (link) => link.url === selectedDocUrl
