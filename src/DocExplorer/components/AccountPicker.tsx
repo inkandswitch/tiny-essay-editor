@@ -142,8 +142,8 @@ export const AccountPicker = ({
       <DialogTrigger>
         <div className="flex flex-row  text-sm text-gray-600 hover:text-gray-800 ">
           <ContactAvatar url={currentAccount?.contactHandle.url} size={size} />
-          {showName && name && <div className="ml-2 py-2">{name}</div>}
-          {showName && !name && <div className="ml-2 py-2">Sign in</div>}
+          {showName && isLoggedIn && <div className="ml-2 py-2">{name}</div>}
+          {showName && !isLoggedIn && <div className="ml-2 py-2">Sign in</div>}
         </div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
