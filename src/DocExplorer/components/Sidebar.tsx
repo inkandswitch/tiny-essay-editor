@@ -1,6 +1,6 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useState } from "react";
-import { ChevronsLeft, FolderInput, Plus, Text } from "lucide-react";
+import { ChevronsLeft, FolderGit, FolderUp, Plus, Text } from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
@@ -41,6 +41,7 @@ type SidebarProps = {
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   hideSidebar: () => void;
   addNewDocument: (doc: { type: DocType }) => void;
+  addLocalDocument: (doc: {type: DocType }) => void;
   openDocFromUrl: (url: AutomergeUrl) => void;
 };
 
@@ -49,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectDoc,
   hideSidebar,
   addNewDocument,
+  addLocalDocument,
   openDocFromUrl,
 }) => {
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
@@ -98,6 +100,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div
           className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
+          onClick={() => addLocalDocument({ type: "essay" })}
+        >
+          <FolderUp
+            size={14}
+            className="inline-block font-bold mr-2 align-top mt-[2px]"
+          />
+          Add local document
+        </div>
+        <div
+          className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
           onClick={() => setOpenNewDocPopoverVisible(true)}
         >
           {/* todo: extract a component for this */}
@@ -106,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onOpenChange={setOpenNewDocPopoverVisible}
           >
             <PopoverTrigger>
-              <FolderInput
+              <FolderGit
                 size={14}
                 className="inline-block font-bold mr-2 align-top mt-[2px]"
               />

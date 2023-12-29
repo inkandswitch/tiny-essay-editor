@@ -16,6 +16,7 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
+import { openFiles } from "../utils";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -54,6 +55,34 @@ export const DocExplorer: React.FC = () => {
       );
 
       selectDoc(newDocHandle.url);
+    },
+    [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
+  );
+
+  const addLocalDocument = useCallback(
+    async ({ type }: { type: DocType }) => {
+      if (type !== "essay") {
+        throw new Error("Only essays are supported right now");
+      }
+
+      // open dialog to get path
+      // readTextFile to get contents
+      const contents = await openFiles();
+      contents.forEach((content) => {
+        const loaded = (doc: any) => {
+          doc.content = content;
+          doc.commentThreads = {};
+        };
+
+        const newDocHandle = repo.create<MarkdownDoc>();
+        newDocHandle.change(loaded);
+
+        if (!rootFolderDoc) {
+          return;
+        }
+
+        selectDoc(newDocHandle.url);
+      });
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
   );
@@ -146,6 +175,7 @@ export const DocExplorer: React.FC = () => {
           selectDoc={selectDoc}
           hideSidebar={() => setShowSidebar(false)}
           addNewDocument={addNewDocument}
+          addLocalDocument={addLocalDocument}
           openDocFromUrl={openDocFromUrl}
         />
       </div>

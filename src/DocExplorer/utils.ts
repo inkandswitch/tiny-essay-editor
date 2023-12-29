@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import { save, open } from "@tauri-apps/api/dialog";
+import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { isNull } from "lodash";
 
 export interface FileDoc {
   type: string;
@@ -104,53 +107,34 @@ export function arraysAreEqual<T>(a: T[], b: T[]): boolean {
   return true;
 } // taken from https://web.dev/patterns/files/save-a-file
 
-export const saveFile = async (blob, suggestedName, types) => {
-  // Feature detection. The API needs to be supported
-  // and the app not run in an iframe.
-  const supportsFileSystemAccess =
-    "showSaveFilePicker" in window &&
-    (() => {
-      try {
-        return window.self === window.top;
-      } catch {
-        return false;
-      }
-    })();
-  // If the File System Access API is supported…
-  if (supportsFileSystemAccess) {
-    try {
-      // Show the file save dialog.
-      // @ts-expect-error showSaveFilePicker is not in the TS types
-      const handle = await showSaveFilePicker({
-        suggestedName,
-        types,
-      });
-      // Write the blob to the file.
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err) {
-      // Fail silently if the user has simply canceled the dialog.
-      if (err.name === "AbortError") {
-        return;
-      }
-    }
+export const saveFile = async (blob: Blob, suggestedName: string, types) => {
+  const path = await save({
+    defaultPath: suggestedName,
+    filters: [{
+      name: 'Markdown',
+      extensions: ['md']
+    }]
+  });
+  const blobText = await blob.text();
+  await writeTextFile(path, blobText);
+  return;
+};
+
+export const openFiles = async () => {
+  const selected = await open({
+    multiple: true,
+    directory: false,
+  });
+  if (Array.isArray(selected)) {
+    const contents = selected.map(async (path) => {
+      const contents = await readTextFile(path);
+      return contents
+    });
+    return await Promise.all(contents);
+  } else if (selected === null) {
+    return null;
+  } else {
+    const contents = await readTextFile(selected);
+    return [contents];
   }
-  // Fallback if the File System Access API is not supported…
-  // Create the blob URL.
-  const blobURL = URL.createObjectURL(blob);
-  // Create the `<a download>` element and append it invisibly.
-  const a = document.createElement("a");
-  a.href = blobURL;
-  a.download = suggestedName;
-  a.style.display = "none";
-  document.body.append(a);
-  // Programmatically click the element.
-  a.click();
-  // Revoke the blob URL and remove the element.
-  setTimeout(() => {
-    URL.revokeObjectURL(blobURL);
-    a.remove();
-  }, 1000);
 };
