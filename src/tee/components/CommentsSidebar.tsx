@@ -188,7 +188,7 @@ export const CommentsSidebar = ({
         <PopoverTrigger asChild>
           {showCommentButton && (
             <Button
-              className="relative shadow-md"
+              className="relative shadow-md w-44"
               variant="outline"
               style={{
                 top: (selection?.yCoord ?? 0) + 23,
@@ -196,7 +196,7 @@ export const CommentsSidebar = ({
               }}
             >
               <MessageSquarePlus size={24} className="mr-2" />
-              Add a comment
+              Add comment
             </Button>
           )}
         </PopoverTrigger>

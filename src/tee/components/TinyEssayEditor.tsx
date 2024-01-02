@@ -52,7 +52,7 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
             setActiveThreadId={setActiveThreadId}
           />
         </div>
-        <div>
+        <div className="w-0">
           <CommentsSidebar
             doc={doc}
             changeDoc={changeDoc}
