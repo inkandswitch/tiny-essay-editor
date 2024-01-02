@@ -203,17 +203,23 @@ export const getVisibleTheadsWithPos = ({
   return threadsWithPositions;
 };
 
-export const useScrollPosition = () => {
+export const useScrollPosition = (
+  ref: React.MutableRefObject<HTMLDivElement>
+) => {
   const [scrollPosition, setScrollPosition] = useState(0);
 
   useEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+    const div: HTMLDivElement = ref.current;
     const updatePosition = () => {
-      setScrollPosition(window.pageYOffset);
+      setScrollPosition(div.scrollTop);
     };
-    window.addEventListener("scroll", updatePosition);
+    div.addEventListener("scroll", () => updatePosition());
     updatePosition();
-    return () => window.removeEventListener("scroll", updatePosition);
-  }, []);
+    return () => div.removeEventListener("scroll", updatePosition);
+  }, [ref, ref.current]);
 
   return scrollPosition;
 };
@@ -247,10 +253,12 @@ export const useThreadsWithPositions = ({
   doc,
   view,
   activeThreadId,
+  editorRef,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
   activeThreadId: string;
+  editorRef: React.MutableRefObject<HTMLElement | null>;
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(
@@ -262,11 +270,11 @@ export const useThreadsWithPositions = ({
 
   // It may be inefficient to rerender comments sidebar on each scroll but
   // it's fine for now and it lets us reposition comments as the user scrolls.
-  // (Notably we're not literally repositioning comments in JS;
+  // (Notably we're not repositioning comments in JS at 60fps;
   // we just use CodeMirror to compute position, and it doesn't tell us position
   // of comments that are way off-screen. That's why we need this scroll handler
   // to catch when things come near the screen)
-  const scrollPosition = useScrollPosition();
+  const scrollPosition = useScrollPosition(editorRef);
 
   const threadsWithPositions = useMemo(
     () =>
@@ -276,7 +284,7 @@ export const useThreadsWithPositions = ({
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;
     // but actually it's critical for making comments appear correctly as scrolling happens
-    [doc, view, activeThreadId, scrollPosition]
+    [doc, view, activeThreadId, threads, scrollPosition]
   );
 
   return threadsWithPositions;

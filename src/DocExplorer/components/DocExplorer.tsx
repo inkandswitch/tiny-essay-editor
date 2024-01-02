@@ -150,7 +150,7 @@ export const DocExplorer: React.FC = () => {
         />
       </div>
       <div
-        className={`flex-grow relative h-screen overflow-auto ${
+        className={`flex-grow relative h-screen ${
           !selectedDocUrl ? "bg-gray-200" : ""
         }`}
       >
@@ -162,7 +162,7 @@ export const DocExplorer: React.FC = () => {
             selectDoc={selectDoc}
             deleteFromAccountDocList={deleteFromRootFolder}
           />
-          <div className="flex-grow overflow-auto">
+          <div className="flex-grow overflow-hidden">
             {!selectedDocUrl && (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div>
