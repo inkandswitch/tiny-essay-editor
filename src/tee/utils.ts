@@ -134,8 +134,8 @@ export const getVisibleTheadsWithPos = ({
       return [];
     }
 
-    const TOP_MARGIN = 80;
-    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + TOP_MARGIN;
+    const TOP_MARGIN = 40;
+    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + TOP_MARGIN - 16;
 
     return [
       {
