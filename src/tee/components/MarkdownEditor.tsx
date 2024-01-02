@@ -3,9 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   EditorView,
   keymap,
-  highlightSpecialChars,
   drawSelection,
-  highlightActiveLine,
   dropCursor,
 } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
@@ -22,12 +20,11 @@ import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import {
   syntaxHighlighting,
   indentOnInput,
-  foldGutter,
   foldKeymap,
   indentUnit,
 } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import { searchKeymap } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
@@ -41,6 +38,7 @@ import {
   threadDecorations,
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
+import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 
 export type TextSelection = {
   from: number;
@@ -91,14 +89,10 @@ export function MarkdownEditor({
       extensions: [
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
-        highlightSpecialChars(),
         history(),
-        foldGutter(),
         drawSelection(),
         dropCursor(),
         indentOnInput(),
-        highlightActiveLine(),
-        highlightSelectionMatches(),
         keymap.of([
           ...defaultKeymap,
           ...searchKeymap,
@@ -125,6 +119,7 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
+        lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?

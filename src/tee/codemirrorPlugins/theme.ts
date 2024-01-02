@@ -21,7 +21,8 @@ const ESSAY_STYLES = {
     fontFamily: '"Merriweather", serif',
     padding: "10px 0",
     margin: "0 var(--cm-padding-x)",
-    textAlign: "justify",
+    // textAlign: "justify",
+    textWrap: "pretty",
     lineHeight: "24px",
   },
   ".cm-content li": {
