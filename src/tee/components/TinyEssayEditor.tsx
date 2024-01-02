@@ -36,10 +36,13 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
 
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
-      <div className="@container flex bg-gray-50">
-        {/* We use container queries to adjust padding based on the size of our container */}
-        {/* this hardcoded width, with padding, gives us the correct line height for essays */}
-        <div className="@md:w-4/5 @md:ml-8 @md:mt-4 @md:mr-2 @md:mb-8 max-w-[706px] bg-white p-4 pr-8 border border-gray-200 box-border rounded-md">
+      <div className="@container flex bg-gray-50 justify-center">
+        {/* This has some subtle behavior for responsiveness.
+            - We use container queries to adjust the width of the editor based on the size of our container.
+            - We get the right line width by hardcoding a max-width and x-padding
+            - We take over the full screen on narrow displays (showing comments on mobile is TODO)
+         */}
+        <div className="bg-white border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 ">
           <MarkdownEditor
             handle={handle}
             path={["content"]}
@@ -49,7 +52,7 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
             setActiveThreadId={setActiveThreadId}
           />
         </div>
-        <div className="flex-grow">
+        <div>
           <CommentsSidebar
             doc={doc}
             changeDoc={changeDoc}
