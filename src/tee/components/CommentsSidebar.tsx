@@ -39,6 +39,10 @@ export const CommentsSidebar = ({
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
+  const [commentBoxOpen, setCommentBoxOpen] = useState(false);
+  const [activeReplyThreadId, setActiveReplyThreadId] = useState<
+    string | null
+  >();
 
   // suppress showing the button immediately after adding a thread
   const [suppressButton, setSuppressButton] = useState(false);
@@ -147,7 +151,14 @@ export const CommentsSidebar = ({
             })}
           </div>
           <div className="mt-2">
-            <Popover>
+            <Popover
+              open={activeReplyThreadId === thread.id}
+              onOpenChange={(open) =>
+                open
+                  ? setActiveReplyThreadId(thread.id)
+                  : setActiveReplyThreadId(null)
+              }
+            >
               <PopoverTrigger asChild>
                 <Button className="mr-2" variant="outline">
                   <Reply className="mr-2 " /> Reply
@@ -160,6 +171,13 @@ export const CommentsSidebar = ({
                   onChange={(event) =>
                     setPendingCommentText(event.target.value)
                   }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && event.metaKey) {
+                      addReplyToThread(thread.id);
+                      setActiveReplyThreadId(null);
+                      event.preventDefault();
+                    }
+                  }}
                 />
 
                 <PopoverClose>
@@ -168,6 +186,7 @@ export const CommentsSidebar = ({
                     onClick={() => addReplyToThread(thread.id)}
                   >
                     Comment
+                    <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
                   </Button>
                 </PopoverClose>
               </PopoverContent>
@@ -184,7 +203,10 @@ export const CommentsSidebar = ({
           </div>
         </div>
       ))}
-      <Popover>
+      <Popover
+        open={commentBoxOpen}
+        onOpenChange={() => setCommentBoxOpen((prev) => !prev)}
+      >
         <PopoverTrigger asChild>
           {showCommentButton && (
             <Button
@@ -208,13 +230,14 @@ export const CommentsSidebar = ({
             // GL Nov: figure out how to close the popover upon cmd-enter submit
             // GL 12/14: the answer here is going to be to control Popover open
             // state ourselves as we now do elsewhere in the codebase
-            // onKeyDown={(event) => {
-            //   if (event.key === "Enter" && event.metaKey) {
-            //     startCommentThreadAtSelection(pendingCommentText);
-            //     setSuppressButton(true);
-            //     event.preventDefault();
-            //   }
-            // }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && event.metaKey) {
+                startCommentThreadAtSelection(pendingCommentText);
+                setSuppressButton(true);
+                setCommentBoxOpen(false);
+                event.preventDefault();
+              }
+            }}
           />
 
           <PopoverClose>
@@ -226,7 +249,7 @@ export const CommentsSidebar = ({
               }}
             >
               Comment
-              {/* <span className="text-gray-400 ml-2 text-xs">(⌘-⏎)</span> */}
+              <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
             </Button>
           </PopoverClose>
         </PopoverContent>
