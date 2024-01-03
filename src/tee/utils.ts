@@ -204,7 +204,7 @@ export const getVisibleTheadsWithPos = ({
 };
 
 export const useScrollPosition = (
-  ref: React.MutableRefObject<HTMLDivElement>
+  ref: React.MutableRefObject<HTMLElement | null>
 ) => {
   const [scrollPosition, setScrollPosition] = useState(0);
 
@@ -212,7 +212,7 @@ export const useScrollPosition = (
     if (!ref.current) {
       return;
     }
-    const div: HTMLDivElement = ref.current;
+    const div = ref.current;
     const updatePosition = () => {
       setScrollPosition(div.scrollTop);
     };
