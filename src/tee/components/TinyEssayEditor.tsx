@@ -2,7 +2,7 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
-import { CommentsSidebar } from "./CommentsSidebar.1";
+import { CommentsSidebar } from "./CommentsSidebar";
 import { useThreadsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
