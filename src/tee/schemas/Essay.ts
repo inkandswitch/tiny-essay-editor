@@ -1,11 +1,10 @@
-import { AutomergeUrlFromString } from "@/automerge-repo-schema-utils/schemas/AutomergeUrl";
 import { SchemaToType } from "@/automerge-repo-schema-utils/utils";
 import { Schema as S } from "@effect/schema";
 
 const CommentV1 = S.struct({
   id: S.string,
   content: S.string,
-  contactUrl: S.optional(AutomergeUrlFromString),
+  contactUrl: S.optional(S.string),
   timestamp: S.number,
   userId: S.optional(S.string),
 });
