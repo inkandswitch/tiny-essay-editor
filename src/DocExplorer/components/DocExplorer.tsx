@@ -8,7 +8,7 @@ import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
-import { getTitle } from "@/tee/datatype";
+
 import {
   DocType,
   FolderDoc,
@@ -22,6 +22,8 @@ import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { Essay } from "@/tee/schemas/Essay";
 import { ChangeFn } from "@automerge/automerge";
+import { parseSync } from "@effect/schema/Parser";
+import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -70,7 +72,7 @@ export const DocExplorer: React.FC = () => {
       return;
     }
 
-    const title = getTitle(selectedDoc.content);
+    const { title } = parseSync(EssayV1ToHasTitleV1)(selectedDoc);
 
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(

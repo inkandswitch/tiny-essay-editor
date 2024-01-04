@@ -23,29 +23,3 @@ export const markCopy = (doc: Essay) => {
 export const asMarkdownFile = (doc: Essay): Blob => {
   return new Blob([doc.content], { type: "text/markdown" });
 }; // Helper to get the title of one of our markdown docs.
-// looks first for yaml frontmatter from the i&s essay format;
-// then looks for the first H1.
-
-export const getTitle = (content: string) => {
-  const frontmatterRegex = /---\n([\s\S]+?)\n---/;
-  const frontmatterMatch = content.match(frontmatterRegex);
-  const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
-
-  const titleRegex = /title:\s"(.+?)"/;
-  const subtitleRegex = /subtitle:\s"(.+?)"/;
-
-  const titleMatch = frontmatter.match(titleRegex);
-  const subtitleMatch = frontmatter.match(subtitleRegex);
-
-  let title = titleMatch ? titleMatch[1] : null;
-  const subtitle = subtitleMatch ? subtitleMatch[1] : "";
-
-  // If title not found in frontmatter, find first markdown heading
-  if (!title) {
-    const titleFallbackRegex = /(^|\n)#\s(.+)/;
-    const titleFallbackMatch = content.match(titleFallbackRegex);
-    title = titleFallbackMatch ? titleFallbackMatch[2] : "Untitled";
-  }
-
-  return `${title} ${subtitle && `: ${subtitle}`}`;
-};

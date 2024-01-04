@@ -5,6 +5,13 @@
 
 import { Schema as S } from "@effect/schema";
 
+export type AutomergeSchema<T> = {
+  schema: T;
+
+  // semantic actions
+  // name?
+};
+
 type DeepMutable<T> = {
   -readonly [K in keyof T]: T[K] extends (infer R)[]
     ? DeepMutable<R>[]
@@ -16,3 +23,9 @@ type DeepMutable<T> = {
 };
 
 export type SchemaToType<T extends S.Schema<any>> = DeepMutable<S.Schema.To<T>>;
+
+// somehow we need to get the original schema
+// export const openAs(doc, newSchema) => ...
+
+// we want to say:
+// const { title } = convert(Essay, HasTitle)(doc)

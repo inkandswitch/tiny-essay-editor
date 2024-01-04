@@ -1,4 +1,4 @@
-import { SchemaToType } from "@/automerge-repo-schema-utils/schemaToType";
+import { SchemaToType } from "@/automerge-repo-schema-utils/utils";
 import { Schema as S } from "@effect/schema";
 
 const CommentV1 = S.struct({
@@ -28,13 +28,13 @@ const UserV1 = S.struct({
 
 type UserV1 = SchemaToType<typeof UserV1>;
 
-const EssayV1 = S.struct({
+export const EssayV1 = S.struct({
   content: S.string,
   commentThreads: S.record(S.string, CommentThreadV1),
   users: S.array(UserV1),
 });
 
-type EssayV1 = SchemaToType<typeof EssayV1>;
+export type EssayV1 = SchemaToType<typeof EssayV1>;
 
 export type CommentThread = CommentThreadV1;
 export type Comment = CommentV1;

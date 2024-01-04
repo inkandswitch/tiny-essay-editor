@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Schema as S } from "@effect/schema";
 import { isLeft } from "effect/Either";
-import { SchemaToType } from "./schemaToType";
+import { SchemaToType } from "./utils";
 
 // An experimental version of the automerge-repo useDocument hook
 // which has stronger schema validation powered by @effect/schema

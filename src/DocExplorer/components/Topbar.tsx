@@ -17,7 +17,6 @@ import {
 import { asMarkdownFile, markCopy } from "../../tee/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
-import { getTitle } from "@/tee/datatype";
 import { saveFile } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
 
@@ -31,6 +30,8 @@ import {
 
 import { save } from "@automerge/automerge";
 import { Essay } from "@/tee/schemas/Essay";
+import { parseSync } from "@effect/schema/Parser";
+import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -130,7 +131,8 @@ export const Topbar: React.FC<TopbarProps> = ({
                 });
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: getTitle(newHandle.docSync().content),
+                  name: parseSync(EssayV1ToHasTitleV1)(newHandle.docSync())
+                    .title,
                   type: "essay",
                 };
 
