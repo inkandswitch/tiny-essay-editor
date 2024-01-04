@@ -1,63 +1,72 @@
 import { ChangeFn, ChangeOptions, Doc } from "@automerge/automerge/next";
 import {
   AutomergeUrl,
+  DocHandle,
   DocHandleChangePayload,
 } from "@automerge/automerge-repo";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Schema as S } from "@effect/schema";
-import { isLeft } from "effect/Either";
+import { isLeft, Either } from "effect/Either";
+import { Either as E } from "effect";
 import { SchemaToType } from "./utils";
+import { ParseError } from "@effect/schema/ParseResult";
 
 // An experimental version of the automerge-repo useDocument hook
 // which has stronger schema validation powered by @effect/schema
 
+type HookResult<T extends S.Schema<any>> =
+  | { _tag: "loading"; handle: DocHandle<SchemaToType<T>> }
+  | {
+      _tag: "error";
+      error: ParseError;
+    }
+  | {
+      _tag: "ok";
+      doc: Doc<SchemaToType<T>>;
+      changeDoc: (changeFn: ChangeFn<SchemaToType<T>>) => void;
+      handle: DocHandle<SchemaToType<T>>;
+    };
+
 export function useTypedDocument<T extends S.Schema<any>>(
   documentUrl: AutomergeUrl | null,
   schema: T
-): [
-  Doc<SchemaToType<T>> | undefined,
-  (changeFn: ChangeFn<SchemaToType<T>>) => void
-] {
-  const [doc, setDoc] = useState<Doc<SchemaToType<T>>>();
+): HookResult<T> {
   const repo = useRepo();
-
   const handle = documentUrl ? repo.find<SchemaToType<T>>(documentUrl) : null;
+  const [result, setResult] = useState<HookResult<T>>({
+    _tag: "loading",
+    handle: handle,
+  });
 
-  const validateDoc = useCallback(
-    (doc: unknown): void => {
+  const processNewDoc = useCallback(
+    (doc: Doc<SchemaToType<T>>) => {
       const parseResult = S.parseEither(schema)(doc);
-      // GL 12/6/23:
-      // TODO: Need to think a lot more about what to do with errors here.
-      // Should we crash the app and prevent it from loading?
-      // Could use effect schema transforms to do a basic cambria thing.
       if (isLeft(parseResult)) {
-        //         alert(`⚠️ WARNING: document loaded from repo does not match schema.
-
-        // Proceed at your own risk.
-
-        // ${String(parseResult.left)}`);
-        console.error(
-          "WARNING: document loaded from repo does not match schema"
-        );
-        console.error(doc);
-        console.error(String(parseResult.left));
+        setResult({ _tag: "error", error: parseResult.left });
+      } else {
+        setResult(() => ({
+          _tag: "ok",
+          doc: doc,
+          changeDoc: (changeFn) => {
+            handle.change(changeFn);
+          },
+          handle,
+        }));
       }
     },
-    [schema]
+    [schema, handle]
   );
 
   useEffect(() => {
     if (!handle) return;
 
     handle.doc().then((v) => {
-      validateDoc(v);
-      setDoc(v);
+      processNewDoc(v);
     });
 
     const onChange = (h: DocHandleChangePayload<SchemaToType<T>>) => {
-      validateDoc(h.doc);
-      setDoc(h.doc);
+      processNewDoc(h.doc);
     };
     handle.on("change", onChange);
     const cleanup = () => {
@@ -65,15 +74,7 @@ export function useTypedDocument<T extends S.Schema<any>>(
     };
 
     return cleanup;
-  }, [handle, validateDoc]);
+  }, [handle, processNewDoc]);
 
-  const changeDoc = (
-    changeFn: ChangeFn<SchemaToType<T>>,
-    options?: ChangeOptions<SchemaToType<T>> | undefined
-  ) => {
-    if (!handle) return;
-    handle.change(changeFn, options);
-  };
-
-  return [doc, changeDoc];
+  return result;
 }

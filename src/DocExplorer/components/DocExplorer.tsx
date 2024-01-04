@@ -19,11 +19,11 @@ import {
 
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import { LoadingScreen } from "./LoadingScreen";
+import { LoadingScreen } from "../../automerge-repo-schema-utils/LoadingScreen";
 import { Essay } from "@/tee/schemas/Essay";
 import { ChangeFn } from "@automerge/automerge";
-import { parseSync } from "@effect/schema/Parser";
-import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
+import { getTitle } from "@/tee/schemas/transforms";
+import { withDocument } from "@/automerge-repo-schema-utils/LoadDocument";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -72,7 +72,11 @@ export const DocExplorer: React.FC = () => {
       return;
     }
 
-    const { title } = parseSync(EssayV1ToHasTitleV1)(selectedDoc);
+    if (!selectedDoc.content || typeof selectedDoc.content !== "string") {
+      return;
+    }
+    const title = getTitle(selectedDoc.content);
+    // const { title } = parseSync(EssayV1ToHasTitleV1)(selectedDoc);
 
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(
@@ -188,11 +192,8 @@ export const DocExplorer: React.FC = () => {
               </div>
             )}
 
-            {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
-                If we want more continuity we could not do this. */}
-            {selectedDocUrl && selectedDoc && (
-              <TinyEssayEditor docUrl={selectedDocUrl} key={selectedDocUrl} />
-            )}
+            {selectedDocUrl &&
+              withDocument(TinyEssayEditor, selectedDocUrl, Essay)}
           </div>
         </div>
       </div>

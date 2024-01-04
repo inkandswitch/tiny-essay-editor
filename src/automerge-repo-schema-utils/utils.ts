@@ -3,14 +3,9 @@
 // the schema library and make them mutable for editing
 // within an automerge document.
 
+import { Doc } from "@automerge/automerge";
+import { DocHandle } from "@automerge/automerge-repo";
 import { Schema as S } from "@effect/schema";
-
-export type AutomergeSchema<T> = {
-  schema: T;
-
-  // semantic actions
-  // name?
-};
 
 type DeepMutable<T> = {
   -readonly [K in keyof T]: T[K] extends (infer R)[]
@@ -29,3 +24,9 @@ export type SchemaToType<T extends S.Schema<any>> = DeepMutable<S.Schema.To<T>>;
 
 // we want to say:
 // const { title } = convert(Essay, HasTitle)(doc)
+
+export type LoadDocumentChildProps<T> = {
+  doc: Doc<T>;
+  changeDoc: (changeFn: (doc: T) => void) => void;
+  handle: DocHandle<T>;
+};
