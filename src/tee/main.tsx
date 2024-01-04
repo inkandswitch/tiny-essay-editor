@@ -39,7 +39,6 @@ window.Automerge = Automerge;
 window.repo = repo;
 // @ts-expect-error - adding property to window
 window.handle = handle; // we'll use this later for experimentation
-console.log("added");
 
 // @ts-expect-error - adding property to window
 window.logoImageUrl = "/assets/logo-favicon-310x310-transparent.png";

@@ -6,7 +6,7 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { init } from "../../tee/datatype";
+import { init } from "@/tee/schemas/Essay";
 import { Button } from "@/components/ui/button";
 
 import {

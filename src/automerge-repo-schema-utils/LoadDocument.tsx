@@ -30,7 +30,6 @@ export const LoadDocument: React.FC<{
   }
 
   if (result._tag === "error") {
-    console.log(formatErrors(result.error.errors));
     return (
       <div className="p-4  h-full">
         <div className="mb-4 bg-red-100 p-4 rounded-sm">

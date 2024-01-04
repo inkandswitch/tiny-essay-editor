@@ -14,7 +14,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { asMarkdownFile, markCopy } from "../../tee/datatype";
+import { asMarkdownFile, markCopy } from "@/tee/schemas/Essay";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
