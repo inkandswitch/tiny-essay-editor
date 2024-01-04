@@ -7,7 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import { mount } from "./mount.js";
 import "./index.css";
-import { MarkdownDoc } from "./schema.js";
+import { Essay } from "./schemas/Essay";
 
 const SYNC_SERVER_URL =
   import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
@@ -25,7 +25,7 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<MarkdownDoc>();
+  handle = repo.create<Essay>();
   const { init } = await import("./datatype.js");
   handle.change(init);
 }
@@ -39,6 +39,7 @@ window.Automerge = Automerge;
 window.repo = repo;
 // @ts-expect-error - adding property to window
 window.handle = handle; // we'll use this later for experimentation
+console.log("added");
 
 // @ts-expect-error - adding property to window
 window.logoImageUrl = "/assets/logo-favicon-310x310-transparent.png";

@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
-
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
-
 import {
   Popover,
   PopoverContent,
@@ -129,7 +127,7 @@ export const CommentsSidebar = ({
                   <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
                     {comment.contactUrl ? (
                       <ContactAvatar
-                        // TODO: properly validate automerge URLs in the schema
+                        // TODO:
                         url={comment.contactUrl as AutomergeUrl}
                         showName={true}
                         size="sm"

@@ -1,22 +1,23 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
-import { CommentsSidebar } from "./CommentsSidebar";
+import { CommentsSidebar } from "./CommentsSidebar.1";
 import { useThreadsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
+import { useTypedDocument } from "@/automerge-repo-schema-utils/useTypedDocument";
+import { Essay } from "../schemas/Essay";
 
 export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useTypedDocument(docUrl, Essay); // used to trigger re-rendering when the doc loads
+  const handle = useHandle<Essay>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
