@@ -4,9 +4,10 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { Schema as S } from "@effect/schema";
 import { useTypedDocument } from "./useTypedDocument";
 import { LoadingScreen } from "./LoadingScreen";
-import { AutomergeClass, LoadDocumentChildProps } from "./utils";
+import { LoadDocumentChildProps } from "./utils";
 import { formatErrors } from "@effect/schema/TreeFormatter";
 import { RawView } from "./RawView";
+import { Essay } from "@/tee/schemas/Essay";
 
 // <LoadDocument docUrl={docUrl} schema={schema}>
 // {({doc, changeDoc, handle}) =>
@@ -65,13 +66,13 @@ export const LoadDocument: React.FC<{
 //    {withDocument(MyChildComponent, docUrl, schema)}
 // </div>
 
-export const withDocument = (
+export const withDocument = <T extends typeof Essay>(
   Component: React.FC<LoadDocumentChildProps<any>>,
   docUrl: AutomergeUrl,
-  schema: AutomergeClass<any>
+  model: T
 ) => {
   return (
-    <LoadDocument docUrl={docUrl} schema={schema.schema}>
+    <LoadDocument docUrl={docUrl} schema={model.schema}>
       {({ doc, changeDoc, handle }) => (
         <Component {...{ doc, changeDoc, handle }} />
       )}

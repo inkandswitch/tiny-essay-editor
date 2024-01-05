@@ -6,6 +6,7 @@
 import { Doc } from "@automerge/automerge";
 import { DocHandle, Repo } from "@automerge/automerge-repo";
 import { Schema as S } from "@effect/schema";
+import { isLeft } from "effect/Either";
 
 type DeepMutable<T> = {
   -readonly [K in keyof T]: T[K] extends (infer R)[]
@@ -38,21 +39,32 @@ export type ActionSpec<T> = {
   name: string;
   description: string;
   run: (doc: T, params: any) => void;
-  parameters: {
-    type: "object";
-    properties: {
-      // TODO: this should support arbitrary JSON schema as input parameters.
-      // The only reason I haven't done that yet is that my UI form logic is dumb and simple.
-      // We can switch to a generic JSON schema form builder maybe,
-      // and also use the typescript types from that here.
-      // or, better -- switch to effect schema here!
-      [key: string]: {
-        type: "string" | "number" | "boolean";
-        description: string;
-      };
-    };
-  };
+  // TODO: redo this
+  parameters: any;
+  // parameters: {
+  // type: "object";
+  // properties: {
+  //   // TODO: this should support arbitrary JSON schema as input parameters.
+  //   // The only reason I haven't done that yet is that my UI form logic is dumb and simple.
+  //   // We can switch to a generic JSON schema form builder maybe,
+  //   // and also use the typescript types from that here.
+  //   // or, better -- switch to effect schema here!
+  //   [key: string]: {
+  //     type: "string" | "number" | "boolean";
+  //     description: string;
+  //   };
+  // };
+  // };
 };
+
+export abstract class AutomergeModel<S extends S.Schema<any>> {
+  constructor(public handle: DocHandle<SchemaToType<S>>, public repo: Repo) {}
+
+  getTitle: (doc: SchemaToType<S>) => string = () => "Untitled";
+  actions: { [key: string]: ActionSpec<SchemaToType<S>> } = {};
+  fileExports: { [key: string]: (doc: SchemaToType<S>) => Blob } = {};
+  markAsCopy: (doc: SchemaToType<S>) => void = () => {};
+}
 
 // todo: turn this into a Javascript class?
 // Essay could inherit from it?

@@ -8,7 +8,7 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Essay } from "../schemas/Essay";
+import { EssayAsFunctionsOld } from "../schemas/Essay";
 import { LoadDocumentChildProps } from "@/automerge-repo-schema-utils/utils";
 
 export const TinyEssayEditor = ({

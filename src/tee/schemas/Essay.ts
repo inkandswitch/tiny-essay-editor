@@ -1,8 +1,13 @@
-import { AutomergeClass } from "@/automerge-repo-schema-utils/utils";
+import {
+  AutomergeClass,
+  AutomergeModel,
+} from "@/automerge-repo-schema-utils/utils";
 import { SchemaToType } from "@/automerge-repo-schema-utils/utils";
 import { uuid } from "@automerge/automerge";
+import { DocHandle, Repo } from "@automerge/automerge-repo";
 import { getCursor, splice } from "@automerge/automerge/next";
 import { Schema as S } from "@effect/schema";
+import { isLeft } from "effect/Either";
 
 const CommentV1 = S.struct({
   id: S.string,
@@ -41,28 +46,51 @@ export const EssayV1 = S.struct({
 });
 
 export type EssayV1 = SchemaToType<typeof EssayV1>;
-export type Essay = EssayV1;
+export type EssayDoc = EssayV1;
+export type EssaySchema = EssayV1;
 
-export const Essay: AutomergeClass<typeof EssayV1> = {
-  schema: EssayV1,
+export class Essay extends AutomergeModel<typeof EssayV1> {
+  static schema = EssayV1;
 
-  /* Populate the document with default values */
+  static create = (repo: Repo): Essay => {
+    const handle = repo.create<SchemaToType<typeof EssayV1>>();
+    handle.change(Essay.init);
+    return this.fromHandle(handle);
+  };
 
-  // TODO: what should we set as the input type here?
-  // It's an empty object that we're initializing;
-  // it's not really accurate to say the input type is EssayV1
-  // but that also helps with autocomplete...
-  init: (doc: EssayV1) => {
+  // Expect that loading happens earlier, and by this point we already have a handle loaded with the correct schema.
+  static fromHandle = (handle: DocHandle<EssayDoc>): Essay => {
+    const doc = handle.docSync();
+    const parseResult = S.parseEither(this.schema)(doc);
+    if (isLeft(parseResult)) {
+      throw new Error(`Failed to parse document: ${parseResult.left}`);
+    }
+    // @ts-expect-error why does this not work? i think the DeepMutable thing.
+    return new Essay(handle);
+  };
+
+  static init = (doc: EssayV1) => {
     doc.content = "# Untitled\n\n";
     doc.commentThreads = {};
     doc.users = [];
-  },
+  };
 
-  getTitle: (doc: EssayV1) => {
-    return getTitle(doc.content);
-  },
+  clone = () => {
+    const newHandle = this.repo.clone<EssayDoc>(this.handle);
+    const newEssay = Essay.fromHandle(newHandle);
+    newEssay.markAsCopy();
+    return newEssay;
+  };
 
-  actions: {
+  get doc() {
+    return this.handle.docSync();
+  }
+
+  get title() {
+    return getTitle(this.doc.content);
+  }
+
+  actions = {
     resolveAllComments: {
       name: "resolve all comments",
       description: "resolve all comments on the doc",
@@ -121,27 +149,31 @@ export const Essay: AutomergeClass<typeof EssayV1> = {
         doc.commentThreads[thread.id] = thread;
       },
     },
-  },
+  };
 
   // todo: factor out more exporting stuff into an abstract class
-  fileExports: {
-    Markdown: (doc: EssayV1): Blob => {
-      return new Blob([doc.content], { type: "text/markdown" });
+  fileExports = {
+    Markdown: (): Blob => {
+      return new Blob([this.doc.content], { type: "text/markdown" });
     },
-    Plaintext: (doc: EssayV1): Blob => {
-      return new Blob([doc.content], { type: "text/plain" });
+    Plaintext: (): Blob => {
+      return new Blob([this.doc.content], { type: "text/plain" });
     },
-  },
+  };
 
   // Dubious whether this deserves its own API..?
+  // It could be an action that is idiomatically provided..?
   /* Mark a document as a copy of another document */
-  markAsCopy: (doc: EssayV1) => {
-    const firstHeadingIndex = doc.content.search(/^#\s.*$/m);
-    if (firstHeadingIndex !== -1) {
-      splice(doc, ["content"], firstHeadingIndex + 2, 0, "Copy of ");
-    }
-  },
-};
+  markAsCopy = () => {
+    this.handle.change((doc) => {
+      const firstHeadingIndex = doc.content.search(/^#\s.*$/m);
+      if (firstHeadingIndex !== -1) {
+        splice(this.doc, ["content"], firstHeadingIndex + 2, 0, "Copy of ");
+      }
+    });
+  };
+}
+
 export const getTitle = (content: string) => {
   const frontmatterRegex = /---\n([\s\S]+?)\n---/;
   const frontmatterMatch = content.match(frontmatterRegex);

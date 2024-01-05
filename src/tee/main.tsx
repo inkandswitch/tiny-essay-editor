@@ -7,7 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import { mount } from "./mount.js";
 import "./index.css";
-import { Essay } from "./schemas/Essay";
+import { EssayV1 } from "./schemas/Essay.js";
 
 const SYNC_SERVER_URL =
   import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
@@ -25,7 +25,7 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<Essay>();
+  handle = repo.create<typeof EssayV1>();
   const { Essay } = await import("./schemas/Essay.js");
   handle.change(Essay.init);
 }

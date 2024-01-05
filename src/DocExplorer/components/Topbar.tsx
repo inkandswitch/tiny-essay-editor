@@ -28,15 +28,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { save } from "@automerge/automerge";
-import { Essay } from "@/tee/schemas/Essay";
 import { parseSync } from "@effect/schema/Parser";
 import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
-import { AutomergeClass } from "@/automerge-repo-schema-utils/utils";
 
 import { extension } from "mime-types";
+import { Essay, EssayDoc } from "@/tee/schemas/Essay";
 
 type TopbarProps = {
-  selectedDocClass: AutomergeClass<any>;
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocUrl: AutomergeUrl | null;
@@ -45,7 +43,6 @@ type TopbarProps = {
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
-  selectedDocClass,
   showSidebar,
   setShowSidebar,
   selectedDocUrl,
@@ -58,8 +55,10 @@ export const Topbar: React.FC<TopbarProps> = ({
     (doc) => doc.url === selectedDocUrl
   )?.name;
   const selectedDocHandle = useHandle<any>(selectedDocUrl);
-
   const [selectedDoc] = useDocument<any>(selectedDocUrl);
+
+  // todo: do this creation in the hook itself, one time only
+  const essay = new Essay(selectedDocHandle);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
@@ -117,15 +116,11 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<Essay>(selectedDocHandle);
-                newHandle.change((doc) => {
-                  selectedDocClass.markAsCopy(doc);
-                });
+                const newEssay = essay.clone();
                 const newDocLink: DocLink = {
-                  url: newHandle.url,
+                  url: newEssay.handle.url,
                   // TODO: generalize this to other doc types besides essays
-                  name: parseSync(EssayV1ToHasTitleV1)(newHandle.docSync())
-                    .title,
+                  name: newEssay.title,
                   type: "essay",
                 };
 
@@ -146,44 +141,40 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
 
-            {Object.entries(selectedDocClass.fileExports).map(
-              ([fileType, fn]) => (
-                <DropdownMenuItem
-                  key={fileType}
-                  onClick={() => {
-                    const file = fn(selectedDoc);
-                    const title = selectedDocClass.getTitle(selectedDoc);
-                    const safeTitle = title
-                      .replace(/[^a-z0-9]/gi, "_")
-                      .toLowerCase();
-                    const fileExtension = extension(file.type);
+            {Object.entries(essay.fileExports).map(([fileType, getFile]) => (
+              <DropdownMenuItem
+                key={fileType}
+                onClick={() => {
+                  const file = getFile();
+                  const title = essay.title;
+                  const safeTitle = title
+                    .replace(/[^a-z0-9]/gi, "_")
+                    .toLowerCase();
+                  const fileExtension = extension(file.type);
 
-                    console.log({ file, title });
+                  if (!fileExtension) {
+                    throw new Error(
+                      `No file extension found for file type ${file.type}`
+                    );
+                  }
 
-                    if (!fileExtension) {
-                      throw new Error(
-                        `No file extension found for file type ${file.type}`
-                      );
-                    }
-
-                    // TODO: generalize this logic more from markdown to others
-                    saveFile(file, `${safeTitle}.${fileExtension}`, [
-                      {
-                        accept: {
-                          "text/markdown": [`.${fileExtension}`],
-                        },
+                  // TODO: generalize this logic more from markdown to others
+                  saveFile(file, `${safeTitle}.${fileExtension}`, [
+                    {
+                      accept: {
+                        "text/markdown": [`.${fileExtension}`],
                       },
-                    ]);
-                  }}
-                >
-                  <Download
-                    size={14}
-                    className="inline-block text-gray-500 mr-2"
-                  />{" "}
-                  Export as {fileType}
-                </DropdownMenuItem>
-              )
-            )}
+                    },
+                  ]);
+                }}
+              >
+                <Download
+                  size={14}
+                  className="inline-block text-gray-500 mr-2"
+                />{" "}
+                Export as {fileType}
+              </DropdownMenuItem>
+            ))}
 
             <DropdownMenuItem onClick={() => downloadAsAutomerge()}>
               <SaveIcon size={14} className="inline-block text-gray-500 mr-2" />{" "}

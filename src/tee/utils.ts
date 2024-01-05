@@ -2,8 +2,8 @@ import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
-import { Essay } from "./schemas/Essay";
 import { CommentThreadForUI, CommentThreadWithPosition } from "./types";
+import { EssayDoc } from "./schemas/Essay";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -70,7 +70,7 @@ const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
 
 // Resolve comment thread cursors to integer positions in the document
 export const getThreadsForUI = (
-  doc: Essay,
+  doc: EssayDoc,
   activeThreadId: string | null
 ): CommentThreadForUI[] => {
   return Object.values(doc.commentThreads ?? {})
@@ -117,7 +117,7 @@ export const getVisibleTheadsWithPos = ({
   activeThreadId,
 }: {
   threads: CommentThreadForUI[];
-  doc: Essay;
+  doc: EssayDoc;
   view: EditorView;
   activeThreadId: string | null;
 }): CommentThreadWithPosition[] => {
@@ -252,7 +252,7 @@ export const useThreadsWithPositions = ({
   activeThreadId,
   editorRef,
 }: {
-  doc: Essay;
+  doc: EssayDoc;
   view: EditorView;
   activeThreadId: string;
   editorRef: React.MutableRefObject<HTMLElement | null>;

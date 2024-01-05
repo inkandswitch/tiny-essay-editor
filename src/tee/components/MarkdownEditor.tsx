@@ -39,7 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { Essay } from "../schemas/Essay";
+import { EssayAsFunctionsOld } from "../schemas/Essay";
 import { CommentThreadForUI } from "../types";
 
 export type TextSelection = {

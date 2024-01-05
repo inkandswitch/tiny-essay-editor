@@ -51,7 +51,7 @@ export const DocExplorer: React.FC = () => {
         throw new Error("Only essays are supported right now");
       }
 
-      const newDocHandle = createDocument(repo, Essay);
+      const newEssay = Essay.create(repo);
 
       if (!rootFolderDoc) {
         return;
@@ -61,11 +61,11 @@ export const DocExplorer: React.FC = () => {
         doc.docs.unshift({
           type: "essay",
           name: "Untitled document",
-          url: newDocHandle.url,
+          url: newEssay.handle.url,
         })
       );
 
-      selectDoc(newDocHandle.url);
+      selectDoc(newEssay.handle.url);
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
   );
@@ -172,7 +172,6 @@ export const DocExplorer: React.FC = () => {
       >
         <div className="flex flex-col h-screen">
           <Topbar
-            selectedDocClass={selectedDocClass}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}

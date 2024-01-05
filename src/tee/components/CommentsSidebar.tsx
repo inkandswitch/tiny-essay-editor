@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { CommentThread, Essay, Comment } from "../schemas/Essay";
+import { CommentThread, Comment, EssayDoc } from "../schemas/Essay";
 import { CommentThreadWithPosition } from "../types";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
@@ -27,8 +27,8 @@ export const CommentsSidebar = ({
   activeThreadId,
   setActiveThreadId,
 }: {
-  doc: Essay;
-  changeDoc: (changeFn: ChangeFn<Essay>) => void;
+  doc: EssayDoc;
+  changeDoc: (changeFn: ChangeFn<EssayDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
