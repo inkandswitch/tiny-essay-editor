@@ -5,8 +5,12 @@ import {
 } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { Essay } from "@/tee/schemas/Essay";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
+import { Essay, EssayDoc } from "@/tee/schemas/Essay";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -23,7 +27,6 @@ import { LoadingScreen } from "../../automerge-repo-schema-utils/LoadingScreen";
 import { ChangeFn } from "@automerge/automerge";
 import { getTitle } from "@/tee/schemas/Essay";
 import { withDocument } from "@/automerge-repo-schema-utils/LoadDocument";
-import { createDocument } from "@/automerge-repo-schema-utils/utils";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -35,8 +38,8 @@ export const DocExplorer: React.FC = () => {
 
   const {
     selectedDoc,
+    selectedEssay,
     selectedDocUrl,
-    selectedDocClass,
     selectDoc,
     openDocFromUrl,
   } = useSelectedDoc({ rootFolderDoc, changeRootFolderDoc, repo });
@@ -76,18 +79,16 @@ export const DocExplorer: React.FC = () => {
       return;
     }
 
-    if (!selectedDoc.content || typeof selectedDoc.content !== "string") {
-      return;
-    }
-    const title = getTitle(selectedDoc.content);
-    // const { title } = parseSync(EssayV1ToHasTitleV1)(selectedDoc);
-
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(
         (link) => link.url === selectedDocUrl
       );
-      if (existingDocLink && existingDocLink.name !== title) {
-        existingDocLink.name = title;
+      if (
+        existingDocLink &&
+        selectedEssay &&
+        existingDocLink.name !== selectedEssay.title
+      ) {
+        existingDocLink.name = selectedEssay.title;
       }
     });
   }, [
@@ -96,6 +97,7 @@ export const DocExplorer: React.FC = () => {
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
+    selectedEssay,
   ]);
 
   // update tab title to be the selected doc
@@ -218,7 +220,10 @@ const useSelectedDoc = ({
   repo: Repo;
 }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const [selectedDoc] = useDocument<Essay>(selectedDocUrl);
+  const selectedDocHandle = useHandle<EssayDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument<EssayDoc>(selectedDocUrl);
+
+  const selectedEssay = selectedDoc ? new Essay(selectedDocHandle, repo) : null;
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     if (docUrl) {
@@ -278,15 +283,12 @@ const useSelectedDoc = ({
     };
   }, [openDocFromUrl]);
 
-  // At some point in the future we'll need a way to infer the doc class to use
-  // for a given document. For now, we just hardcode it to Essay.
-  const selectedDocClass = Essay;
-
   return {
     selectedDocUrl,
     selectedDoc,
+    selectedEssay,
+    selectedDocHandle,
     selectDoc,
     openDocFromUrl,
-    selectedDocClass,
   };
 };

@@ -8,14 +8,14 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { EssayAsFunctionsOld } from "../schemas/Essay";
 import { LoadDocumentChildProps } from "@/automerge-repo-schema-utils/utils";
+import { EssayDoc } from "../schemas/Essay";
 
 export const TinyEssayEditor = ({
   doc,
   changeDoc,
   handle,
-}: LoadDocumentChildProps<Essay>) => {
+}: LoadDocumentChildProps<EssayDoc>) => {
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();

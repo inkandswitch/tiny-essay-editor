@@ -72,7 +72,9 @@ export const withDocument = <T extends typeof Essay>(
   model: T
 ) => {
   return (
-    <LoadDocument docUrl={docUrl} schema={model.schema}>
+    // It's important to set the key to the doc URL here because that forces
+    // the component to remount when the URL changes, which is what we want.
+    <LoadDocument docUrl={docUrl} schema={model.schema} key={docUrl}>
       {({ doc, changeDoc, handle }) => (
         <Component {...{ doc, changeDoc, handle }} />
       )}

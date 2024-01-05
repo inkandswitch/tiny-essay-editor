@@ -58,7 +58,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [selectedDoc] = useDocument<any>(selectedDocUrl);
 
   // todo: do this creation in the hook itself, one time only
-  const essay = new Essay(selectedDocHandle);
+  const essay = new Essay(selectedDocHandle, repo);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {

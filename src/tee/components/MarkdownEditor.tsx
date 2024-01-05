@@ -39,8 +39,8 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { EssayAsFunctionsOld } from "../schemas/Essay";
 import { CommentThreadForUI } from "../types";
+import { EssayDoc } from "../schemas/Essay";
 
 export type TextSelection = {
   from: number;
@@ -49,7 +49,7 @@ export type TextSelection = {
 };
 
 export type EditorProps = {
-  handle: DocHandle<Essay>;
+  handle: DocHandle<EssayDoc>;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
