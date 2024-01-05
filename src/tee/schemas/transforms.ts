@@ -1,30 +1,7 @@
 import { Schema as S } from "@effect/schema";
 import { EssayV1 } from "./Essay";
 import { HasTitleV1 } from "./HasTitle";
-
-export const getTitle = (content: string) => {
-  const frontmatterRegex = /---\n([\s\S]+?)\n---/;
-  const frontmatterMatch = content.match(frontmatterRegex);
-  const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
-
-  const titleRegex = /title:\s"(.+?)"/;
-  const subtitleRegex = /subtitle:\s"(.+?)"/;
-
-  const titleMatch = frontmatter.match(titleRegex);
-  const subtitleMatch = frontmatter.match(subtitleRegex);
-
-  let title = titleMatch ? titleMatch[1] : null;
-  const subtitle = subtitleMatch ? subtitleMatch[1] : "";
-
-  // If title not found in frontmatter, find first markdown heading
-  if (!title) {
-    const titleFallbackRegex = /(^|\n)#\s(.+)/;
-    const titleFallbackMatch = content.match(titleFallbackRegex);
-    title = titleFallbackMatch ? titleFallbackMatch[2] : "Untitled";
-  }
-
-  return `${title} ${subtitle && `: ${subtitle}`}`;
-};
+import { getTitle } from "./Essay";
 
 // TODO: fix this type error, it's coming from the DeepMutable thing?
 // @ts-expect-error DeepMutable issue

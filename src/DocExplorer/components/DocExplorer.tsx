@@ -21,7 +21,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "../../automerge-repo-schema-utils/LoadingScreen";
 import { ChangeFn } from "@automerge/automerge";
-import { getTitle } from "@/tee/schemas/transforms";
+import { getTitle } from "@/tee/schemas/Essay";
 import { withDocument } from "@/automerge-repo-schema-utils/LoadDocument";
 import { createDocument } from "@/automerge-repo-schema-utils/utils";
 

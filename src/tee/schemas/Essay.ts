@@ -58,6 +58,10 @@ export const Essay: AutomergeClass<typeof EssayV1> = {
     doc.users = [];
   },
 
+  getTitle: (doc: EssayV1) => {
+    return getTitle(doc.content);
+  },
+
   actions: {
     resolveAllComments: {
       name: "resolve all comments",
@@ -119,9 +123,13 @@ export const Essay: AutomergeClass<typeof EssayV1> = {
     },
   },
 
+  // todo: factor out more exporting stuff into an abstract class
   fileExports: {
     Markdown: (doc: EssayV1): Blob => {
       return new Blob([doc.content], { type: "text/markdown" });
+    },
+    Plaintext: (doc: EssayV1): Blob => {
+      return new Blob([doc.content], { type: "text/plain" });
     },
   },
 
@@ -133,4 +141,27 @@ export const Essay: AutomergeClass<typeof EssayV1> = {
       splice(doc, ["content"], firstHeadingIndex + 2, 0, "Copy of ");
     }
   },
+};
+export const getTitle = (content: string) => {
+  const frontmatterRegex = /---\n([\s\S]+?)\n---/;
+  const frontmatterMatch = content.match(frontmatterRegex);
+  const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
+
+  const titleRegex = /title:\s"(.+?)"/;
+  const subtitleRegex = /subtitle:\s"(.+?)"/;
+
+  const titleMatch = frontmatter.match(titleRegex);
+  const subtitleMatch = frontmatter.match(subtitleRegex);
+
+  let title = titleMatch ? titleMatch[1] : null;
+  const subtitle = subtitleMatch ? subtitleMatch[1] : "";
+
+  // If title not found in frontmatter, find first markdown heading
+  if (!title) {
+    const titleFallbackRegex = /(^|\n)#\s(.+)/;
+    const titleFallbackMatch = content.match(titleFallbackRegex);
+    title = titleFallbackMatch ? titleFallbackMatch[2] : "Untitled";
+  }
+
+  return `${title}${subtitle && `: ${subtitle}`}`;
 };

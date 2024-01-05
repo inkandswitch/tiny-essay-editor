@@ -33,6 +33,8 @@ import { parseSync } from "@effect/schema/Parser";
 import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
 import { AutomergeClass } from "@/automerge-repo-schema-utils/utils";
 
+import { extension } from "mime-types";
+
 type TopbarProps = {
   selectedDocClass: AutomergeClass<any>;
   showSidebar: boolean;
@@ -147,14 +149,28 @@ export const Topbar: React.FC<TopbarProps> = ({
             {Object.entries(selectedDocClass.fileExports).map(
               ([fileType, fn]) => (
                 <DropdownMenuItem
+                  key={fileType}
                   onClick={() => {
                     const file = fn(selectedDoc);
+                    const title = selectedDocClass.getTitle(selectedDoc);
+                    const safeTitle = title
+                      .replace(/[^a-z0-9]/gi, "_")
+                      .toLowerCase();
+                    const fileExtension = extension(file.type);
+
+                    console.log({ file, title });
+
+                    if (!fileExtension) {
+                      throw new Error(
+                        `No file extension found for file type ${file.type}`
+                      );
+                    }
 
                     // TODO: generalize this logic more from markdown to others
-                    saveFile(file, "index.md", [
+                    saveFile(file, `${safeTitle}.${fileExtension}`, [
                       {
                         accept: {
-                          "text/markdown": [".md"],
+                          "text/markdown": [`.${fileExtension}`],
                         },
                       },
                     ]);

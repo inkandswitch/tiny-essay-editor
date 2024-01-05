@@ -62,6 +62,9 @@ export type AutomergeClass<S extends S.Schema<any>> = {
   /** Populate a blank doc with initial default data fitting a schema */
   init: (doc: SchemaToType<S>) => void;
 
+  /** Get the title of the document */
+  getTitle: (doc: SchemaToType<S>) => string;
+
   /** List out actions which can be performed on this document. */
   actions: { [key: string]: ActionSpec<SchemaToType<S>> };
 

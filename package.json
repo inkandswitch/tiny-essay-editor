@@ -54,6 +54,7 @@
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
+    "mime-types": "^2.1.35",
     "openai": "^4.11.0",
     "react": "^18.2.0",
     "react-arborist": "^3.3.1",
