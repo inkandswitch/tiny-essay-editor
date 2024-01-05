@@ -26,8 +26,8 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
   handle = repo.create<Essay>();
-  const { init } = await import("./datatype.js");
-  handle.change(init);
+  const { Essay } = await import("./schemas/Essay.js");
+  handle.change(Essay.init);
 }
 
 // eslint-disable-next-line

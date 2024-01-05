@@ -6,7 +6,7 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { init } from "@/tee/schemas/Essay";
+import { Essay } from "@/tee/schemas/Essay";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -20,10 +20,10 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "../../automerge-repo-schema-utils/LoadingScreen";
-import { Essay } from "@/tee/schemas/Essay";
 import { ChangeFn } from "@automerge/automerge";
 import { getTitle } from "@/tee/schemas/transforms";
 import { withDocument } from "@/automerge-repo-schema-utils/LoadDocument";
+import { createDocument } from "@/automerge-repo-schema-utils/utils";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -33,8 +33,13 @@ export const DocExplorer: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
-    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc, repo });
+  const {
+    selectedDoc,
+    selectedDocUrl,
+    selectedDocClass,
+    selectDoc,
+    openDocFromUrl,
+  } = useSelectedDoc({ rootFolderDoc, changeRootFolderDoc, repo });
 
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -46,8 +51,7 @@ export const DocExplorer: React.FC = () => {
         throw new Error("Only essays are supported right now");
       }
 
-      const newDocHandle = repo.create<Essay>();
-      newDocHandle.change(init);
+      const newDocHandle = createDocument(repo, Essay);
 
       if (!rootFolderDoc) {
         return;
@@ -168,6 +172,7 @@ export const DocExplorer: React.FC = () => {
       >
         <div className="flex flex-col h-screen">
           <Topbar
+            selectedDocClass={selectedDocClass}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}
@@ -274,10 +279,15 @@ const useSelectedDoc = ({
     };
   }, [openDocFromUrl]);
 
+  // At some point in the future we'll need a way to infer the doc class to use
+  // for a given document. For now, we just hardcode it to Essay.
+  const selectedDocClass = Essay;
+
   return {
     selectedDocUrl,
     selectedDoc,
     selectDoc,
     openDocFromUrl,
+    selectedDocClass,
   };
 };

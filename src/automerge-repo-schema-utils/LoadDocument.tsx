@@ -1,11 +1,10 @@
 // A wrapper component that loads data, used like this:
 
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { Schema as S } from "@effect/schema";
 import { useTypedDocument } from "./useTypedDocument";
 import { LoadingScreen } from "./LoadingScreen";
-import { LoadDocumentChildProps } from "./utils";
+import { AutomergeClass, LoadDocumentChildProps } from "./utils";
 import { formatErrors } from "@effect/schema/TreeFormatter";
 import { RawView } from "./RawView";
 
@@ -69,10 +68,10 @@ export const LoadDocument: React.FC<{
 export const withDocument = (
   Component: React.FC<LoadDocumentChildProps<any>>,
   docUrl: AutomergeUrl,
-  schema: S.Schema<any, any>
+  schema: AutomergeClass<any>
 ) => {
   return (
-    <LoadDocument docUrl={docUrl} schema={schema}>
+    <LoadDocument docUrl={docUrl} schema={schema.schema}>
       {({ doc, changeDoc, handle }) => (
         <Component {...{ doc, changeDoc, handle }} />
       )}

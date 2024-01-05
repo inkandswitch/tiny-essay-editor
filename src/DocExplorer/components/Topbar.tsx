@@ -14,7 +14,6 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { asMarkdownFile, markCopy } from "@/tee/schemas/Essay";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
@@ -32,8 +31,10 @@ import { save } from "@automerge/automerge";
 import { Essay } from "@/tee/schemas/Essay";
 import { parseSync } from "@effect/schema/Parser";
 import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
+import { AutomergeClass } from "@/automerge-repo-schema-utils/utils";
 
 type TopbarProps = {
+  selectedDocClass: AutomergeClass<any>;
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocUrl: AutomergeUrl | null;
@@ -42,6 +43,7 @@ type TopbarProps = {
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
+  selectedDocClass,
   showSidebar,
   setShowSidebar,
   selectedDocUrl,
@@ -53,21 +55,9 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
   )?.name;
-  const selectedDocHandle = useHandle<Essay>(selectedDocUrl);
+  const selectedDocHandle = useHandle<any>(selectedDocUrl);
 
-  // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<Essay>(selectedDocUrl);
-
-  const exportAsMarkdown = useCallback(() => {
-    const file = asMarkdownFile(selectedDoc);
-    saveFile(file, "index.md", [
-      {
-        accept: {
-          "text/markdown": [".md"],
-        },
-      },
-    ]);
-  }, [selectedDoc]);
+  const [selectedDoc] = useDocument<any>(selectedDocUrl);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
@@ -127,10 +117,11 @@ export const Topbar: React.FC<TopbarProps> = ({
               onClick={() => {
                 const newHandle = repo.clone<Essay>(selectedDocHandle);
                 newHandle.change((doc) => {
-                  markCopy(doc);
+                  selectedDocClass.markAsCopy(doc);
                 });
                 const newDocLink: DocLink = {
                   url: newHandle.url,
+                  // TODO: generalize this to other doc types besides essays
                   name: parseSync(EssayV1ToHasTitleV1)(newHandle.docSync())
                     .title,
                   type: "essay",
@@ -153,10 +144,31 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={() => exportAsMarkdown()}>
-              <Download size={14} className="inline-block text-gray-500 mr-2" />{" "}
-              Export as Markdown
-            </DropdownMenuItem>
+            {Object.entries(selectedDocClass.fileExports).map(
+              ([fileType, fn]) => (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const file = fn(selectedDoc);
+
+                    // TODO: generalize this logic more from markdown to others
+                    saveFile(file, "index.md", [
+                      {
+                        accept: {
+                          "text/markdown": [".md"],
+                        },
+                      },
+                    ]);
+                  }}
+                >
+                  <Download
+                    size={14}
+                    className="inline-block text-gray-500 mr-2"
+                  />{" "}
+                  Export as {fileType}
+                </DropdownMenuItem>
+              )
+            )}
+
             <DropdownMenuItem onClick={() => downloadAsAutomerge()}>
               <SaveIcon size={14} className="inline-block text-gray-500 mr-2" />{" "}
               Download Automerge file
