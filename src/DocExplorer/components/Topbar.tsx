@@ -14,11 +14,8 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { asMarkdownFile, markCopy } from "../../tee/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
-import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/datatype";
 import { saveFile } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
 
@@ -31,6 +28,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { save } from "@automerge/automerge";
+import { parseSync } from "@effect/schema/Parser";
+import { EssayV1ToHasTitleV1 } from "@/tee/schemas/transforms";
+
+import { extension } from "mime-types";
+import { Essay, EssayDoc } from "@/tee/schemas/Essay";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -52,21 +54,11 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
   )?.name;
-  const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
+  const selectedDocHandle = useHandle<any>(selectedDocUrl);
+  const [selectedDoc] = useDocument<any>(selectedDocUrl);
 
-  // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
-
-  const exportAsMarkdown = useCallback(() => {
-    const file = asMarkdownFile(selectedDoc);
-    saveFile(file, "index.md", [
-      {
-        accept: {
-          "text/markdown": [".md"],
-        },
-      },
-    ]);
-  }, [selectedDoc]);
+  // todo: do this creation in the hook itself, one time only
+  const essay = new Essay(selectedDocHandle, repo);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
@@ -124,13 +116,11 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<MarkdownDoc>(selectedDocHandle);
-                newHandle.change((doc) => {
-                  markCopy(doc);
-                });
+                const newEssay = essay.clone();
                 const newDocLink: DocLink = {
-                  url: newHandle.url,
-                  name: getTitle(newHandle.docSync().content),
+                  url: newEssay.handle.url,
+                  // TODO: generalize this to other doc types besides essays
+                  name: newEssay.title,
                   type: "essay",
                 };
 
@@ -151,10 +141,41 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={() => exportAsMarkdown()}>
-              <Download size={14} className="inline-block text-gray-500 mr-2" />{" "}
-              Export as Markdown
-            </DropdownMenuItem>
+            {Object.entries(essay.fileExports).map(([fileType, getFile]) => (
+              <DropdownMenuItem
+                key={fileType}
+                onClick={() => {
+                  const file = getFile();
+                  const title = essay.title;
+                  const safeTitle = title
+                    .replace(/[^a-z0-9]/gi, "_")
+                    .toLowerCase();
+                  const fileExtension = extension(file.type);
+
+                  if (!fileExtension) {
+                    throw new Error(
+                      `No file extension found for file type ${file.type}`
+                    );
+                  }
+
+                  // TODO: generalize this logic more from markdown to others
+                  saveFile(file, `${safeTitle}.${fileExtension}`, [
+                    {
+                      accept: {
+                        "text/markdown": [`.${fileExtension}`],
+                      },
+                    },
+                  ]);
+                }}
+              >
+                <Download
+                  size={14}
+                  className="inline-block text-gray-500 mr-2"
+                />{" "}
+                Export as {fileType}
+              </DropdownMenuItem>
+            ))}
+
             <DropdownMenuItem onClick={() => downloadAsAutomerge()}>
               <SaveIcon size={14} className="inline-block text-gray-500 mr-2" />{" "}
               Download Automerge file
