@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
+import { Changelog } from "@/changelog/components/Changelog";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
   return (
@@ -205,6 +206,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           }}
         </FillFlexParent>
+      </div>
+      <div className="flex-grow overflow-auto border-t border-gray-300 max-h-[50%]">
+        <Changelog docUrl={selectedDocUrl} key={selectedDocUrl} />
       </div>
       <div className="h-12 border-t border-gray-300 py-1 px-2 bg-gray-200">
         <AccountPicker showName />
