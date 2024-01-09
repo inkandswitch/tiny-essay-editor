@@ -84,7 +84,12 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           {groupedChanges.map((changeGroup) => (
             <div
               className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-200 ${
-                selectedChangeId === changeGroup.id ? "bg-gray-100" : ""
+                selectedChangeId === changeGroup.id
+                  ? "bg-blue-100"
+                  : groupedChanges.map((c) => c.id).indexOf(selectedChangeId) >
+                    groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+                  ? "opacity-50"
+                  : ""
               }`}
               data-id={changeGroup.id}
               key={changeGroup.id}
