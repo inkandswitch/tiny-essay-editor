@@ -33,7 +33,9 @@ const Hash: React.FC<{ hash: string }> = ({ hash }) => {
   );
 };
 
-export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
+export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
+  docUrl,
+}) => {
   const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [selectedChangeId, setSelectedChangeId] = React.useState<
     string | null

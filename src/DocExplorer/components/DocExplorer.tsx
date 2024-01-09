@@ -16,7 +16,7 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { Changelog } from "@/history/components/History";
+import { HistoryPlayground } from "@/history/components/History";
 
 export type Tool = {
   id: string;
@@ -33,7 +33,7 @@ const TOOLS = [
   {
     id: "history",
     name: "History",
-    component: Changelog,
+    component: HistoryPlayground,
   },
 ];
 
