@@ -48,6 +48,11 @@ const ESSAY_STYLES = {
     fontWeight: "normal",
     lineHeight: "0.8em",
   },
+  ".cm-patch-splice": {
+    backgroundColor: "rgb(0 255 0 / 15%)",
+    borderBottom: "rgb(0 202 0 / 50%) 2px solid",
+    borderRadius: "3px",
+  },
 };
 
 export const essayTheme = EditorView.theme(ESSAY_STYLES);

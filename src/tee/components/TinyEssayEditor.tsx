@@ -18,10 +18,12 @@ import { Heads, view } from "@automerge/automerge/next";
 export const TinyEssayEditor = ({
   docUrl,
   docHeads,
+  diffHeads,
   readOnly,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
+  diffHeads?: Heads;
   readOnly?: boolean;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -62,6 +64,7 @@ export const TinyEssayEditor = ({
             setActiveThreadId={setActiveThreadId}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
+            diffHeads={diffHeads}
           />
         </div>
         <div className="w-0">
