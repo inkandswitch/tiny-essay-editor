@@ -18,8 +18,29 @@ export type ChangeGroup = {
   diff: Patch[];
 };
 
+export const GROUPINGS = {
+  ActorAndMaxSize: (currentGroup: ChangeGroup, newChange: DecodedChange) => {
+    return (
+      currentGroup.actorIds[0] === newChange.actor &&
+      currentGroup.changes.length < 1000
+    );
+  },
+  ConsecutiveRunByActor: (
+    currentGroup: ChangeGroup,
+    newChange: DecodedChange
+  ) => {
+    return currentGroup.actorIds[0] === newChange.actor;
+  },
+  FixedBatch500: (currentGroup: ChangeGroup) => {
+    return currentGroup.changes.length < 500;
+  },
+};
+
 /* returns all the changes from this doc, grouped in a simple way for now. */
-export const getGroupedChanges = (doc: Doc<MarkdownDoc>) => {
+export const getGroupedChanges = (
+  doc: Doc<MarkdownDoc>,
+  algorithm: keyof typeof GROUPINGS = "ActorAndMaxSize"
+) => {
   const changes = getAllChanges(doc);
   const reversedChanges = [...changes].reverse();
   const changeGroups: ChangeGroup[] = [];
@@ -39,11 +60,7 @@ export const getGroupedChanges = (doc: Doc<MarkdownDoc>) => {
     const change = reversedChanges[i];
     const decodedChange = decodeChange(change);
 
-    if (
-      currentGroup &&
-      currentGroup.actorIds[0] === decodedChange.actor &&
-      currentGroup.changes.length < 1000
-    ) {
+    if (currentGroup && GROUPINGS[algorithm](currentGroup, decodedChange)) {
       currentGroup.changes.push(decodedChange);
       currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
         return op.action === "set" && op.insert === true ? total + 1 : total;

@@ -16,7 +16,7 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { Changelog } from "@/history/components/Changelog";
+import { Changelog } from "@/history/components/History";
 
 export type Tool = {
   id: string;
