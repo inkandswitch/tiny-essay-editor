@@ -56,11 +56,9 @@ export const getGroupedChanges = (
   let currentGroup: ChangeGroup | null = null;
 
   const pushCurrentGroup = () => {
-    currentGroup.diff = diff(
-      doc,
-      [currentGroup.changes[0].hash],
-      [currentGroup.changes[currentGroup.changes.length - 1].hash]
-    );
+    const diffHeads =
+      changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
+    currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
     changeGroups.push(currentGroup);
   };
 

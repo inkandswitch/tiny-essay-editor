@@ -5,6 +5,14 @@ import React, { useMemo, useState } from "react";
 import { getGroupedChanges } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -40,6 +48,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [selectedChangeId, setSelectedChangeId] = React.useState<
     string | null
   >();
+  const [showInlineDiff, setShowInlineDiff] = useState<boolean>(false);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ActorAndMaxSize");
@@ -68,31 +77,46 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   return (
     <div className="flex overflow-hidden h-full ">
-      <div className="w-64 border-r border-gray-200 overflow-hidden flex flex-col font-mono">
-        <div className="p-1 text-xs text-gray-500 uppercase font-bold">
-          Change log
-        </div>
-        <div className="flex justify-between p-1">
-          <div className="flex">
-            <div className="text-xs text-gray-500 uppercase font-bold mr-2">
-              Group by
+      <div className="w-72 border-r border-gray-200 overflow-hidden flex flex-col font-mono text-xs font-semibold text-gray-600">
+        <div className="p-1">
+          <div className="text-xs text-gray-500 uppercase font-bold mb-2">
+            Change log
+          </div>
+          <div className="flex justify-between mb-1">
+            <div className="flex items-center">
+              <div className="text-xs  mr-2">Group by</div>
+
+              <Select
+                value={activeGroupingAlgorithm}
+                onValueChange={(value) =>
+                  setActiveGroupingAlgorithm(value as any)
+                }
+              >
+                <SelectTrigger className="h-6 text-xs w-[160px]">
+                  <SelectValue placeholder="Group by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(GROUPINGS).map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <select
-              className="text-xs text-gray-500  font-bold"
-              value={activeGroupingAlgorithm}
-              onChange={(e) =>
-                setActiveGroupingAlgorithm(e.target.value as any)
-              }
-            >
-              {Object.keys(GROUPINGS).map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
-            </select>
+          </div>
+          <div className="">
+            <Checkbox
+              id="show-inline-diff"
+              checked={showInlineDiff}
+              onCheckedChange={() => setShowInlineDiff(!showInlineDiff)}
+              className="mr-1"
+            />
+            <label htmlFor="show-inline-diff">Show Inline Diffs</label>
           </div>
         </div>
-        <div className="overflow-y-auto flex-grow">
+
+        <div className="overflow-y-auto flex-grow border-t border-gray-200 mt-4">
           {groupedChanges.map((changeGroup) => (
             <div
               className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-200 ${
@@ -126,6 +150,21 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   <Hash key={id} hash={id} />
                 ))}
               </div>
+              {showInlineDiff && (
+                <div>
+                  {changeGroup.diff.map((patch) => (
+                    <div>
+                      {JSON.stringify(patch)}
+                      {patch.path[0] === "content" &&
+                        patch.action === "splice" && (
+                          <div className="text-green-600 bg-green-100">
+                            + {patch.value}
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
