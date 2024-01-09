@@ -56,7 +56,7 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   return (
     <div className="flex overflow-hidden h-full font-mono ">
-      <div className="w-64 border-r border-gray-200">
+      <div className="w-64 border-r border-gray-200 overflow-hidden flex flex-col">
         <div className="p-1 text-xs text-gray-500 uppercase font-bold">
           Change log
         </div>
@@ -80,7 +80,7 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
             </select>
           </div>
         </div>
-        <div>
+        <div className="overflow-y-auto flex-grow">
           {groupedChanges.map((changeGroup) => (
             <div
               className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-200 ${
