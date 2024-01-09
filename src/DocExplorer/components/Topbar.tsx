@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { save } from "@automerge/automerge";
+import { Tool } from "./DocExplorer";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -38,6 +39,10 @@ type TopbarProps = {
   selectedDocUrl: AutomergeUrl | null;
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
+
+  tools: Tool[];
+  activeTool: Tool;
+  setActiveTool: (tool: Tool) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -46,6 +51,9 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
+  tools,
+  activeTool,
+  setActiveTool,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
@@ -94,10 +102,23 @@ export const Topbar: React.FC<TopbarProps> = ({
       <div className="ml-3 text-sm text-gray-700 font-bold">
         {selectedDocName}
       </div>
-      <div className="ml-3 mt-[-2px]">
+      <div className="ml-1 mt-[-2px]">
         {isValidAutomergeUrl(selectedDocUrl) && (
           <SyncIndicatorWrapper docUrl={selectedDocUrl} />
         )}
+      </div>
+      <div className="ml-6">
+        {tools.map((tool) => (
+          <div
+            key={tool.id}
+            className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
+              tool.id === activeTool.id ? "bg-gray-300" : ""
+            } rounded-full`}
+            onClick={() => setActiveTool(tool)}
+          >
+            {tool.name}
+          </div>
+        ))}
       </div>
       <div className="ml-auto mr-4">
         <DropdownMenu>
