@@ -55,8 +55,8 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
 
   return (
-    <div className="flex overflow-hidden h-full font-mono ">
-      <div className="w-64 border-r border-gray-200 overflow-hidden flex flex-col">
+    <div className="flex overflow-hidden h-full ">
+      <div className="w-64 border-r border-gray-200 overflow-hidden flex flex-col font-mono">
         <div className="p-1 text-xs text-gray-500 uppercase font-bold">
           Change log
         </div>
@@ -100,11 +100,11 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   </span>
                 </div>
                 <div className="text-xs text-gray-600 text-right font-semibold">
-                  Heads: <Hash key={changeGroup.id} hash={changeGroup.id} />
+                  <Hash key={changeGroup.id} hash={changeGroup.id} />
                 </div>
               </div>
               <div className="text-xs text-gray-600 font-semibold">
-                Actor:{" "}
+                Actor
                 {changeGroup.actorIds.map((id) => (
                   <Hash key={id} hash={id} />
                 ))}
@@ -114,7 +114,7 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
-        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400">
+        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
           <div className="inline-block mr-4">Heads: {headsForDisplay}</div>
           <div className="inline-block">Diff: Disabled</div>
         </div>
