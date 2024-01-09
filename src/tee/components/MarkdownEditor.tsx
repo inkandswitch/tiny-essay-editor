@@ -6,10 +6,11 @@ import {
   drawSelection,
   dropCursor,
 } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
-import { Prop } from "@automerge/automerge";
+import * as A from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
@@ -48,11 +49,13 @@ export type TextSelection = {
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
-  path: Prop[];
+  path: A.Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
   setActiveThreadId: (threadId: string | null) => void;
   threadsWithPositions: CommentThreadForUI[];
+  readOnly?: boolean;
+  docHeads?: A.Heads;
 };
 
 export function MarkdownEditor({
@@ -62,7 +65,10 @@ export function MarkdownEditor({
   setView,
   setActiveThreadId,
   threadsWithPositions,
+  readOnly,
+  docHeads,
 }: EditorProps) {
+  console.log(docHeads);
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
@@ -81,12 +87,17 @@ export function MarkdownEditor({
       return;
     }
     const doc = handle.docSync();
-    const source = doc.content; // this should use path
+    const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
+    const source = docAtHeads.content; // this should use path
+
+    console.log({ docHeads, docAtHeads });
+
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
     const view = new EditorView({
       doc: source,
       extensions: [
+        EditorState.readOnly.of(readOnly),
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),
@@ -184,7 +195,7 @@ export function MarkdownEditor({
       handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [handle, handleReady]);
+  }, [handle, handleReady, docHeads]);
 
   if (editorCrashed) {
     return (

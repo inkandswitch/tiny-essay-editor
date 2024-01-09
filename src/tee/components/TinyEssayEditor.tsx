@@ -13,18 +13,28 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
+import { Heads, view } from "@automerge/automerge/next";
 
-export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
+export const TinyEssayEditor = ({
+  docUrl,
+  docHeads,
+  readOnly,
+}: {
+  docUrl: AutomergeUrl;
+  docHeads?: Heads;
+  readOnly?: boolean;
+}) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
-  const [view, setView] = useState<EditorView>();
+  const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,
-    view,
+    view: editorView,
     activeThreadId,
     editorRef,
   });
@@ -47,14 +57,16 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
             handle={handle}
             path={["content"]}
             setSelection={setSelection}
-            setView={setView}
+            setView={setEditorView}
             threadsWithPositions={threadsWithPositions}
             setActiveThreadId={setActiveThreadId}
+            readOnly={readOnly ?? false}
+            docHeads={docHeads}
           />
         </div>
         <div className="w-0">
           <CommentsSidebar
-            doc={doc}
+            doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
             activeThreadId={activeThreadId}
