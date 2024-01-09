@@ -50,6 +50,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     string | null
   >();
   const [showInlineDiff, setShowInlineDiff] = useState<boolean>(false);
+  const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ActorAndMaxSize");
@@ -73,8 +74,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     selectedChangeIndex < groupedChanges.length - 1
       ? [groupedChanges[selectedChangeIndex + 1].id]
       : [];
-
-  console.log({ docHeads, diffHeads });
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -113,7 +112,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               onCheckedChange={() => setShowInlineDiff(!showInlineDiff)}
               className="mr-1"
             />
-            <label htmlFor="show-inline-diff">Show Inline Diffs</label>
+            <label htmlFor="show-inline-diff">Show diff summaries</label>
           </div>
         </div>
 
@@ -155,7 +154,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 <div className="mt-4 ">
                   {changeGroup.diff.map((patch) => (
                     <div className="mb-1">
-                      {/* {JSON.stringify(patch)} */}
                       {patch.path[0] === "content" &&
                         patch.action === "splice" && (
                           <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
@@ -180,16 +178,28 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
-        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
-          <div className="inline-block mr-4">Heads: {headsForDisplay}</div>
-          <div className="inline-block">Diff: Disabled</div>
+        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono flex">
+          <div className="mr-4">Heads: {headsForDisplay}</div>
+          <div className="flex">
+            <Checkbox
+              id="show-diff-overlay"
+              className="mr-1"
+              checked={showDiffOverlay}
+              onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
+            >
+              Diff Overlay
+            </Checkbox>
+            <label htmlFor="show-diff-overlay" className="mr-4">
+              Show Diff
+            </label>
+          </div>
         </div>
         <TinyEssayEditor
           docUrl={docUrl}
           key={docUrl}
           readOnly
           docHeads={docHeads}
-          diffHeads={diffHeads}
+          diffHeads={showDiffOverlay ? diffHeads : undefined}
         />
       </div>
     </div>
