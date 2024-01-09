@@ -31,9 +31,17 @@ export const GROUPINGS = {
   ) => {
     return currentGroup.actorIds[0] === newChange.actor;
   },
-  FixedBatch500: (currentGroup: ChangeGroup) => {
+  Batch500: (currentGroup: ChangeGroup) => {
     return currentGroup.changes.length < 500;
   },
+  Batch100: (currentGroup: ChangeGroup) => {
+    return currentGroup.changes.length < 100;
+  },
+
+  // Other groupings to try:
+  // - time based sessions
+  // - use a manual grouping persisted somewhere?
+  // - nonlinear: group by actor, out of this sorted order of changes
 };
 
 /* returns all the changes from this doc, grouped in a simple way for now. */

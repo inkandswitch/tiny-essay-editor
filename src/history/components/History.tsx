@@ -54,6 +54,16 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const headsForDisplay =
     docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
 
+  const selectedChangeIndex = groupedChanges.findIndex(
+    (changeGroup) => changeGroup.id === selectedChangeId
+  );
+  const diffHeads =
+    selectedChangeIndex < groupedChanges.length - 1
+      ? [groupedChanges[selectedChangeIndex + 1].id]
+      : [];
+
+  console.log({ docHeads, diffHeads });
+
   return (
     <div className="flex overflow-hidden h-full ">
       <div className="w-64 border-r border-gray-200 overflow-hidden flex flex-col font-mono">
@@ -128,6 +138,7 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           key={docUrl}
           readOnly
           docHeads={docHeads}
+          diffHeads={diffHeads}
         />
       </div>
     </div>

@@ -1,10 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   EditorView,
   keymap,
   drawSelection,
   dropCursor,
+  Decoration,
+  WidgetType,
 } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
@@ -40,6 +42,8 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { diff } from "@automerge/automerge/next";
+import { StateEffect, StateField } from "@codemirror/state";
 
 export type TextSelection = {
   from: number;
@@ -56,6 +60,7 @@ export type EditorProps = {
   threadsWithPositions: CommentThreadForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
+  diffHeads?: A.Heads;
 };
 
 export function MarkdownEditor({
@@ -67,12 +72,41 @@ export function MarkdownEditor({
   threadsWithPositions,
   readOnly,
   docHeads,
+  diffHeads,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
 
   const handleReady = handle.isReady();
+
+  const patches = useMemo(
+    () => {
+      if (!diffHeads) return [];
+      const doc = handle.docSync();
+      const patches = diff(doc, diffHeads, docHeads ?? A.getHeads(doc));
+
+      return patches;
+    },
+    [handle, handle.docSync(), docHeads, diffHeads] // rethink this useCallback caching
+  );
+
+  console.log({ patches });
+
+  // Propagate patches into the codemirror
+  useEffect(() => {
+    console.log("doin the effect", patches);
+    editorRoot.current?.dispatch({
+      effects: setPatchesEffect.of(patches),
+    });
+  }, [patches, editorRoot.current]);
+
+  // Propagate activeThreadId into the codemirror
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      effects: setThreadsEffect.of(threadsWithPositions),
+    });
+  }, [threadsWithPositions]);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -86,6 +120,7 @@ export function MarkdownEditor({
       return;
     }
     const doc = handle.docSync();
+    console.log("recreating editor");
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
 
@@ -128,6 +163,8 @@ export function MarkdownEditor({
         frontmatterPlugin,
         threadsField,
         threadDecorations,
+        patchesField,
+        patchDecorations,
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
@@ -154,13 +191,15 @@ export function MarkdownEditor({
           view.update([transaction]);
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          setSelection({
-            from: selection.from,
-            to: selection.to,
-            yCoord:
-              -1 * view.scrollDOM.getBoundingClientRect().top +
-              view.coordsAtPos(selection.from).top,
-          });
+          if (selection) {
+            setSelection({
+              from: selection.from,
+              to: selection.to,
+              yCoord:
+                -1 * view.scrollDOM.getBoundingClientRect().top +
+                  view.coordsAtPos(selection.from)?.top ?? 0,
+            });
+          }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.
@@ -237,3 +276,84 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+// Stuff for patches decoration
+
+const setPatchesEffect = StateEffect.define<A.Patch[]>();
+const patchesField = StateField.define<A.Patch[]>({
+  create() {
+    console.log("create");
+    return [];
+  },
+  update(patches, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setPatchesEffect)) {
+        return e.value;
+      }
+    }
+    return patches;
+  },
+});
+
+class DeletionMarker extends WidgetType {
+  constructor() {
+    super();
+  }
+
+  toDOM(): HTMLElement {
+    const box = document.createElement("div");
+    box.style.display = "inline-block";
+    box.style.boxSizing = "border-box";
+    box.style.padding = "0 2px";
+    box.style.color = "rgb(236 35 35)";
+    box.style.margin = "0 4px";
+    box.style.fontSize = "0.8em";
+    box.style.backgroundColor = "rgb(255 0 0 / 10%)";
+    box.style.borderRadius = "3px";
+    box.innerText = "⌫";
+    return box;
+  }
+
+  eq() {
+    // todo: i think this is right for now until we show hover of del text etc
+    return true;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
+const deleteDecoration = Decoration.widget({
+  widget: new DeletionMarker(),
+  side: 1,
+});
+
+const patchDecorations = EditorView.decorations.compute(
+  [patchesField],
+  (state) => {
+    const patches = state
+      .field(patchesField)
+      .filter((patch) => patch.path[0] === "content");
+
+    console.log("deco", patches);
+
+    const decorations = patches.flatMap((patch) => {
+      switch (patch.action) {
+        case "splice": {
+          const from = patch.path[1];
+          const length = patch.value.length;
+          return [spliceDecoration.range(from, from + length)];
+        }
+        case "del": {
+          const from = patch.path[1];
+          return [deleteDecoration.range(from)];
+        }
+      }
+      return [];
+    });
+
+    return Decoration.set(decorations);
+  }
+);
