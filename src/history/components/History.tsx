@@ -6,6 +6,33 @@ import { getGroupedChanges } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../utils";
 
+const hashToColor = (hash: string) => {
+  let hashInt = 0;
+  for (let i = 0; i < hash.length; i++) {
+    hashInt = hash.charCodeAt(i) + ((hashInt << 5) - hashInt);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hashInt >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
+  }
+  return color;
+};
+
+const Hash: React.FC<{ hash: string }> = ({ hash }) => {
+  const color = useMemo(() => hashToColor(hash), [hash]);
+
+  return (
+    <div className="inline-flex items-center border border-gray-300 rounded-full px-1">
+      <div
+        className="w-2 h-2 rounded-full mr-[2px]"
+        style={{ backgroundColor: color }}
+      ></div>
+      <div>{hash.substring(0, 6)}</div>
+    </div>
+  );
+};
+
 export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [selectedChangeId, setSelectedChangeId] = React.useState<
@@ -24,8 +51,11 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   // for now it works because the id of the group is the last change in the group
   const docHeads = selectedChangeId ? [selectedChangeId] : undefined;
 
+  const headsForDisplay =
+    docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
+
   return (
-    <div className="flex overflow-hidden h-full">
+    <div className="flex overflow-hidden h-full font-mono ">
       <div className="w-64 border-r border-gray-200">
         <div className="p-1 text-xs text-gray-500 uppercase font-bold">
           Change log
@@ -69,21 +99,25 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     -{changeGroup.charsDeleted}
                   </span>
                 </div>
-                <div className="text-xs text-gray-400 text-right">
-                  {changeGroup.changes[0].hash.substring(0, 6)}
+                <div className="text-xs text-gray-600 text-right font-semibold">
+                  Heads: <Hash key={changeGroup.id} hash={changeGroup.id} />
                 </div>
               </div>
-              <div>
-                Actor IDs:{" "}
-                {changeGroup.actorIds
-                  .map((id) => id.substring(0, 6))
-                  .join(", ")}
+              <div className="text-xs text-gray-600 font-semibold">
+                Actor:{" "}
+                {changeGroup.actorIds.map((id) => (
+                  <Hash key={id} hash={id} />
+                ))}
               </div>
             </div>
           ))}
         </div>
       </div>
-      <div className="flex-grow overflow-hidden m-8  border border-gray-600">
+      <div className="flex-grow overflow-hidden">
+        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400">
+          <div className="inline-block mr-4">Heads: {headsForDisplay}</div>
+          <div className="inline-block">Diff: Disabled</div>
+        </div>
         <TinyEssayEditor
           docUrl={docUrl}
           key={docUrl}
