@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { truncate } from "lodash";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -116,10 +117,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-grow border-t border-gray-200 mt-4">
+        <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
           {groupedChanges.map((changeGroup) => (
             <div
-              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-200 ${
+              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 ${
                 selectedChangeId === changeGroup.id
                   ? "bg-blue-100"
                   : groupedChanges.map((c) => c.id).indexOf(selectedChangeId) >
@@ -151,14 +152,23 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 ))}
               </div>
               {showInlineDiff && (
-                <div>
+                <div className="mt-4 ">
                   {changeGroup.diff.map((patch) => (
-                    <div>
-                      {JSON.stringify(patch)}
+                    <div className="mb-1">
+                      {/* {JSON.stringify(patch)} */}
                       {patch.path[0] === "content" &&
                         patch.action === "splice" && (
-                          <div className="text-green-600 bg-green-100">
-                            + {patch.value}
+                          <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
+                            {truncate(patch.value, {
+                              length: 100,
+                            })}
+                          </div>
+                        )}
+
+                      {patch.path[0] === "content" &&
+                        patch.action === "del" && (
+                          <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
+                            Deleted {patch.length ?? 1} characters
                           </div>
                         )}
                     </div>
