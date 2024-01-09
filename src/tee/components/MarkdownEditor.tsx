@@ -68,7 +68,6 @@ export function MarkdownEditor({
   readOnly,
   docHeads,
 }: EditorProps) {
-  console.log(docHeads);
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
@@ -89,8 +88,6 @@ export function MarkdownEditor({
     const doc = handle.docSync();
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
-
-    console.log({ docHeads, docAtHeads });
 
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
