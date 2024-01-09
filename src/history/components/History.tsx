@@ -66,7 +66,7 @@ export const Changelog: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               Group by
             </div>
             <select
-              className="text-xs text-gray-500  "
+              className="text-xs text-gray-500  font-bold"
               value={activeGroupingAlgorithm}
               onChange={(e) =>
                 setActiveGroupingAlgorithm(e.target.value as any)
