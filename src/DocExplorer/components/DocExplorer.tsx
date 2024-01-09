@@ -16,12 +16,35 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
+import { Changelog } from "@/history/components/Changelog";
+
+export type Tool = {
+  id: string;
+  name: string;
+  component: React.FC;
+};
+
+const TOOLS = [
+  {
+    id: "tee",
+    name: "Editor",
+    component: TinyEssayEditor,
+  },
+  {
+    id: "history",
+    name: "History",
+    component: Changelog,
+  },
+];
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
+  const [activeTool, setActiveTool] = useState(TOOLS[0]);
+
+  const ToolComponent = activeTool.component;
 
   const [showSidebar, setShowSidebar] = useState(true);
 
@@ -156,6 +179,9 @@ export const DocExplorer: React.FC = () => {
       >
         <div className="flex flex-col h-screen">
           <Topbar
+            tools={TOOLS}
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}
@@ -183,7 +209,7 @@ export const DocExplorer: React.FC = () => {
             {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
             {selectedDocUrl && selectedDoc && (
-              <TinyEssayEditor docUrl={selectedDocUrl} key={selectedDocUrl} />
+              <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
             )}
           </div>
         </div>
