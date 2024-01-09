@@ -50,7 +50,6 @@ export const getGroupedChanges = (
   algorithm: keyof typeof GROUPINGS = "ActorAndMaxSize"
 ) => {
   const changes = getAllChanges(doc);
-  const reversedChanges = [...changes].reverse();
   const changeGroups: ChangeGroup[] = [];
 
   let currentGroup: ChangeGroup | null = null;
@@ -62,8 +61,8 @@ export const getGroupedChanges = (
     changeGroups.push(currentGroup);
   };
 
-  for (let i = 0; i < reversedChanges.length; i++) {
-    const change = reversedChanges[i];
+  for (let i = 0; i < changes.length; i++) {
+    const change = changes[i];
     const decodedChange = decodeChange(change);
 
     if (currentGroup && GROUPINGS[algorithm](currentGroup, decodedChange)) {
@@ -74,11 +73,16 @@ export const getGroupedChanges = (
       currentGroup.charsDeleted += decodedChange.ops.reduce((total, op) => {
         return op.action === "del" ? total + 1 : total;
       }, 0);
+      currentGroup.id = decodedChange.hash;
     } else {
       if (currentGroup) {
         pushCurrentGroup();
       }
       currentGroup = {
+        // the "ID" is the hash of the latest change in the group.
+        // TODO: revisit whether this makes sense as an identifier for the group?
+        // It's a bit dangerous to store this separately from the changes since they
+        // might get out of sync, but it's super convenient in the view...
         id: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
@@ -96,6 +100,9 @@ export const getGroupedChanges = (
   if (currentGroup) {
     pushCurrentGroup();
   }
+
+  // we want the latest group at the top
+  changeGroups.reverse();
 
   return changeGroups;
 };
