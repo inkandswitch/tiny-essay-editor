@@ -129,7 +129,7 @@ export function MarkdownEditor({
     const view = new EditorView({
       doc: source,
       extensions: [
-        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),

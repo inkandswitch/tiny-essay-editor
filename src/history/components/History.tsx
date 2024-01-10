@@ -178,26 +178,39 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
-        <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono flex">
-          <div className="mr-4">Heads: {headsForDisplay}</div>
-          <div className="flex">
-            <Checkbox
-              id="show-diff-overlay"
-              className="mr-1"
-              checked={showDiffOverlay}
-              onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
-            >
-              Diff Overlay
-            </Checkbox>
-            <label htmlFor="show-diff-overlay" className="mr-4">
-              Show Diff
-            </label>
-          </div>
+        <div className="p-2 h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
+          {docHeads && (
+            <div className="flex">
+              <div className="mr-6">
+                Showing past state (readonly): {headsForDisplay}
+              </div>
+              <div className="flex mr-6">
+                <Checkbox
+                  id="show-diff-overlay"
+                  className="mr-1"
+                  checked={showDiffOverlay}
+                  onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
+                >
+                  Diff Overlay
+                </Checkbox>
+                <label htmlFor="show-diff-overlay" className="mr-4">
+                  Show Diff
+                </label>
+              </div>
+              <div
+                className="text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
+                onClick={() => setSelectedChangeId(null)}
+              >
+                Reset to latest
+              </div>
+            </div>
+          )}
+          {!docHeads && <div>Showing current state (editable)</div>}
         </div>
         <TinyEssayEditor
           docUrl={docUrl}
           key={docUrl}
-          readOnly
+          readOnly={docHeads !== undefined}
           docHeads={docHeads}
           diffHeads={showDiffOverlay ? diffHeads : undefined}
         />
