@@ -17,6 +17,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { HistoryPlayground } from "@/history/components/History";
+import { DraftsPlayground } from "@/drafts/Drafts";
 
 export type Tool = {
   id: string;
@@ -34,6 +35,11 @@ const TOOLS = [
     id: "history",
     name: "History",
     component: HistoryPlayground,
+  },
+  {
+    id: "drafts",
+    name: "Drafts",
+    component: DraftsPlayground,
   },
 ];
 

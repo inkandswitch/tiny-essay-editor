@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { save } from "@automerge/automerge";
+import { getHeads, save } from "@automerge/automerge";
 import { Tool } from "./DocExplorer";
 
 type TopbarProps = {
@@ -148,6 +148,18 @@ export const Topbar: React.FC<TopbarProps> = ({
                 const newHandle = repo.clone<MarkdownDoc>(selectedDocHandle);
                 newHandle.change((doc) => {
                   markCopy(doc);
+                  doc.copyMetadata.source = {
+                    url: selectedDocUrl,
+                    copyHeads: getHeads(selectedDocHandle.docSync()),
+                  };
+                });
+                selectedDocHandle.change((doc) => {
+                  doc.copyMetadata.copies.push({
+                    name: "Untitled Draft",
+                    copyTimestamp: Date.now(),
+                    url: newHandle.url,
+                    copyHeads: getHeads(newHandle.docSync()),
+                  });
                 });
                 const newDocLink: DocLink = {
                   url: newHandle.url,
