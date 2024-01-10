@@ -1,4 +1,4 @@
-import { MarkdownDoc } from "@/tee/schema";
+import { CopyableMarkdownDoc } from "@/tee/schema";
 import {
   Doc,
   diff,
@@ -46,10 +46,15 @@ export const GROUPINGS = {
 
 /* returns all the changes from this doc, grouped in a simple way for now. */
 export const getGroupedChanges = (
-  doc: Doc<MarkdownDoc>,
-  algorithm: keyof typeof GROUPINGS = "ActorAndMaxSize"
+  doc: Doc<CopyableMarkdownDoc>,
+  options: {
+    algorithm: keyof typeof GROUPINGS;
+    start?: string;
+    end?: string;
+  }
 ) => {
   const changes = getAllChanges(doc);
+  const decodedChanges = changes.map((change) => decodeChange(change));
   const changeGroups: ChangeGroup[] = [];
 
   let currentGroup: ChangeGroup | null = null;
@@ -61,11 +66,24 @@ export const getGroupedChanges = (
     changeGroups.push(currentGroup);
   };
 
-  for (let i = 0; i < changes.length; i++) {
-    const change = changes[i];
-    const decodedChange = decodeChange(change);
+  let startIndex = 0;
+  if (options.start) {
+    const indexOfChange = decodedChanges.findIndex(
+      (change) => change.hash === options.start
+    );
+    if (indexOfChange === -1) {
+      throw new Error(`start change not found: ${options.start}`);
+    }
+    startIndex = indexOfChange + 1;
+  }
 
-    if (currentGroup && GROUPINGS[algorithm](currentGroup, decodedChange)) {
+  for (let i = startIndex; i < decodedChanges.length; i++) {
+    const decodedChange = decodedChanges[i];
+
+    if (
+      currentGroup &&
+      GROUPINGS[options.algorithm](currentGroup, decodedChange)
+    ) {
       currentGroup.changes.push(decodedChange);
       currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
         return op.action === "set" && op.insert === true ? total + 1 : total;
@@ -94,6 +112,10 @@ export const getGroupedChanges = (
         }, 0),
         diff: [],
       };
+    }
+
+    if (options.end && decodedChange.hash === options.end) {
+      break;
     }
   }
 

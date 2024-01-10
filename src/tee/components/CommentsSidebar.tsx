@@ -3,6 +3,7 @@ import {
   Comment,
   CommentThread,
   CommentThreadWithPosition,
+  CopyableMarkdownDoc,
   MarkdownDoc,
 } from "../schema";
 
@@ -31,7 +32,7 @@ export const CommentsSidebar = ({
   setActiveThreadId,
 }: {
   doc: MarkdownDoc;
-  changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  changeDoc: (changeFn: ChangeFn<CopyableMarkdownDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;

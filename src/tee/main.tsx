@@ -7,7 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import { mount } from "./mount.js";
 import "./index.css";
-import { MarkdownDoc } from "./schema.js";
+import { CopyableMarkdownDoc } from "./schema.js";
 
 const SYNC_SERVER_URL =
   import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
@@ -25,7 +25,7 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<MarkdownDoc>();
+  handle = repo.create<CopyableMarkdownDoc>();
   const { init } = await import("./datatype.js");
   handle.change(init);
 }

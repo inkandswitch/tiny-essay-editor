@@ -2,7 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { MarkdownDoc } from "../schema";
+import { CopyableMarkdownDoc, MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
@@ -26,9 +26,9 @@ export const TinyEssayEditor = ({
   diffHeads?: Heads;
   readOnly?: boolean;
 }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc, changeDoc] = useDocument<CopyableMarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const handle = useHandle<CopyableMarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [editorView, setEditorView] = useState<EditorView>();

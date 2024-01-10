@@ -17,7 +17,7 @@ import {
 import { asMarkdownFile, markCopy } from "../../tee/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
-import { MarkdownDoc } from "@/tee/schema";
+import { Copyable, CopyableMarkdownDoc, MarkdownDoc } from "@/tee/schema";
 import { getTitle } from "@/tee/datatype";
 import { saveFile } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { save } from "@automerge/automerge";
+import { getHeads, save } from "@automerge/automerge";
 import { Tool } from "./DocExplorer";
 
 type TopbarProps = {
@@ -60,10 +60,10 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
   )?.name;
-  const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
+  const selectedDocHandle = useHandle<CopyableMarkdownDoc>(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument<CopyableMarkdownDoc>(selectedDocUrl);
 
   const exportAsMarkdown = useCallback(() => {
     const file = asMarkdownFile(selectedDoc);
@@ -145,9 +145,22 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<MarkdownDoc>(selectedDocHandle);
+                const newHandle =
+                  repo.clone<CopyableMarkdownDoc>(selectedDocHandle);
                 newHandle.change((doc) => {
                   markCopy(doc);
+                  doc.copyMetadata.source = {
+                    url: selectedDocUrl,
+                    copyHeads: getHeads(selectedDocHandle.docSync()),
+                  };
+                });
+                selectedDocHandle.change((doc) => {
+                  doc.copyMetadata.copies.push({
+                    name: "Untitled Copy",
+                    copyTimestamp: Date.now(),
+                    url: newHandle.url,
+                    copyHeads: getHeads(newHandle.docSync()),
+                  });
                 });
                 const newDocLink: DocLink = {
                   url: newHandle.url,

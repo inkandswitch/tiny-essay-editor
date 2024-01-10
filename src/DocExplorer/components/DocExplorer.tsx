@@ -1,10 +1,14 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
 import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
-import { MarkdownDoc } from "@/tee/schema";
+import { CopyableMarkdownDoc, MarkdownDoc } from "@/tee/schema";
 import { getTitle } from "@/tee/datatype";
 import {
   DocType,
@@ -61,7 +65,7 @@ export const DocExplorer: React.FC = () => {
         throw new Error("Only essays are supported right now");
       }
 
-      const newDocHandle = repo.create<MarkdownDoc>();
+      const newDocHandle = repo.create<CopyableMarkdownDoc>();
       newDocHandle.change(init);
 
       if (!rootFolderDoc) {
@@ -223,7 +227,13 @@ export const DocExplorer: React.FC = () => {
 // API for changing the selection is properly thru the URL)
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+
+  const [selectedDoc] = useDocument<CopyableMarkdownDoc>(selectedDocUrl);
+
+  // Put the handle on window for debugging
+  const selectedDocHandle = useHandle<CopyableMarkdownDoc>(selectedDocUrl);
+  // @ts-expect-error setting window global
+  window.handle = selectedDocHandle;
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     if (docUrl) {
