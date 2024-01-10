@@ -124,7 +124,7 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
-        // lineWrappingPlugin,
+        lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
