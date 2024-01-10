@@ -8,6 +8,10 @@ import { splice } from "@automerge/automerge/next";
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
+  doc.copyMetadata = {
+    source: null,
+    copies: [],
+  };
 };
 
 // When a copy of the document has been made,

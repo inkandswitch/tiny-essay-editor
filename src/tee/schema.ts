@@ -1,3 +1,4 @@
+import { Heads } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export type Comment = {
@@ -33,8 +34,28 @@ export type User = {
   name: string;
 };
 
-export type MarkdownDoc = {
+type _MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
 };
+
+export type Copyable = {
+  copyMetadata: {
+    /* A pointer to the source where this was copied from */
+    source: {
+      url: AutomergeUrl;
+      copyHeads: Heads;
+    } | null;
+
+    /* A pointer to copies of this doc */
+    copies: Array<{
+      url: AutomergeUrl;
+      copyHeads: Heads;
+      copyTimestamp: number;
+      name: string;
+    }>;
+  };
+};
+
+export type MarkdownDoc = _MarkdownDoc & Copyable;
