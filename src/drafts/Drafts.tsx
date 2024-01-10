@@ -8,7 +8,14 @@ import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { truncate } from "lodash";
 import { getHeads } from "@automerge/automerge/next";
 import { markCopy } from "@/tee/datatype";
-import { PlusIcon } from "lucide-react";
+import { DeleteIcon, MergeIcon, MoreHorizontal, PlusIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -72,6 +79,11 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     const draftHandle = repo.find<MarkdownDoc>(draftUrl);
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     docHandle.merge(draftHandle);
+    deleteDraft(draftUrl);
+  };
+
+  const deleteDraft = (draftUrl: AutomergeUrl) => {
+    const docHandle = repo.find<MarkdownDoc>(docUrl);
     docHandle.change((doc) => {
       const index = doc.copyMetadata.copies.findIndex(
         (copy) => copy.url === draftUrl
@@ -122,30 +134,53 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           <div className="overflow-y-auto flex-grow border-t border-gray-400">
             {drafts.map((draft) => (
               <div
+                key={draft.url}
                 className={`p-2 border-b border-gray-400 cursor-default ${
                   draft.url === selectedDraftUrl ? "bg-blue-100" : ""
                 }`}
                 onClick={() => setSelectedDraftUrl(draft.url)}
               >
-                <div className="text-xs font-bold">{draft.name}</div>
+                <div className="text-xs font-bold flex items-center">
+                  <div>{draft.name}</div>
+                  <div className="ml-auto mr-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <MoreHorizontal
+                          size={18}
+                          className=" text-gray-500 hover:text-gray-800"
+                        />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="mr-4">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            mergeDraft(draft.url);
+                            setSelectedDraftUrl(null);
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MergeIcon className="mr-2" size={12} />
+                          Merge
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            deleteDraft(draft.url);
+                            setSelectedDraftUrl(null);
+                            e.stopPropagation();
+                          }}
+                        >
+                          <DeleteIcon className="mr-2" size={12} />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
                 <div className="text-xs text-gray-500">
                   {truncate(draft.url, { length: 25 })}
                 </div>
                 <div className="text-xs text-gray-500">
                   created {getRelativeTimeString(draft.copyTimestamp)}
                 </div>
-                <Button
-                  className="mt-2 font-semibold text-xs"
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    mergeDraft(draft.url);
-                    setSelectedDraftUrl(null);
-                    e.stopPropagation();
-                  }}
-                >
-                  Merge to main
-                </Button>
               </div>
             ))}
           </div>
