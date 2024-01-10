@@ -19,11 +19,7 @@ import {
 } from "@automerge/automerge-codemirror";
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
-import {
-  CommentThreadForUI,
-  CopyableMarkdownDoc,
-  MarkdownDoc,
-} from "../schema";
+import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import {
   syntaxHighlighting,
   indentOnInput,
@@ -56,7 +52,7 @@ export type TextSelection = {
 };
 
 export type EditorProps = {
-  handle: DocHandle<CopyableMarkdownDoc>;
+  handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
@@ -95,8 +91,11 @@ export function MarkdownEditor({
     [handle, handle.docSync(), docHeads, diffHeads] // rethink this useCallback caching
   );
 
+  console.log({ patches });
+
   // Propagate patches into the codemirror
   useEffect(() => {
+    console.log("doin the effect", patches);
     editorRoot.current?.dispatch({
       effects: setPatchesEffect.of(patches),
     });
@@ -121,6 +120,7 @@ export function MarkdownEditor({
       return;
     }
     const doc = handle.docSync();
+    console.log("recreating editor");
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
 
@@ -282,6 +282,7 @@ export function MarkdownEditor({
 const setPatchesEffect = StateEffect.define<A.Patch[]>();
 const patchesField = StateField.define<A.Patch[]>({
   create() {
+    console.log("create");
     return [];
   },
   update(patches, tr) {
@@ -335,6 +336,8 @@ const patchDecorations = EditorView.decorations.compute(
     const patches = state
       .field(patchesField)
       .filter((patch) => patch.path[0] === "content");
+
+    console.log("deco", patches);
 
     const decorations = patches.flatMap((patch) => {
       switch (patch.action) {

@@ -1,8 +1,8 @@
-import { CopyableMarkdownDoc, MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useMemo, useState } from "react";
-import { ChangeGroup, getGroupedChanges } from "../utils";
+import { getGroupedChanges } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -45,46 +45,20 @@ const Hash: React.FC<{ hash: string }> = ({ hash }) => {
 export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const repo = useRepo();
-  const [doc, changeDoc] = useDocument<CopyableMarkdownDoc>(docUrl);
-  const [sourceDocForCopy] = useDocument<CopyableMarkdownDoc>(
-    doc?.copyMetadata.source?.url || undefined
-  );
+  const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [selectedChangeId, setSelectedChangeId] = React.useState<
     string | null
   >();
   const [showInlineDiff, setShowInlineDiff] = useState<boolean>(false);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
-  const [showCopyMetadataInChangelog, setShowCopyMetadataInChangelog] =
-    useState<boolean>(false);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ActorAndMaxSize");
 
-  const nameOfThisCopy = sourceDocForCopy?.copyMetadata.copies.find(
-    (c) => c.url === docUrl
-  )?.name;
-
-  // Returns grouped changes using the chosen algorithm. If this document is a copy,
-  // it only returns the changes for the source document up to the copy heads.
-  const groupedChangesForSourceDoc = useMemo(() => {
+  const groupedChanges = useMemo(() => {
     if (!doc) return [];
-    return getGroupedChanges(doc, {
-      algorithm: activeGroupingAlgorithm,
-      // Technically cutting off at the first copy head isn't correct,
-      // but it's a fine approximation for now.
-      end:
-        showCopyMetadataInChangelog && doc.copyMetadata.source?.copyHeads?.[0],
-    });
-  }, [doc, activeGroupingAlgorithm, showCopyMetadataInChangelog]);
-
-  const groupedChangesForCopyDoc = useMemo(() => {
-    if (!doc) return [];
-    return getGroupedChanges(doc, {
-      algorithm: activeGroupingAlgorithm,
-      start: doc.copyMetadata.source?.copyHeads?.[0],
-    });
-  }, [doc, activeGroupingAlgorithm, showCopyMetadataInChangelog]);
+    return getGroupedChanges(doc, activeGroupingAlgorithm);
+  }, [doc, activeGroupingAlgorithm]);
 
   // TODO: is the heads for a group always the id of the group?
   // for now it works because the id of the group is the last change in the group
@@ -93,18 +67,13 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const headsForDisplay =
     docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
 
-  const selectedChangeIndex = groupedChangesForSourceDoc.findIndex(
+  const selectedChangeIndex = groupedChanges.findIndex(
     (changeGroup) => changeGroup.id === selectedChangeId
   );
-  let diffHeads: Heads | undefined = undefined;
-
-  if (selectedChangeIndex > -1) {
-    diffHeads =
-      selectedChangeIndex < groupedChangesForSourceDoc.length - 1
-        ? [groupedChangesForSourceDoc[selectedChangeIndex + 1].id]
-        : [];
-  }
-  console.log(docHeads, selectedChangeIndex, diffHeads);
+  const diffHeads =
+    selectedChangeIndex < groupedChanges.length - 1
+      ? [groupedChanges[selectedChangeIndex + 1].id]
+      : [];
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -145,124 +114,68 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             />
             <label htmlFor="show-inline-diff">Show diff summaries</label>
           </div>
-          <div className="">
-            <Checkbox
-              id="show-copy-metadata"
-              disabled={!doc?.copyMetadata.source}
-              checked={showCopyMetadataInChangelog}
-              onCheckedChange={() =>
-                setShowCopyMetadataInChangelog(!showCopyMetadataInChangelog)
-              }
-              className="mr-1"
-            />
-            <label htmlFor="show-copy-metadata">
-              Separate history for copy
-            </label>
-          </div>
         </div>
 
-        {showCopyMetadataInChangelog && (
-          <div className="mt-4">
-            <div className="p-1 font-bold bg-gray-200 border-t border-b border-gray-500">
-              Copy: {nameOfThisCopy}
-            </div>
-            <div className="">
-              {groupedChangesForCopyDoc.map((changeGroup) => (
-                <ChangeGroupPreview
-                  changeGroup={changeGroup}
-                  selected={selectedChangeId === changeGroup.id}
-                  select={() => setSelectedChangeId(changeGroup.id)}
-                  showInlineDiff={showInlineDiff}
-                  hidden={
-                    // If the selected change ID is in the source document,
-                    // then we know that all changes in the copy must be hidden.
-                    // We could probably model this better by putting all changes in one list or something.
-                    groupedChangesForSourceDoc.findIndex(
-                      (c) => c.id === selectedChangeId
-                    ) > -1 ||
-                    groupedChangesForCopyDoc
-                      .map((c) => c.id)
-                      .indexOf(selectedChangeId) >
-                      groupedChangesForCopyDoc
-                        .map((c) => c.id)
-                        .indexOf(changeGroup.id)
-                  }
-                />
-              ))}
-            </div>
-            <div className="p-1 font-bold bg-gray-200 border-t border-b border-gray-500">
-              <div className="flex">
-                <div>Source</div>
-                {/* This is a button for rebasing the draft. */}
-                {/* It doesn't work properly yet so I've removed it for now. */}
-                {/* <div className="ml-auto text-red-600">
-                  {sourceDocForCopy &&
-                    !isEqual(
-                      getHeads(sourceDocForCopy),
-                      doc.copyMetadata.source?.copyHeads
-                    ) && (
-                      <div className="flex">
-                        <div className="mr-1">New changes</div>
-
-                        <div
-                          className="underline cursor-pointer"
-                          onClick={() => {
-                            repo
-                              .find(docUrl)
-                              .merge(repo.find(doc.copyMetadata.source.url));
-                            changeDoc(
-                              (doc) =>
-                                (doc.copyMetadata.source.copyHeads =
-                                  getHeads(sourceDocForCopy))
-                            );
-                          }}
-                        >
-                          Update
-                        </div>
-                      </div>
-                    )}
-                </div> */}
+        <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
+          {groupedChanges.map((changeGroup) => (
+            <div
+              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 ${
+                selectedChangeId === changeGroup.id
+                  ? "bg-blue-100"
+                  : groupedChanges.map((c) => c.id).indexOf(selectedChangeId) >
+                    groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+                  ? "opacity-50"
+                  : ""
+              }`}
+              data-id={changeGroup.id}
+              key={changeGroup.id}
+              onClick={() => setSelectedChangeId(changeGroup.id)}
+            >
+              <div className="flex justify-between text-xs">
+                <div>
+                  <span className="text-green-600 font-bold mr-2">
+                    +{changeGroup.charsAdded}
+                  </span>
+                  <span className="text-red-600 font-bold">
+                    -{changeGroup.charsDeleted}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600 text-right font-semibold">
+                  <Hash key={changeGroup.id} hash={changeGroup.id} />
+                </div>
               </div>
-            </div>
-            {groupedChangesForSourceDoc.map((changeGroup) => (
-              <ChangeGroupPreview
-                changeGroup={changeGroup}
-                selected={selectedChangeId === changeGroup.id}
-                select={() => setSelectedChangeId(changeGroup.id)}
-                showInlineDiff={showInlineDiff}
-                hidden={
-                  groupedChangesForSourceDoc
-                    .map((c) => c.id)
-                    .indexOf(selectedChangeId) >
-                  groupedChangesForSourceDoc
-                    .map((c) => c.id)
-                    .indexOf(changeGroup.id)
-                }
-              />
-            ))}
-          </div>
-        )}
+              <div className="text-xs text-gray-600 font-semibold">
+                Actor
+                {changeGroup.actorIds.map((id) => (
+                  <Hash key={id} hash={id} />
+                ))}
+              </div>
+              {showInlineDiff && (
+                <div className="mt-4 ">
+                  {changeGroup.diff.map((patch) => (
+                    <div className="mb-1">
+                      {patch.path[0] === "content" &&
+                        patch.action === "splice" && (
+                          <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
+                            {truncate(patch.value, {
+                              length: 100,
+                            })}
+                          </div>
+                        )}
 
-        {!showCopyMetadataInChangelog && (
-          <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
-            {groupedChangesForSourceDoc.map((changeGroup) => (
-              <ChangeGroupPreview
-                changeGroup={changeGroup}
-                selected={selectedChangeId === changeGroup.id}
-                select={() => setSelectedChangeId(changeGroup.id)}
-                showInlineDiff={showInlineDiff}
-                hidden={
-                  groupedChangesForSourceDoc
-                    .map((c) => c.id)
-                    .indexOf(selectedChangeId) >
-                  groupedChangesForSourceDoc
-                    .map((c) => c.id)
-                    .indexOf(changeGroup.id)
-                }
-              />
-            ))}
-          </div>
-        )}
+                      {patch.path[0] === "content" &&
+                        patch.action === "del" && (
+                          <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
+                            Deleted {patch.length ?? 1} characters
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="flex-grow overflow-hidden">
         <div className="p-2 h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
@@ -286,9 +199,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               </div>
               <div
                 className="text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
-                onClick={() => {
-                  setSelectedChangeId(null);
-                }}
+                onClick={() => setSelectedChangeId(null)}
               >
                 Reset to latest
               </div>
@@ -304,66 +215,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           diffHeads={showDiffOverlay ? diffHeads : undefined}
         />
       </div>
-    </div>
-  );
-};
-
-const ChangeGroupPreview: React.FC<{
-  changeGroup: ChangeGroup;
-  selected: boolean;
-  hidden: boolean;
-  select: () => void;
-  showInlineDiff: boolean;
-}> = ({ changeGroup, selected, select, hidden, showInlineDiff }) => {
-  return (
-    <div
-      className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 ${
-        selected ? "bg-blue-100" : hidden ? "opacity-50" : ""
-      }`}
-      data-id={changeGroup.id}
-      key={changeGroup.id}
-      onClick={() => select()}
-    >
-      <div className="flex justify-between text-xs">
-        <div>
-          <span className="text-green-600 font-bold mr-2">
-            +{changeGroup.charsAdded}
-          </span>
-          <span className="text-red-600 font-bold">
-            -{changeGroup.charsDeleted}
-          </span>
-        </div>
-        <div className="text-xs text-gray-600 text-right font-semibold">
-          <Hash key={changeGroup.id} hash={changeGroup.id} />
-        </div>
-      </div>
-      <div className="text-xs text-gray-600 font-semibold">
-        Actor
-        {changeGroup.actorIds.map((id) => (
-          <Hash key={id} hash={id} />
-        ))}
-      </div>
-      {showInlineDiff && (
-        <div className="mt-4 ">
-          {changeGroup.diff.map((patch) => (
-            <div className="mb-1">
-              {patch.path[0] === "content" && patch.action === "splice" && (
-                <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
-                  {truncate(patch.value, {
-                    length: 100,
-                  })}
-                </div>
-              )}
-
-              {patch.path[0] === "content" && patch.action === "del" && (
-                <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
-                  Deleted {patch.length ?? 1} characters
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
