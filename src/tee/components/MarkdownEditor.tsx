@@ -90,7 +90,12 @@ export function MarkdownEditor({
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),
-        drawSelection(),
+
+        // GL 1/10/24: I'm disabling this plugin for now because it was causing weird issues with
+        // rectangular selection, and it doesn't provide any obvious benefit at the moment.
+        // In the future we might want to bring it back though.
+        // drawSelection(),
+
         dropCursor(),
         indentOnInput(),
         keymap.of([
@@ -119,7 +124,7 @@ export function MarkdownEditor({
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
-        lineWrappingPlugin,
+        // lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
