@@ -341,6 +341,10 @@ const patchDecorations = EditorView.decorations.compute(
           return [spliceDecoration.range(from, from + length)];
         }
         case "del": {
+          if (patch.path.length < 2) {
+            console.error("this is so weird! why??");
+            return [];
+          }
           const from = patch.path[1];
           return [deleteDecoration.range(from)];
         }
