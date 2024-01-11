@@ -1,7 +1,7 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChangeGroup,
   GROUPINGS_THAT_NEED_BATCH_SIZE,
@@ -67,11 +67,11 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
-    useState<keyof typeof GROUPINGS>("ByNumberOfChanges");
+    useState<keyof typeof GROUPINGS>("ByCharCount");
 
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
-  const [groupingBatchSize, setGroupingBatchSize] = useState<number>(500);
+  const [groupingBatchSize, setGroupingBatchSize] = useState<number>(1000);
 
   // The grouping function returns change groups starting from the latest change.
   const { changeGroups: groupedChanges, changeCount } = useMemo(() => {
@@ -81,6 +81,12 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       batchSize: groupingBatchSize,
     });
   }, [doc, activeGroupingAlgorithm, groupingBatchSize]);
+
+  // When the algorithm or batch size changes, the selection can get weird.
+  // just reset whenever either of those changes.
+  useEffect(() => {
+    setChangeGroupSelection(null);
+  }, [activeGroupingAlgorithm, groupingBatchSize]);
 
   const [changeGroupSelection, setChangeGroupSelection] =
     useState<ChangeGroupSelection | null>();

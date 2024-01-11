@@ -39,6 +39,13 @@ export const GROUPINGS = {
   ) => {
     return currentGroup.changes.length < batchSize;
   },
+  ByCharCount: (
+    currentGroup: ChangeGroup,
+    newChange: DecodedChange,
+    batchSize: number
+  ) => {
+    return currentGroup.charsAdded + currentGroup.charsDeleted < batchSize;
+  },
 
   // Other groupings to try:
   // - time based sessions
@@ -46,9 +53,10 @@ export const GROUPINGS = {
   // - nonlinear: group by actor, out of this sorted order of changes
 };
 
-export const GROUPINGS_THAT_NEED_BATCH_SIZE = [
+export const GROUPINGS_THAT_NEED_BATCH_SIZE: Array<keyof typeof GROUPINGS> = [
   "ByActorAndNumChanges",
   "ByNumberOfChanges",
+  "ByCharCount",
 ];
 
 /* returns all the changes from this doc, grouped in a simple way for now. */
