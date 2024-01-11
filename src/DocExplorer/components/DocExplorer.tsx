@@ -81,6 +81,15 @@ export const DocExplorer: React.FC = () => {
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
   );
 
+  // set current user as author metadata to the repo
+  useEffect(() => {
+    if (!currentAccount) {
+      repo.setGlobalMetadata({});
+    } else {
+      repo.setGlobalMetadata({ author: currentAccount.contactHandle.url });
+    }
+  }, [repo, currentAccount]);
+
   // sync doc names up from TEE docs to the sidebar list.
   useEffect(() => {
     if (selectedDoc === undefined) {

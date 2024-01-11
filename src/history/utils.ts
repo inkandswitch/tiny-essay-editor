@@ -8,11 +8,14 @@ import {
   Patch,
   getAllChanges,
 } from "@automerge/automerge";
+import { isValidAutomergeUrl } from "@automerge/automerge-repo/dist/AutomergeUrl";
+import { AutomergeUrl } from "@automerge/automerge-repo/dist/types";
 
 export type ChangeGroup = {
   id: string;
   changes: DecodedChange[];
   actorIds: ActorId[];
+  authorsContactUrls?: AutomergeUrl[];
   charsAdded: number;
   charsDeleted: number;
   diff: Patch[];
@@ -78,6 +81,11 @@ export const getGroupedChanges = (
       if (currentGroup) {
         pushCurrentGroup();
       }
+
+      const authorContactUrl = getAuthorContactUrl(decodedChange);
+
+      console.log("parse", decodedChange, authorContactUrl);
+
       currentGroup = {
         // the "ID" is the hash of the latest change in the group.
         // TODO: revisit whether this makes sense as an identifier for the group?
@@ -86,6 +94,7 @@ export const getGroupedChanges = (
         id: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
+        authorsContactUrls: authorContactUrl ? [authorContactUrl] : undefined,
         charsAdded: decodedChange.ops.reduce((total, op) => {
           return op.action === "set" && op.insert === true ? total + 1 : total;
         }, 0),
@@ -106,3 +115,18 @@ export const getGroupedChanges = (
 
   return changeGroups;
 };
+
+function getAuthorContactUrl(change: DecodedChange): AutomergeUrl | undefined {
+  if (!change.message) {
+    return;
+  }
+
+  try {
+    const { author } = JSON.parse(change.message);
+    if (author && isValidAutomergeUrl(author)) {
+      return author;
+    }
+  } catch (e) {
+    return undefined;
+  }
+}

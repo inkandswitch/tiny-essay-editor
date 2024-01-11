@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { truncate } from "lodash";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -131,6 +132,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               key={changeGroup.id}
               onClick={() => setSelectedChangeId(changeGroup.id)}
             >
+              {console.log(changeGroup) as undefined}
               <div className="flex justify-between text-xs">
                 <div>
                   <span className="text-green-600 font-bold mr-2">
@@ -145,10 +147,18 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 </div>
               </div>
               <div className="text-xs text-gray-600 font-semibold">
-                Actor
-                {changeGroup.actorIds.map((id) => (
-                  <Hash key={id} hash={id} />
-                ))}
+                {!changeGroup.authorsContactUrls && (
+                  <>
+                    Actor
+                    {changeGroup.actorIds.map((id) => (
+                      <Hash key={id} hash={id} />
+                    ))}
+                  </>
+                )}
+                {changeGroup.authorsContactUrls &&
+                  changeGroup.authorsContactUrls.map((contactUrl) => (
+                    <ContactAvatar url={contactUrl} size="sm" showName />
+                  ))}
               </div>
               {showInlineDiff && (
                 <div className="mt-4 ">
