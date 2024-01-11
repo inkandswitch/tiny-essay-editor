@@ -275,6 +275,7 @@ export function MarkdownEditor({
 }
 
 // Stuff for patches decoration
+// TODO: move this into a separate file
 
 const setPatchesEffect = StateEffect.define<A.Patch[]>();
 const patchesField = StateField.define<A.Patch[]>({

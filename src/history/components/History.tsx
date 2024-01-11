@@ -22,6 +22,8 @@ import {
 import { truncate } from "lodash";
 import { FileDiffIcon, TimerResetIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MinimapWithDiff } from "./MinimapWithDiff";
+import { view } from "@automerge/automerge";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -63,9 +65,13 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
   const [doc] = useDocument<MarkdownDoc>(docUrl);
-  const [showInlineDiff, setShowInlineDiff] = useState<boolean>(false);
-  const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
 
+  // diffs can be shown either in the change log or in the doc itself.
+  const [showDiffSummariesInLog, setShowDiffSummariesInLog] =
+    useState<boolean>(false);
+  const [showDiffInDoc, setShowDiffInDoc] = useState<boolean>(true);
+
+  // The grouping algorithm to use for the change log (because this is a playground!)
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ByCharCount");
 
@@ -106,14 +112,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // for now it works because the id of the group is the last change in the group...
   const docHeads = changeGroupSelection ? [changeGroupSelection.to] : undefined;
 
-  const headsForDisplay =
-    docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
-
-  // const diffHeads =
-  //   selectedChangeIndex < groupedChanges.length - 1
-  //     ? [groupedChanges[selectedChangeIndex + 1].id]
-  //     : [];
-
   let diffHeads = docHeads;
   if (changeGroupSelection) {
     const indexOfDiffFrom = groupedChanges
@@ -126,62 +124,125 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     }
   }
 
+  const handleClickOnChangeGroup = (
+    e: React.MouseEvent,
+    changeGroup: ChangeGroup
+  ) => {
+    // For normal clicks without the shift key, we just select one change.
+    if (!e.shiftKey) {
+      setChangeGroupSelection({
+        from: changeGroup.id,
+        to: changeGroup.id,
+      });
+      return;
+    }
+
+    // If the shift key is pressed, we create a multi-change selection.
+    // If there's no existing change group selected, just use the latest as the starting point for the selection.
+    if (!changeGroupSelection) {
+      setChangeGroupSelection({
+        from: changeGroup.id,
+        to: groupedChanges[groupedChanges.length - 1].id,
+      });
+      return;
+    }
+
+    // Extend the existing range selection appropriately
+
+    const indexOfSelectionFrom = groupedChanges.findIndex(
+      (c) => c.id === changeGroupSelection.from
+    );
+
+    const indexOfSelectionTo = groupedChanges.findIndex(
+      (c) => c.id === changeGroupSelection.to
+    );
+
+    const indexOfClickedChangeGroup = groupedChanges.findIndex(
+      (c) => c.id === changeGroup.id
+    );
+
+    if (indexOfClickedChangeGroup < indexOfSelectionFrom) {
+      setChangeGroupSelection({
+        from: changeGroup.id,
+        to: changeGroupSelection.to,
+      });
+      return;
+    }
+
+    if (indexOfClickedChangeGroup > indexOfSelectionTo) {
+      setChangeGroupSelection({
+        from: changeGroupSelection.from,
+        to: changeGroup.id,
+      });
+      return;
+    }
+
+    setChangeGroupSelection({
+      from: changeGroupSelection.from,
+      to: changeGroup.id,
+    });
+  };
   return (
-    <div className="flex overflow-hidden h-full ">
-      <div className="w-72 border-r border-gray-200 overflow-hidden flex flex-col font-mono text-xs font-semibold text-gray-600">
+    <div className="flex overflow-y-hidden h-full ">
+      <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col font-mono text-xs font-semibold text-gray-600">
         <div className="p-1">
           <div className="text-xs text-gray-500 uppercase font-bold mb-2">
             Change log
           </div>
-          <div className="flex justify-between mb-1">
-            <div className="flex items-center">
-              <div className="text-xs  mr-2">Group by</div>
+          <div className="mb-2">
+            <div className="flex justify-between mb-1">
+              <div className="flex items-center">
+                <div className="text-xs  mr-2">Group by</div>
 
-              <Select
-                value={activeGroupingAlgorithm}
-                onValueChange={(value) =>
-                  setActiveGroupingAlgorithm(value as any)
+                <Select
+                  value={activeGroupingAlgorithm}
+                  onValueChange={(value) =>
+                    setActiveGroupingAlgorithm(value as any)
+                  }
+                >
+                  <SelectTrigger className="h-6 text-xs w-[160px]">
+                    <SelectValue placeholder="Group by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(GROUPINGS).map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="h-4 mb-2">
+              {GROUPINGS_THAT_NEED_BATCH_SIZE.includes(
+                activeGroupingAlgorithm
+              ) && (
+                <div className="flex">
+                  <div className="text-xs mr-2 w-36">Batch size</div>
+                  <Slider
+                    defaultValue={[groupingBatchSize]}
+                    max={changeCount}
+                    step={1}
+                    onValueChange={(value) => setGroupingBatchSize(value[0])}
+                  />
+                  {groupingBatchSize}
+                </div>
+              )}
+            </div>
+            <div>
+              <Checkbox
+                id="show-inline-diff"
+                checked={showDiffSummariesInLog}
+                onCheckedChange={() =>
+                  setShowDiffSummariesInLog(!showDiffSummariesInLog)
                 }
-              >
-                <SelectTrigger className="h-6 text-xs w-[160px]">
-                  <SelectValue placeholder="Group by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(GROUPINGS).map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {key}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                className="mr-1"
+              />
+              <label htmlFor="show-inline-diff">Show diff summaries</label>
             </div>
           </div>
 
-          <div className="h-4 mb-2">
-            {GROUPINGS_THAT_NEED_BATCH_SIZE.includes(
-              activeGroupingAlgorithm
-            ) && (
-              <div className="flex">
-                <div className="text-xs mr-2 w-36">Batch size</div>
-                <Slider
-                  defaultValue={[groupingBatchSize]}
-                  max={changeCount}
-                  step={1}
-                  onValueChange={(value) => setGroupingBatchSize(value[0])}
-                />
-                {groupingBatchSize}
-              </div>
-            )}
-          </div>
-          <div className="mb-2">
-            <Checkbox
-              id="show-inline-diff"
-              checked={showInlineDiff}
-              onCheckedChange={() => setShowInlineDiff(!showInlineDiff)}
-              className="mr-1"
-            />
-            <label htmlFor="show-inline-diff">Show diff summaries</label>
-          </div>
           <div className="h-4">
             {docHeads && (
               <Button
@@ -205,7 +266,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             .reverse()
             .map((changeGroup) => (
               <div
-                className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
+                className={`group px-1 py-2 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
                   selectedChangeGroups.includes(changeGroup)
                     ? "bg-blue-100"
                     : changeGroupSelection &&
@@ -219,59 +280,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 data-id={changeGroup.id}
                 key={changeGroup.id}
                 onClick={(e) => {
-                  // For normal clicks without the shift key, we just select one change.
-                  if (!e.shiftKey) {
-                    setChangeGroupSelection({
-                      from: changeGroup.id,
-                      to: changeGroup.id,
-                    });
-                    return;
-                  }
-
-                  // If the shift key is pressed, we create a multi-change selection.
-                  // If there's no existing change group selected, just use the latest as the starting point for the selection.
-                  if (!changeGroupSelection) {
-                    setChangeGroupSelection({
-                      from: changeGroup.id,
-                      to: groupedChanges[groupedChanges.length - 1].id,
-                    });
-                    return;
-                  }
-
-                  // Extend the existing range selection appropriately
-
-                  const indexOfSelectionFrom = groupedChanges.findIndex(
-                    (c) => c.id === changeGroupSelection.from
-                  );
-
-                  const indexOfSelectionTo = groupedChanges.findIndex(
-                    (c) => c.id === changeGroupSelection.to
-                  );
-
-                  const indexOfClickedChangeGroup = groupedChanges.findIndex(
-                    (c) => c.id === changeGroup.id
-                  );
-
-                  if (indexOfClickedChangeGroup < indexOfSelectionFrom) {
-                    setChangeGroupSelection({
-                      from: changeGroup.id,
-                      to: changeGroupSelection.to,
-                    });
-                    return;
-                  }
-
-                  if (indexOfClickedChangeGroup > indexOfSelectionTo) {
-                    setChangeGroupSelection({
-                      from: changeGroupSelection.from,
-                      to: changeGroup.id,
-                    });
-                    return;
-                  }
-
-                  setChangeGroupSelection({
-                    from: changeGroupSelection.from,
-                    to: changeGroup.id,
-                  });
+                  handleClickOnChangeGroup(e, changeGroup);
                 }}
               >
                 <div className="flex justify-between text-xs">
@@ -293,7 +302,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     <Hash key={id} hash={id} />
                   ))}
                 </div>
-                {showInlineDiff && (
+                {showDiffSummariesInLog && (
                   <div className="mt-4 ">
                     {changeGroup.diff.map((patch) => (
                       <div className="mb-1">
@@ -325,14 +334,16 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           {docHeads && (
             <div className="flex">
               <div className="mr-6">
-                Showing past state (readonly): {headsForDisplay}
+                Showing past state (readonly):{" "}
+                {docHeads?.map((head) => <Hash key={head} hash={head} />) ||
+                  "latest"}
               </div>
               <div className="flex mr-6">
                 <Checkbox
                   id="show-diff-overlay"
                   className="mr-1"
-                  checked={showDiffOverlay}
-                  onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
+                  checked={showDiffInDoc}
+                  onCheckedChange={() => setShowDiffInDoc(!showDiffInDoc)}
                 >
                   Diff Overlay
                 </Checkbox>
@@ -354,13 +365,22 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           )}
           {!docHeads && <div>Showing current state (editable)</div>}
         </div>
+
         <TinyEssayEditor
           docUrl={docUrl}
           key={docUrl}
           readOnly={docHeads !== undefined}
           docHeads={docHeads}
-          diffHeads={showDiffOverlay ? diffHeads : undefined}
+          diffHeads={showDiffInDoc ? diffHeads : undefined}
         />
+        {doc && changeGroupSelection && showDiffInDoc && (
+          <div className="absolute top-20 right-6">
+            <MinimapWithDiff
+              doc={docHeads ? view(doc, docHeads) : doc}
+              patches={selectedChangeGroups.flatMap((cg) => cg.diff)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
