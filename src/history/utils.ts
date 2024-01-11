@@ -19,23 +19,25 @@ export type ChangeGroup = {
 };
 
 export const GROUPINGS = {
-  ActorAndMaxSize: (currentGroup: ChangeGroup, newChange: DecodedChange) => {
+  ByActorAndNumChanges: (
+    currentGroup: ChangeGroup,
+    newChange: DecodedChange,
+    batchSize: number
+  ) => {
     return (
       currentGroup.actorIds[0] === newChange.actor &&
-      currentGroup.changes.length < 1000
+      currentGroup.changes.length < batchSize
     );
   },
-  ConsecutiveRunByActor: (
-    currentGroup: ChangeGroup,
-    newChange: DecodedChange
-  ) => {
+  ByActor: (currentGroup: ChangeGroup, newChange: DecodedChange) => {
     return currentGroup.actorIds[0] === newChange.actor;
   },
-  Batch500: (currentGroup: ChangeGroup) => {
-    return currentGroup.changes.length < 500;
-  },
-  Batch100: (currentGroup: ChangeGroup) => {
-    return currentGroup.changes.length < 100;
+  ByNumberOfChanges: (
+    currentGroup: ChangeGroup,
+    newChange: DecodedChange,
+    batchSize: number
+  ) => {
+    return currentGroup.changes.length < batchSize;
   },
 
   // Other groupings to try:
@@ -44,10 +46,21 @@ export const GROUPINGS = {
   // - nonlinear: group by actor, out of this sorted order of changes
 };
 
+export const GROUPINGS_THAT_NEED_BATCH_SIZE = [
+  "ByActorAndNumChanges",
+  "ByNumberOfChanges",
+];
+
 /* returns all the changes from this doc, grouped in a simple way for now. */
 export const getGroupedChanges = (
   doc: Doc<MarkdownDoc>,
-  algorithm: keyof typeof GROUPINGS = "ActorAndMaxSize"
+  options: {
+    algorithm: keyof typeof GROUPINGS;
+    batchSize: number;
+  } = {
+    algorithm: "ByActorAndNumChanges",
+    batchSize: 100,
+  }
 ) => {
   const changes = getAllChanges(doc);
   const changeGroups: ChangeGroup[] = [];
@@ -65,7 +78,14 @@ export const getGroupedChanges = (
     const change = changes[i];
     const decodedChange = decodeChange(change);
 
-    if (currentGroup && GROUPINGS[algorithm](currentGroup, decodedChange)) {
+    if (
+      currentGroup &&
+      GROUPINGS[options.algorithm](
+        currentGroup,
+        decodedChange,
+        options.batchSize
+      )
+    ) {
       currentGroup.changes.push(decodedChange);
       currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
         return op.action === "set" && op.insert === true ? total + 1 : total;
@@ -74,6 +94,9 @@ export const getGroupedChanges = (
         return op.action === "del" ? total + 1 : total;
       }, 0);
       currentGroup.id = decodedChange.hash;
+      if (!currentGroup.actorIds.includes(decodedChange.actor)) {
+        currentGroup.actorIds.push(decodedChange.actor);
+      }
     } else {
       if (currentGroup) {
         pushCurrentGroup();
@@ -101,5 +124,5 @@ export const getGroupedChanges = (
     pushCurrentGroup();
   }
 
-  return changeGroups;
+  return { changeGroups, changeCount: changes.length };
 };

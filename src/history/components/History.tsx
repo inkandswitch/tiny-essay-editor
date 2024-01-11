@@ -2,10 +2,16 @@ import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useMemo, useState } from "react";
-import { ChangeGroup, getGroupedChanges } from "../utils";
+import {
+  ChangeGroup,
+  GROUPINGS_THAT_NEED_BATCH_SIZE,
+  getGroupedChanges,
+} from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+
 import {
   Select,
   SelectContent,
@@ -61,13 +67,20 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
-    useState<keyof typeof GROUPINGS>("ActorAndMaxSize");
+    useState<keyof typeof GROUPINGS>("ByNumberOfChanges");
+
+  // Some grouping algorithms have a batch size parameter.
+  // we can set this using a slider in the UI.
+  const [groupingBatchSize, setGroupingBatchSize] = useState<number>(500);
 
   // The grouping function returns change groups starting from the latest change.
-  const groupedChanges = useMemo(() => {
-    if (!doc) return [];
-    return getGroupedChanges(doc, activeGroupingAlgorithm);
-  }, [doc, activeGroupingAlgorithm]);
+  const { changeGroups: groupedChanges, changeCount } = useMemo(() => {
+    if (!doc) return { changeGroups: [], changeCount: 0 };
+    return getGroupedChanges(doc, {
+      algorithm: activeGroupingAlgorithm,
+      batchSize: groupingBatchSize,
+    });
+  }, [doc, activeGroupingAlgorithm, groupingBatchSize]);
 
   const [changeGroupSelection, setChangeGroupSelection] =
     useState<ChangeGroupSelection | null>();
@@ -82,8 +95,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
     selectedChangeGroups = groupedChanges.slice(fromIndex, toIndex + 1);
   }
-
-  console.log({ selectedChangeGroups, changeGroupSelection, groupedChanges });
 
   // TODO: is the heads for a group always the id of the group?
   // for now it works because the id of the group is the last change in the group...
@@ -138,6 +149,23 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="h-4 mb-2">
+            {GROUPINGS_THAT_NEED_BATCH_SIZE.includes(
+              activeGroupingAlgorithm
+            ) && (
+              <div className="flex">
+                <div className="text-xs mr-2 w-36">Batch size</div>
+                <Slider
+                  defaultValue={[groupingBatchSize]}
+                  max={changeCount}
+                  step={1}
+                  onValueChange={(value) => setGroupingBatchSize(value[0])}
+                />
+                {groupingBatchSize}
+              </div>
+            )}
           </div>
           <div className="mb-2">
             <Checkbox
@@ -254,7 +282,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   </div>
                 </div>
                 <div className="text-xs text-gray-600 font-semibold">
-                  Actor
+                  Actors:
                   {changeGroup.actorIds.map((id) => (
                     <Hash key={id} hash={id} />
                   ))}
