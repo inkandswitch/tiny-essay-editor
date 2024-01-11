@@ -2,7 +2,7 @@
 
 This is a simple collaborative Markdown editor built in React, with inline format preview and inline commenting.
 
-It's built on [automerge](https://github.com/automerge/automerge) and [automerge-repo](https://github.com/automerge/automerge-repo) for CRDT-based storage and sync. It uses [Codemirror](https://codemirror.net/) for markdown editing UI, and  [automerge-codemirror](https://github.com/automerge/automerge-codemirror) to connect to Codemirror.
+It's built on [automerge](https://github.com/automerge/automerge) and [automerge-repo](https://github.com/automerge/automerge-repo) for CRDT-based storage and sync. It uses [Codemirror](https://codemirror.net/) for markdown editing UI, and [automerge-codemirror](https://github.com/automerge/automerge-codemirror) to connect to Codemirror.
 
 <img width="1318" alt="CleanShot 2023-11-08 at 14 15 49@2x" src="https://github.com/inkandswitch/tiny-essay-editor/assets/934016/672e0642-0ecd-47f6-8595-be2629a4e265">
 
@@ -27,9 +27,43 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 
 ## Run it
 
-`yarn`
+Setup the automerge submodule
 
-`yarn dev`
+```
+git submodule init
+git submodule update --init --remote
+```
+
+Check out the `version-control-project` in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the actual branch.
+
+```
+cd src/vendor/vendored-automerge-repo
+git checkout version-control-project
+```
+
+Install and build automerge repo
+
+```
+pnpm install
+pnpm build
+```
+
+Install dependencies for tiny-essay-editor and start the dev server
+
+```
+cd ../../..
+yarn
+yarn dev
+```
+
+To pull in updates for the submodule run the following update command
+
+```
+git submodule update --remote --rebase
+```
+
+> --remote ensures we are getting the latest changes
+> --rebase ensures that the changes are pulled into the checked out "version-control-branch" instead of checking out a detached HEAD
 
 ## Dual deployment
 
