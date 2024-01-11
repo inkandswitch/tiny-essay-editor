@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { truncate } from "lodash";
+import { FileDiffIcon, TimerResetIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -105,7 +107,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               </Select>
             </div>
           </div>
-          <div className="">
+          <div className="mb-2">
             <Checkbox
               id="show-inline-diff"
               checked={showInlineDiff}
@@ -114,12 +116,25 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             />
             <label htmlFor="show-inline-diff">Show diff summaries</label>
           </div>
+          <div className="h-4">
+            {docHeads && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-6"
+                onClick={() => setSelectedChangeId(null)}
+              >
+                <TimerResetIcon size={12} className="mr-1 inline" />
+                Reset view to latest
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
           {groupedChanges.map((changeGroup) => (
             <div
-              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 ${
+              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
                 selectedChangeId === changeGroup.id
                   ? "bg-blue-100"
                   : groupedChanges.map((c) => c.id).indexOf(selectedChangeId) >
@@ -194,15 +209,19 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   Diff Overlay
                 </Checkbox>
                 <label htmlFor="show-diff-overlay" className="mr-4">
+                  <FileDiffIcon size={12} className="mr-1 inline" />
                   Show Diff
                 </label>
               </div>
-              <div
-                className="text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-6 mt-[-4px]"
                 onClick={() => setSelectedChangeId(null)}
               >
-                Reset to latest
-              </div>
+                <TimerResetIcon size={12} className="mr-1 inline" />
+                Reset view to latest
+              </Button>
             </div>
           )}
           {!docHeads && <div>Showing current state (editable)</div>}
