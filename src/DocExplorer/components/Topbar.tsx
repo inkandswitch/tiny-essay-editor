@@ -158,7 +158,6 @@ export const Topbar: React.FC<TopbarProps> = ({
                     name: "Untitled Draft",
                     copyTimestamp: Date.now(),
                     url: newHandle.url,
-                    copyHeads: getHeads(newHandle.docSync()),
                   });
                 });
                 const newDocLink: DocLink = {

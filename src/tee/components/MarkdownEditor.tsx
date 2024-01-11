@@ -84,10 +84,8 @@ export function MarkdownEditor({
     () => {
       if (!diffHeads) return [];
       const doc = handle.docSync();
-      const patches = diff(doc, diffHeads, docHeads ?? A.getHeads(doc));
-
-      // ????
-      console.log({ diffHeads, docHeads, inferred: A.getHeads(doc), patches });
+      const diffTargetHeads = docHeads ?? A.getHeads(doc);
+      const patches = diff(doc, diffHeads, diffTargetHeads);
 
       return patches;
     },

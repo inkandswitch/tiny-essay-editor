@@ -51,7 +51,6 @@ export type Copyable = {
     /* A pointer to copies of this doc */
     copies: Array<{
       url: AutomergeUrl;
-      copyHeads: Heads;
       copyTimestamp: number;
       name: string;
     }>;

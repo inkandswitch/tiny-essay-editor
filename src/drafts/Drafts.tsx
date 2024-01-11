@@ -1,19 +1,17 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { isEqual, truncate } from "lodash";
-import { getHeads } from "@automerge/automerge/next";
-import { markCopy } from "@/tee/datatype";
+import * as A from "@automerge/automerge/next";
 import { DeleteIcon, MergeIcon, MoreHorizontal, PlusIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -25,6 +23,21 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [selectedDraftUrl, setSelectedDraftUrl] = useState<AutomergeUrl | null>(
     null
   );
+
+  // put handles on window for debug
+  useEffect(() => {
+    const docHandle = repo.find<MarkdownDoc>(docUrl);
+    // @ts-expect-error window global debug
+    window.docHandle = docHandle;
+
+    if (!selectedDraftUrl) return;
+    const selectedDraftHandle = repo.find<MarkdownDoc>(selectedDraftUrl);
+    // @ts-expect-error window global debug
+    window.draftHandle = selectedDraftHandle;
+
+    // @ts-expect-error window global debug
+    window.A = A;
+  }, [selectedDraftUrl, docUrl]);
   const [selectedDraftDoc] = useDocument<MarkdownDoc>(selectedDraftUrl);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
 
@@ -58,28 +71,25 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     const newHandle = repo.clone<MarkdownDoc>(docHandle);
 
+    // This is a terribly intricate dance because we store the draft metadata in the doc itself.
+    // We need to make sure that the copyheads for the draft doc is set after the original doc has the new draft metadata.
+    // We also need to merge the original handle into the draft after we update the draft metadata.
+    // This can all be avoided by storing draft metadata outside of the document itself.
+
     docHandle.change((doc) => {
       doc.copyMetadata.copies.unshift({
         name: "Untitled Draft",
         copyTimestamp: Date.now(),
         url: newHandle.url,
-        copyHeads: getHeads(newHandle.docSync()),
       });
     });
 
-    console.log(
-      "main doc heads after creating draft",
-      getHeads(docHandle.docSync())
-    );
-
-    // NOTE: It's very important that we set the copy heads after we've changed the draft metadata above.
-    // Otherwise, when we add the draft to the main document, it will move the heads past the copyheads.
-    // In the future, we should just store the draft metadata outside of the document itself to avoid this problem entirely.
+    newHandle.merge(docHandle);
 
     newHandle.change((doc) => {
       doc.copyMetadata.source = {
         url: docUrl,
-        copyHeads: getHeads(docHandle.docSync()),
+        copyHeads: A.getHeads(docHandle.docSync()),
       };
     });
     setSelectedDraftUrl(newHandle.url);
@@ -108,20 +118,14 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // if the copy head stored on it don't match the latest heads of the main doc.
   const selectedDraftNeedsRebase =
     selectedDraftDoc &&
-    !isEqual(getHeads(doc), selectedDraftDoc.copyMetadata.source.copyHeads);
-
-  console.log(
-    getHeads(doc),
-    selectedDraftDoc?.copyMetadata.source.copyHeads,
-    selectedDraftNeedsRebase
-  );
+    !isEqual(A.getHeads(doc), selectedDraftDoc.copyMetadata.source.copyHeads);
 
   const rebaseDraft = (draftUrl: AutomergeUrl) => {
     const draftHandle = repo.find<MarkdownDoc>(draftUrl);
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
-      doc.copyMetadata.source.copyHeads = getHeads(docHandle.docSync());
+      doc.copyMetadata.source.copyHeads = A.getHeads(docHandle.docSync());
     });
   };
 
@@ -146,19 +150,23 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
 
         <div className="">
-          <div className="p-1 text-xs text-gray-500 uppercase font-bold mb-1">
-            Drafts
-          </div>
+          <div className="flex items-center mb-2">
+            <div className="p-1 text-xs text-gray-500 uppercase font-bold mb-1">
+              Drafts
+            </div>
 
-          <Button
-            className="mx-2 my-1"
-            variant="outline"
-            size="sm"
-            onClick={createDraft}
-          >
-            <PlusIcon className="mr-2" size={12} />
-            Create new draft
-          </Button>
+            <div className="ml-auto mr-1">
+              <Button
+                className=""
+                variant="outline"
+                size="sm"
+                onClick={createDraft}
+              >
+                <PlusIcon className="mr-2" size={12} />
+                New draft
+              </Button>
+            </div>
+          </div>
 
           <div className="overflow-y-auto flex-grow border-t border-gray-400">
             {drafts.map((draft) => (
@@ -222,20 +230,23 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               <div className="flex items-center">
                 <div className="flex items-center">
                   <input
+                    id="show-diff-overlay"
                     type="checkbox"
                     checked={showDiffOverlay}
                     onChange={(e) => setShowDiffOverlay(e.target.checked)}
                   />
-                  <label className="ml-2">Show diff overlay</label>
+                  <label className="ml-2" htmlFor="show-diff-overlay">
+                    Show diff overlay
+                  </label>
                 </div>
                 {selectedDraftNeedsRebase && (
-                  <div className="ml-4 text-red-500 flex">
+                  <div className="ml-6 text-red-500 flex">
                     New changes on main
                     <div
                       className=" ml-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
                       onClick={() => rebaseDraft(selectedDraftUrl)}
                     >
-                      Pull into draft
+                      Update draft
                     </div>
                   </div>
                 )}
@@ -246,7 +257,11 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         <TinyEssayEditor
           docUrl={selectedDraftUrl || docUrl}
           key={docUrl}
-          diffHeads={showDiffOverlay ? getHeads(doc) : undefined}
+          diffHeads={
+            showDiffOverlay && selectedDraftDoc
+              ? selectedDraftDoc.copyMetadata.source.copyHeads
+              : undefined
+          }
         />
       </div>
     </div>
