@@ -16,13 +16,13 @@
     "preview": "vite preview",
     "test": "vitest"
   },
-  "dependencies": {
+  "dependencies": {  
     "@automerge/automerge": "^2.1.9",
-    "@automerge/automerge-repo": "",
-    "@automerge/automerge-repo-network-broadcastchannel": "",
-    "@automerge/automerge-repo-network-websocket": "",
-    "@automerge/automerge-repo-react-hooks": "",
-    "@automerge/automerge-repo-storage-indexeddb": "",
+    "@automerge/automerge-repo": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo",
+    "@automerge/automerge-repo-network-broadcastchannel": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-broadcastchannel",
+    "@automerge/automerge-repo-network-websocket": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-websocket",
+    "@automerge/automerge-repo-react-hooks": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks",
+    "@automerge/automerge-repo-storage-indexeddb": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-storage-indexeddb",
     "@automerge/automerge-codemirror": "^0.0.7",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
@@ -85,11 +85,11 @@
     "vite": "^4.4.5",
     "vitest": "^0.34.6"
   }, 
-  "reolve": {
-    "**/@automerge/automerge-repo": "link:./src/vendor/automerge-repo/packages/automerge-repo",  
-    "**/@automerge/automerge-repo-network-broadcastchannel": "link:./src/vendor/automerge-repo/packages/automerge-repo-network-broadcastchannel",
-    "**/@automerge/automerge-repo-network-websocket": "link:./src/vendor/automerge-repo/packages/automerge-repo-network-websocket",
-    "**/@automerge/automerge-repo-react-hooks": "link:./src/vendor/automerge-repo/packages/automerge-repo-react-hooks",
-    "**/@automerge/automerge-repo-storage-indexeddb": "link:./src/vendor/automerge-repo/packages/automerge-repo-storage-indexeddb"
+  "resolutions": {
+    "**/@automerge/automerge-repo": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo",  
+    "**/@automerge/automerge-repo-network-broadcastchannel": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-broadcastchannel",
+    "**/@automerge/automerge-repo-network-websocket": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-websocket",
+    "**/@automerge/automerge-repo-react-hooks": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks",
+    "**/@automerge/automerge-repo-storage-indexeddb": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-storage-indexeddb"
   }
 }

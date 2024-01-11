@@ -1,4 +1,4 @@
-[submodule "src/vendor/automerge-repo"]
-	path = src/vendor/automerge-repo
+[submodule "src/vendor/vendored-automerge-repo"]
+	path = src/vendor/vendored-automerge-repo
 	url = git@github.com:automerge/automerge-repo.git
 	branch = version-control-project
