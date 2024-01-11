@@ -1,13 +1,21 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  Repo,
+  isValidAutomergeUrl,
+} from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { init } from "../../tee/datatype";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
+import { Essay, EssayDoc } from "@/tee/schemas/Essay";
 import { Button } from "@/components/ui/button";
-import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/datatype";
+
 import {
   DocType,
+  FolderDoc,
   useCurrentAccount,
   useCurrentAccountDoc,
   useCurrentRootFolderDoc,
@@ -15,7 +23,10 @@ import {
 
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import { LoadingScreen } from "./LoadingScreen";
+import { LoadingScreen } from "../../automerge-repo-schema-utils/LoadingScreen";
+import { ChangeFn } from "@automerge/automerge";
+import { getTitle } from "@/tee/schemas/Essay";
+import { withDocument } from "@/automerge-repo-schema-utils/LoadDocument";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
@@ -25,8 +36,13 @@ export const DocExplorer: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
-    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
+  const {
+    selectedDoc,
+    selectedEssay,
+    selectedDocUrl,
+    selectDoc,
+    openDocFromUrl,
+  } = useSelectedDoc({ rootFolderDoc, changeRootFolderDoc, repo });
 
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -38,8 +54,7 @@ export const DocExplorer: React.FC = () => {
         throw new Error("Only essays are supported right now");
       }
 
-      const newDocHandle = repo.create<MarkdownDoc>();
-      newDocHandle.change(init);
+      const newEssay = Essay.create(repo);
 
       if (!rootFolderDoc) {
         return;
@@ -49,11 +64,11 @@ export const DocExplorer: React.FC = () => {
         doc.docs.unshift({
           type: "essay",
           name: "Untitled document",
-          url: newDocHandle.url,
+          url: newEssay.handle.url,
         })
       );
 
-      selectDoc(newDocHandle.url);
+      selectDoc(newEssay.handle.url);
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
   );
@@ -64,14 +79,16 @@ export const DocExplorer: React.FC = () => {
       return;
     }
 
-    const title = getTitle(selectedDoc.content);
-
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(
         (link) => link.url === selectedDocUrl
       );
-      if (existingDocLink && existingDocLink.name !== title) {
-        existingDocLink.name = title;
+      if (
+        existingDocLink &&
+        selectedEssay &&
+        existingDocLink.name !== selectedEssay.title
+      ) {
+        existingDocLink.name = selectedEssay.title;
       }
     });
   }, [
@@ -80,6 +97,7 @@ export const DocExplorer: React.FC = () => {
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
+    selectedEssay,
   ]);
 
   // update tab title to be the selected doc
@@ -180,11 +198,8 @@ export const DocExplorer: React.FC = () => {
               </div>
             )}
 
-            {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
-                If we want more continuity we could not do this. */}
-            {selectedDocUrl && selectedDoc && (
-              <TinyEssayEditor docUrl={selectedDocUrl} key={selectedDocUrl} />
-            )}
+            {selectedDocUrl &&
+              withDocument(TinyEssayEditor, selectedDocUrl, Essay)}
           </div>
         </div>
       </div>
@@ -195,9 +210,20 @@ export const DocExplorer: React.FC = () => {
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
-const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
+const useSelectedDoc = ({
+  rootFolderDoc,
+  changeRootFolderDoc,
+  repo,
+}: {
+  rootFolderDoc: FolderDoc;
+  changeRootFolderDoc: ChangeFn<(doc: FolderDoc) => void>;
+  repo: Repo;
+}) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+  const selectedDocHandle = useHandle<EssayDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument<EssayDoc>(selectedDocUrl);
+
+  const selectedEssay = selectedDoc ? new Essay(selectedDocHandle, repo) : null;
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     if (docUrl) {
@@ -226,7 +252,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
 
       setSelectedDocUrl(docUrl);
     },
-    [rootFolderDoc, changeRootFolderDoc, selectDoc]
+    [rootFolderDoc, changeRootFolderDoc]
   );
 
   // observe the URL hash to change the selected document
@@ -240,6 +266,9 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
           return;
         }
         openDocFromUrl(docUrl);
+
+        // @ts-expect-error - adding property to window
+        window.handle = repo.find(docUrl);
       }
     };
 
@@ -257,6 +286,8 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   return {
     selectedDocUrl,
     selectedDoc,
+    selectedEssay,
+    selectedDocHandle,
     selectDoc,
     openDocFromUrl,
   };

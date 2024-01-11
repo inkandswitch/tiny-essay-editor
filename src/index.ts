@@ -5,7 +5,10 @@ import css from "./index.css";
 document.adoptedStyleSheets.push(css);
 
 export { mount } from "./tee/mount.js";
-export { init } from "./tee/datatype.js";
+
+// TODO: this needs to be reworked to account for the new schema system,
+// where init is a function available on a schema object.
+// export { init } from "./tee/datatype.js";
 
 // @ts-expect-error - set a window global for the logo image using browser standards
 window.logoImageUrl = new URL(

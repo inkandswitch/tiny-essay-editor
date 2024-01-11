@@ -1,8 +1,9 @@
 import { EditorView, Decoration } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
-import { CommentThreadForUI } from "../schema";
+
 import { amRangeToCMRange } from "../utils";
 import { sortBy } from "lodash";
+import { CommentThreadForUI } from "../types";
 
 export const setThreadsEffect = StateEffect.define<CommentThreadForUI[]>();
 export const threadsField = StateField.define<CommentThreadForUI[]>({

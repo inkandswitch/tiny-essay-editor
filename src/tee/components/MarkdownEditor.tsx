@@ -16,7 +16,7 @@ import {
 } from "@automerge/automerge-codemirror";
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
-import { CommentThreadForUI, MarkdownDoc } from "../schema";
+
 import {
   syntaxHighlighting,
   indentOnInput,
@@ -39,6 +39,8 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { CommentThreadForUI } from "../types";
+import { EssayDoc } from "../schemas/Essay";
 
 export type TextSelection = {
   from: number;
@@ -47,7 +49,7 @@ export type TextSelection = {
 };
 
 export type EditorProps = {
-  handle: DocHandle<MarkdownDoc>;
+  handle: DocHandle<EssayDoc>;
   path: Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;

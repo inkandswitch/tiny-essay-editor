@@ -1,10 +1,4 @@
 import { Button } from "@/components/ui/button";
-import {
-  Comment,
-  CommentThread,
-  CommentThreadWithPosition,
-  MarkdownDoc,
-} from "../schema";
 
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +15,9 @@ import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { CommentThread, Comment, EssayDoc } from "../schemas/Essay";
+import { CommentThreadWithPosition } from "../types";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export const CommentsSidebar = ({
   doc,
@@ -30,8 +27,8 @@ export const CommentsSidebar = ({
   activeThreadId,
   setActiveThreadId,
 }: {
-  doc: MarkdownDoc;
-  changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  doc: EssayDoc;
+  changeDoc: (changeFn: ChangeFn<EssayDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
@@ -132,7 +129,8 @@ export const CommentsSidebar = ({
                   <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
                     {comment.contactUrl ? (
                       <ContactAvatar
-                        url={comment.contactUrl}
+                        // TODO: properly validate automerge URLs in the schema
+                        url={comment.contactUrl as AutomergeUrl}
                         showName={true}
                         size="sm"
                       />

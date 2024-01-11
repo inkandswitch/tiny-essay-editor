@@ -4,9 +4,13 @@ import { Progress } from "@/components/ui/progress";
 
 // A very rough and naive loading screen.
 // It just assumes things load in ~1 second and shows a progress bar.
+
 // Typically Automerge blocks the UI thread while it's loading though,
 // so we don't get smooth progress or anything, the bar just
 // shows empty and then the doc loads.
+
+// TODO: use a GPU transform to get smooth loading while process blocked
+// TODO: get more actual progress metadata out of automerge to drive the bar
 
 export const LoadingScreen = ({
   docUrl,

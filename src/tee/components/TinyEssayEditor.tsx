@@ -1,9 +1,4 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
-
-import { MarkdownDoc } from "../schema";
-import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
@@ -13,10 +8,14 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
+import { LoadDocumentChildProps } from "@/automerge-repo-schema-utils/utils";
+import { EssayDoc } from "../schemas/Essay";
 
-export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
-  const handle = useHandle<MarkdownDoc>(docUrl);
+export const TinyEssayEditor = ({
+  doc,
+  changeDoc,
+  handle,
+}: LoadDocumentChildProps<EssayDoc>) => {
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
@@ -28,11 +27,6 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
     activeThreadId,
     editorRef,
   });
-
-  // todo: remove from this component and move up to DocExplorer?
-  if (!doc) {
-    return <LoadingScreen docUrl={docUrl} handle={handle} />;
-  }
 
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
