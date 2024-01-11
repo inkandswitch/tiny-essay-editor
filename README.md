@@ -27,21 +27,21 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 
 ## Run it
 
-Setup the automerge submodule
+Setup the automerge-repo submodule
 
 ```
 git submodule init
 git submodule update --init --remote
 ```
 
-Check out the `version-control-project` in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the actual branch.
+Check out the `version-control-project` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
 
 ```
 cd src/vendor/vendored-automerge-repo
 git checkout version-control-project
 ```
 
-Install and build automerge repo
+Install and build automerge-repo
 
 ```
 pnpm install
@@ -56,13 +56,13 @@ yarn
 yarn dev
 ```
 
-To pull in updates for the submodule run the following update command
+To pull in subsequent updates for the submodule run:
 
 ```
 git submodule update --remote --rebase
 ```
 
-> --remote ensures we are getting the latest changes
+> --remote ensures we are getting the latest changes <br>
 > --rebase ensures that the changes are pulled into the checked out "version-control-branch" instead of checking out a detached HEAD
 
 ## Dual deployment
