@@ -5,7 +5,7 @@ import React, { useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
-import { truncate } from "lodash";
+import { isEqual, truncate } from "lodash";
 import { getHeads } from "@automerge/automerge/next";
 import { markCopy } from "@/tee/datatype";
 import { DeleteIcon, MergeIcon, MoreHorizontal, PlusIcon } from "lucide-react";
@@ -25,9 +25,8 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [selectedDraftUrl, setSelectedDraftUrl] = useState<AutomergeUrl | null>(
     null
   );
+  const [selectedDraftDoc] = useDocument<MarkdownDoc>(selectedDraftUrl);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
-
-  console.log({ selectedDraftUrl });
 
   if (!doc) return <div>Loading...</div>;
   if (!doc.copyMetadata)
@@ -58,12 +57,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const createDraft = () => {
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     const newHandle = repo.clone<MarkdownDoc>(docHandle);
-    newHandle.change((doc) => {
-      doc.copyMetadata.source = {
-        url: docUrl,
-        copyHeads: getHeads(doc),
-      };
-    });
+
     docHandle.change((doc) => {
       doc.copyMetadata.copies.unshift({
         name: "Untitled Draft",
@@ -71,6 +65,22 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         url: newHandle.url,
         copyHeads: getHeads(newHandle.docSync()),
       });
+    });
+
+    console.log(
+      "main doc heads after creating draft",
+      getHeads(docHandle.docSync())
+    );
+
+    // NOTE: It's very important that we set the copy heads after we've changed the draft metadata above.
+    // Otherwise, when we add the draft to the main document, it will move the heads past the copyheads.
+    // In the future, we should just store the draft metadata outside of the document itself to avoid this problem entirely.
+
+    newHandle.change((doc) => {
+      doc.copyMetadata.source = {
+        url: docUrl,
+        copyHeads: getHeads(docHandle.docSync()),
+      };
     });
     setSelectedDraftUrl(newHandle.url);
   };
@@ -94,7 +104,26 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     });
   };
 
-  console.log({ diffHeads: getHeads(doc) });
+  // The selected draft doesn't have the latest from the main document
+  // if the copy head stored on it don't match the latest heads of the main doc.
+  const selectedDraftNeedsRebase =
+    selectedDraftDoc &&
+    !isEqual(getHeads(doc), selectedDraftDoc.copyMetadata.source.copyHeads);
+
+  console.log(
+    getHeads(doc),
+    selectedDraftDoc?.copyMetadata.source.copyHeads,
+    selectedDraftNeedsRebase
+  );
+
+  const rebaseDraft = (draftUrl: AutomergeUrl) => {
+    const draftHandle = repo.find<MarkdownDoc>(draftUrl);
+    const docHandle = repo.find<MarkdownDoc>(docUrl);
+    draftHandle.merge(docHandle);
+    draftHandle.change((doc) => {
+      doc.copyMetadata.source.copyHeads = getHeads(docHandle.docSync());
+    });
+  };
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -191,12 +220,25 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           <div className="flex items-center">
             {selectedDraftUrl && (
               <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={showDiffOverlay}
-                  onChange={(e) => setShowDiffOverlay(e.target.checked)}
-                />
-                <label className="ml-2">Show diff overlay</label>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showDiffOverlay}
+                    onChange={(e) => setShowDiffOverlay(e.target.checked)}
+                  />
+                  <label className="ml-2">Show diff overlay</label>
+                </div>
+                {selectedDraftNeedsRebase && (
+                  <div className="ml-4 text-red-500 flex">
+                    New changes on main
+                    <div
+                      className=" ml-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
+                      onClick={() => rebaseDraft(selectedDraftUrl)}
+                    >
+                      Pull into draft
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
