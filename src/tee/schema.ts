@@ -57,4 +57,10 @@ export type Copyable = {
   };
 };
 
-export type MarkdownDoc = _MarkdownDoc & Copyable;
+export type Tag = { name: string; heads: Heads };
+export type Taggable = {
+  // TODO: should we model this as a map instead?
+  tags: Tag[];
+};
+
+export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable;

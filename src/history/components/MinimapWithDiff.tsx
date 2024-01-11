@@ -40,7 +40,7 @@ export const MinimapWithDiff: React.FC<{
 }> = ({ doc, patches }) => {
   // Roughly split up the doc into 80-char lines to approximate the way it's displayed
   let currentIndex = 0;
-  const linesNested = doc.content.split("\n").map((line) => {
+  const linesNested = (doc.content ?? "").split("\n").map((line) => {
     const lineObjects = (line.match(/.{1,80}/g) || [""]).map((text) => {
       const lineObject: DocLine = {
         text,

@@ -1,7 +1,11 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
 import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
 import { MarkdownDoc } from "@/tee/schema";
@@ -229,6 +233,13 @@ export const DocExplorer: React.FC = () => {
 // API for changing the selection is properly thru the URL)
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
+  const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
+
+  useEffect(() => {
+    // @ts-expect-error window global for debugging
+    window.handle = selectedDocHandle;
+  }, [selectedDocHandle]);
+
   const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {

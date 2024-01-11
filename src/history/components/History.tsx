@@ -20,7 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { truncate } from "lodash";
-import { FileDiffIcon, TimerResetIcon } from "lucide-react";
+import {
+  CopyIcon,
+  DeleteIcon,
+  FileDiffIcon,
+  PlusIcon,
+  TagIcon,
+  TimerResetIcon,
+  TrashIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
@@ -42,12 +50,20 @@ const Hash: React.FC<{ hash: string }> = ({ hash }) => {
   const color = useMemo(() => hashToColor(hash), [hash]);
 
   return (
-    <div className="inline-flex items-center border border-gray-300 rounded-full px-1">
+    <div className="inline-flex items-center border border-gray-300 rounded-full pl-1">
       <div
         className="w-2 h-2 rounded-full mr-[2px]"
         style={{ backgroundColor: color }}
       ></div>
       <div>{hash.substring(0, 6)}</div>
+      <div
+        className="cursor-pointer px-1 ml-1 hover:bg-gray-50 active:bg-gray-200 rounded-full"
+        onClick={() => {
+          navigator.clipboard.writeText(hash);
+        }}
+      >
+        <CopyIcon size={10} />
+      </div>
     </div>
   );
 };
@@ -64,7 +80,7 @@ type ChangeGroupSelection = {
 export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const [doc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
 
   // diffs can be shown either in the change log or in the doc itself.
   const [showDiffSummariesInLog, setShowDiffSummariesInLog] =
@@ -85,6 +101,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return getGroupedChanges(doc, {
       algorithm: activeGroupingAlgorithm,
       batchSize: groupingBatchSize,
+      tags: doc.tags ?? [],
     });
   }, [doc, activeGroupingAlgorithm, groupingBatchSize]);
 
@@ -258,73 +275,118 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
+        <div className="overflow-y-auto flex-grow border-t border-gray-400 pt-4 mt-2">
           {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
           {groupedChanges
             .slice()
             .reverse()
             .map((changeGroup) => (
-              <div
-                className={`group px-1 py-2 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
-                  selectedChangeGroups.includes(changeGroup)
-                    ? "bg-blue-100"
-                    : changeGroupSelection &&
-                      groupedChanges
-                        .map((c) => c.id)
-                        .indexOf(changeGroupSelection.to) <
-                        groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
-                    ? "opacity-50"
-                    : ""
-                }`}
-                data-id={changeGroup.id}
-                key={changeGroup.id}
-                onClick={(e) => {
-                  handleClickOnChangeGroup(e, changeGroup);
-                }}
-              >
-                <div className="flex justify-between text-xs">
-                  <div>
-                    <span className="text-green-600 font-bold mr-2">
-                      +{changeGroup.charsAdded}
-                    </span>
-                    <span className="text-red-600 font-bold">
-                      -{changeGroup.charsDeleted}
-                    </span>
+              <div className="relative">
+                {changeGroupSelection?.to === changeGroup.id &&
+                  changeGroup.tags.length === 0 && (
+                    <div
+                      className="absolute top-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                      onClick={() => {
+                        changeDoc((doc) => {
+                          if (!doc.tags) {
+                            doc.tags = [];
+                          }
+                          doc.tags.push({
+                            name: window.prompt("Tag name:"),
+                            heads: [changeGroup.id],
+                          });
+                        });
+                      }}
+                    >
+                      <TagIcon size={12} className="inline-block mr-1" />
+                      Add a tag
+                    </div>
+                  )}
+                {changeGroup.tags.map((tag) => (
+                  <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
+                    <TagIcon size={12} className="mr-1 mt-[2px]" />
+                    <div>{tag.name}</div>
+                    <div className="ml-auto">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          changeDoc((doc) => {
+                            const tagIndex = doc.tags.indexOf(tag);
+                            doc.tags.splice(tagIndex, 1);
+                          });
+                        }}
+                      >
+                        <TrashIcon size={14} />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-600 text-right font-semibold">
-                    <Hash key={changeGroup.id} hash={changeGroup.id} />
+                ))}
+                <div
+                  className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
+                    selectedChangeGroups.includes(changeGroup)
+                      ? "bg-blue-100"
+                      : changeGroupSelection &&
+                        groupedChanges
+                          .map((c) => c.id)
+                          .indexOf(changeGroupSelection.to) <
+                          groupedChanges
+                            .map((c) => c.id)
+                            .indexOf(changeGroup.id)
+                      ? "opacity-50"
+                      : ""
+                  }`}
+                  data-id={changeGroup.id}
+                  key={changeGroup.id}
+                  onClick={(e) => {
+                    handleClickOnChangeGroup(e, changeGroup);
+                  }}
+                >
+                  <div className="flex justify-between text-xs">
+                    <div>
+                      <span className="text-green-600 font-bold mr-2">
+                        +{changeGroup.charsAdded}
+                      </span>
+                      <span className="text-red-600 font-bold">
+                        -{changeGroup.charsDeleted}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 text-right font-semibold">
+                      <Hash key={changeGroup.id} hash={changeGroup.id} />
+                    </div>
                   </div>
-                </div>
-                <div className="text-xs text-gray-600 font-semibold">
-                  Actors:
-                  {changeGroup.actorIds.map((id) => (
-                    <Hash key={id} hash={id} />
-                  ))}
-                </div>
-                {showDiffSummariesInLog && (
-                  <div className="mt-4 ">
-                    {changeGroup.diff.map((patch) => (
-                      <div className="mb-1">
-                        {patch.path[0] === "content" &&
-                          patch.action === "splice" && (
-                            <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
-                              {truncate(patch.value, {
-                                length: 100,
-                              })}
-                            </div>
-                          )}
-
-                        {patch.path[0] === "content" &&
-                          patch.action === "del" && (
-                            <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
-                              Deleted {patch.length ?? 1} characters
-                            </div>
-                          )}
-                      </div>
+                  <div className="text-xs text-gray-600 font-semibold">
+                    Actors:
+                    {changeGroup.actorIds.map((id) => (
+                      <Hash key={id} hash={id} />
                     ))}
                   </div>
-                )}
+                  {showDiffSummariesInLog && (
+                    <div className="mt-4 ">
+                      {changeGroup.diff.map((patch) => (
+                        <div className="mb-1">
+                          {patch.path[0] === "content" &&
+                            patch.action === "splice" && (
+                              <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
+                                {truncate(patch.value, {
+                                  length: 100,
+                                })}
+                              </div>
+                            )}
+
+                          {patch.path[0] === "content" &&
+                            patch.action === "del" && (
+                              <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
+                                Deleted {patch.length ?? 1} characters
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
         </div>
