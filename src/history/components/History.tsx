@@ -2,7 +2,7 @@ import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useMemo, useState } from "react";
-import { getGroupedChanges } from "../utils";
+import { ChangeGroup, getGroupedChanges } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,38 +44,70 @@ const Hash: React.FC<{ hash: string }> = ({ hash }) => {
   );
 };
 
+// the data structure that represents the range of change groups we've selected for showing diffs.
+type ChangeGroupSelection = {
+  /** The older (causally) change group in the selection */
+  from: ChangeGroup["id"];
+
+  /** The newer (causally) change group in the selection */
+  to: ChangeGroup["id"];
+};
+
 export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
   const [doc] = useDocument<MarkdownDoc>(docUrl);
-  const [selectedChangeId, setSelectedChangeId] = React.useState<
-    string | null
-  >();
   const [showInlineDiff, setShowInlineDiff] = useState<boolean>(false);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
 
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ActorAndMaxSize");
 
+  // The grouping function returns change groups starting from the latest change.
   const groupedChanges = useMemo(() => {
     if (!doc) return [];
     return getGroupedChanges(doc, activeGroupingAlgorithm);
   }, [doc, activeGroupingAlgorithm]);
 
+  const [changeGroupSelection, setChangeGroupSelection] =
+    useState<ChangeGroupSelection | null>();
+
+  let selectedChangeGroups: ChangeGroup[] = [];
+  if (changeGroupSelection) {
+    const fromIndex = groupedChanges.findIndex(
+      (changeGroup) => changeGroup.id === changeGroupSelection.from
+    );
+    const toIndex = groupedChanges.findIndex(
+      (changeGroup) => changeGroup.id === changeGroupSelection.to
+    );
+    selectedChangeGroups = groupedChanges.slice(fromIndex, toIndex + 1);
+  }
+
+  console.log({ selectedChangeGroups, changeGroupSelection, groupedChanges });
+
   // TODO: is the heads for a group always the id of the group?
-  // for now it works because the id of the group is the last change in the group
-  const docHeads = selectedChangeId ? [selectedChangeId] : undefined;
+  // for now it works because the id of the group is the last change in the group...
+  const docHeads = changeGroupSelection ? [changeGroupSelection.to] : undefined;
 
   const headsForDisplay =
     docHeads?.map((head) => <Hash key={head} hash={head} />) || "latest";
 
-  const selectedChangeIndex = groupedChanges.findIndex(
-    (changeGroup) => changeGroup.id === selectedChangeId
-  );
-  const diffHeads =
-    selectedChangeIndex < groupedChanges.length - 1
-      ? [groupedChanges[selectedChangeIndex + 1].id]
-      : [];
+  // const diffHeads =
+  //   selectedChangeIndex < groupedChanges.length - 1
+  //     ? [groupedChanges[selectedChangeIndex + 1].id]
+  //     : [];
+
+  let diffHeads = docHeads;
+  if (changeGroupSelection) {
+    const indexOfDiffFrom = groupedChanges
+      .map((c) => c.id)
+      .indexOf(changeGroupSelection.from);
+    if (indexOfDiffFrom > 0) {
+      diffHeads = [groupedChanges[indexOfDiffFrom - 1].id];
+    } else {
+      diffHeads = [];
+    }
+  }
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -122,7 +154,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 variant="outline"
                 size="sm"
                 className="text-xs h-6"
-                onClick={() => setSelectedChangeId(null)}
+                onClick={() => setChangeGroupSelection(null)}
               >
                 <TimerResetIcon size={12} className="mr-1 inline" />
                 Reset view to latest
@@ -132,64 +164,126 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
 
         <div className="overflow-y-auto flex-grow border-t border-gray-400 mt-4">
-          {groupedChanges.map((changeGroup) => (
-            <div
-              className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
-                selectedChangeId === changeGroup.id
-                  ? "bg-blue-100"
-                  : groupedChanges.map((c) => c.id).indexOf(selectedChangeId) >
-                    groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
-                  ? "opacity-50"
-                  : ""
-              }`}
-              data-id={changeGroup.id}
-              key={changeGroup.id}
-              onClick={() => setSelectedChangeId(changeGroup.id)}
-            >
-              <div className="flex justify-between text-xs">
-                <div>
-                  <span className="text-green-600 font-bold mr-2">
-                    +{changeGroup.charsAdded}
-                  </span>
-                  <span className="text-red-600 font-bold">
-                    -{changeGroup.charsDeleted}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-600 text-right font-semibold">
-                  <Hash key={changeGroup.id} hash={changeGroup.id} />
-                </div>
-              </div>
-              <div className="text-xs text-gray-600 font-semibold">
-                Actor
-                {changeGroup.actorIds.map((id) => (
-                  <Hash key={id} hash={id} />
-                ))}
-              </div>
-              {showInlineDiff && (
-                <div className="mt-4 ">
-                  {changeGroup.diff.map((patch) => (
-                    <div className="mb-1">
-                      {patch.path[0] === "content" &&
-                        patch.action === "splice" && (
-                          <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
-                            {truncate(patch.value, {
-                              length: 100,
-                            })}
-                          </div>
-                        )}
+          {/* It's easiest to think of the change group in causal order, and we just reverse it on display
+          in order to get most recent stuff at the top. */}
+          {groupedChanges
+            .slice()
+            .reverse()
+            .map((changeGroup) => (
+              <div
+                className={`group px-1 py-2 w-full overflow-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
+                  selectedChangeGroups.includes(changeGroup)
+                    ? "bg-blue-100"
+                    : changeGroupSelection &&
+                      groupedChanges
+                        .map((c) => c.id)
+                        .indexOf(changeGroupSelection.to) <
+                        groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+                    ? "opacity-50"
+                    : ""
+                }`}
+                data-id={changeGroup.id}
+                key={changeGroup.id}
+                onClick={(e) => {
+                  // For normal clicks without the shift key, we just select one change.
+                  if (!e.shiftKey) {
+                    setChangeGroupSelection({
+                      from: changeGroup.id,
+                      to: changeGroup.id,
+                    });
+                    return;
+                  }
 
-                      {patch.path[0] === "content" &&
-                        patch.action === "del" && (
-                          <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
-                            Deleted {patch.length ?? 1} characters
-                          </div>
-                        )}
-                    </div>
+                  // If the shift key is pressed, we create a multi-change selection.
+                  // If there's no existing change group selected, just use the latest as the starting point for the selection.
+                  if (!changeGroupSelection) {
+                    setChangeGroupSelection({
+                      from: changeGroup.id,
+                      to: groupedChanges[groupedChanges.length - 1].id,
+                    });
+                    return;
+                  }
+
+                  // Extend the existing range selection appropriately
+
+                  const indexOfSelectionFrom = groupedChanges.findIndex(
+                    (c) => c.id === changeGroupSelection.from
+                  );
+
+                  const indexOfSelectionTo = groupedChanges.findIndex(
+                    (c) => c.id === changeGroupSelection.to
+                  );
+
+                  const indexOfClickedChangeGroup = groupedChanges.findIndex(
+                    (c) => c.id === changeGroup.id
+                  );
+
+                  if (indexOfClickedChangeGroup < indexOfSelectionFrom) {
+                    setChangeGroupSelection({
+                      from: changeGroup.id,
+                      to: changeGroupSelection.to,
+                    });
+                    return;
+                  }
+
+                  if (indexOfClickedChangeGroup > indexOfSelectionTo) {
+                    setChangeGroupSelection({
+                      from: changeGroupSelection.from,
+                      to: changeGroup.id,
+                    });
+                    return;
+                  }
+
+                  setChangeGroupSelection({
+                    from: changeGroupSelection.from,
+                    to: changeGroup.id,
+                  });
+                }}
+              >
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <span className="text-green-600 font-bold mr-2">
+                      +{changeGroup.charsAdded}
+                    </span>
+                    <span className="text-red-600 font-bold">
+                      -{changeGroup.charsDeleted}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 text-right font-semibold">
+                    <Hash key={changeGroup.id} hash={changeGroup.id} />
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 font-semibold">
+                  Actor
+                  {changeGroup.actorIds.map((id) => (
+                    <Hash key={id} hash={id} />
                   ))}
                 </div>
-              )}
-            </div>
-          ))}
+                {showInlineDiff && (
+                  <div className="mt-4 ">
+                    {changeGroup.diff.map((patch) => (
+                      <div className="mb-1">
+                        {patch.path[0] === "content" &&
+                          patch.action === "splice" && (
+                            <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
+                              {truncate(patch.value, {
+                                length: 100,
+                              })}
+                            </div>
+                          )}
+
+                        {patch.path[0] === "content" &&
+                          patch.action === "del" && (
+                            <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
+                              Deleted {patch.length ?? 1} characters
+                            </div>
+                          )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
@@ -217,7 +311,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 variant="outline"
                 size="sm"
                 className="text-xs h-6 mt-[-4px]"
-                onClick={() => setSelectedChangeId(null)}
+                onClick={() => setChangeGroupSelection(null)}
               >
                 <TimerResetIcon size={12} className="mr-1 inline" />
                 Reset view to latest

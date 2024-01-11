@@ -101,8 +101,5 @@ export const getGroupedChanges = (
     pushCurrentGroup();
   }
 
-  // we want the latest group at the top
-  changeGroups.reverse();
-
   return changeGroups;
 };
