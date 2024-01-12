@@ -16,6 +16,7 @@
 
     "paths": {
       "@/*": ["./src/*"]
+
     },
 
     /* Linting */
@@ -25,5 +26,6 @@
     // "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "test"],
+  "exclude": ["src/vendor"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
