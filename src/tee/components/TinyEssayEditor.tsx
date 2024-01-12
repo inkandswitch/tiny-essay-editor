@@ -1,6 +1,6 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
+import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
@@ -20,11 +20,13 @@ export const TinyEssayEditor = ({
   docHeads,
   diffHeads,
   readOnly,
+  diffStyle,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
   diffHeads?: Heads;
   readOnly?: boolean;
+  diffStyle?: DiffStyle;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
@@ -65,6 +67,7 @@ export const TinyEssayEditor = ({
             readOnly={readOnly ?? false}
             docHeads={docHeads}
             diffHeads={diffHeads}
+            diffStyle={diffStyle ?? "normal"}
           />
         </div>
         <div className="w-0">

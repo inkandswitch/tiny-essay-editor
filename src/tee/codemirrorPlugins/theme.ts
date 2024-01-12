@@ -53,6 +53,12 @@ const ESSAY_STYLES = {
     borderBottom: "rgb(0 202 0 / 50%) 2px solid",
     borderRadius: "3px",
   },
+  ".cm-patch-pencil": {
+    borderBottom: "rgb(0 0 0 / 10%) 2px solid",
+    color: "rgb(0 0 0 / 60%)",
+    fontFamily: "'Schoolbell', cursive",
+    fontSize: "1.1em",
+  },
 };
 
 export const essayTheme = EditorView.theme(ESSAY_STYLES);

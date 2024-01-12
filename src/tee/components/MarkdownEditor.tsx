@@ -51,6 +51,8 @@ export type TextSelection = {
   yCoord: number;
 };
 
+export type DiffStyle = "normal" | "pencil";
+
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
@@ -61,6 +63,7 @@ export type EditorProps = {
   readOnly?: boolean;
   docHeads?: A.Heads;
   diffHeads?: A.Heads;
+  diffStyle: DiffStyle;
 };
 
 export function MarkdownEditor({
@@ -73,6 +76,7 @@ export function MarkdownEditor({
   readOnly,
   docHeads,
   diffHeads,
+  diffStyle,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -161,7 +165,7 @@ export function MarkdownEditor({
         threadsField,
         threadDecorations,
         patchesField,
-        patchDecorations,
+        patchDecorations(diffStyle ?? "normal"),
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
@@ -321,15 +325,15 @@ class DeletionMarker extends WidgetType {
   }
 }
 
+const hiddenDecoration = Decoration.mark({ class: "cm-patch-pencil" });
 const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
 const deleteDecoration = Decoration.widget({
   widget: new DeletionMarker(),
   side: 1,
 });
 
-const patchDecorations = EditorView.decorations.compute(
-  [patchesField],
-  (state) => {
+const patchDecorations = (diffStyle: DiffStyle) =>
+  EditorView.decorations.compute([patchesField], (state) => {
     const patches = state
       .field(patchesField)
       .filter((patch) => patch.path[0] === "content");
@@ -339,7 +343,9 @@ const patchDecorations = EditorView.decorations.compute(
         case "splice": {
           const from = patch.path[1];
           const length = patch.value.length;
-          return [spliceDecoration.range(from, from + length)];
+          const decoration =
+            diffStyle === "pencil" ? hiddenDecoration : spliceDecoration;
+          return [decoration.range(from, from + length)];
         }
         case "del": {
           if (patch.path.length < 2) {
@@ -354,5 +360,4 @@ const patchDecorations = EditorView.decorations.compute(
     });
 
     return Decoration.set(decorations);
-  }
-);
+  });
