@@ -6,7 +6,8 @@
   "module": "index.js",
   "scripts": {
     "dev": "vite --force --port 5173",
-    "build": "tsc && vite build",
+    "build": "yarn build:vendored-automerge-repo && tsc && vite build",
+    "build:vendored-automerge-repo": "cd src/vendor/vendored-automerge-repo && git checkout version-control-project && pnpm install && pnpm build && cd -",
     "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
     "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
     "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
@@ -16,14 +17,14 @@
     "preview": "vite preview",
     "test": "vitest"
   },
-  "dependencies": {  
+  "dependencies": {
     "@automerge/automerge": "^2.1.9",
+    "@automerge/automerge-codemirror": "^0.0.7",
     "@automerge/automerge-repo": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo",
     "@automerge/automerge-repo-network-broadcastchannel": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-broadcastchannel",
     "@automerge/automerge-repo-network-websocket": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-websocket",
     "@automerge/automerge-repo-react-hooks": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks",
     "@automerge/automerge-repo-storage-indexeddb": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-storage-indexeddb",
-    "@automerge/automerge-codemirror": "^0.0.7",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -76,15 +77,16 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "jsdom": "^22.1.0",
+    "pnpm": "^8.14.1",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.3",
     "tsc-alias": "^1.8.8",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vitest": "^0.34.6"
-  }, 
+  },
   "resolutions": {
-    "**/@automerge/automerge-repo": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo",  
+    "**/@automerge/automerge-repo": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo",
     "**/@automerge/automerge-repo-network-broadcastchannel": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-broadcastchannel",
     "**/@automerge/automerge-repo-network-websocket": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-network-websocket",
     "**/@automerge/automerge-repo-react-hooks": "link:./src/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks",
