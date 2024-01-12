@@ -143,7 +143,7 @@ const ACCOUNT_URL_STORAGE_KEY = "tinyEssayEditor:accountUrl";
 
 let CURRENT_ACCOUNT: Promise<Account>;
 
-async function getAccount(repo: Repo) {
+export async function getAccount(repo: Repo) {
   if (!repo.storageSubsystem) {
     throw new Error("cannot create account without storage");
   }

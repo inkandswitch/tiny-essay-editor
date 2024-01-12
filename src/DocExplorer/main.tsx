@@ -1,4 +1,4 @@
-import { Repo } from "@automerge/automerge-repo";
+import { Repo, AutomergeUrl } from "@automerge/automerge-repo";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 
@@ -7,6 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import "./index.css";
 import { mount } from "./mount.js";
+import { getAccount } from "./account.js";
 
 const repo = new Repo({
   network: [
@@ -14,6 +15,17 @@ const repo = new Repo({
     new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
   ],
   storage: new IndexedDBStorageAdapter(),
+  changeMetadata: () => ({ author, time: Date.now() }),
+});
+
+let author: AutomergeUrl;
+
+getAccount(repo).then((account) => {
+  author = account.contactHandle.url;
+
+  account.on("change", () => {
+    author = account.contactHandle.url;
+  });
 });
 
 // @ts-expect-error - adding property to window
