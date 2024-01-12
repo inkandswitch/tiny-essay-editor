@@ -34,11 +34,11 @@ git submodule init
 git submodule update --init --remote
 ```
 
-Check out the `version-control-project` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
+Check out the `chronicle` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
 
 ```
 cd src/vendor/vendored-automerge-repo
-git checkout version-control-project
+git checkout chronicle
 ```
 
 Install and build automerge-repo
