@@ -23,9 +23,7 @@ import {
 import { truncate } from "lodash";
 import {
   CopyIcon,
-  DeleteIcon,
   FileDiffIcon,
-  PlusIcon,
   TagIcon,
   TimerResetIcon,
   TrashIcon,

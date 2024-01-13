@@ -28,7 +28,7 @@ type GroupingAlgorithm = (
   numericParameter: number
 ) => boolean;
 
-export const GROUPINGS: { [key: string]: GroupingAlgorithm } = {
+export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
   ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
       currentGroup.actorIds[0] === newChange.actor &&
