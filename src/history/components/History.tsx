@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -242,13 +243,22 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   <div className="text-xs mr-2 w-36">Batch size</div>
                   <Slider
                     defaultValue={[groupingNumericParameter]}
+                    min={1}
                     max={changeCount}
                     step={1}
                     onValueChange={(value) =>
                       setGroupingNumericParameter(value[0])
                     }
                   />
-                  {groupingNumericParameter}
+                  <input
+                    type="number"
+                    min={1}
+                    max={changeCount}
+                    value={groupingNumericParameter}
+                    onChange={(e) =>
+                      setGroupingNumericParameter(parseInt(e.target.value))
+                    }
+                  />
                 </div>
               )}
               {GROUPINGS_THAT_TAKE_GAP_TIME.includes(
@@ -259,12 +269,22 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   <Slider
                     defaultValue={[groupingNumericParameter]}
                     max={300}
+                    min={1}
                     step={1}
                     onValueChange={(value) =>
                       setGroupingNumericParameter(value[0])
                     }
+                    className="w-48"
                   />
-                  {groupingNumericParameter}
+                  <input
+                    type="number"
+                    min={1}
+                    max={300}
+                    value={groupingNumericParameter}
+                    onChange={(e) =>
+                      setGroupingNumericParameter(parseInt(e.target.value))
+                    }
+                  />
                 </div>
               )}
             </div>
@@ -365,8 +385,11 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     handleClickOnChangeGroup(e, changeGroup);
                   }}
                 >
-                  <div className="flex justify-between text-xs">
+                  <div className="flex justify-between text-xs mb-1">
                     <div>
+                      <div className="text-gray-500 font-bold uppercase">
+                        Edits
+                      </div>
                       <span className="text-green-600 font-bold mr-2">
                         +{changeGroup.charsAdded}
                       </span>
@@ -378,12 +401,28 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       <Hash key={changeGroup.id} hash={changeGroup.id} />
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 font-semibold">
-                    Actors:
+                  <div className="text-xs text-gray-600 font-semibold mb-1">
+                    <div className="text-gray-500 font-bold uppercase">
+                      Actors
+                    </div>
                     {changeGroup.actorIds.map((id) => (
                       <Hash key={id} hash={id} />
                     ))}
                   </div>
+                  {changeGroup.authorUrls.length > 0 && (
+                    <div className="text-xs text-gray-600 font-semibold mb-1">
+                      <div className="text-gray-500 font-bold uppercase">
+                        Authors
+                      </div>
+                      {changeGroup.authorUrls.map((contactUrl) => (
+                        <ContactAvatar
+                          url={contactUrl}
+                          showName={true}
+                          size="sm"
+                        />
+                      ))}
+                    </div>
+                  )}
                   {showDiffSummariesInLog && (
                     <div className="mt-4 ">
                       {changeGroup.diff.map((patch) => (
@@ -409,7 +448,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   )}
                   {changeGroup.time && (
                     <div className="text-gray-500">
-                      {" "}
+                      <div className="text-gray-500 font-bold uppercase">
+                        Last edited
+                      </div>
+
                       {getRelativeTimeString(changeGroup.time)}
                     </div>
                   )}

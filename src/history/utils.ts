@@ -1,4 +1,5 @@
 import { MarkdownDoc, Tag } from "@/tee/schema";
+import { AutomergeUrl } from "@/vendor/vendored-automerge-repo/packages/automerge-repo/dist";
 import {
   Doc,
   diff,
@@ -13,6 +14,7 @@ export type ChangeGroup = {
   id: string;
   changes: DecodedChange[];
   actorIds: ActorId[];
+  authorUrls: AutomergeUrl[];
   charsAdded: number;
   charsDeleted: number;
   diff: Patch[];
@@ -27,18 +29,17 @@ type GroupingAlgorithm = (
 ) => boolean;
 
 export const GROUPINGS: { [key: string]: GroupingAlgorithm } = {
-  ByActorAndNumChanges: (
-    currentGroup: ChangeGroup,
-    newChange: DecodedChange,
-    batchSize: number
-  ) => {
+  ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
       currentGroup.actorIds[0] === newChange.actor &&
       currentGroup.changes.length < batchSize
     );
   },
-  ByActor: (currentGroup: ChangeGroup, newChange: DecodedChange) => {
+  ByActor: (currentGroup, newChange) => {
     return currentGroup.actorIds[0] === newChange.actor;
+  },
+  ByAuthor: (currentGroup, newChange) => {
+    return currentGroup.authorUrls.includes(newChange.metadata.author);
   },
   ByNumberOfChanges: (
     currentGroup: ChangeGroup,
@@ -118,6 +119,7 @@ export const getGroupedChanges = (
   for (let i = 0; i < changes.length; i++) {
     const change = changes[i];
     let decodedChange = decodeChange(change);
+    decodedChange.metadata = {};
 
     try {
       const metadata = JSON.parse(decodedChange.message);
@@ -143,6 +145,12 @@ export const getGroupedChanges = (
       }
       if (!currentGroup.actorIds.includes(decodedChange.actor)) {
         currentGroup.actorIds.push(decodedChange.actor);
+      }
+      if (
+        decodedChange.metadata.author &&
+        !currentGroup.authorUrls.includes(decodedChange.metadata.author)
+      ) {
+        currentGroup.authorUrls.push(decodedChange.metadata.author);
       }
 
       // If this change is tagged, then we should end the current group.
@@ -176,6 +184,9 @@ export const getGroupedChanges = (
         diff: [],
         tags: [],
         time: decodedChange.time ?? undefined,
+        authorUrls: decodedChange.metadata.author
+          ? [decodedChange.metadata.author]
+          : [],
       };
     }
   }
