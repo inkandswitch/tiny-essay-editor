@@ -39,7 +39,10 @@ export const GROUPINGS: { [key: string]: GroupingAlgorithm } = {
     return currentGroup.actorIds[0] === newChange.actor;
   },
   ByAuthor: (currentGroup, newChange) => {
-    return currentGroup.authorUrls.includes(newChange.metadata.author);
+    if (!newChange.metadata?.author) {
+      return true;
+    }
+    return currentGroup.authorUrls.includes(newChange.metadata?.author);
   },
   ByNumberOfChanges: (
     currentGroup: ChangeGroup,
@@ -63,7 +66,12 @@ export const GROUPINGS: { [key: string]: GroupingAlgorithm } = {
   // "batch size" param here means "max gap allowed, in ms"
   //
   ByEditTime: (currentGroup, newChange, maxGapInSeconds) => {
-    if (!newChange.time || !currentGroup.time) {
+    if (
+      newChange.time === undefined ||
+      newChange.time === 0 ||
+      currentGroup.time === undefined ||
+      currentGroup.time === 0
+    ) {
       return true;
     }
 
@@ -140,14 +148,14 @@ export const getGroupedChanges = (
       }, 0);
 
       currentGroup.id = decodedChange.hash;
-      if (decodedChange.time) {
+      if (decodedChange.time && decodedChange.time > 0) {
         currentGroup.time = decodedChange.time;
       }
       if (!currentGroup.actorIds.includes(decodedChange.actor)) {
         currentGroup.actorIds.push(decodedChange.actor);
       }
       if (
-        decodedChange.metadata.author &&
+        decodedChange.metadata?.author &&
         !currentGroup.authorUrls.includes(decodedChange.metadata.author)
       ) {
         currentGroup.authorUrls.push(decodedChange.metadata.author);
@@ -183,8 +191,11 @@ export const getGroupedChanges = (
         }, 0),
         diff: [],
         tags: [],
-        time: decodedChange.time ?? undefined,
-        authorUrls: decodedChange.metadata.author
+        time:
+          decodedChange.time && decodedChange.time > 0
+            ? decodedChange.time
+            : undefined,
+        authorUrls: decodedChange.metadata?.author
           ? [decodedChange.metadata.author]
           : [],
       };
