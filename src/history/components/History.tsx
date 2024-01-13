@@ -4,7 +4,8 @@ import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ChangeGroup,
-  GROUPINGS_THAT_NEED_BATCH_SIZE,
+  GROUPINGS_THAT_TAKE_BATCH_SIZE,
+  GROUPINGS_THAT_TAKE_GAP_TIME,
   getGroupedChanges,
 } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
@@ -32,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
+import { getRelativeTimeString } from "@/DocExplorer/utils";
 
 const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -93,23 +95,24 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
-  const [groupingBatchSize, setGroupingBatchSize] = useState<number>(1000);
+  const [groupingNumericParameter, setGroupingNumericParameter] =
+    useState<number>(1000);
 
   // The grouping function returns change groups starting from the latest change.
   const { changeGroups: groupedChanges, changeCount } = useMemo(() => {
     if (!doc) return { changeGroups: [], changeCount: 0 };
     return getGroupedChanges(doc, {
       algorithm: activeGroupingAlgorithm,
-      batchSize: groupingBatchSize,
+      numericParameter: groupingNumericParameter,
       tags: doc.tags ?? [],
     });
-  }, [doc, activeGroupingAlgorithm, groupingBatchSize]);
+  }, [doc, activeGroupingAlgorithm, groupingNumericParameter]);
 
   // When the algorithm or batch size changes, the selection can get weird.
   // just reset whenever either of those changes.
   useEffect(() => {
     setChangeGroupSelection(null);
-  }, [activeGroupingAlgorithm, groupingBatchSize]);
+  }, [activeGroupingAlgorithm, groupingNumericParameter]);
 
   const [changeGroupSelection, setChangeGroupSelection] =
     useState<ChangeGroupSelection | null>();
@@ -232,18 +235,36 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             </div>
 
             <div className="h-4 mb-2">
-              {GROUPINGS_THAT_NEED_BATCH_SIZE.includes(
+              {GROUPINGS_THAT_TAKE_BATCH_SIZE.includes(
                 activeGroupingAlgorithm
               ) && (
                 <div className="flex">
                   <div className="text-xs mr-2 w-36">Batch size</div>
                   <Slider
-                    defaultValue={[groupingBatchSize]}
+                    defaultValue={[groupingNumericParameter]}
                     max={changeCount}
                     step={1}
-                    onValueChange={(value) => setGroupingBatchSize(value[0])}
+                    onValueChange={(value) =>
+                      setGroupingNumericParameter(value[0])
+                    }
                   />
-                  {groupingBatchSize}
+                  {groupingNumericParameter}
+                </div>
+              )}
+              {GROUPINGS_THAT_TAKE_GAP_TIME.includes(
+                activeGroupingAlgorithm
+              ) && (
+                <div className="flex">
+                  <div className="text-xs mr-2 w-36">Max gap (s)</div>
+                  <Slider
+                    defaultValue={[groupingNumericParameter]}
+                    max={300}
+                    step={1}
+                    onValueChange={(value) =>
+                      setGroupingNumericParameter(value[0])
+                    }
+                  />
+                  {groupingNumericParameter}
                 </div>
               )}
             </div>
@@ -384,6 +405,12 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                             )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {changeGroup.time && (
+                    <div className="text-gray-500">
+                      {" "}
+                      {getRelativeTimeString(changeGroup.time)}
                     </div>
                   )}
                 </div>

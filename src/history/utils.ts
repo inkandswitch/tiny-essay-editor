@@ -17,9 +17,16 @@ export type ChangeGroup = {
   charsDeleted: number;
   diff: Patch[];
   tags: Tag[];
+  time?: number;
 };
 
-export const GROUPINGS = {
+type GroupingAlgorithm = (
+  currentGroup: ChangeGroup,
+  newChange: DecodedChange,
+  numericParameter: number
+) => boolean;
+
+export const GROUPINGS: { [key: string]: GroupingAlgorithm } = {
   ByActorAndNumChanges: (
     currentGroup: ChangeGroup,
     newChange: DecodedChange,
@@ -52,16 +59,30 @@ export const GROUPINGS = {
   // so we only end up splitting when there's a manual tag
   ByTagsOnly: () => true,
 
+  // "batch size" param here means "max gap allowed, in ms"
+  //
+  ByEditTime: (currentGroup, newChange, maxGapInSeconds) => {
+    if (!newChange.time || !currentGroup.time) {
+      return true;
+    }
+
+    return newChange.time < currentGroup.time + maxGapInSeconds * 1000;
+  },
+
   // Other groupings to try:
   // - time based sessions
   // - use a manual grouping persisted somewhere?
   // - nonlinear: group by actor, out of this sorted order of changes
 };
 
-export const GROUPINGS_THAT_NEED_BATCH_SIZE: Array<keyof typeof GROUPINGS> = [
+export const GROUPINGS_THAT_TAKE_BATCH_SIZE: Array<keyof typeof GROUPINGS> = [
   "ByActorAndNumChanges",
   "ByNumberOfChanges",
   "ByCharCount",
+];
+
+export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
+  "ByEditTime",
 ];
 
 /* returns all the changes from this doc, grouped in a simple way for now. */
@@ -69,15 +90,16 @@ export const getGroupedChanges = (
   doc: Doc<MarkdownDoc>,
   {
     algorithm,
-    batchSize,
+    numericParameter,
     tags,
   }: {
     algorithm: keyof typeof GROUPINGS;
-    batchSize: number;
+    numericParameter: number;
     tags: Tag[];
   } = {
     algorithm: "ByActorAndNumChanges",
-    batchSize: 100,
+    /** Some algorithms have a numeric parameter like batch size that the user can control */
+    numericParameter: 100,
     tags: [],
   }
 ) => {
@@ -95,12 +117,17 @@ export const getGroupedChanges = (
 
   for (let i = 0; i < changes.length; i++) {
     const change = changes[i];
-    const decodedChange = decodeChange(change);
+    let decodedChange = decodeChange(change);
+
+    try {
+      const metadata = JSON.parse(decodedChange.message);
+      decodedChange = { ...decodedChange, metadata };
+    } catch (e) {}
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
     if (
       currentGroup &&
-      GROUPINGS[algorithm](currentGroup, decodedChange, batchSize)
+      GROUPINGS[algorithm](currentGroup, decodedChange, numericParameter)
     ) {
       currentGroup.changes.push(decodedChange);
       currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
@@ -109,7 +136,11 @@ export const getGroupedChanges = (
       currentGroup.charsDeleted += decodedChange.ops.reduce((total, op) => {
         return op.action === "del" ? total + 1 : total;
       }, 0);
+
       currentGroup.id = decodedChange.hash;
+      if (decodedChange.time) {
+        currentGroup.time = decodedChange.time;
+      }
       if (!currentGroup.actorIds.includes(decodedChange.actor)) {
         currentGroup.actorIds.push(decodedChange.actor);
       }
@@ -144,6 +175,7 @@ export const getGroupedChanges = (
         }, 0),
         diff: [],
         tags: [],
+        time: decodedChange.time ?? undefined,
       };
     }
   }
