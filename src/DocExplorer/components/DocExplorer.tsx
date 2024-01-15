@@ -22,6 +22,7 @@ import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { HistoryPlayground } from "@/history/components/History";
 import { DraftsPlayground } from "@/drafts/Drafts";
+import { SpatialHistoryPlayground } from "@/spatial/Spatial";
 
 export type Tool = {
   id: string;
@@ -41,6 +42,11 @@ const TOOLS = [
     component: HistoryPlayground,
   },
   {
+    id: "spatial",
+    name: "Spatial",
+    component: SpatialHistoryPlayground,
+  },
+  {
     id: "drafts",
     name: "Drafts",
     component: DraftsPlayground,
@@ -52,7 +58,7 @@ export const DocExplorer: React.FC = () => {
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const [activeTool, setActiveTool] = useState(TOOLS[0]);
+  const [activeTool, setActiveTool] = useState(TOOLS[1]);
 
   const ToolComponent = activeTool.component;
 
