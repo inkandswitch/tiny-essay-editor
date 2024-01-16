@@ -40,6 +40,7 @@ import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { CircularPacking, sampleData } from "./CircularPacking";
 
 export const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -91,6 +92,7 @@ const changeGroupFields = [
   "diff",
   "time",
   "editStats",
+  "blobs",
 ] as const;
 
 type ChangeGroupFields = (typeof changeGroupFields)[number];
@@ -112,6 +114,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       authors: true,
       time: true,
       diff: false,
+      blobs: true,
     });
 
   // The grouping algorithm to use for the change log (because this is a playground!)
@@ -522,6 +525,34 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       <span className="text-red-600 font-bold">
                         -{changeGroup.charsDeleted}
                       </span>
+                    </div>
+                  )}
+                  {visibleFieldsOnChangeGroup.blobs && (
+                    <div className="text-xs text-gray-600 font-semibold mb-2">
+                      <div className="text-gray-500 font-bold uppercase">
+                        Blobs
+                      </div>
+                      <CircularPacking
+                        data={{
+                          type: "node",
+                          name: "root",
+                          value:
+                            changeGroup.charsAdded + changeGroup.charsDeleted,
+                          children: changeGroup.diff.map((patch) => ({
+                            type: "leaf",
+                            name: "",
+                            value:
+                              patch.action === "splice"
+                                ? patch.value.length
+                                : patch.action === "del"
+                                ? patch.length
+                                : 0,
+                            color: patch.action === "splice" ? "green" : "red",
+                          })),
+                        }}
+                        width={250}
+                        height={100}
+                      />
                     </div>
                   )}
                 </div>
