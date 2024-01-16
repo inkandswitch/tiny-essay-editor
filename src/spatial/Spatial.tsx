@@ -2,7 +2,7 @@ import { MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
 import { EditorView } from "@codemirror/view";
 
@@ -11,6 +11,8 @@ interface Deletion {
   to: number;
   previousText: string;
 }
+
+const MIN_DELETE_SIZE = 10;
 
 interface DeletionWithPosition extends Deletion {
   y: number;
@@ -25,6 +27,25 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [selection, setSelection] = useState<TextSelection>();
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+
+  const [editorWidth, setEditorWidth] = useState<number>();
+
+  // update editor width
+  useEffect(() => {
+    if (!editorRef) {
+      return;
+    }
+
+    setEditorWidth(editorRef.current.getBoundingClientRect().width);
+
+    const handleResize = () => {
+      setEditorWidth(editorRef.current.getBoundingClientRect().width);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, [editorRef.current]);
 
   let deletions: Deletion[] = useMemo(() => {
     if (!doc) {
@@ -93,6 +114,10 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           case "del": {
             const prevContent = A.view(doc, prevHeads).content;
 
+            if (!patch.length || patch.length < MIN_DELETE_SIZE) {
+              break;
+            }
+
             deletions.push({
               from: index,
               to: index,
@@ -128,7 +153,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     });
   }, [deletions, editorView]);
 
-  console.log(deletions);
+  console.log(deletionsWithPosition);
 
   return (
     <div className="flex overflow-y-hidden h-full ">
@@ -152,16 +177,23 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               />
             </div>
             <div className="relative">
-              {deletionsWithPosition.map(({ previousText, y, height }) => {
-                return (
-                  <div
-                    className="absolute bg-white border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4"
-                    style={{ top: `${y}px` }}
-                  >
-                    {previousText}
-                  </div>
-                );
-              })}
+              {deletionsWithPosition.map(
+                ({ previousText, y, height }, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="absolute bg-white border border-gray-200 box-border rounded-md px-8 py-4"
+                      style={{
+                        top: `${y}px`,
+                        width: `${editorWidth}px`,
+                        left: 0,
+                      }}
+                    >
+                      {previousText}
+                    </div>
+                  );
+                }
+              )}
             </div>
           </div>
         </div>
