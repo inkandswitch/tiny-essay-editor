@@ -3,8 +3,13 @@ import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
+import {
+  DebugHighlight,
+  MarkdownEditor,
+  TextSelection,
+} from "@/tee/components/MarkdownEditor";
 import { EditorView } from "@codemirror/view";
+import { c } from "vitest/dist/reporters-5f784f42.js";
 
 interface Deletion {
   from: number;
@@ -114,7 +119,51 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           case "del": {
             const prevContent = A.view(doc, prevHeads).content;
 
-            if (!patch.length || patch.length < MIN_DELETE_SIZE) {
+            if (!patch.length) {
+              break;
+            }
+
+            const from = index;
+            const length = patch.length;
+            const to = index + length;
+
+            // update previous deletions
+            deletions = deletions.flatMap((deletion) => {
+              // for now delete deletions if another delete is crossing
+              if (
+                (from < deletion.from && to > deletion.from) ||
+                (from < deletion.to && to > deletion.to)
+              ) {
+                return [];
+              }
+
+              // move if delete happened before
+              if (to < deletion.from) {
+                return [
+                  {
+                    ...deletion,
+                    from: deletion.from - length,
+                    to: deletion.to - length,
+                  },
+                ];
+              }
+
+              // shrink if deletion happened inside
+              if (from >= deletion.from && from <= deletion.to) {
+                return [
+                  {
+                    ...deletion,
+                    to: deletion.to - length,
+                  },
+                ];
+              }
+
+              // otherwise deletion is not affected
+              return [deletion];
+            });
+
+            // only track deletes that are bigger than a min size
+            if (patch.length < MIN_DELETE_SIZE) {
               break;
             }
 
@@ -142,7 +191,14 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     const topOfEditor = editorView.scrollDOM.getBoundingClientRect()?.top ?? 0;
 
     return deletions.map((deletion) => {
-      const relativeY = editorView.coordsAtPos(deletion.from).top;
+      let relativeY;
+
+      try {
+        relativeY = editorView.coordsAtPos(deletion.from).top;
+      } catch (err) {
+        debugger;
+      }
+
       const height = editorView.coordsAtPos(deletion.to).bottom - relativeY;
 
       return {
@@ -154,6 +210,12 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   }, [deletions, editorView]);
 
   console.log(deletionsWithPosition);
+
+  const debugHightlights: DebugHighlight[] = deletions.map(({ from, to }) => ({
+    from,
+    to,
+    class: "bg-red-500",
+  }));
 
   return (
     <div className="flex overflow-y-hidden h-full ">
@@ -174,6 +236,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 setActiveThreadId={() => {}}
                 readOnly={false}
                 diffStyle="normal"
+                debugHighlights={debugHightlights}
               />
             </div>
             <div className="relative">

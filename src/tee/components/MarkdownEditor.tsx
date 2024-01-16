@@ -64,6 +64,7 @@ export type EditorProps = {
   docHeads?: A.Heads;
   diffHeads?: A.Heads;
   diffStyle: DiffStyle;
+  debugHighlights?: DebugHighlight[];
 };
 
 export function MarkdownEditor({
@@ -77,6 +78,7 @@ export function MarkdownEditor({
   docHeads,
   diffHeads,
   diffStyle,
+  debugHighlights,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -95,6 +97,15 @@ export function MarkdownEditor({
     },
     [handle, handle.docSync(), docHeads, diffHeads] // rethink this useCallback caching
   );
+
+  // Propagate debug highlights into codemirror
+  useEffect(() => {
+    console.log("set debug highlights", debugHighlights);
+
+    editorRoot.current?.dispatch({
+      effects: setDebugHighlightsEffect.of(debugHighlights),
+    });
+  }, [debugHighlights, editorRoot.current]);
 
   // Propagate patches into the codemirror
   useEffect(() => {
@@ -171,6 +182,8 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
+        debugHighlightsField,
+        debugHighlightsDecorations,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -361,3 +374,43 @@ const patchDecorations = (diffStyle: DiffStyle) =>
 
     return Decoration.set(decorations);
   });
+
+export interface DebugHighlight {
+  from: number;
+  to: number;
+  class: string;
+}
+
+const setDebugHighlightsEffect = StateEffect.define<DebugHighlight[]>();
+const debugHighlightsField = StateField.define<DebugHighlight[]>({
+  create() {
+    return [];
+  },
+  update(hightlights, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setDebugHighlightsEffect)) {
+        return e.value.sort((a, b) => a.from - b.from);
+      }
+    }
+
+    return hightlights;
+  },
+});
+
+const debugHighlightsDecorations = EditorView.decorations.compute(
+  [debugHighlightsField],
+  (state) => {
+    const highlights = state.field(debugHighlightsField);
+
+    console.log("compute highlights", highlights);
+
+    return Decoration.set(
+      highlights.map((highlight) => {
+        return Decoration.mark({ class: highlight.class }).range(
+          highlight.from,
+          highlight.to + (highlight.to === highlight.from ? 1 : 0)
+        );
+      })
+    );
+  }
+);
