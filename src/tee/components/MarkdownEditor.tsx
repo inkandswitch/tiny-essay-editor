@@ -44,6 +44,7 @@ import {
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { diff } from "@automerge/automerge/next";
 import { StateEffect, StateField } from "@codemirror/state";
+import { reconcileAnnotationType } from "@automerge/automerge-codemirror/dist/plugin";
 
 export type TextSelection = {
   from: number;
@@ -65,6 +66,7 @@ export type EditorProps = {
   diffHeads?: A.Heads;
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
+  onDelete?: (size: number) => void;
 };
 
 export function MarkdownEditor({
@@ -79,6 +81,7 @@ export function MarkdownEditor({
   diffHeads,
   diffStyle,
   debugHighlights,
+  onDelete,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -100,10 +103,8 @@ export function MarkdownEditor({
 
   // Propagate debug highlights into codemirror
   useEffect(() => {
-    console.log("set debug highlights", debugHighlights);
-
     editorRoot.current?.dispatch({
-      effects: setDebugHighlightsEffect.of(debugHighlights),
+      effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
   }, [debugHighlights, editorRoot.current]);
 
@@ -203,6 +204,19 @@ export function MarkdownEditor({
             }
           }
           view.update([transaction]);
+
+          // listen for delete event
+          // ignore transactions created by reconciler
+          if (!transaction.annotation(reconcileAnnotationType)) {
+            transaction.changes.iterChanges(
+              (fromA, toA, fromB, toB, inserted) => {
+                if (fromA !== toA && inserted.length === 0) {
+                  onDelete(toA - fromA);
+                }
+              }
+            );
+          }
+
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
           if (selection) {
@@ -401,8 +415,6 @@ const debugHighlightsDecorations = EditorView.decorations.compute(
   [debugHighlightsField],
   (state) => {
     const highlights = state.field(debugHighlightsField);
-
-    console.log("compute highlights", highlights);
 
     return Decoration.set(
       highlights.map((highlight) => {

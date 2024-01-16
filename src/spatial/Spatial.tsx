@@ -1,15 +1,10 @@
+import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
 import { MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import React, { useState, useRef, useMemo, useEffect } from "react";
-import {
-  DebugHighlight,
-  MarkdownEditor,
-  TextSelection,
-} from "@/tee/components/MarkdownEditor";
 import { EditorView } from "@codemirror/view";
-import { c } from "vitest/dist/reporters-5f784f42.js";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 interface Deletion {
   from: number;
@@ -17,7 +12,7 @@ interface Deletion {
   previousText: string;
 }
 
-const MIN_DELETE_SIZE = 10;
+const MIN_DELETE_SIZE = 1;
 
 interface DeletionWithPosition extends Deletion {
   y: number;
@@ -33,7 +28,33 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
 
+  const [diffHeads, setDiffHeads] = useLocalStorageState<A.Heads>(
+    `${docUrl}.diffHeads`
+  );
+
   const [editorWidth, setEditorWidth] = useState<number>();
+
+  const onDelete = (size) => {
+    if (size < MIN_DELETE_SIZE) {
+      return;
+    }
+
+    if (!diffHeads) {
+      // on delete get's called before the transaction is applied to the document
+      const headsBeforeDelete = A.getHeads(handle.docSync());
+      setDiffHeads(headsBeforeDelete);
+    }
+  };
+
+  const patches: A.Patch[] = useMemo(() => {
+    if (!diffHeads || !doc) {
+      return [];
+    }
+
+    return A.diff(doc, A.getHeads(doc), diffHeads);
+  }, [diffHeads, doc]);
+
+  console.log("patches", patches);
 
   // update editor width
   useEffect(() => {
@@ -51,171 +72,6 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     return () => window.removeEventListener("resize", handleResize);
   }, [editorRef.current]);
-
-  let deletions: Deletion[] = useMemo(() => {
-    if (!doc) {
-      return [];
-    }
-
-    let prevHeads = [];
-    let deletions: Deletion[] = [];
-
-    A.getAllChanges(doc).forEach((change) => {
-      const decodedChange = A.decodeChange(change);
-
-      const patches = A.diff(doc, prevHeads, [decodedChange.hash]);
-
-      for (const patch of patches) {
-        const [key, index] = patch.path;
-
-        // ignore anything that's not a change on content
-        if (key !== "content") {
-          continue;
-        }
-
-        switch (patch.action) {
-          case "splice": {
-            const from = index;
-            const length = patch.value.length;
-            const to = index + length;
-
-            deletions = deletions.flatMap((deletion) => {
-              // for now delete deletions if something is inserted across boundaries
-              if (
-                (from < deletion.from && to > deletion.from) ||
-                (from < deletion.to && to > deletion.to)
-              ) {
-                return [];
-              }
-
-              // move if insertion happened before
-              if (to < deletion.from) {
-                return [
-                  {
-                    ...deletion,
-                    from: deletion.from + length,
-                    to: deletion.to + length,
-                  },
-                ];
-              }
-
-              // expand if insertion happened inside
-              if (from >= deletion.from && from <= deletion.to) {
-                return [
-                  {
-                    ...deletion,
-                    to: deletion.to + length,
-                  },
-                ];
-              }
-
-              // otherwise deletion is not affected
-              return [deletion];
-            });
-
-            break;
-          }
-
-          case "del": {
-            const prevContent = A.view(doc, prevHeads).content;
-
-            if (!patch.length) {
-              break;
-            }
-
-            const from = index;
-            const length = patch.length;
-            const to = index + length;
-
-            // update previous deletions
-            deletions = deletions.flatMap((deletion) => {
-              // for now delete deletions if another delete is crossing
-              if (
-                (from < deletion.from && to > deletion.from) ||
-                (from < deletion.to && to > deletion.to)
-              ) {
-                return [];
-              }
-
-              // move if delete happened before
-              if (to < deletion.from) {
-                return [
-                  {
-                    ...deletion,
-                    from: deletion.from - length,
-                    to: deletion.to - length,
-                  },
-                ];
-              }
-
-              // shrink if deletion happened inside
-              if (from >= deletion.from && from <= deletion.to) {
-                return [
-                  {
-                    ...deletion,
-                    to: deletion.to - length,
-                  },
-                ];
-              }
-
-              // otherwise deletion is not affected
-              return [deletion];
-            });
-
-            // only track deletes that are bigger than a min size
-            if (patch.length < MIN_DELETE_SIZE) {
-              break;
-            }
-
-            deletions.push({
-              from: index,
-              to: index,
-              previousText: prevContent.slice(index, index + patch.length),
-            });
-            break;
-          }
-        }
-      }
-
-      prevHeads = [decodedChange.hash];
-    });
-
-    return deletions;
-  }, [doc]);
-
-  const deletionsWithPosition: DeletionWithPosition[] = useMemo(() => {
-    if (!editorView) {
-      return [];
-    }
-
-    const topOfEditor = editorView.scrollDOM.getBoundingClientRect()?.top ?? 0;
-
-    return deletions.map((deletion) => {
-      let relativeY;
-
-      try {
-        relativeY = editorView.coordsAtPos(deletion.from).top;
-      } catch (err) {
-        debugger;
-      }
-
-      const height = editorView.coordsAtPos(deletion.to).bottom - relativeY;
-
-      return {
-        ...deletion,
-        y: relativeY,
-        height,
-      };
-    });
-  }, [deletions, editorView]);
-
-  console.log(deletionsWithPosition);
-
-  const debugHightlights: DebugHighlight[] = deletions.map(({ from, to }) => ({
-    from,
-    to,
-    class: "bg-red-500",
-  }));
 
   return (
     <div className="flex overflow-y-hidden h-full ">
@@ -236,12 +92,12 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 setActiveThreadId={() => {}}
                 readOnly={false}
                 diffStyle="normal"
-                debugHighlights={debugHightlights}
+                onDelete={onDelete}
               />
             </div>
             <div className="relative">
-              {deletionsWithPosition.map(
-                ({ previousText, y, height }, index) => {
+              {false &&
+                [].map(({ previousText, y, height }, index) => {
                   return (
                     <div
                       key={index}
@@ -255,8 +111,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       {previousText}
                     </div>
                   );
-                }
-              )}
+                })}
             </div>
           </div>
         </div>
@@ -264,3 +119,22 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
+
+function useLocalStorageState<T>(
+  key,
+  defaultValue = ""
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+  // Get from local storage then
+  // parse stored json or if none return initialValue
+  const [state, setState] = useState(() => {
+    const storedValue = localStorage.getItem(key);
+    return storedValue !== null ? JSON.parse(storedValue) : defaultValue;
+  });
+
+  // Update local storage when state changes
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  return [state, setState];
+}
