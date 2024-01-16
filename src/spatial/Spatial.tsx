@@ -12,9 +12,12 @@ interface Deletion {
   previousText: string;
 }
 
-const MIN_DELETE_SIZE = 1;
+const MIN_SNIPPET_SIZE = 50;
 
-interface DeletionWithPosition extends Deletion {
+interface Snippet {
+  from: number;
+  to: number;
+  text: string;
   y: number;
   height: number;
 }
@@ -35,26 +38,72 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [editorWidth, setEditorWidth] = useState<number>();
 
   const onDelete = (size) => {
-    if (size < MIN_DELETE_SIZE) {
+    if (size < MIN_SNIPPET_SIZE) {
       return;
     }
 
-    if (!diffHeads) {
-      // on delete get's called before the transaction is applied to the document
-      const headsBeforeDelete = A.getHeads(handle.docSync());
-      setDiffHeads(headsBeforeDelete);
-    }
+    // on delete get's called before the transaction is applied to the document
+    const headsBeforeDelete = A.getHeads(handle.docSync());
+
+    // need to check prevDiffHeads inside of setter, because onDelete is cached on initialization in codemirror
+    setDiffHeads((prevDiffHeads) =>
+      prevDiffHeads ? prevDiffHeads : headsBeforeDelete
+    );
   };
 
-  const patches: A.Patch[] = useMemo(() => {
+  const snippets: Snippet[] = useMemo(() => {
     if (!diffHeads || !doc) {
       return [];
     }
 
-    return A.diff(doc, A.getHeads(doc), diffHeads);
+    const patches = A.diff(doc, A.getHeads(doc), diffHeads);
+    const insertedRanges = new Map<number, number>();
+
+    // collection insertions
+    for (const patch of patches) {
+      const [key, index] = patch.path;
+      if (key !== "content") {
+        continue;
+      }
+      if (patch.action === "del") {
+        insertedRanges.set(index, patch.length);
+      }
+    }
+
+    const snippets: Snippet[] = [];
+
+    // turn splices into snippets
+    for (const patch of patches) {
+      const [key, index] = patch.path;
+
+      if (
+        key !== "content" ||
+        patch.action !== "splice" ||
+        patch.value.length < MIN_SNIPPET_SIZE
+      ) {
+        continue;
+      }
+
+      const replacementOfSnippetLength = insertedRanges.get(index) ?? 0;
+
+      const from = index;
+      const to = index + replacementOfSnippetLength;
+      const fromY = editorView.coordsAtPos(from).top;
+      const toY = editorView.coordsAtPos(to).bottom;
+
+      snippets.push({
+        from,
+        to,
+        text: patch.value,
+        y: fromY,
+        height: toY - fromY,
+      });
+    }
+
+    return snippets;
   }, [diffHeads, doc]);
 
-  console.log("patches", patches);
+  console.log("snippets", snippets);
 
   // update editor width
   useEffect(() => {
@@ -73,13 +122,27 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [editorRef.current]);
 
+  const debugHighlights = snippets.flatMap((snippet) => {
+    if (snippet.from === snippet.to) {
+      return [];
+    }
+
+    return [
+      {
+        from: snippet.from,
+        to: snippet.to,
+        class: "text-blue-500",
+      },
+    ];
+  });
+
   return (
     <div className="flex overflow-y-hidden h-full ">
       <div className="flex-grow overflow-hidden">
         <div className="h-full overflow-auto">
-          <div className="@container flex bg-gray-50 justify-center">
+          <div className="@container flex bg-gray-50">
             <div
-              className="bg-white border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4"
+              className="bg-white border-r border-gray-200 box-border w-full max-w-[722px] px-8 py-4"
               ref={editorRef}
             >
               <MarkdownEditor
@@ -93,25 +156,25 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 readOnly={false}
                 diffStyle="normal"
                 onDelete={onDelete}
+                debugHighlights={debugHighlights}
               />
             </div>
             <div className="relative">
-              {false &&
-                [].map(({ previousText, y, height }, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="absolute bg-white border border-gray-200 box-border rounded-md px-8 py-4"
-                      style={{
-                        top: `${y}px`,
-                        width: `${editorWidth}px`,
-                        left: 0,
-                      }}
-                    >
-                      {previousText}
-                    </div>
-                  );
-                })}
+              {snippets.map(({ text, y, height }, index) => {
+                return (
+                  <div
+                    key={index}
+                    className="absolute bg-white border border-gray-200 box-border rounded-md px-8 py-4 cm-line overflow-hidden left-2"
+                    style={{
+                      top: `${y - 50}px`,
+                      width: `${editorWidth}px`,
+                      height: `${height}px`,
+                    }}
+                  >
+                    {text}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
