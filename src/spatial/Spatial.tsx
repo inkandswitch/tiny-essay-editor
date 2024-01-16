@@ -1,5 +1,6 @@
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
 import { MarkdownDoc } from "@/tee/schema";
+import { Doc } from "@automerge/automerge";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
@@ -12,12 +13,15 @@ interface Deletion {
   previousText: string;
 }
 
-const MIN_SNIPPET_SIZE = 50;
-
 interface Snippet {
+  cursor: A.Cursor;
+  heads: A.Heads;
+}
+
+interface ResolvedSnippet {
+  text: string;
   from: number;
   to: number;
-  text: string;
   y: number;
   height: number;
 }
@@ -31,77 +35,73 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
 
-  const [diffHeads, setDiffHeads] = useLocalStorageState<A.Heads>(
-    `${docUrl}.diffHeads`
-  );
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
 
   const [editorWidth, setEditorWidth] = useState<number>();
 
-  const onDelete = (size) => {
-    if (size < MIN_SNIPPET_SIZE) {
-      return;
-    }
+  const onDelete = (position) => {
+    const doc = handle.docSync();
+    const cursor = A.getCursor(doc, ["content"], position - 1); // cursors don't have a side so we need to anchor to the character before the delete
 
     // on delete get's called before the transaction is applied to the document
     const headsBeforeDelete = A.getHeads(handle.docSync());
 
-    // need to check prevDiffHeads inside of setter, because onDelete is cached on initialization in codemirror
-    setDiffHeads((prevDiffHeads) =>
-      prevDiffHeads ? prevDiffHeads : headsBeforeDelete
+    setSnippets((snippets) =>
+      snippets.concat({
+        cursor,
+        heads: headsBeforeDelete,
+      })
     );
   };
 
-  const snippets: Snippet[] = useMemo(() => {
-    if (!diffHeads || !doc) {
-      return [];
-    }
+  const resolvedSnippets: ResolvedSnippet[] = useMemo(() => {
+    const resolvedSnippets: ResolvedSnippet[] = [];
 
-    const patches = A.diff(doc, A.getHeads(doc), diffHeads);
-    const insertedRanges = new Map<number, number>();
+    for (const snippet of snippets) {
+      const patches = A.diff(doc, A.getHeads(doc), snippet.heads);
 
-    // collection insertions
-    for (const patch of patches) {
-      const [key, index] = patch.path;
-      if (key !== "content") {
-        continue;
-      }
-      if (patch.action === "del") {
-        insertedRanges.set(index, patch.length);
-      }
-    }
-
-    const snippets: Snippet[] = [];
-
-    // turn splices into snippets
-    for (const patch of patches) {
-      const [key, index] = patch.path;
-
-      if (
-        key !== "content" ||
-        patch.action !== "splice" ||
-        patch.value.length < MIN_SNIPPET_SIZE
-      ) {
+      const from = safelyGetCursorPosition(doc, snippet.cursor) + 1; // cursor points to previous character so we need to add one
+      if (from === null) {
         continue;
       }
 
-      const replacementOfSnippetLength = insertedRanges.get(index) ?? 0;
+      console.log("patches", from, patches);
 
-      const from = index;
-      const to = index + replacementOfSnippetLength;
+      // all ops are inverted so this corresponds to the patch of stuff that was inserted where the snippet used to be
+      const delPatchAtFrom = patches.find((patch: A.Patch) => {
+        const [key, index] = patch.path;
+        return key === "content" && patch.action === "del" && index === from;
+      });
+
+      const to = delPatchAtFrom ? from + (delPatchAtFrom.length ?? 1) : from;
+
+      // splice
+      const splicePatchAtFrom = patches.find((patch) => {
+        const [key, index] = patch.path;
+
+        console.log(patch.action, index, from);
+
+        return key === "content" && patch.action === "splice" && index === from;
+      });
+
+      if (!splicePatchAtFrom) {
+        continue;
+      }
+
       const fromY = editorView.coordsAtPos(from).top;
       const toY = editorView.coordsAtPos(to).bottom;
 
-      snippets.push({
+      resolvedSnippets.push({
         from,
         to,
-        text: patch.value,
+        text: splicePatchAtFrom.value,
         y: fromY,
         height: toY - fromY,
       });
     }
 
-    return snippets;
-  }, [diffHeads, doc]);
+    return resolvedSnippets;
+  }, [snippets, doc]);
 
   console.log("snippets", snippets);
 
@@ -122,7 +122,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [editorRef.current]);
 
-  const debugHighlights = snippets.flatMap((snippet) => {
+  const debugHighlights = resolvedSnippets.flatMap((snippet) => {
     if (snippet.from === snippet.to) {
       return [];
     }
@@ -155,16 +155,16 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 setActiveThreadId={() => {}}
                 readOnly={false}
                 diffStyle="normal"
-                onDelete={onDelete}
+                onModDelete={onDelete}
                 debugHighlights={debugHighlights}
               />
             </div>
             <div className="relative">
-              {snippets.map(({ text, y, height }, index) => {
+              {resolvedSnippets.map(({ text, y, height }, index) => {
                 return (
                   <div
                     key={index}
-                    className="absolute bg-white border border-gray-200 box-border rounded-md px-8 py-4 cm-line overflow-hidden left-2"
+                    className="absolute bg-white border-l b border-gray-200 box-border px-8 cm-line overflow-hidden left-2"
                     style={{
                       top: `${y - 50}px`,
                       width: `${editorWidth}px`,
@@ -185,7 +185,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
 function useLocalStorageState<T>(
   key,
-  defaultValue = ""
+  defaultValue?: T
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
   // Get from local storage then
   // parse stored json or if none return initialValue
@@ -200,4 +200,15 @@ function useLocalStorageState<T>(
   }, [key, state]);
 
   return [state, setState];
+}
+
+function safelyGetCursorPosition<T>(
+  doc: Doc<T>,
+  cursor: A.Cursor
+): number | null {
+  try {
+    return A.getCursorPosition(doc, ["content"], cursor);
+  } catch (err) {
+    return null;
+  }
 }

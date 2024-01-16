@@ -17,7 +17,7 @@ import {
   plugin as amgPlugin,
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
-import { indentWithTab } from "@codemirror/commands";
+import { indentWithTab, deleteCharForward } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
 import {
@@ -67,6 +67,7 @@ export type EditorProps = {
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onDelete?: (size: number) => void;
+  onModDelete?: (position: number) => void;
 };
 
 export function MarkdownEditor({
@@ -81,6 +82,7 @@ export function MarkdownEditor({
   diffHeads,
   diffStyle,
   debugHighlights,
+  onModDelete,
   onDelete,
 }: EditorProps) {
   const containerRef = useRef(null);
@@ -155,6 +157,15 @@ export function MarkdownEditor({
         dropCursor(),
         indentOnInput(),
         keymap.of([
+          {
+            key: "Mod-Backspace",
+            run: () => {
+              const position = view.state.selection.main.head;
+              onModDelete(position);
+              deleteCharForward(view);
+              return true;
+            },
+          },
           ...defaultKeymap,
           ...searchKeymap,
           ...historyKeymap,
@@ -207,7 +218,7 @@ export function MarkdownEditor({
 
           // listen for delete event
           // ignore transactions created by reconciler
-          if (!transaction.annotation(reconcileAnnotationType)) {
+          if (!transaction.annotation(reconcileAnnotationType) && onDelete) {
             transaction.changes.iterChanges(
               (fromA, toA, fromB, toB, inserted) => {
                 if (fromA !== toA && inserted.length === 0) {
