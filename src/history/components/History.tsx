@@ -23,12 +23,19 @@ import {
 import { truncate } from "lodash";
 import {
   CopyIcon,
+  EyeIcon,
   FileDiffIcon,
   TagIcon,
   TimerResetIcon,
   TrashIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
@@ -78,15 +85,34 @@ type ChangeGroupSelection = {
   to: ChangeGroup["id"];
 };
 
+const changeGroupFields = [
+  "authors",
+  "actorIds",
+  "diff",
+  "time",
+  "editStats",
+] as const;
+
+type ChangeGroupFields = (typeof changeGroupFields)[number];
+
+type VisibleFieldsOnChangeGroup = { [key in ChangeGroupFields]: boolean };
+
 export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
 
   // diffs can be shown either in the change log or in the doc itself.
-  const [showDiffSummariesInLog, setShowDiffSummariesInLog] =
-    useState<boolean>(false);
   const [showDiffInDoc, setShowDiffInDoc] = useState<boolean>(true);
+
+  const [visibleFieldsOnChangeGroup, setVisibleFieldsOnChangeGroup] =
+    useState<VisibleFieldsOnChangeGroup>({
+      editStats: true,
+      actorIds: false,
+      authors: true,
+      time: true,
+      diff: false,
+    });
 
   // The grouping algorithm to use for the change log (because this is a playground!)
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
@@ -286,17 +312,52 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 </div>
               )}
             </div>
-            <div>
-              <Checkbox
-                id="show-inline-diff"
-                checked={showDiffSummariesInLog}
-                onCheckedChange={() =>
-                  setShowDiffSummariesInLog(!showDiffSummariesInLog)
-                }
-                className="mr-1"
-              />
-              <label htmlFor="show-inline-diff">Show diff summaries</label>
-            </div>
+          </div>
+
+          <div className="flex items-center mb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-xs"
+                  aria-label="Change visible fields"
+                >
+                  <EyeIcon size={14} />
+                  Set visible fields
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {changeGroupFields.map((field) => (
+                  <DropdownMenuItem
+                    key={field}
+                    className="flex items-center"
+                    onClick={() => {
+                      setVisibleFieldsOnChangeGroup((visibleFields) => ({
+                        ...visibleFields,
+                        [field]: !visibleFields[field],
+                      }));
+                    }}
+                  >
+                    <Checkbox
+                      id={`change-group-field-${field}`}
+                      className="mr-1"
+                      checked={visibleFieldsOnChangeGroup[field]}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setVisibleFieldsOnChangeGroup((visibleFields) => ({
+                          ...visibleFields,
+                          [field]: !visibleFields[field],
+                        }))
+                      }
+                    />
+                    <label htmlFor={`change-group-field-${field}`}>
+                      {field}
+                    </label>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="h-4">
@@ -383,46 +444,43 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     handleClickOnChangeGroup(e, changeGroup);
                   }}
                 >
-                  <div className="flex justify-between text-xs mb-1">
-                    <div>
-                      <div className="text-gray-500 font-bold uppercase">
-                        Edits
-                      </div>
-                      <span className="text-green-600 font-bold mr-2">
-                        +{changeGroup.charsAdded}
-                      </span>
-                      <span className="text-red-600 font-bold">
-                        -{changeGroup.charsDeleted}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-xs mb-2">
+                    {visibleFieldsOnChangeGroup.authors &&
+                      changeGroup.authorUrls.length > 0 && (
+                        <div className="text-sm text-gray-600  mb-2">
+                          <div className="text-gray-500 uppercase text-xs font-bold">
+                            Authors
+                          </div>
+                          {changeGroup.authorUrls.map((contactUrl) => (
+                            <ContactAvatar
+                              url={contactUrl}
+                              showName={true}
+                              size="sm"
+                            />
+                          ))}
+                        </div>
+                      )}
+
                     <div className="text-xs text-gray-600 text-right font-semibold">
                       <Hash key={changeGroup.id} hash={changeGroup.id} />
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 font-semibold mb-1">
-                    <div className="text-gray-500 font-bold uppercase">
-                      Actors
-                    </div>
-                    {changeGroup.actorIds.map((id) => (
-                      <Hash key={id} hash={id} />
-                    ))}
-                  </div>
-                  {changeGroup.authorUrls.length > 0 && (
-                    <div className="text-xs text-gray-600 font-semibold mb-1">
+                  {visibleFieldsOnChangeGroup.actorIds && (
+                    <div className="text-xs text-gray-600 font-semibold mb-2">
                       <div className="text-gray-500 font-bold uppercase">
-                        Authors
+                        Actors
                       </div>
-                      {changeGroup.authorUrls.map((contactUrl) => (
-                        <ContactAvatar
-                          url={contactUrl}
-                          showName={true}
-                          size="sm"
-                        />
+                      {changeGroup.actorIds.map((id) => (
+                        <Hash key={id} hash={id} />
                       ))}
                     </div>
                   )}
-                  {showDiffSummariesInLog && (
-                    <div className="mt-4 ">
+
+                  {visibleFieldsOnChangeGroup.diff && (
+                    <div className="mb-2">
+                      <div className="text-gray-500 font-bold uppercase text-xs">
+                        Diff
+                      </div>
                       {changeGroup.diff.map((patch) => (
                         <div className="mb-1">
                           {patch.path[0] === "content" &&
@@ -444,13 +502,26 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       ))}
                     </div>
                   )}
-                  {changeGroup.time && (
-                    <div className="text-gray-500">
-                      <div className="text-gray-500 font-bold uppercase">
+                  {visibleFieldsOnChangeGroup.time && changeGroup.time && (
+                    <div className="text-gray-500 mb-2 text-sm">
+                      <div className="text-gray-500 font-bold uppercase text-xs">
                         Last edited
                       </div>
 
                       {getRelativeTimeString(changeGroup.time)}
+                    </div>
+                  )}
+                  {visibleFieldsOnChangeGroup.editStats && (
+                    <div>
+                      <div className="text-gray-500 font-bold uppercase">
+                        Stats
+                      </div>
+                      <span className="text-green-600 font-bold mr-2">
+                        +{changeGroup.charsAdded}
+                      </span>
+                      <span className="text-red-600 font-bold">
+                        -{changeGroup.charsDeleted}
+                      </span>
                     </div>
                   )}
                 </div>
