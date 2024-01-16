@@ -6,12 +6,8 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { EditorView } from "@codemirror/view";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-
-interface Deletion {
-  from: number;
-  to: number;
-  previousText: string;
-}
+import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Snippet {
   cursor: A.Cursor;
@@ -53,6 +49,14 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       })
     );
   };
+
+  const onRemoveSnippetAtIndex = (indexToDelete: number) => {
+    setSnippets((snippets) =>
+      snippets.filter((snippet, index) => index !== indexToDelete)
+    );
+  };
+
+  const onToggleExpandSnippetAtIndex = (indexToToggle: number) => {};
 
   const resolvedSnippets: ResolvedSnippet[] = useMemo(() => {
     const resolvedSnippets: ResolvedSnippet[] = [];
@@ -163,15 +167,40 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               {resolvedSnippets.map(({ text, y, height }, index) => {
                 return (
                   <div
-                    key={index}
-                    className="absolute bg-white border-l b border-gray-200 box-border px-8 cm-line overflow-hidden left-2"
+                    className="left-4 absolute mt-[-36px]"
                     style={{
                       top: `${y - 50}px`,
                       width: `${editorWidth}px`,
-                      height: `${height}px`,
                     }}
                   >
-                    {text}
+                    <div className="flex w-full justify-end bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onRemoveSnippetAtIndex(index)}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                    <div
+                      key={index}
+                      className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
+                      style={{
+                        height: `${height}px`,
+                      }}
+                    >
+                      {text}
+                      <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
+                    </div>
+                    <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onToggleExpandSnippetAtIndex(index)}
+                      >
+                        <ChevronDown />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
