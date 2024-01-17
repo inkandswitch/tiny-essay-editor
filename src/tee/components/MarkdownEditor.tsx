@@ -1,50 +1,51 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  EditorView,
-  keymap,
-  drawSelection,
-  dropCursor,
-  Decoration,
-  WidgetType,
-} from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
+import {
+  Decoration,
+  dropCursor,
+  EditorView,
+  keymap,
+  WidgetType,
+} from "@codemirror/view";
 
-import * as A from "@automerge/automerge/next";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
 } from "@automerge/automerge-codemirror";
-import { indentWithTab, deleteCharForward } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
-import { CommentThreadForUI, MarkdownDoc } from "../schema";
-import {
-  syntaxHighlighting,
-  indentOnInput,
-  foldKeymap,
-  indentUnit,
-} from "@codemirror/language";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { searchKeymap } from "@codemirror/search";
+import * as A from "@automerge/automerge/next";
+import { diff } from "@automerge/automerge/next";
 import { completionKeymap } from "@codemirror/autocomplete";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import {
+  foldKeymap,
+  indentOnInput,
+  indentUnit,
+  syntaxHighlighting,
+} from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
-import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
-import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
-import { markdownStyles, essayTheme } from "../codemirrorPlugins/theme";
-import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
-import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
+import { searchKeymap } from "@codemirror/search";
+import { StateEffect, StateField, SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   setThreadsEffect,
   threadDecorations,
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
+import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
+import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { diff } from "@automerge/automerge/next";
-import { StateEffect, StateField } from "@codemirror/state";
-import { reconcileAnnotationType } from "@automerge/automerge-codemirror/dist/plugin";
+import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
+import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
+import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
+import { CommentThreadForUI, MarkdownDoc } from "../schema";
 
 export type TextSelection = {
   from: number;
@@ -66,8 +67,7 @@ export type EditorProps = {
   diffHeads?: A.Heads;
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
-  onDelete?: (size: number) => void;
-  onModDelete?: (position: number) => void;
+  onOpenSnippet?: (range: SelectionRange) => void;
 };
 
 export function MarkdownEditor({
@@ -82,8 +82,7 @@ export function MarkdownEditor({
   diffHeads,
   diffStyle,
   debugHighlights,
-  onModDelete,
-  onDelete,
+  onOpenSnippet,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -158,13 +157,15 @@ export function MarkdownEditor({
         indentOnInput(),
         keymap.of([
           {
-            key: "Mod-Backspace",
+            key: "Mod-o",
             run: () => {
-              const position = view.state.selection.main.head;
-              onModDelete(position);
-              deleteCharForward(view);
+              console.log("do stuff");
+              const selectedRange = view.state.selection.main;
+              onOpenSnippet(selectedRange);
               return true;
             },
+            preventDefault: true,
+            stopPropagation: true,
           },
           ...defaultKeymap,
           ...searchKeymap,
@@ -215,18 +216,6 @@ export function MarkdownEditor({
             }
           }
           view.update([transaction]);
-
-          // listen for delete event
-          // ignore transactions created by reconciler
-          if (!transaction.annotation(reconcileAnnotationType) && onDelete) {
-            transaction.changes.iterChanges(
-              (fromA, toA, fromB, toB, inserted) => {
-                if (fromA !== toA && inserted.length === 0) {
-                  onDelete(toA - fromA);
-                }
-              }
-            );
-          }
 
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
