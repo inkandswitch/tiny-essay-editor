@@ -188,8 +188,10 @@ export const HorizontalMinimap: React.FC<{
 }> = ({ doc, patches }) => {
   const buckets = bucketPatches(doc, patches);
 
+  const headingsExist = buckets.filter((b) => b.headings.length > 0).length > 0;
+
   return (
-    <div className="mt-10">
+    <div className={`${headingsExist && "mt-10"}`}>
       <div className="flex flex-row w-[75%]">
         {buckets.map((bucket) => (
           <div className="relative w-[4%]">
