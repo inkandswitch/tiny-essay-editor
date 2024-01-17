@@ -58,7 +58,7 @@ export const DocExplorer: React.FC = () => {
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const [activeTool, setActiveTool] = useState(TOOLS[2]);
+  const [activeTool, setActiveTool] = useState(TOOLS[0]);
 
   const ToolComponent = activeTool.component;
 
