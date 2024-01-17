@@ -36,7 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MinimapWithDiff } from "./MinimapWithDiff";
+import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -95,6 +95,8 @@ const changeGroupFields = [
   "time",
   "editStats",
   "blobs",
+  "minimapVertical",
+  "minibar",
 ] as const;
 
 type ChangeGroupFields = (typeof changeGroupFields)[number];
@@ -111,17 +113,19 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const [visibleFieldsOnChangeGroup, setVisibleFieldsOnChangeGroup] =
     useState<VisibleFieldsOnChangeGroup>({
-      editStats: true,
+      editStats: false,
       actorIds: false,
       authors: true,
       time: true,
       diff: false,
       blobs: false,
+      minimapVertical: false,
+      minibar: true,
     });
 
   // The grouping algorithm to use for the change log (because this is a playground!)
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
-    useState<keyof typeof GROUPINGS>("ByCharCount");
+    useState<keyof typeof GROUPINGS>("ByAuthor");
 
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
@@ -269,7 +273,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 activeGroupingAlgorithm
               ) && (
                 <div className="flex">
-                  <div className="text-xs mr-2 w-36">Batch size</div>
+                  <div className="text-xs mr-2 w-40">Batch size</div>
                   <Slider
                     defaultValue={[groupingNumericParameter]}
                     min={1}
@@ -458,6 +462,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                           </div>
                           {changeGroup.authorUrls.map((contactUrl) => (
                             <ContactAvatar
+                              key={contactUrl}
                               url={contactUrl}
                               showName={true}
                               size="sm"
@@ -573,6 +578,33 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                                 200
                             )
                           }
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {visibleFieldsOnChangeGroup.minimapVertical && (
+                    <div className="mb-2">
+                      <div className="text-gray-500 font-bold uppercase">
+                        Minimap
+                      </div>
+                      <div>
+                        <MinimapWithDiff
+                          doc={changeGroup.docAtEndOfChangeGroup}
+                          patches={changeGroup.diff}
+                          size="compact"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {visibleFieldsOnChangeGroup.minibar && (
+                    <div className="mb-2">
+                      <div className="text-gray-500 font-bold uppercase">
+                        Minibar
+                      </div>
+                      <div>
+                        <HorizontalMinimap
+                          doc={changeGroup.docAtEndOfChangeGroup}
+                          patches={changeGroup.diff}
                         />
                       </div>
                     </div>

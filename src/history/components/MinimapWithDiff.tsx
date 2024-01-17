@@ -37,7 +37,8 @@ type DocLine = {
 export const MinimapWithDiff: React.FC<{
   doc: MarkdownDoc;
   patches: Patch[];
-}> = ({ doc, patches }) => {
+  size?: "normal" | "compact";
+}> = ({ doc, patches, size }) => {
   // Roughly split up the doc into 80-char lines to approximate the way it's displayed
   let currentIndex = 0;
   const linesNested = (doc.content ?? "").split("\n").map((line) => {
@@ -77,20 +78,28 @@ export const MinimapWithDiff: React.FC<{
   const lines: DocLine[] = [].concat(...linesNested);
 
   return (
-    <div className="p-2 bg-white w-36 text-[3px]  border border-gray-400 inline-block  transition-all ease-in-out">
+    <div
+      className={`p-2 w-36 bg-white ${
+        size === "compact" ? "text-[2px]" : " text-[3px]"
+      } border border-gray-400 inline-block  transition-all ease-in-out`}
+    >
       {lines.map((line, i) => {
         const isHeading =
           line.text.startsWith("## ") || line.text.startsWith("# ");
         return (
           <div
-            className={` select-none cursor-default w-full ${
+            className={` overflow-visible select-none cursor-default w-full ${
               line.type === "inserted"
-                ? "bg-green-200"
+                ? "bg-green-300"
                 : line.type === "deleted"
-                ? "bg-red-200"
+                ? "bg-red-300"
                 : ""
             } ${line.visible ? "opacity-100" : "opacity-50"} ${
-              isHeading ? "font-medium h-[10px]" : "h-[4px]"
+              isHeading
+                ? "font-medium h-[10px]"
+                : size === "compact"
+                ? "h-[1px]"
+                : "h-[4px]"
             }`}
             key={i}
           >
@@ -107,3 +116,145 @@ export const MinimapWithDiff: React.FC<{
     </div>
   );
 };
+
+type BucketedPatches = Array<{
+  startIndex: number;
+  patches: Patch[];
+  headings: string[];
+  headingsEdited: boolean;
+}>;
+
+const NUM_BUCKETS = 25;
+
+/* Bucket patches based on their spatial location in the document. */
+const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
+  const bucketSize = Math.ceil(doc.content.length / NUM_BUCKETS);
+  const buckets: BucketedPatches = Array.from({ length: NUM_BUCKETS }, () => ({
+    startIndex: 0,
+    patches: [],
+    headings: [],
+    headingsEdited: false,
+  }));
+
+  const headings = extractHeadings(doc);
+
+  for (let i = 0; i < NUM_BUCKETS; i++) {
+    buckets[i].startIndex = i * bucketSize;
+    headings.forEach((heading) => {
+      if (
+        heading.index >= buckets[i].startIndex &&
+        heading.index < buckets[i].startIndex + bucketSize
+      ) {
+        buckets[i].headings.push(heading.text);
+      }
+    });
+  }
+
+  patches.forEach((patch) => {
+    let patchStart: number, patchEnd: number;
+    switch (patch.action) {
+      case "del": {
+        patchStart = patch.path[1];
+        patchEnd = patchStart + patch.length;
+        break;
+      }
+      case "splice": {
+        patchStart = patch.path[1];
+        patchEnd = patchStart + patch.value.length;
+        break;
+      }
+      default: {
+        return;
+      }
+    }
+
+    const startBucket = Math.floor(patchStart / bucketSize);
+    const endBucket = Math.min(
+      Math.floor(patchEnd / bucketSize),
+      NUM_BUCKETS - 1
+    );
+
+    for (let i = startBucket; i <= endBucket; i++) {
+      buckets[i].patches.push(patch);
+    }
+
+    // Mark buckets as having their headings edited
+    for (let i = startBucket; i >= 0; i--) {
+      if (buckets[i].headings.length > 0) {
+        buckets[i].headingsEdited = true;
+        break;
+      }
+    }
+
+    for (let i = startBucket; i <= endBucket; i++) {
+      if (buckets[i].headings.length > 0) {
+        buckets[i].headingsEdited = true;
+      }
+    }
+  });
+
+  return buckets;
+};
+
+export const HorizontalMinimap: React.FC<{
+  doc: MarkdownDoc;
+  patches: Patch[];
+}> = ({ doc, patches }) => {
+  const buckets = bucketPatches(doc, patches);
+  console.log(buckets.filter((b) => b.headings.length > 0));
+
+  return (
+    <div className="mt-10">
+      <div className="flex flex-row w-[75%]">
+        {buckets.map((bucket) => (
+          <div className="relative w-[4%]">
+            {bucket.headings.length > 0 && (
+              <div
+                className={`absolute top-[-20px] left-0 text-xs text-gray-500 min-w-[100px] transform -rotate-[20deg] origin-left font-narrow bg-white bg-opacity-70 ${
+                  bucket.headingsEdited
+                    ? "font-semibold"
+                    : "opacity-30 font-normal"
+                }`}
+              >
+                {truncate(bucket.headings.join(", "), { length: 20 })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="h-3 flex flex-row border border-gray-400 rounded-md w-[75%]">
+        {buckets.map((bucket) => {
+          let color = "";
+          if (
+            bucket.patches.filter((patch) => patch.action === "splice").length >
+            0
+          ) {
+            color = "bg-green-300";
+          } else if (
+            bucket.patches.filter((patch) => patch.action === "del").length > 0
+          ) {
+            color = "bg-red-300";
+          }
+          return (
+            <div
+              className={`relative w-[4%] ${color} ${
+                bucket.headings.length > 0 && "border-l border-gray-500"
+              }`}
+            ></div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+function extractHeadings(doc: MarkdownDoc) {
+  const headingData = [];
+  const regex = /^##\s(.*)/gm;
+  let match;
+
+  while ((match = regex.exec(doc.content)) != null) {
+    headingData.push({ index: match.index, text: match[1] });
+  }
+
+  return headingData;
+}

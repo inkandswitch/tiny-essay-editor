@@ -74,6 +74,7 @@ module.exports = {
       fontFamily: {
         sans: ["Merriweather Sans", "sans-serif"],
         serif: ["Merriweather", "serif"],
+        narrow: ["Arial Narrow", "Arial", "sans-serif"],
       },
     },
   },

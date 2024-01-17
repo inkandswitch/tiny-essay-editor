@@ -8,7 +8,8 @@ import {
   DecodedChange,
   Patch,
   getAllChanges,
-} from "@automerge/automerge";
+  view,
+} from "@automerge/automerge/next";
 
 export type ChangeGroup = {
   id: string;
@@ -17,6 +18,8 @@ export type ChangeGroup = {
   authorUrls: AutomergeUrl[];
   charsAdded: number;
   charsDeleted: number;
+  // TODO make this a generic type
+  docAtEndOfChangeGroup: Doc<MarkdownDoc>;
   diff: Patch[];
   tags: Tag[];
   time?: number;
@@ -121,6 +124,7 @@ export const getGroupedChanges = (
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
+    currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
     changeGroups.push(currentGroup);
   };
 
@@ -198,6 +202,7 @@ export const getGroupedChanges = (
         authorUrls: decodedChange.metadata?.author
           ? [decodedChange.metadata.author]
           : [],
+        docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
       };
     }
   }
