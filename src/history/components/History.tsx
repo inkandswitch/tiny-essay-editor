@@ -34,7 +34,7 @@ import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
-const hashToColor = (hash: string) => {
+export const hashToColor = (hash: string) => {
   let hashInt = 0;
   for (let i = 0; i < hash.length; i++) {
     hashInt = hash.charCodeAt(i) + ((hashInt << 5) - hashInt);

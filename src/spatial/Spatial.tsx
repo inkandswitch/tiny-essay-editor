@@ -9,6 +9,22 @@ import { SelectionRange } from "@codemirror/state";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getGroupedChanges, ChangeGroup } from "@/history/utils";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import {
+  GROUPINGS,
+  GROUPINGS_THAT_TAKE_BATCH_SIZE,
+  GROUPINGS_THAT_TAKE_GAP_TIME,
+} from "@/history/utils";
+import { hashToColor } from "@/history/components/History";
+import { group } from "console";
 
 interface Snippet {
   from: A.Cursor;
@@ -29,17 +45,32 @@ interface ResolvedSnippet {
 
 interface SnippetVersion {
   heads: A.Heads;
+  changeGroup: ChangeGroup;
   text: string;
 }
+
+const MAX_BATCH_SIZE = 2000;
+const MAX_GAP = 300;
 
 export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+
+  // The grouping algorithm to use for the change log (because this is a playground!)
+  const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
+    useState<keyof typeof GROUPINGS>("ByCharCount");
+
+  // Some grouping algorithms have a batch size parameter.
+  // we can set this using a slider in the UI.
+  const [_groupingNumericParameter, setGroupingNumericParameter] =
+    useState<number>(1000);
+
+  const groupingNumericParameter = useDebounce(_groupingNumericParameter);
 
   const [snippets, setSnippets] = useState<Snippet[]>([]);
 
@@ -92,7 +123,12 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     for (const snippet of snippets) {
       let tempDoc = A.init<MarkdownDoc>();
-      let changes = A.getChanges(tempDoc, doc);
+
+      const { changeGroups } = getGroupedChanges(doc, {
+        algorithm: activeGroupingAlgorithm,
+        numericParameter: groupingNumericParameter,
+        tags: doc.tags ?? [],
+      });
 
       let versions: SnippetVersion[] = [];
       let prevText;
@@ -104,8 +140,11 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         continue;
       }
 
-      changes.forEach((change) => {
-        [tempDoc] = A.applyChanges(tempDoc, [change]);
+      changeGroups.forEach((changeGroup: ChangeGroup) => {
+        [tempDoc] = A.applyChanges(
+          tempDoc,
+          changeGroup.changes.map(A.encodeChange)
+        );
         let heads = A.getHeads(tempDoc);
 
         const fromInTempDoc = safelyGetCursorPosition(tempDoc, snippet.from);
@@ -118,7 +157,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           );
 
           if (text !== prevText) {
-            versions.unshift({ heads, text });
+            versions.unshift({ heads, text, changeGroup });
             prevText = text;
           }
         }
@@ -141,7 +180,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     }
 
     return resolvedSnippets;
-  }, [snippets, doc]);
+  }, [snippets, doc, groupingNumericParameter, activeGroupingAlgorithm]);
 
   console.log({ resolvedSnippets, snippets });
 
@@ -177,7 +216,76 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   });
 
   return (
-    <div className="flex overflow-y-hidden h-full ">
+    <div className="flex flex-col overflow-y-hidden h-full ">
+      <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono flex gap-3">
+        <div className="flex items-center gap-2">
+          <div className="text-xs whitespace-nowrap">Group by</div>
+
+          <Select
+            value={activeGroupingAlgorithm}
+            onValueChange={(value) => setActiveGroupingAlgorithm(value as any)}
+          >
+            <SelectTrigger className="h-6 text-xs">
+              <SelectValue placeholder="Group by" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(GROUPINGS).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {key}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {GROUPINGS_THAT_TAKE_BATCH_SIZE.includes(activeGroupingAlgorithm) && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-xs whitespace-nowrap">Batch size</div>
+            <Slider
+              defaultValue={[groupingNumericParameter]}
+              min={1}
+              max={MAX_BATCH_SIZE}
+              step={1}
+              onValueChange={(value) => setGroupingNumericParameter(value[0])}
+              className="flex-shrink-0"
+            />
+            <input
+              type="number"
+              min={1}
+              max={MAX_BATCH_SIZE}
+              value={groupingNumericParameter}
+              onChange={(e) =>
+                setGroupingNumericParameter(parseInt(e.target.value))
+              }
+            />
+          </div>
+        )}
+
+        {GROUPINGS_THAT_TAKE_GAP_TIME.includes(activeGroupingAlgorithm) && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-xs whitespace-nowrap">Max gap (s)</div>
+            <Slider
+              defaultValue={[groupingNumericParameter]}
+              max={MAX_GAP}
+              min={1}
+              step={1}
+              onValueChange={(value) => setGroupingNumericParameter(value[0])}
+              className="flex-shrink-0"
+            />
+            <input
+              type="number"
+              min={1}
+              max={MAX_GAP}
+              value={groupingNumericParameter}
+              onChange={(e) =>
+                setGroupingNumericParameter(parseInt(e.target.value))
+              }
+            />
+          </div>
+        )}
+
+        <div className="flex items-center"></div>
+      </div>
       <div className="flex-grow overflow-hidden">
         <div className="h-full overflow-auto">
           <div className="@container flex bg-gray-50">
@@ -260,6 +368,10 @@ function SnippetView({
         <div className="flex min-w-0 overflow-auto no-scrollbar">
           {versions.map((version, index) => {
             const isActive = version === activeVersion;
+            const { actorIds, authorUrls } = version.changeGroup;
+
+            const authorHash =
+              authorUrls.length > 0 ? authorUrls.join(",") : actorIds.join(",");
 
             return (
               <button
@@ -270,9 +382,11 @@ function SnippetView({
                 className="p-0.5"
               >
                 <div
-                  className={`w-[16px] h-[16px] rounded-full flex-shrink-0 ${
-                    isActive ? "bg-black" : "bg-gray-500"
-                  }`}
+                  className="w-[16px] h-[16px] rounded-full flex-shrink-0 bg-black"
+                  style={{
+                    opacity: isActive ? "1" : "0.5",
+                    background: hashToColor(authorHash),
+                  }}
                 ></div>
               </button>
             );
@@ -303,25 +417,6 @@ function SnippetView({
   );
 }
 
-function useLocalStorageState<T>(
-  key,
-  defaultValue?: T
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-  // Get from local storage then
-  // parse stored json or if none return initialValue
-  const [state, setState] = useState(() => {
-    const storedValue = localStorage.getItem(key);
-    return storedValue !== null ? JSON.parse(storedValue) : defaultValue;
-  });
-
-  // Update local storage when state changes
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
-  }, [key, state]);
-
-  return [state, setState];
-}
-
 function safelyGetCursorPosition<T>(
   doc: Doc<T>,
   cursor: A.Cursor
@@ -339,4 +434,18 @@ function arraysEqual<T>(arr1: T[], arr2: T[]): boolean {
     if (arr1[i] !== arr2[i]) return false;
   }
   return true;
+}
+
+export function useDebounce<T>(value: T, delay?: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay || 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
