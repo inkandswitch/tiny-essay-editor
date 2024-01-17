@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 interface Snippet {
   cursor: A.Cursor;
   heads: A.Heads;
+  isExpanded: boolean;
 }
 
 interface ResolvedSnippet {
@@ -20,6 +21,7 @@ interface ResolvedSnippet {
   to: number;
   y: number;
   height: number;
+  isExpanded: boolean;
 }
 
 export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
@@ -46,6 +48,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       snippets.concat({
         cursor,
         heads: headsBeforeDelete,
+        isExpanded: true,
       })
     );
   };
@@ -56,7 +59,15 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
   };
 
-  const onToggleExpandSnippetAtIndex = (indexToToggle: number) => {};
+  const onToggleExpandSnippetAtIndex = (indexToToggle: number) => {
+    setSnippets((snippets) =>
+      snippets.map((snippet, index) =>
+        index === indexToToggle
+          ? { ...snippet, isExpanded: !snippet.isExpanded }
+          : snippet
+      )
+    );
+  };
 
   const resolvedSnippets: ResolvedSnippet[] = useMemo(() => {
     const resolvedSnippets: ResolvedSnippet[] = [];
@@ -101,6 +112,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         text: splicePatchAtFrom.value,
         y: fromY,
         height: toY - fromY,
+        isExpanded: snippet.isExpanded,
       });
     }
 
@@ -135,7 +147,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       {
         from: snippet.from,
         to: snippet.to,
-        class: "text-blue-500",
+        class: "cm-patch-pencil",
       },
     ];
   });
@@ -164,46 +176,50 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               />
             </div>
             <div className="relative">
-              {resolvedSnippets.map(({ text, y, height }, index) => {
-                return (
-                  <div
-                    className="left-4 absolute mt-[-36px]"
-                    style={{
-                      top: `${y - 50}px`,
-                      width: `${editorWidth}px`,
-                    }}
-                  >
-                    <div className="flex w-full justify-end bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onRemoveSnippetAtIndex(index)}
-                      >
-                        <X />
-                      </Button>
-                    </div>
+              {resolvedSnippets.map(
+                ({ text, y, height, isExpanded }, index) => {
+                  return (
                     <div
-                      key={index}
-                      className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
+                      className="left-4 absolute mt-[-36px]"
                       style={{
-                        height: `${height}px`,
+                        top: `${y - 50}px`,
+                        width: `${editorWidth}px`,
                       }}
                     >
-                      {text}
-                      <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
-                    </div>
-                    <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onToggleExpandSnippetAtIndex(index)}
+                      <div className="flex w-full justify-end bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onRemoveSnippetAtIndex(index)}
+                        >
+                          <X />
+                        </Button>
+                      </div>
+                      <div
+                        key={index}
+                        className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
+                        style={{
+                          height: isExpanded ? "" : `${height}px`,
+                        }}
                       >
-                        <ChevronDown />
-                      </Button>
+                        {text}
+                        {!isExpanded && (
+                          <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
+                        )}
+                      </div>
+                      <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onToggleExpandSnippetAtIndex(index)}
+                        >
+                          {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </div>
           </div>
         </div>
