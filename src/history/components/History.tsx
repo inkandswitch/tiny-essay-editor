@@ -116,7 +116,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       authors: true,
       time: true,
       diff: false,
-      blobs: true,
+      blobs: false,
     });
 
   // The grouping algorithm to use for the change log (because this is a playground!)
@@ -563,7 +563,14 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                               1,
                               (changeGroup.charsAdded +
                                 changeGroup.charsDeleted) /
-                                1000
+                                // this constant here is a hack -- we're just trying to make the height
+                                // of the blobs proportional to the number of characters in the
+                                // change...
+                                // maybe would be better to pick this number based on the max
+                                // size of a change group in this doc's history?
+                                // One important note is that if the change size exceeds this maximum, it's fine, it doesn't overflow.
+                                // The problem is that if this constant is too big, smaller changes become invisibly tiny.
+                                200
                             )
                           }
                         />
