@@ -77,6 +77,16 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
   };
 
+  const onSelectVersionOfSnippetAtIndex = (indexToChange, version) => {
+    setSnippets((snippets) =>
+      snippets.map((snippet, index) =>
+        index === indexToChange
+          ? { ...snippet, selectedHeads: version.heads }
+          : snippet
+      )
+    );
+  };
+
   const resolvedSnippets: ResolvedSnippet[] = useMemo(() => {
     const resolvedSnippets: ResolvedSnippet[] = [];
 
@@ -108,7 +118,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           );
 
           if (text !== prevText) {
-            versions.push({ heads, text });
+            versions.unshift({ heads, text });
             prevText = text;
           }
         }
@@ -133,7 +143,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return resolvedSnippets;
   }, [snippets, doc]);
 
-  console.log(resolvedSnippets);
+  console.log({ resolvedSnippets, snippets });
 
   // update editor width
   useEffect(() => {
@@ -190,56 +200,18 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               />
             </div>
             <div className="relative">
-              {resolvedSnippets.map(
-                (
-                  { versions, y, height, isExpanded, selectedVersion },
-                  index
-                ) => {
-                  return (
-                    <div
-                      key={index}
-                      className="left-4 absolute mt-[-36px]"
-                      style={{
-                        top: `${y - 50}px`,
-                        width: `${editorWidth}px`,
-                      }}
-                    >
-                      <div className="flex w-full justify-between bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border">
-                        <div></div>
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onRemoveSnippetAtIndex(index)}
-                        >
-                          <X />
-                        </Button>
-                      </div>
-                      <div
-                        key={index}
-                        className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
-                        style={{
-                          height: isExpanded ? "" : `${height}px`,
-                        }}
-                      >
-                        {selectedVersion.text}
-                        {!isExpanded && (
-                          <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
-                        )}
-                      </div>
-                      <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onToggleExpandSnippetAtIndex(index)}
-                        >
-                          {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-              )}
+              {resolvedSnippets.map((snippet, index) => (
+                <SnippetView
+                  key={index}
+                  snippet={snippet}
+                  editorWidth={editorWidth}
+                  onRemoveSnippet={() => onRemoveSnippetAtIndex(index)}
+                  onToggleExpand={() => onToggleExpandSnippetAtIndex(index)}
+                  onSelectVersion={(version) =>
+                    onSelectVersionOfSnippetAtIndex(index, version)
+                  }
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -247,6 +219,89 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
+
+interface SnippetViewProps {
+  snippet: ResolvedSnippet;
+  editorWidth: number;
+  onRemoveSnippet: () => void;
+  onToggleExpand: () => void;
+  onSelectVersion: (version: SnippetVersion) => void;
+}
+
+function SnippetView({
+  snippet,
+  editorWidth,
+  onRemoveSnippet,
+  onToggleExpand,
+  onSelectVersion,
+}: SnippetViewProps) {
+  const { versions, y, height, isExpanded, selectedVersion } = snippet;
+  const [hoveredVersion, setHoveredVersion] = useState<SnippetVersion>();
+
+  const onMouseOverVersionAtIndex = (index: number) => {
+    setHoveredVersion(versions[index]);
+  };
+
+  const onMouseLeaveVersionAtIndex = (index: number) => {
+    setHoveredVersion(undefined);
+  };
+
+  const activeVersion = hoveredVersion ?? selectedVersion;
+
+  return (
+    <div
+      className="left-4 absolute mt-[-36px]"
+      style={{
+        top: `${y - 50}px`,
+        width: `${editorWidth}px`,
+      }}
+    >
+      <div className="flex w-full justify-between bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border items-center px-8">
+        <div className="flex min-w-0 overflow-auto no-scrollbar">
+          {versions.map((version, index) => {
+            const isActive = version === activeVersion;
+
+            return (
+              <button
+                onMouseOver={() => onMouseOverVersionAtIndex(index)}
+                onMouseLeave={() => onMouseLeaveVersionAtIndex(index)}
+                onClick={() => onSelectVersion(version)}
+                key={index}
+                className="p-0.5"
+              >
+                <div
+                  className={`w-[16px] h-[16px] rounded-full flex-shrink-0 ${
+                    isActive ? "bg-black" : "bg-gray-500"
+                  }`}
+                ></div>
+              </button>
+            );
+          })}
+        </div>
+
+        <Button size="sm" variant="ghost" onClick={() => onRemoveSnippet()}>
+          <X />
+        </Button>
+      </div>
+      <div
+        className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
+        style={{
+          height: isExpanded ? "" : `${height}px`,
+        }}
+      >
+        <div className="whitespace-pre-wrap">{activeVersion?.text}</div>
+        {!isExpanded && (
+          <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
+        )}
+      </div>
+      <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
+        <Button size="sm" variant="ghost" onClick={() => onToggleExpand()}>
+          {isExpanded ? <ChevronUp /> : <ChevronDown />}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function useLocalStorageState<T>(
   key,
