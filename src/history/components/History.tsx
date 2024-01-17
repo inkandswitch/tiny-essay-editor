@@ -6,6 +6,7 @@ import {
   ChangeGroup,
   GROUPINGS_THAT_TAKE_BATCH_SIZE,
   GROUPINGS_THAT_TAKE_GAP_TIME,
+  charsAddedAndDeletedByPatches,
   getGroupedChanges,
 } from "../utils";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
@@ -97,6 +98,7 @@ const changeGroupFields = [
   "blobs",
   "minimapVertical",
   "minibar",
+  "sections",
 ] as const;
 
 type ChangeGroupFields = (typeof changeGroupFields)[number];
@@ -121,6 +123,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       blobs: false,
       minimapVertical: false,
       minibar: true,
+      sections: false,
     });
 
   // The grouping algorithm to use for the change log (because this is a playground!)
@@ -607,6 +610,46 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                           patches={changeGroup.diff}
                         />
                       </div>
+                    </div>
+                  )}
+                  {visibleFieldsOnChangeGroup.sections && (
+                    <div className="text-gray-500 mb-2 text-sm">
+                      <div className="text-gray-500 font-bold uppercase text-xs">
+                        Sections
+                      </div>
+
+                      {changeGroup.headings.filter((h) => h.patches.length > 0)
+                        .length > 0 && (
+                        <ul>
+                          {changeGroup.headings
+                            .filter((h) => h.patches.length > 0)
+                            .map((heading) => {
+                              const { charsAdded, charsDeleted } =
+                                charsAddedAndDeletedByPatches(heading.patches);
+                              return (
+                                <li className="text-xs">
+                                  ## {truncate(heading.text, { length: 20 })}{" "}
+                                  {charsAdded > 0 && (
+                                    <span className="text-green-600  mr-2">
+                                      +{charsAdded}
+                                    </span>
+                                  )}
+                                  {charsDeleted > 0 && (
+                                    <span className="text-red-600 ">
+                                      -{charsDeleted}
+                                    </span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      )}
+                      {changeGroup.headings.filter((h) => h.patches.length > 0)
+                        .length === 0 && (
+                        <div className="text-xs text-gray-400 italic">
+                          No edited sections
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

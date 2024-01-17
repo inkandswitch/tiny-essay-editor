@@ -1,6 +1,7 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { Patch } from "@automerge/automerge/next";
 import { truncate } from "lodash";
+import { Heading, extractHeadings } from "../utils";
 
 function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
   if (patch.path[0] !== "content") {
@@ -120,8 +121,7 @@ export const MinimapWithDiff: React.FC<{
 type BucketedPatches = Array<{
   startIndex: number;
   patches: Patch[];
-  headings: string[];
-  headingsEdited: boolean;
+  headings: Heading[];
 }>;
 
 const NUM_BUCKETS = 25;
@@ -136,7 +136,7 @@ const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
     headingsEdited: false,
   }));
 
-  const headings = extractHeadings(doc);
+  const headings = extractHeadings(doc, patches);
 
   for (let i = 0; i < NUM_BUCKETS; i++) {
     buckets[i].startIndex = i * bucketSize;
@@ -145,7 +145,7 @@ const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
         heading.index >= buckets[i].startIndex &&
         heading.index < buckets[i].startIndex + bucketSize
       ) {
-        buckets[i].headings.push(heading.text);
+        buckets[i].headings.push(heading);
       }
     });
   }
@@ -177,20 +177,6 @@ const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
     for (let i = startBucket; i <= endBucket; i++) {
       buckets[i].patches.push(patch);
     }
-
-    // Mark buckets as having their headings edited
-    for (let i = startBucket; i >= 0; i--) {
-      if (buckets[i].headings.length > 0) {
-        buckets[i].headingsEdited = true;
-        break;
-      }
-    }
-
-    for (let i = startBucket; i <= endBucket; i++) {
-      if (buckets[i].headings.length > 0) {
-        buckets[i].headingsEdited = true;
-      }
-    }
   });
 
   return buckets;
@@ -201,7 +187,6 @@ export const HorizontalMinimap: React.FC<{
   patches: Patch[];
 }> = ({ doc, patches }) => {
   const buckets = bucketPatches(doc, patches);
-  console.log(buckets.filter((b) => b.headings.length > 0));
 
   return (
     <div className="mt-10">
@@ -211,12 +196,14 @@ export const HorizontalMinimap: React.FC<{
             {bucket.headings.length > 0 && (
               <div
                 className={`absolute top-[-20px] left-0 text-xs text-gray-500 min-w-[100px] transform -rotate-[20deg] origin-left font-narrow bg-white bg-opacity-70 ${
-                  bucket.headingsEdited
+                  bucket.headings.find((h) => h.patches.length > 0)
                     ? "font-semibold"
                     : "opacity-30 font-normal"
                 }`}
               >
-                {truncate(bucket.headings.join(", "), { length: 20 })}
+                {truncate(bucket.headings.map((h) => h.text).join(", "), {
+                  length: 20,
+                })}
               </div>
             )}
           </div>
@@ -247,14 +234,3 @@ export const HorizontalMinimap: React.FC<{
     </div>
   );
 };
-function extractHeadings(doc: MarkdownDoc) {
-  const headingData = [];
-  const regex = /^##\s(.*)/gm;
-  let match;
-
-  while ((match = regex.exec(doc.content)) != null) {
-    headingData.push({ index: match.index, text: match[1] });
-  }
-
-  return headingData;
-}

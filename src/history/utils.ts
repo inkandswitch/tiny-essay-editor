@@ -11,19 +11,25 @@ import {
   view,
 } from "@automerge/automerge/next";
 
-export type ChangeGroup = {
+type GenericChangeGroup = {
   id: string;
   changes: DecodedChange[];
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
-  charsAdded: number;
-  charsDeleted: number;
   // TODO make this a generic type
   docAtEndOfChangeGroup: Doc<MarkdownDoc>;
   diff: Patch[];
   tags: Tag[];
   time?: number;
 };
+
+type TEEChangeGroup = {
+  charsAdded: number;
+  charsDeleted: number;
+  headings: Heading[];
+};
+
+export type ChangeGroup = GenericChangeGroup & TEEChangeGroup;
 
 type GroupingAlgorithm = (
   currentGroup: ChangeGroup,
@@ -125,6 +131,10 @@ export const getGroupedChanges = (
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
     currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
+    currentGroup.headings = extractHeadings(
+      currentGroup.docAtEndOfChangeGroup,
+      currentGroup.diff
+    );
     changeGroups.push(currentGroup);
   };
 
@@ -203,6 +213,7 @@ export const getGroupedChanges = (
           ? [decodedChange.metadata.author]
           : [],
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
+        headings: [],
       };
     }
   }
@@ -212,4 +223,80 @@ export const getGroupedChanges = (
   }
 
   return { changeGroups, changeCount: changes.length };
+};
+
+export type Heading = {
+  index: number;
+  text: string;
+  patches: Patch[];
+};
+
+export const extractHeadings = (
+  doc: MarkdownDoc,
+  patches: Patch[]
+): Heading[] => {
+  const headingData: Heading[] = [];
+  const regex = /^##\s(.*)/gm;
+  let match;
+
+  while ((match = regex.exec(doc.content)) != null) {
+    headingData.push({ index: match.index, text: match[1], patches: [] });
+  }
+
+  for (const patch of patches) {
+    if (
+      patch.path[0] !== "content" ||
+      !["splice", "del"].includes(patch.action)
+    ) {
+      continue;
+    }
+    let patchStart: number, patchEnd: number;
+    switch (patch.action) {
+      case "del": {
+        patchStart = patch.path[1];
+        patchEnd = patchStart + patch.length;
+        break;
+      }
+      case "splice": {
+        patchStart = patch.path[1];
+        patchEnd = patchStart + patch.value.length;
+        break;
+      }
+      default: {
+        continue;
+      }
+    }
+
+    // The heading was edited if it overlaps with the patch.
+    for (let i = 0; i < headingData.length; i++) {
+      const heading = headingData[i];
+      if (heading.index >= patchStart && heading.index <= patchEnd) {
+        heading.patches.push(patch);
+      }
+      if (
+        heading.index < patchStart &&
+        headingData[i + 1]?.index > patchStart
+      ) {
+        heading.patches.push(patch);
+      }
+    }
+  }
+
+  return headingData;
+};
+
+export const charsAddedAndDeletedByPatches = (
+  patches: Patch[]
+): { charsAdded: number; charsDeleted: number } => {
+  return patches.reduce(
+    (acc, patch) => {
+      if (patch.action === "splice") {
+        acc.charsAdded += patch.value.length;
+      } else if (patch.action === "del") {
+        acc.charsDeleted += patch.length;
+      }
+      return acc;
+    },
+    { charsAdded: 0, charsDeleted: 0 }
+  );
 };
