@@ -40,7 +40,9 @@ import { MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { CircularPacking, sampleData } from "./CircularPacking";
+import { CircularPacking } from "./CircularPacking";
+
+const BLOBS_HEIGHT = 70;
 
 export const hashToColor = (hash: string) => {
   let hashInt = 0;
@@ -515,7 +517,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     </div>
                   )}
                   {visibleFieldsOnChangeGroup.editStats && (
-                    <div>
+                    <div className="mb-2">
                       <div className="text-gray-500 font-bold uppercase">
                         Stats
                       </div>
@@ -532,27 +534,40 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       <div className="text-gray-500 font-bold uppercase">
                         Blobs
                       </div>
-                      <CircularPacking
-                        data={{
-                          type: "node",
-                          name: "root",
-                          value:
-                            changeGroup.charsAdded + changeGroup.charsDeleted,
-                          children: changeGroup.diff.map((patch) => ({
-                            type: "leaf",
-                            name: "",
+                      <div
+                        className={`w-48 min-h-8 h-[${BLOBS_HEIGHT}px] flex justify-center items-center border border-gray-200`}
+                      >
+                        <CircularPacking
+                          data={{
+                            type: "node",
+                            name: "root",
                             value:
-                              patch.action === "splice"
-                                ? patch.value.length
-                                : patch.action === "del"
-                                ? patch.length
-                                : 0,
-                            color: patch.action === "splice" ? "green" : "red",
-                          })),
-                        }}
-                        width={250}
-                        height={100}
-                      />
+                              changeGroup.charsAdded + changeGroup.charsDeleted,
+                            children: changeGroup.diff.map((patch) => ({
+                              type: "leaf",
+                              name: "",
+                              value:
+                                patch.action === "splice"
+                                  ? patch.value.length
+                                  : patch.action === "del"
+                                  ? patch.length
+                                  : 0,
+                              color:
+                                patch.action === "splice" ? "green" : "red",
+                            })),
+                          }}
+                          width={100}
+                          height={
+                            BLOBS_HEIGHT *
+                            Math.min(
+                              1,
+                              (changeGroup.charsAdded +
+                                changeGroup.charsDeleted) /
+                                1000
+                            )
+                          }
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
