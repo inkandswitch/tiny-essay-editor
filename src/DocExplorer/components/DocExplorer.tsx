@@ -195,8 +195,6 @@ export const DocExplorer: React.FC = () => {
       >
         <div className="flex flex-col h-screen">
           <Topbar
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}
