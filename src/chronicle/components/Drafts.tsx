@@ -4,7 +4,7 @@ import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { getRelativeTimeString } from "@/DocExplorer/utils";
+import { getRelativeTimeString } from "@/docExplorer/utils";
 import { isEqual, truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {

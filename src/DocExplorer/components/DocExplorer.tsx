@@ -20,9 +20,9 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { HistoryPlayground } from "@/history/components/History";
-import { DraftsPlayground } from "@/drafts/Drafts";
-import { SpatialHistoryPlayground } from "@/spatial/Spatial";
+import { HistoryPlayground } from "@/chronicle/components/History";
+import { DraftsPlayground } from "@/chronicle/components/Drafts";
+import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 
 export type Tool = {
   id: string;

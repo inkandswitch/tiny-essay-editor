@@ -3,7 +3,7 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
-import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
+import { LoadingScreen } from "../../docExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";

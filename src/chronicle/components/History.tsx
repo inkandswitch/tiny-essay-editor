@@ -8,9 +8,9 @@ import {
   GROUPINGS_THAT_TAKE_GAP_TIME,
   charsAddedAndDeletedByPatches,
   getGroupedChanges,
-} from "../utils";
+} from "../groupChanges";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { GROUPINGS } from "../utils";
+import { GROUPINGS } from "../groupChanges";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 
@@ -39,8 +39,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
-import { getRelativeTimeString } from "@/DocExplorer/utils";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { getRelativeTimeString } from "@/docExplorer/utils";
+import { ContactAvatar } from "@/docExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
 
 const BLOBS_HEIGHT = 70;
