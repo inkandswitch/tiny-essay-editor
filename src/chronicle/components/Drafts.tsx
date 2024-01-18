@@ -35,7 +35,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   );
   const [showDraftsSidebar, setShowDraftsSidebar] = useState<boolean>(true);
   const account = useCurrentAccount();
-  const contactDoc = account.contactHandle.docSync();
+  const contactDoc = account?.contactHandle?.docSync();
 
   const createDraft = useCallback(
     (name: string = "Untitled Draft") => {
@@ -313,13 +313,14 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               )}
               {myPrivateDraftUrl && (
                 <div className="flex items-center">
-                  <div className="mr-2 text-xs font-semibold bg-purple-100 border-b-2 border-purple-300 px-1 rounded-md">
-                    In private session
-                  </div>
                   <Button
                     variant="outline"
-                    className="h-6 text-xs font-semibold"
+                    className="h-6 text-xs font-semibold bg-purple-50 border-purple-400"
                     onClick={() => {
+                      const confirm = window.confirm(
+                        "OK to share your private work in the main shared doc?"
+                      );
+                      if (!confirm) return;
                       mergeDraft(myPrivateDraftUrl);
                       setMyPrivateDraftUrl(null);
                       setSelectedDraftUrl(null);
@@ -327,7 +328,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     }}
                   >
                     <UsersIcon size={16} className="mr-1 inline" />
-                    End session and share
+                    End private session
                   </Button>
                 </div>
               )}
