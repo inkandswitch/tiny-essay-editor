@@ -244,7 +244,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col font-mono text-xs font-semibold text-gray-600">
         <div className="p-1">
           <div className="text-xs text-gray-500 uppercase font-bold mb-2">
-            Change log
+            History
           </div>
           <div className="mb-2">
             <div className="flex justify-between mb-1">
