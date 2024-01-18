@@ -318,7 +318,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     className="h-6 text-xs font-semibold bg-purple-50 border-purple-400"
                     onClick={() => {
                       const confirm = window.confirm(
-                        "OK to share your private work in the main shared doc?"
+                        "OK to share your edits in the main version?"
                       );
                       if (!confirm) return;
                       mergeDraft(myPrivateDraftUrl);
