@@ -68,6 +68,7 @@ export type EditorProps = {
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
+  limitToRange?: { start: number; end: number };
 };
 
 export function MarkdownEditor({

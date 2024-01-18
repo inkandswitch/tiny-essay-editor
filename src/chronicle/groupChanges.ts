@@ -300,3 +300,69 @@ export const charsAddedAndDeletedByPatches = (
     { charsAdded: 0, charsDeleted: 0 }
   );
 };
+
+// This is a quick hacky grouping
+// Probably better to iterate over patches rather than groups..?
+const groupPatchesByDelimiter =
+  (delimiter: string) =>
+  (
+    doc: MarkdownDoc,
+    patches: Patch[]
+  ): {
+    lineStartIndex: number;
+    lineEndIndex: number;
+    patches: Patch[];
+  }[] => {
+    if (!doc?.content) return [];
+    const consumedPatches = new Set<Patch>();
+    const lines = doc.content.split(delimiter);
+    const groupedPatches: {
+      lineStartIndex: number;
+      lineEndIndex: number;
+      patches: Patch[];
+    }[] = [];
+
+    let currentIndex = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineEndIndex = currentIndex + line.length;
+
+      const patchesForLine = patches
+        .filter((patch) => {
+          if (!["del", "splice"].includes(patch.action)) return false;
+          const patchStart = patch.path[1];
+          const patchEnd =
+            patchStart +
+            (patch.action === "del" ? patch.length : patch.value.length);
+          return patchStart <= lineEndIndex && patchEnd >= currentIndex;
+        })
+        .filter((patch) => !consumedPatches.has(patch));
+
+      patchesForLine.forEach((patch) => consumedPatches.add(patch));
+
+      // Subtract the current index from the path to make it relative to the group
+      const patchesWithRelativeIndexes = patchesForLine.map((patch) => ({
+        ...patch,
+        path: [
+          patch.path[0],
+          patch.path[1] - currentIndex,
+          ...patch.path.slice(2),
+        ],
+      }));
+
+      if (patchesForLine.length > 0) {
+        groupedPatches.push({
+          lineStartIndex: currentIndex,
+          lineEndIndex,
+          patches: patchesWithRelativeIndexes,
+        });
+      }
+
+      currentIndex = lineEndIndex + 1; // +1 for the newline character
+    }
+
+    return groupedPatches;
+  };
+
+export const groupPatchesByLine = groupPatchesByDelimiter("\n");
+export const groupPatchesByParagraph = groupPatchesByDelimiter("\n\n");

@@ -8,6 +8,7 @@ import {
   GROUPINGS_THAT_TAKE_GAP_TIME,
   charsAddedAndDeletedByPatches,
   getGroupedChanges,
+  groupPatchesByParagraph,
 } from "../groupChanges";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../groupChanges";
@@ -42,21 +43,11 @@ import { view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/docExplorer/utils";
 import { ContactAvatar } from "@/docExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
+import { hashToColor } from "../utils";
+import { MarkdownEditor } from "@/tee/components/MarkdownEditor";
+import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
 
 const BLOBS_HEIGHT = 70;
-
-export const hashToColor = (hash: string) => {
-  let hashInt = 0;
-  for (let i = 0; i < hash.length; i++) {
-    hashInt = hash.charCodeAt(i) + ((hashInt << 5) - hashInt);
-  }
-  let color = "#";
-  for (let i = 0; i < 3; i++) {
-    const value = (hashInt >> (i * 8)) & 0xff;
-    color += ("00" + value.toString(16)).substr(-2);
-  }
-  return color;
-};
 
 const Hash: React.FC<{ hash: string }> = ({ hash }) => {
   const color = useMemo(() => hashToColor(hash), [hash]);
@@ -105,6 +96,8 @@ type ChangeGroupFields = (typeof changeGroupFields)[number];
 
 type VisibleFieldsOnChangeGroup = { [key in ChangeGroupFields]: boolean };
 
+type MainPaneView = "wholeDoc" | "snippets";
+
 export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
@@ -129,6 +122,9 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // The grouping algorithm to use for the change log (because this is a playground!)
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
     useState<keyof typeof GROUPINGS>("ByAuthor");
+
+  // The view mode for the main pane (either "wholeDoc" or "snippets")
+  const [mainPaneView, setMainPaneView] = useState<MainPaneView>("wholeDoc");
 
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
@@ -180,6 +176,17 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       diffHeads = [];
     }
   }
+
+  // the diff for the selected change groups
+  const selectedDiff = selectedChangeGroups.flatMap((cg) => cg.diff);
+
+  // the document state at the end of the selected change groups
+  const selectedDoc = docHeads ? view(doc, docHeads) : doc;
+
+  const diffGroupedByParagraph = useMemo(
+    () => groupPatchesByParagraph(selectedDoc, selectedDiff),
+    [selectedDoc, selectedDiff]
+  );
 
   const handleClickOnChangeGroup = (
     e: React.MouseEvent,
@@ -488,7 +495,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       ))}
                     </div>
                   )}
-
                   {visibleFieldsOnChangeGroup.diff && (
                     <div className="mb-2">
                       <div className="text-gray-500 font-bold uppercase text-xs">
@@ -525,16 +531,26 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     </div>
                   )}
                   {visibleFieldsOnChangeGroup.editStats && (
-                    <div className="mb-2">
-                      <div className="text-gray-500 font-bold uppercase">
-                        Stats
+                    <div className="mb-2 font-bold">
+                      <div className="inline">
+                        <div className="text-gray-500 uppercase">Stats</div>
+                        <span className="text-green-600  mr-2">
+                          +{changeGroup.charsAdded}
+                        </span>
+                        <span className="text-red-600 ">
+                          -{changeGroup.charsDeleted}
+                        </span>
                       </div>
-                      <span className="text-green-600 font-bold mr-2">
-                        +{changeGroup.charsAdded}
-                      </span>
-                      <span className="text-red-600 font-bold">
-                        -{changeGroup.charsDeleted}
-                      </span>
+                      <div className="inline ml-2">
+                        /{" "}
+                        {
+                          groupPatchesByParagraph(
+                            changeGroup.docAtEndOfChangeGroup,
+                            changeGroup.diff
+                          ).length
+                        }{" "}
+                        paragraphs
+                      </div>
                     </div>
                   )}
                   {visibleFieldsOnChangeGroup.blobs && (
@@ -658,14 +674,24 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
-        <div className="p-2 h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
+        <div className="h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
           {docHeads && (
-            <div className="flex">
-              <div className="mr-6">
-                Showing past state (readonly):{" "}
-                {docHeads?.map((head) => <Hash key={head} hash={head} />) ||
-                  "latest"}
-              </div>
+            <div className="flex items-center p-1">
+              <Select
+                value={mainPaneView}
+                onValueChange={(value) => setMainPaneView(value as any)}
+              >
+                <SelectTrigger className="h-6 text-xs mr-2 max-w-36">
+                  <SelectValue placeholder="View Mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["wholeDoc", "snippets"].map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {key === "wholeDoc" ? "Whole doc" : "Diff Snippets"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex mr-6">
                 <Checkbox
                   id="show-diff-overlay"
@@ -683,7 +709,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs h-6 mt-[-4px]"
+                className="text-xs h-6 mt-[-4px] font-semibold ml-auto"
                 onClick={() => setChangeGroupSelection(null)}
               >
                 <TimerResetIcon size={12} className="mr-1 inline" />
@@ -691,22 +717,45 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               </Button>
             </div>
           )}
-          {!docHeads && <div>Showing current state (editable)</div>}
+          {!docHeads && (
+            <div className="p-2 text-gray-500">
+              Select a changeset to view history
+            </div>
+          )}
         </div>
-
-        <TinyEssayEditor
-          docUrl={docUrl}
-          key={docUrl}
-          readOnly={docHeads !== undefined}
-          docHeads={docHeads}
-          diffHeads={showDiffInDoc ? diffHeads : undefined}
-        />
-        {doc && changeGroupSelection && showDiffInDoc && (
-          <div className="absolute top-20 right-6">
-            <MinimapWithDiff
-              doc={docHeads ? view(doc, docHeads) : doc}
-              patches={selectedChangeGroups.flatMap((cg) => cg.diff)}
+        {mainPaneView === "wholeDoc" && docUrl && (
+          <>
+            <TinyEssayEditor
+              docUrl={docUrl}
+              key={docUrl}
+              readOnly={docHeads !== undefined}
+              docHeads={docHeads}
+              diffHeads={showDiffInDoc ? diffHeads : undefined}
             />
+            {doc && changeGroupSelection && showDiffInDoc && (
+              <div className="absolute top-20 right-6">
+                <MinimapWithDiff doc={selectedDoc} patches={selectedDiff} />
+              </div>
+            )}
+          </>
+        )}
+        {mainPaneView === "snippets" && docUrl && (
+          <div className="h-full overflow-y-auto">
+            {diffGroupedByParagraph.map((snippet) => (
+              <div
+                className="border border-red-500 m-4"
+                key={`${docHeads}-${snippet.lineStartIndex}-${snippet.lineEndIndex}`}
+              >
+                <div className="w-96 text-xs">{JSON.stringify(snippet)}</div>
+                <ReadonlySnippetView
+                  text={selectedDoc.content.slice(
+                    snippet.lineStartIndex,
+                    snippet.lineEndIndex
+                  )}
+                  patches={snippet.patches}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>

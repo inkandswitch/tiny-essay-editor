@@ -23,7 +23,7 @@ import {
   GROUPINGS_THAT_TAKE_BATCH_SIZE,
   GROUPINGS_THAT_TAKE_GAP_TIME,
 } from "@/chronicle/groupChanges";
-import { hashToColor } from "@/chronicle/components/History";
+import { hashToColor } from "../utils";
 import { group } from "console";
 
 interface Snippet {

@@ -29,7 +29,6 @@ export const TinyEssayEditor = ({
   diffStyle?: DiffStyle;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
-  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
@@ -48,6 +47,7 @@ export const TinyEssayEditor = ({
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
+  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
       <div className="@container flex bg-gray-50 justify-center">
