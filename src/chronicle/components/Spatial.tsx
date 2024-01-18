@@ -1,31 +1,30 @@
-import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
-import { MarkdownDoc } from "@/tee/schema";
-import { Doc } from "@automerge/automerge";
-import { next as A } from "@automerge/automerge";
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { EditorView } from "@codemirror/view";
-import { SelectionRange } from "@codemirror/state";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { getGroupedChanges, ChangeGroup } from "@/chronicle/groupChanges";
+import { hashToColor } from "@/chronicle/components/History";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import {
+  ChangeGroup,
   GROUPINGS,
   GROUPINGS_THAT_TAKE_BATCH_SIZE,
   GROUPINGS_THAT_TAKE_GAP_TIME,
+  getGroupedChanges,
 } from "@/chronicle/groupChanges";
-import { hashToColor } from "@/chronicle/components/History";
-import { group } from "console";
-
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
+import { MarkdownViewer } from "@/tee/components/MarkdownViewer";
+import { MarkdownDoc } from "@/tee/schema";
+import { next as A, Doc } from "@automerge/automerge";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
+import { SelectionRange } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 interface Snippet {
   from: A.Cursor;
   to: A.Cursor;
@@ -157,7 +156,11 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           );
 
           if (text !== prevText) {
-            versions.unshift({ heads, text, changeGroup });
+            versions.unshift({
+              heads,
+              text,
+              changeGroup,
+            });
             prevText = text;
           }
         }
@@ -210,7 +213,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       {
         from: snippet.from,
         to: snippet.to,
-        class: "cm-patch-pencil",
+        class: "bg-gray-100",
       },
     ];
   });
@@ -310,6 +313,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             <div className="relative">
               {resolvedSnippets.map((snippet, index) => (
                 <SnippetView
+                  handle={handle}
                   key={index}
                   snippet={snippet}
                   editorWidth={editorWidth}
@@ -329,6 +333,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 };
 
 interface SnippetViewProps {
+  handle: DocHandle<MarkdownDoc>;
   snippet: ResolvedSnippet;
   editorWidth: number;
   onRemoveSnippet: () => void;
@@ -337,6 +342,7 @@ interface SnippetViewProps {
 }
 
 function SnippetView({
+  handle,
   snippet,
   editorWidth,
   onRemoveSnippet,
@@ -403,7 +409,8 @@ function SnippetView({
           height: isExpanded ? "" : `${height}px`,
         }}
       >
-        <div className="whitespace-pre-wrap">{activeVersion?.text}</div>
+        {activeVersion && <MarkdownViewer text={activeVersion.text} />}
+
         {!isExpanded && (
           <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
         )}
