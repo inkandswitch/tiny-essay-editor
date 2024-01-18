@@ -11,8 +11,9 @@ import {
   DeleteIcon,
   MergeIcon,
   MoreHorizontal,
-  PencilIcon,
   PlusIcon,
+  UsersIcon,
+  VenetianMaskIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,20 +21,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
+import { useCurrentAccount } from "@/docExplorer/account";
 
 export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
-  const [myPencilDraftUrl, setMyPencilDraftUrl] = useState<AutomergeUrl | null>(
-    null
-  );
+  const [myPrivateDraftUrl, setMyPrivateDraftUrl] =
+    useState<AutomergeUrl | null>(null);
   const [selectedDraftUrl, setSelectedDraftUrl] = useState<AutomergeUrl | null>(
     null
   );
   const [showDraftsSidebar, setShowDraftsSidebar] = useState<boolean>(true);
+  const account = useCurrentAccount();
+  const contactDoc = account.contactHandle.docSync();
 
   const createDraft = useCallback(
     (name: string = "Untitled Draft") => {
@@ -249,7 +251,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       )}
       <div className="flex-grow overflow-hidden">
-        <div className="p-2 h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
+        <div className="p-2 h-10 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
           <div className="flex items-center">
             <div className="flex items-center">
               <input
@@ -289,24 +291,46 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               </div>
             )}
             <div className={`ml-auto mr-2 flex items-center`}>
-              <Switch
-                className="border border-gray-300 h-4 mr-2"
-                checked={myPencilDraftUrl !== null}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    const draftUrl = createDraft("My Pencil Draft"); // todo put user's name in here
-                    setMyPencilDraftUrl(draftUrl);
+              {!myPrivateDraftUrl && (
+                <Button
+                  variant="outline"
+                  className="h-6 text-xs font-semibold"
+                  onClick={() => {
+                    const draftUrl = createDraft(
+                      `Private Session: ${
+                        contactDoc?.type === "registered"
+                          ? contactDoc.name
+                          : "Unknown User"
+                      }`
+                    ); // todo put user's name in here
+                    setMyPrivateDraftUrl(draftUrl);
                     setShowDiffOverlay(true);
-                  } else {
-                    mergeDraft(myPencilDraftUrl);
-                    setMyPencilDraftUrl(null);
-                    setSelectedDraftUrl(null);
-                    setShowDiffOverlay(false);
-                  }
-                }}
-              />
-              <PencilIcon size={16} className="mr-1" />
-              Write in pencil
+                  }}
+                >
+                  <VenetianMaskIcon size={16} className="mr-1 inline" />
+                  Start private session
+                </Button>
+              )}
+              {myPrivateDraftUrl && (
+                <div className="flex items-center">
+                  <div className="mr-2 text-xs font-semibold bg-purple-100 border-b-2 border-purple-300 px-1 rounded-md">
+                    In private session
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-6 text-xs font-semibold"
+                    onClick={() => {
+                      mergeDraft(myPrivateDraftUrl);
+                      setMyPrivateDraftUrl(null);
+                      setSelectedDraftUrl(null);
+                      setShowDiffOverlay(false);
+                    }}
+                  >
+                    <UsersIcon size={16} className="mr-1 inline" />
+                    End session and share
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -319,7 +343,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               : undefined
           }
           diffStyle={
-            selectedDraftUrl === myPencilDraftUrl ? "pencil" : "normal"
+            selectedDraftUrl === myPrivateDraftUrl ? "private" : "normal"
           }
         />
       </div>

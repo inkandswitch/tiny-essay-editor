@@ -210,7 +210,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       {
         from: snippet.from,
         to: snippet.to,
-        class: "cm-patch-pencil",
+        class: "cm-patch-private",
       },
     ];
   });
