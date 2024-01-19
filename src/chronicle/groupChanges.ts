@@ -27,6 +27,7 @@ type TEEChangeGroup = {
   charsAdded: number;
   charsDeleted: number;
   headings: Heading[];
+  commentsAdded: number;
 };
 
 export type ChangeGroup = GenericChangeGroup & TEEChangeGroup;
@@ -129,14 +130,51 @@ export const getGroupedChanges = (
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
 
-    // Omit the group if the diff didn't affect the doc text or the comments.
-    // (This is specific to TEE for now)
-    const groupAffectedTextOrComments =
-      currentGroup.diff.filter((patch) =>
-        ["content", "commentThreads"].includes(patch.path[0])
-      ).length > 0;
+    // Finalize the stats on the group based on the diff
 
-    if (!groupAffectedTextOrComments) {
+    currentGroup.charsAdded = currentGroup.diff.reduce((total, patch) => {
+      if (patch.path[0] !== "content") {
+        return total;
+      }
+      if (patch.action === "splice") {
+        return total + patch.value.length;
+      } else {
+        return total;
+      }
+    }, 0);
+
+    currentGroup.charsDeleted = currentGroup.diff.reduce((total, patch) => {
+      if (patch.path[0] !== "content") {
+        return total;
+      }
+      if (patch.action === "del") {
+        return total + patch.length;
+      } else {
+        return total;
+      }
+    }, 0);
+
+    currentGroup.commentsAdded = currentGroup.diff.reduce((total, patch) => {
+      const isNewComment =
+        patch.path[0] === "commentThreads" &&
+        patch.path.length === 4 &&
+        patch.action === "insert";
+
+      if (!isNewComment) {
+        return total;
+      } else {
+        console.log(patch);
+        return total + 1;
+      }
+    }, 0);
+
+    // GL 1/19: For now, only show a group if it edited the text or added a comment.
+    // THIS IS A HACK, revisit this logic and think about it more carefully!
+    if (
+      currentGroup.charsAdded === 0 &&
+      currentGroup.charsDeleted === 0 &&
+      currentGroup.commentsAdded === 0
+    ) {
       return;
     }
 
@@ -165,13 +203,6 @@ export const getGroupedChanges = (
       GROUPINGS[algorithm](currentGroup, decodedChange, numericParameter)
     ) {
       currentGroup.changes.push(decodedChange);
-      currentGroup.charsAdded += decodedChange.ops.reduce((total, op) => {
-        return op.action === "set" && op.insert === true ? total + 1 : total;
-      }, 0);
-      currentGroup.charsDeleted += decodedChange.ops.reduce((total, op) => {
-        return op.action === "del" ? total + 1 : total;
-      }, 0);
-
       currentGroup.id = decodedChange.hash;
       if (decodedChange.time && decodedChange.time > 0) {
         currentGroup.time = decodedChange.time;
@@ -214,6 +245,7 @@ export const getGroupedChanges = (
         charsDeleted: decodedChange.ops.reduce((total, op) => {
           return op.action === "del" ? total + 1 : total;
         }, 0),
+        commentsAdded: 0,
         diff: [],
         tags: [],
         time:

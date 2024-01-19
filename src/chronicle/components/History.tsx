@@ -108,14 +108,14 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const [visibleFieldsOnChangeGroup, setVisibleFieldsOnChangeGroup] =
     useState<VisibleFieldsOnChangeGroup>({
-      editStats: false,
+      editStats: true,
       actorIds: false,
       authors: true,
       time: true,
       diff: false,
       blobs: false,
       minimapVertical: false,
-      minibar: true,
+      minibar: false,
       sections: false,
     });
 
@@ -555,22 +555,27 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   <div className="mb-2 font-bold">
                     <div className="inline">
                       <div className="text-gray-500 uppercase">Stats</div>
-                      <span className="text-green-600  mr-2">
+                      <span
+                        className={`text-green-600  mr-2 ${
+                          changeGroup.charsAdded === 0 && "opacity-50"
+                        }`}
+                      >
                         +{changeGroup.charsAdded}
                       </span>
-                      <span className="text-red-600 ">
+                      <span
+                        className={`text-red-600 mr-2 ${
+                          changeGroup.charsDeleted === 0 && "opacity-50"
+                        }`}
+                      >
                         -{changeGroup.charsDeleted}
                       </span>
-                    </div>
-                    <div className="inline ml-2">
-                      /{" "}
-                      {
-                        groupPatchesByParagraph(
-                          changeGroup.docAtEndOfChangeGroup,
-                          changeGroup.diff
-                        ).length
-                      }{" "}
-                      paragraphs
+                      <span
+                        className={`text-gray-500 ${
+                          changeGroup.commentsAdded === 0 && "opacity-50"
+                        }`}
+                      >
+                        💬{changeGroup.commentsAdded}
+                      </span>
                     </div>
                   </div>
                 )}
