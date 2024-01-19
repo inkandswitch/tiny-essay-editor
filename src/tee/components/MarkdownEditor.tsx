@@ -25,6 +25,7 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import {
+  codeFolding,
   foldKeymap,
   indentOnInput,
   indentUnit,
@@ -186,6 +187,9 @@ export function MarkdownEditor({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
+        codeFolding({
+          placeholderText: "Hello folded",
+        }),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
