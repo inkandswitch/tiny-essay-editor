@@ -53,9 +53,12 @@ const MAX_GAP = 300;
 export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const [doc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [editorView, setEditorView] = useState<EditorView>();
+  const editorViewRef = useRef<EditorView>(null);
+  const snippetsWithVersionsAndResolvedPosRef = useRef<
+    SnippetWithVersionsAndResolvedPos[]
+  >([]);
   const [selectedHeadsBySnippet, setSelectedHeadsBySnippet] = useState<
     Record<string, A.Heads>
   >({});
@@ -91,10 +94,20 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
   };
 
-  const onCloseSnippetAtIndex = (indexToClose: number) => {
-    setSnippets((snippets) =>
-      snippets.filter((snippet, index) => index !== indexToClose)
-    );
+  const onCloseSnippetAtIndex = (indexToClose: number, replace: boolean) => {
+    const snippet = snippetsWithVersionsAndResolvedPosRef.current[indexToClose];
+
+    editorViewRef.current.dispatch({
+      changes: {
+        from: snippet.from + 1,
+        to: snippet.to - 1,
+        insert: snippet.selectedVersion.text,
+      },
+    });
+
+    setSnippets((snippets) => {
+      return snippets.filter((snippet, index) => index !== indexToClose);
+    });
   };
 
   const onSelectVersionOfSnippetAtIndex = (
@@ -194,6 +207,9 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     [snippetsWithVersions, selectedHeadsBySnippet, doc]
   );
 
+  snippetsWithVersionsAndResolvedPosRef.current =
+    snippetsWithVersionsAndResolvedPos;
+
   return (
     <div className="flex flex-col overflow-y-hidden h-full ">
       <div className="p-2 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono flex gap-3">
@@ -277,7 +293,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 handle={handle}
                 path={["content"]}
                 setSelection={() => {}}
-                setView={setEditorView}
+                setView={(view) => (editorViewRef.current = view)}
                 threadsWithPositions={[]}
                 setActiveThreadId={() => {}}
                 readOnly={false}

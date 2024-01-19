@@ -70,7 +70,7 @@ export type EditorProps = {
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
-  onCloseSnippet?: (index: number, resetToSelectedVersion: boolean) => void;
+  onCloseSnippet?: (index: number, replace: boolean) => void;
   onSelectVersionOfSnippet?: (index: number, heads: A.Heads) => void;
   limitToRange?: { start: number; end: number };
   snippets?: SnippetWithVersionsAndResolvedPos[];
@@ -218,7 +218,9 @@ export function MarkdownEditor({
         debugHighlightsDecorations,
         scrubbableSnippetsField,
         scrubbableSectionsDecorations({
-          onCloseAtIndex: (index) => onCloseSnippet(index, false),
+          onCloseAtIndex: (index, replace) => {
+            onCloseSnippet(index, replace);
+          },
           onSelectVersionAtIndex: onSelectVersionOfSnippet,
         }),
       ],
@@ -461,8 +463,7 @@ import ReactDom from "react-dom/client";
 import { Button } from "@/components/ui/button";
 import { hashToColor } from "@/chronicle/utils";
 import { MarkdownViewer } from "./MarkdownViewer";
-import { X } from "lucide-react";
-import { head } from "lodash";
+import { X, Check } from "lucide-react";
 
 const setScrubbableSectionsEffect =
   StateEffect.define<SnippetWithVersionsAndResolvedPos[]>();
@@ -484,7 +485,7 @@ const scrubbableSnippetsField = StateField.define<
 });
 
 interface ScrubbableSectionsDecorationsConfig {
-  onCloseAtIndex: (index: number) => void;
+  onCloseAtIndex: (index: number, replace: boolean) => void;
   onSelectVersionAtIndex: (index: number, heads: A.Heads) => void;
 }
 
@@ -501,8 +502,8 @@ export const scrubbableSectionsDecorations = ({
       const widget = Decoration.widget({
         widget: new SnippetWidget({
           snippet: scrubbableSection,
-          onClose() {
-            onCloseAtIndex(index);
+          onClose(replace) {
+            onCloseAtIndex(index, replace);
           },
           onSelectVersion(heads) {
             onSelectVersionAtIndex(index, heads);
@@ -520,7 +521,7 @@ export const scrubbableSectionsDecorations = ({
 
 interface SnippetWidgetConfig {
   snippet: SnippetWithVersionsAndResolvedPos;
-  onClose: () => void;
+  onClose: (replace: boolean) => void;
   onSelectVersion: (heads: A.Heads) => void;
 }
 
@@ -528,7 +529,7 @@ class SnippetWidget extends WidgetType {
   private snippet: SnippetWithVersionsAndResolvedPos;
   private dom: HTMLDivElement;
   private root: ReactDom.Root;
-  private onClose: () => void;
+  private onClose: (replace: boolean) => void;
   private onSelectVersion: (heads: A.Heads) => void;
 
   constructor({ snippet, onClose, onSelectVersion }: SnippetWidgetConfig) {
@@ -557,7 +558,7 @@ class SnippetWidget extends WidgetType {
 
 interface SnippetViewProps {
   snippet: SnippetWithVersionsAndResolvedPos;
-  onClose: () => void;
+  onClose: (replace: boolean) => void;
   onSelectVersion: (version: SnippetVersion) => void;
 }
 
@@ -607,13 +608,20 @@ function SnippetView({ snippet, onClose, onSelectVersion }: SnippetViewProps) {
         </div>
 
         <div>
-          <Button size="sm" variant="ghost" onClick={() => onClose()}>
+          <Button size="sm" variant="ghost" onClick={() => onClose(false)}>
             <X />
           </Button>
         </div>
       </div>
       <div className="shadow-xl border border-gray rounded">
         {activeVersion && <MarkdownViewer text={activeVersion.text} />}
+      </div>
+      <div className="flex justify-end py-2">
+        {activeVersion !== snippet.versions[0] && (
+          <Button size="sm" variant="default" onClick={() => onClose(true)}>
+            replace
+          </Button>
+        )}
       </div>
     </div>
   );
