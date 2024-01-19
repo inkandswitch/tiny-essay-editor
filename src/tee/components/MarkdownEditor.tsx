@@ -8,6 +8,8 @@ import {
   EditorView,
   keymap,
   WidgetType,
+  ViewPlugin,
+  ViewUpdate,
 } from "@codemirror/view";
 
 import {
@@ -69,6 +71,7 @@ export type EditorProps = {
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   limitToRange?: { start: number; end: number };
+  scrubbableSections?: SnippetsWithVersionsAndResolvedPos[];
 };
 
 export function MarkdownEditor({
@@ -84,6 +87,7 @@ export function MarkdownEditor({
   diffStyle,
   debugHighlights,
   onOpenSnippet,
+  scrubbableSections = [],
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -130,6 +134,12 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
+
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      effects: setScrubbableSectionsEffect.of(scrubbableSections),
+    });
+  }, [scrubbableSections, editorRoot.current]);
 
   useEffect(() => {
     if (!handleReady) {
@@ -198,6 +208,8 @@ export function MarkdownEditor({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
+        scrubbableSnippetsField,
+        scrubbableSectionsDecorations,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -427,3 +439,62 @@ const debugHighlightsDecorations = EditorView.decorations.compute(
     );
   }
 );
+
+import { SnippetsWithVersionsAndResolvedPos } from "@/chronicle/components/Spatial";
+import { RangeSetBuilder } from "@codemirror/state";
+
+const setScrubbableSectionsEffect =
+  StateEffect.define<SnippetsWithVersionsAndResolvedPos[]>();
+const scrubbableSnippetsField = StateField.define<
+  SnippetsWithVersionsAndResolvedPos[]
+>({
+  create() {
+    return [];
+  },
+
+  update(snippets, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setScrubbableSectionsEffect)) {
+        return e.value;
+      }
+    }
+    return snippets;
+  },
+});
+
+export const scrubbableSectionsDecorations = EditorView.decorations.compute(
+  [scrubbableSnippetsField],
+  (state) => {
+    const scrubbableSections = state.field(scrubbableSnippetsField);
+
+    const builder = new RangeSetBuilder<Decoration>();
+
+    for (const scrubbableSection of scrubbableSections) {
+      const widget = Decoration.widget({
+        widget: new SnippetWidget(),
+        side: 1,
+      });
+
+      builder.add(scrubbableSection.from, scrubbableSection.to, widget);
+    }
+
+    const decorations = builder.finish();
+
+    console.log(decorations);
+
+    return decorations;
+  }
+);
+
+class SnippetWidget extends WidgetType {
+  constructor() {
+    super();
+  }
+
+  toDOM() {
+    const dom = document.createElement("div");
+    dom.className = "snippet-widget";
+    dom.textContent = "this is a snippet";
+    return dom;
+  }
+}

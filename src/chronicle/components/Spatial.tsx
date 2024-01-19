@@ -5,7 +5,6 @@ import {
   GROUPINGS_THAT_TAKE_GAP_TIME,
   getGroupedChanges,
 } from "@/chronicle/groupChanges";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,33 +13,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { hashToColor } from "../utils";
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
-import { MarkdownViewer } from "@/tee/components/MarkdownViewer";
 import { MarkdownDoc } from "@/tee/schema";
 import { next as A, Doc } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { SelectionRange } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Snippet {
   from: A.Cursor;
   to: A.Cursor;
-  isExpanded: boolean;
   selectedHeads: A.Heads;
 }
 
-interface ResolvedSnippet {
-  from: number;
-  to: number;
-  y: number;
-  height: number;
-  isExpanded: boolean;
+export interface SnippetWithVersions {
+  from: A.Cursor;
+  to: A.Cursor;
   versions: SnippetVersion[];
   selectedVersion: SnippetVersion;
+}
+
+export interface SnippetsWithVersionsAndResolvedPos
+  extends SnippetWithVersions {
+  from: number;
+  to: number;
 }
 
 interface SnippetVersion {
@@ -59,7 +57,6 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 }) => {
   const [doc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, setSelection] = useState<TextSelection>();
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -88,25 +85,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       snippets.concat({
         from,
         to,
-        isExpanded: true,
         selectedHeads: A.getHeads(doc),
       })
-    );
-  };
-
-  const onRemoveSnippetAtIndex = (indexToDelete: number) => {
-    setSnippets((snippets) =>
-      snippets.filter((snippet, index) => index !== indexToDelete)
-    );
-  };
-
-  const onToggleExpandSnippetAtIndex = (indexToToggle: number) => {
-    setSnippets((snippets) =>
-      snippets.map((snippet, index) =>
-        index === indexToToggle
-          ? { ...snippet, isExpanded: !snippet.isExpanded }
-          : snippet
-      )
     );
   };
 
@@ -120,8 +100,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
   };
 
-  const resolvedSnippets: ResolvedSnippet[] = useMemo(() => {
-    const resolvedSnippets: ResolvedSnippet[] = [];
+  const snippetsWithVersions: SnippetWithVersions[] = useMemo(() => {
+    const snippetsWithVersions: SnippetWithVersions[] = [];
 
     for (const snippet of snippets) {
       let tempDoc = A.init<MarkdownDoc>();
@@ -171,15 +151,9 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         }
       });
 
-      const fromY = editorView.coordsAtPos(from).top;
-      const toY = editorView.coordsAtPos(to).bottom;
-
-      resolvedSnippets.push({
-        from,
-        to,
-        y: fromY,
-        height: toY - fromY,
-        isExpanded: true,
+      snippetsWithVersions.push({
+        from: snippet.from,
+        to: snippet.to,
         versions,
         selectedVersion: versions.find((v) =>
           arraysEqual(v.heads, snippet.selectedHeads)
@@ -187,10 +161,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       });
     }
 
-    return resolvedSnippets;
-  }, [snippets, doc, groupingNumericParameter, activeGroupingAlgorithm]);
-
-  console.log({ resolvedSnippets, snippets });
+    return snippetsWithVersions;
+  }, [snippets, groupingNumericParameter, activeGroupingAlgorithm]);
 
   // update editor width
   useEffect(() => {
@@ -209,19 +181,15 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [editorRef.current]);
 
-  const debugHighlights = resolvedSnippets.flatMap((snippet) => {
-    if (snippet.from === snippet.to) {
-      return [];
-    }
-
-    return [
-      {
-        from: snippet.from,
-        to: snippet.to,
-        class: "bg-gray-100",
-      },
-    ];
-  });
+  const snippetsWithVersionsAndResolvedPos = useMemo(
+    () =>
+      snippetsWithVersions.map((snippet) => ({
+        ...snippet,
+        from: A.getCursorPosition(doc, ["content"], snippet.from),
+        to: A.getCursorPosition(doc, ["content"], snippet.to),
+      })),
+    [snippetsWithVersions, doc]
+  );
 
   return (
     <div className="flex flex-col overflow-y-hidden h-full ">
@@ -312,23 +280,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 readOnly={false}
                 diffStyle="normal"
                 onOpenSnippet={onOpenSnippet}
-                debugHighlights={debugHighlights}
+                scrubbableSections={snippetsWithVersionsAndResolvedPos}
               />
-            </div>
-            <div className="relative">
-              {resolvedSnippets.map((snippet, index) => (
-                <SnippetView
-                  doc={doc}
-                  key={index}
-                  snippet={snippet}
-                  editorWidth={editorWidth}
-                  onRemoveSnippet={() => onRemoveSnippetAtIndex(index)}
-                  onToggleExpand={() => onToggleExpandSnippetAtIndex(index)}
-                  onSelectVersion={(version) =>
-                    onSelectVersionOfSnippetAtIndex(index, version)
-                  }
-                />
-              ))}
             </div>
           </div>
         </div>
@@ -336,121 +289,6 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
-
-interface SnippetViewProps {
-  doc: MarkdownDoc;
-  snippet: ResolvedSnippet;
-  editorWidth: number;
-  onRemoveSnippet: () => void;
-  onToggleExpand: () => void;
-  onSelectVersion: (version: SnippetVersion) => void;
-}
-
-function SnippetView({
-  doc,
-  snippet,
-  editorWidth,
-  onRemoveSnippet,
-  onToggleExpand,
-  onSelectVersion,
-}: SnippetViewProps) {
-  const { versions, y, height, isExpanded, selectedVersion } = snippet;
-  const [hoveredVersion, setHoveredVersion] = useState<SnippetVersion>();
-
-  const onMouseOverVersionAtIndex = (index: number) => {
-    setHoveredVersion(versions[index]);
-  };
-
-  const onMouseLeaveVersionAtIndex = (index: number) => {
-    setHoveredVersion(undefined);
-  };
-
-  const activeVersion = hoveredVersion ?? selectedVersion;
-
-  const highlights = useMemo(() => {
-    if (!activeVersion) {
-      return [];
-    }
-
-    const changes = A.diff(doc, A.getHeads(doc), activeVersion.heads);
-
-    const hightlights = [];
-
-    changes.forEach((change) => {
-      const [key, index] = change.path;
-
-      if (
-        key === "content" &&
-        change.action === "del" &&
-        index >= activeVersion.from
-      ) {
-      }
-    });
-
-    console.log("changes", changes);
-  }, [activeVersion]);
-
-  return (
-    <div
-      className="left-4 absolute mt-[-36px]"
-      style={{
-        top: `${y - 50}px`,
-        width: `${editorWidth}px`,
-      }}
-    >
-      <div className="flex w-full justify-between bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white border-l border-r border-gray-200 box-border items-center px-8">
-        <div className="flex min-w-0 overflow-auto no-scrollbar">
-          {versions.map((version, index) => {
-            const isActive = version === activeVersion;
-            const { actorIds, authorUrls } = version.changeGroup;
-
-            const authorHash =
-              authorUrls.length > 0 ? authorUrls.join(",") : actorIds.join(",");
-
-            return (
-              <button
-                onMouseOver={() => onMouseOverVersionAtIndex(index)}
-                onMouseLeave={() => onMouseLeaveVersionAtIndex(index)}
-                onClick={() => onSelectVersion(version)}
-                key={index}
-                className="p-0.5"
-              >
-                <div
-                  className="w-[16px] h-[16px] rounded-full flex-shrink-0 bg-black"
-                  style={{
-                    opacity: isActive ? "1" : "0.5",
-                    background: hashToColor(authorHash),
-                  }}
-                ></div>
-              </button>
-            );
-          })}
-        </div>
-
-        <Button size="sm" variant="ghost" onClick={() => onRemoveSnippet()}>
-          <X />
-        </Button>
-      </div>
-      <div
-        className="relative bg-white px-8 cm-line overflow-hidden border-l border-r border-gray-200 box-border"
-        style={{
-          height: isExpanded ? "" : `${height}px`,
-        }}
-      >
-        {activeVersion && <MarkdownViewer text={activeVersion.text} />}
-
-        {!isExpanded && (
-          <div className="absolute bottom-0 justify-center items-center right-0 left-0 flex bg-gradient-to-b from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]"></div>
-        )}
-      </div>
-      <div className="flex w-full justify-center border-l border-r border-gray-200 box-border bg-gradient-to-t from-transparent via-[rgba(255,255,255, 0.5)] to-white h-[25px]">
-        <Button size="sm" variant="ghost" onClick={() => onToggleExpand()}>
-          {isExpanded ? <ChevronUp /> : <ChevronDown />}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 function safelyGetCursorPosition<T>(
   doc: Doc<T>,
