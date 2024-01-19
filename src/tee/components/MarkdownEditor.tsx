@@ -69,10 +69,10 @@ export type EditorProps = {
   diffHeads?: A.Heads;
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
-  onOpenScrubbaleSection?: (range: SelectionRange) => void;
-  onCloseScrubbableSectionAt?: (index: number) => void;
+  onOpenSnippet?: (range: SelectionRange) => void;
+  onCloseSnippet?: (index: number) => void;
   limitToRange?: { start: number; end: number };
-  scrubbableSections?: SnippetWithVersionsAndResolvedPos[];
+  snippets?: SnippetWithVersionsAndResolvedPos[];
 };
 
 export function MarkdownEditor({
@@ -88,7 +88,8 @@ export function MarkdownEditor({
   diffStyle,
   debugHighlights,
   onOpenSnippet,
-  scrubbableSections,
+  onCloseSnippet,
+  snippets,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -137,14 +138,14 @@ export function MarkdownEditor({
   }, [threadsWithPositions]);
 
   useEffect(() => {
-    if (!scrubbableSections) {
+    if (!snippets) {
       return;
     }
 
     editorRoot.current?.dispatch({
-      effects: setScrubbableSectionsEffect.of(scrubbableSections),
+      effects: setScrubbableSectionsEffect.of(snippets),
     });
-  }, [scrubbableSections, editorRoot.current]);
+  }, [snippets, editorRoot.current]);
 
   useEffect(() => {
     if (!handleReady) {
@@ -214,7 +215,7 @@ export function MarkdownEditor({
         debugHighlightsField,
         debugHighlightsDecorations,
         scrubbableSnippetsField,
-        scrubbableSectionsDecorations,
+        scrubbableSectionsDecorations(onCloseSnippet ?? (() => {})),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -476,47 +477,51 @@ const scrubbableSnippetsField = StateField.define<
   },
 });
 
-export const scrubbableSectionsDecorations = EditorView.decorations.compute(
-  [scrubbableSnippetsField],
-  (state) => {
+export const scrubbableSectionsDecorations = (
+  onCloseAtIndex: (index: number) => void
+) => {
+  return EditorView.decorations.compute([scrubbableSnippetsField], (state) => {
     const scrubbableSections = state.field(scrubbableSnippetsField);
 
     const builder = new RangeSetBuilder<Decoration>();
 
-    for (const scrubbableSection of scrubbableSections) {
+    scrubbableSections.forEach((scrubbableSection, index) => {
       const widget = Decoration.widget({
-        widget: new SnippetWidget(scrubbableSection),
+        widget: new SnippetWidget(scrubbableSection, () => {
+          onCloseAtIndex(index);
+        }),
         side: 1,
       });
 
       builder.add(scrubbableSection.from, scrubbableSection.to, widget);
-    }
+    });
 
-    const decorations = builder.finish();
-
-    console.log(decorations);
-
-    return decorations;
-  }
-);
+    return builder.finish();
+  });
+};
 
 class SnippetWidget extends WidgetType {
   private snippet: SnippetWithVersionsAndResolvedPos;
   private dom: HTMLDivElement;
   private root: ReactDom.Root;
+  private onClose: () => void;
 
-  constructor(snippet: SnippetWithVersionsAndResolvedPos) {
+  constructor(snippet: SnippetWithVersionsAndResolvedPos, onClose: () => void) {
     super();
 
     this.snippet = snippet;
 
     this.dom = document.createElement("div");
     this.root = ReactDom.createRoot(this.dom);
+    this.onClose = onClose;
   }
 
   toDOM() {
     this.root.render(
-      React.createElement(SnippetView, { snippet: this.snippet })
+      React.createElement(SnippetView, {
+        snippet: this.snippet,
+        onClose: this.onClose,
+      })
     );
 
     return this.dom;
@@ -525,12 +530,13 @@ class SnippetWidget extends WidgetType {
 
 interface SnippetViewProps {
   snippet: SnippetWithVersionsAndResolvedPos;
+  onClose: () => void;
   /*  onRemoveSnippet: () => void;
   onToggleExpand: () => void;
   onSelectVersion: (version: SnippetVersion) => void; */
 }
 
-function SnippetView({ snippet }: SnippetViewProps) {
+function SnippetView({ snippet, onClose }: SnippetViewProps) {
   const { versions, selectedVersion } = snippet;
   const [hoveredVersion, setHoveredVersion] = useState<SnippetVersion>();
 
@@ -575,13 +581,7 @@ function SnippetView({ snippet }: SnippetViewProps) {
           })}
         </div>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            /*onRemoveSnippet()*/
-          }}
-        >
+        <Button size="sm" variant="ghost" onClick={() => onClose()}>
           <X />
         </Button>
       </div>

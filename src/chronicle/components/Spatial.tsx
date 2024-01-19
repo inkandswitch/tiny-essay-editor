@@ -92,13 +92,11 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     );
   };
 
-  const onSelectVersionOfSnippetAtIndex = (indexToChange, version) => {
+  const onCloseSnippetAtIndex = (indexToClose: number) => {
+    console.log("close");
+
     setSnippets((snippets) =>
-      snippets.map((snippet, index) =>
-        index === indexToChange
-          ? { ...snippet, selectedHeads: version.heads }
-          : snippet
-      )
+      snippets.filter((snippet, index) => index !== indexToClose)
     );
   };
 
@@ -280,7 +278,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 readOnly={false}
                 diffStyle="normal"
                 onOpenSnippet={onOpenSnippet}
-                scrubbableSections={snippetsWithVersionsAndResolvedPos}
+                onCloseSnippet={onCloseSnippetAtIndex}
+                snippets={snippetsWithVersionsAndResolvedPos}
               />
             </div>
           </div>
