@@ -356,6 +356,7 @@ const groupPatchesByDelimiter =
   (delimiter: string) =>
   (doc: MarkdownDoc, patches: Patch[]): PatchGroup[] => {
     if (!doc?.content) return [];
+    console.log("grouping", patches);
     const patchGroups: PatchGroup[] = [];
 
     let currentGroup: PatchGroup | null = null;
@@ -369,29 +370,16 @@ const groupPatchesByDelimiter =
       return {
         groupStartIndex: groupStartIndex >= 0 ? groupStartIndex : patchStart,
         groupEndIndex: groupEndIndex >= 0 ? groupEndIndex : patchEnd,
-        patches: [
-          patchWithAdjustedIndexes(
-            patch,
-            groupStartIndex >= 0 ? groupStartIndex : patchStart
-          ),
-        ],
-      };
-    };
-
-    const patchWithAdjustedIndexes = (patch: Patch, startIndex: number) => {
-      return {
-        ...patch,
-        path: [
-          patch.path[0],
-          patch.path[1] - startIndex,
-          ...patch.path.slice(2),
-        ],
+        patches: [patch],
       };
     };
 
     for (let i = 0; i < patches.length; i++) {
       const patch = patches[i];
-      if (!["splice", "del"].includes(patch.action)) {
+      if (
+        patch.path[0] !== "content" ||
+        !["splice", "del"].includes(patch.action)
+      ) {
         continue;
       }
 
@@ -400,9 +388,7 @@ const groupPatchesByDelimiter =
 
       if (currentGroup) {
         if (patchStart <= currentGroup.groupEndIndex) {
-          currentGroup.patches.push(
-            patchWithAdjustedIndexes(patch, currentGroup.groupStartIndex)
-          );
+          currentGroup.patches.push(patch);
           if (patchEnd > currentGroup.groupEndIndex) {
             currentGroup.groupEndIndex = patchEnd;
           }

@@ -21,12 +21,14 @@ export const TinyEssayEditor = ({
   diff,
   readOnly,
   diffStyle,
+  foldRanges,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
   diff?: Patch[];
   readOnly?: boolean;
   diffStyle?: DiffStyle;
+  foldRanges?: { from: number; to: number }[];
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -68,6 +70,7 @@ export const TinyEssayEditor = ({
             docHeads={docHeads}
             diff={diff}
             diffStyle={diffStyle ?? "normal"}
+            foldRanges={foldRanges}
           />
         </div>
         <div className="w-0">

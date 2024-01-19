@@ -40,12 +40,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
-import { view } from "@automerge/automerge";
+import { diff, view } from "@automerge/automerge";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
 import { hashToColor } from "../utils";
 import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
+import { MarkdownEditor } from "@/tee/components/MarkdownEditor";
 
 const BLOBS_HEIGHT = 70;
 
@@ -194,6 +195,34 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     () => groupPatchesByParagraph(selectedDoc, selectedDiff),
     [selectedDoc, selectedDiff]
   );
+
+  const foldRanges = useMemo(() => {
+    const ranges: { from: number; to: number }[] = [];
+    let lastTo = 0;
+
+    for (const group of diffGroupedByParagraph) {
+      if (group.groupStartIndex <= lastTo) {
+        continue;
+      }
+      ranges.push({ from: lastTo, to: group.groupStartIndex });
+      lastTo = group.groupEndIndex;
+    }
+
+    if (lastTo !== 0 && lastTo < selectedDoc.content.length - 1) {
+      ranges.push({
+        from: lastTo,
+        to: selectedDoc ? selectedDoc.content.length - 1 : 0,
+      });
+    }
+
+    return ranges;
+  }, [diffGroupedByParagraph, selectedDoc]);
+
+  console.log({
+    diffGroupedByParagraph,
+    foldRanges,
+    length: selectedDoc.content.length,
+  });
 
   const handleClickOnChangeGroup = (
     e: React.MouseEvent,
@@ -564,10 +593,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                       </span>
                       <span
                         className={`text-red-600 mr-2 ${
-                          changeGroup.charsDeleted === 0 && "opacity-50"
+                          !changeGroup.charsDeleted && "opacity-50"
                         }`}
                       >
-                        -{changeGroup.charsDeleted}
+                        -{changeGroup.charsDeleted || 0}
                       </span>
                       <span
                         className={`text-gray-500 ${
@@ -764,8 +793,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             )}
           </>
         )}
-        {mainPaneView === "snippets" && docUrl && (
+        {/* {mainPaneView === "snippets" && docUrl && (
           <div className="h-full overflow-y-auto bg-gray-50 py-8">
+            Hello
+
             {diffGroupedByParagraph.map((snippet) => (
               <div
                 className="bg-white border border-gray-300 m-4 max-w-[722px]"
@@ -781,6 +812,18 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               </div>
             ))}
           </div>
+        )} */}
+        {mainPaneView === "snippets" && docUrl && (
+          <>
+            <TinyEssayEditor
+              docUrl={docUrl}
+              key={`${docUrl}:${docHeads}`}
+              readOnly
+              docHeads={docHeads}
+              diff={showDiffInDoc ? selectedDiff : undefined}
+              foldRanges={foldRanges}
+            />
+          </>
         )}
       </div>
     </div>

@@ -16,7 +16,6 @@ import {
 } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { diff } from "@automerge/automerge/next";
 import { completionKeymap } from "@codemirror/autocomplete";
 import {
   defaultKeymap,
@@ -26,6 +25,7 @@ import {
 } from "@codemirror/commands";
 import {
   codeFolding,
+  foldEffect,
   foldKeymap,
   indentOnInput,
   indentUnit,
@@ -69,7 +69,7 @@ export type EditorProps = {
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
-  limitToRange?: { start: number; end: number };
+  foldRanges?: { from: number; to: number }[];
 };
 
 export function MarkdownEditor({
@@ -85,6 +85,7 @@ export function MarkdownEditor({
   diffStyle,
   debugHighlights,
   onOpenSnippet,
+  foldRanges,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -98,6 +99,13 @@ export function MarkdownEditor({
       effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
   }, [debugHighlights, editorRoot.current]);
+
+  // propagate fold ranges into codemirror
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      effects: (foldRanges ?? []).map((range) => foldEffect.of(range)),
+    });
+  }, [foldRanges, editorRoot.current]);
 
   // Propagate patches into the codemirror
   useEffect(() => {
@@ -188,7 +196,19 @@ export function MarkdownEditor({
         debugHighlightsField,
         debugHighlightsDecorations,
         codeFolding({
-          placeholderText: "Hello folded",
+          placeholderDOM: () => {
+            // TODO use a nicer API for creating these elements?
+            const placeholder = document.createElement("div");
+            placeholder.className = "cm-foldPlaceholder";
+            placeholder.style.padding = "10px";
+            placeholder.style.marginTop = "5px";
+            placeholder.style.marginBottom = "5px";
+            placeholder.style.fontSize = "14px";
+            placeholder.style.fontFamily = "Fira Code";
+            placeholder.style.textAlign = "center";
+            placeholder.innerText = "N lines hidden";
+            return placeholder;
+          },
         }),
       ],
       dispatch(transaction, view) {
