@@ -64,7 +64,7 @@ export type EditorProps = {
   threadsWithPositions: CommentThreadForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  diffHeads?: A.Heads;
+  diff?: A.Patch[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
@@ -80,7 +80,7 @@ export function MarkdownEditor({
   threadsWithPositions,
   readOnly,
   docHeads,
-  diffHeads,
+  diff,
   diffStyle,
   debugHighlights,
   onOpenSnippet,
@@ -90,18 +90,6 @@ export function MarkdownEditor({
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
 
   const handleReady = handle.isReady();
-
-  const patches = useMemo(
-    () => {
-      if (!diffHeads) return [];
-      const doc = handle.docSync();
-      const diffTargetHeads = docHeads ?? A.getHeads(doc);
-      const patches = diff(doc, diffHeads, diffTargetHeads);
-
-      return patches;
-    },
-    [handle, handle.docSync(), docHeads, diffHeads] // rethink this useCallback caching
-  );
 
   // Propagate debug highlights into codemirror
   useEffect(() => {
@@ -113,9 +101,9 @@ export function MarkdownEditor({
   // Propagate patches into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setPatchesEffect.of(patches),
+      effects: setPatchesEffect.of(diff ?? []),
     });
-  }, [patches, editorRoot.current]);
+  }, [diff, editorRoot.current]);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {

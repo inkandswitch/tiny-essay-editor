@@ -13,18 +13,18 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Heads, view } from "@automerge/automerge/next";
+import { Heads, Patch, view } from "@automerge/automerge/next";
 
 export const TinyEssayEditor = ({
   docUrl,
   docHeads,
-  diffHeads,
+  diff,
   readOnly,
   diffStyle,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
-  diffHeads?: Heads;
+  diff?: Patch[];
   readOnly?: boolean;
   diffStyle?: DiffStyle;
 }) => {
@@ -66,7 +66,7 @@ export const TinyEssayEditor = ({
             setActiveThreadId={setActiveThreadId}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
-            diffHeads={diffHeads}
+            diff={diff}
             diffStyle={diffStyle ?? "normal"}
           />
         </div>

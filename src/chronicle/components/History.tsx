@@ -755,7 +755,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               key={docUrl}
               readOnly={docHeads !== undefined}
               docHeads={docHeads}
-              diffHeads={showDiffInDoc ? diffHeads : undefined}
+              diff={showDiffInDoc ? selectedDiff : undefined}
             />
             {doc && changeGroupSelection && showDiffInDoc && (
               <div className="absolute top-20 right-6">
