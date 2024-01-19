@@ -8,7 +8,7 @@ import {
 
 import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { next as A, ChangeFn, uuid } from "@automerge/automerge";
+import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
 
 import {
   Popover,
@@ -29,6 +29,7 @@ export const CommentsSidebar = ({
   threadsWithPositions,
   activeThreadId,
   setActiveThreadId,
+  diff,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
@@ -36,6 +37,7 @@ export const CommentsSidebar = ({
   threadsWithPositions: CommentThreadWithPosition[];
   activeThreadId: string | null;
   setActiveThreadId: (threadId: string | null) => void;
+  diff?: Patch[];
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
@@ -43,6 +45,18 @@ export const CommentsSidebar = ({
   const [activeReplyThreadId, setActiveReplyThreadId] = useState<
     string | null
   >();
+
+  const addedComments: Array<{ threadId: string; commentIndex: number }> = diff
+    .filter(
+      (patch) =>
+        patch.path.length === 4 &&
+        patch.path[0] === "commentThreads" &&
+        patch.action === "insert"
+    )
+    .map((patch) => ({
+      threadId: patch.path[1],
+      commentIndex: patch.path[3],
+    }));
 
   // suppress showing the button immediately after adding a thread
   const [suppressButton, setSuppressButton] = useState(false);
@@ -119,7 +133,7 @@ export const CommentsSidebar = ({
           }}
         >
           <div>
-            {thread.comments.map((comment) => {
+            {thread.comments.map((comment, index) => {
               const legacyUserName =
                 doc.users?.find((user) => user.id === comment.userId)?.name ??
                 "Anonymous";
@@ -127,7 +141,12 @@ export const CommentsSidebar = ({
               return (
                 <div
                   key={comment.id}
-                  className="mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0"
+                  className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0 ${
+                    addedComments.find(
+                      (c) =>
+                        c.threadId === thread.id && c.commentIndex === index
+                    ) && "bg-green-100"
+                  }`}
                 >
                   <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
                     {comment.contactUrl ? (

@@ -78,6 +78,7 @@ export const TinyEssayEditor = ({
             activeThreadId={activeThreadId}
             setActiveThreadId={setActiveThreadId}
             threadsWithPositions={threadsWithPositions}
+            diff={diff}
           />
         </div>
       </div>
