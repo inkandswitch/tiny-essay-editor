@@ -227,7 +227,7 @@ export const DocExplorer: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
+      <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-gray-300 rounded-b-md font-mono font-bold border">
         <img src="/construction.png" className="h-6 mr-2"></img>
         {TOOLS.map((tool) => (
           <div
