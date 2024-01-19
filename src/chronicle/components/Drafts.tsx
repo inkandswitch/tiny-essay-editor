@@ -338,9 +338,13 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         <TinyEssayEditor
           docUrl={selectedDraftUrl || docUrl}
           key={docUrl}
-          diffHeads={
+          diff={
             showDiffOverlay && selectedDraftDoc
-              ? selectedDraftDoc.copyMetadata.source.copyHeads
+              ? A.diff(
+                  selectedDraftDoc,
+                  selectedDraftDoc.copyMetadata.source.copyHeads,
+                  A.getHeads(selectedDraftDoc)
+                )
               : undefined
           }
           diffStyle={
