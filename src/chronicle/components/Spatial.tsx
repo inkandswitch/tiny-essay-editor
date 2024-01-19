@@ -45,6 +45,8 @@ interface ResolvedSnippet {
 interface SnippetVersion {
   heads: A.Heads;
   changeGroup: ChangeGroup;
+  from: number;
+  to: number;
   text: string;
 }
 
@@ -159,6 +161,8 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             versions.unshift({
               heads,
               text,
+              from: fromInTempDoc,
+              to: toInTempDoc,
               changeGroup,
             });
             prevText = text;
@@ -313,7 +317,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             <div className="relative">
               {resolvedSnippets.map((snippet, index) => (
                 <SnippetView
-                  handle={handle}
+                  doc={doc}
                   key={index}
                   snippet={snippet}
                   editorWidth={editorWidth}
@@ -333,7 +337,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 };
 
 interface SnippetViewProps {
-  handle: DocHandle<MarkdownDoc>;
+  doc: MarkdownDoc;
   snippet: ResolvedSnippet;
   editorWidth: number;
   onRemoveSnippet: () => void;
@@ -342,7 +346,7 @@ interface SnippetViewProps {
 }
 
 function SnippetView({
-  handle,
+  doc,
   snippet,
   editorWidth,
   onRemoveSnippet,
@@ -361,6 +365,29 @@ function SnippetView({
   };
 
   const activeVersion = hoveredVersion ?? selectedVersion;
+
+  const highlights = useMemo(() => {
+    if (!activeVersion) {
+      return [];
+    }
+
+    const changes = A.diff(doc, A.getHeads(doc), activeVersion.heads);
+
+    const hightlights = [];
+
+    changes.forEach((change) => {
+      const [key, index] = change.path;
+
+      if (
+        key === "content" &&
+        change.action === "del" &&
+        index >= activeVersion.from
+      ) {
+      }
+    });
+
+    console.log("changes", changes);
+  }, [activeVersion]);
 
   return (
     <div
