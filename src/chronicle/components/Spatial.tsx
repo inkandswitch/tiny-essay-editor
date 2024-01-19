@@ -25,20 +25,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 interface Snippet {
   from: A.Cursor;
   to: A.Cursor;
-  selectedHeads: A.Heads;
 }
 
 export interface SnippetWithVersions {
   from: A.Cursor;
   to: A.Cursor;
   versions: SnippetVersion[];
-  selectedVersion: SnippetVersion;
 }
 
-export interface SnippetsWithVersionsAndResolvedPos
-  extends SnippetWithVersions {
+export interface SnippetWithVersionsAndResolvedPos extends SnippetWithVersions {
   from: number;
   to: number;
+  selectedVersion: SnippetVersion;
 }
 
 export interface SnippetVersion {
@@ -58,6 +56,10 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [doc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [editorView, setEditorView] = useState<EditorView>();
+  const [selectedHeadsBySnippet, setSelectedHeadsBySnippet] = useState<
+    Record<string, A.Heads>
+  >({});
+
   const editorRef = useRef<HTMLDivElement>(null);
 
   // The grouping algorithm to use for the change log (because this is a playground!)
@@ -75,8 +77,6 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const [snippets, setSnippets] = useState<Snippet[]>([]);
 
-  const [editorWidth, setEditorWidth] = useState<number>();
-
   const onOpenSnippet = (range: SelectionRange) => {
     const doc = handle.docSync();
 
@@ -87,17 +87,31 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       snippets.concat({
         from,
         to,
-        selectedHeads: A.getHeads(doc),
       })
     );
   };
 
   const onCloseSnippetAtIndex = (indexToClose: number) => {
-    console.log("close");
-
     setSnippets((snippets) =>
       snippets.filter((snippet, index) => index !== indexToClose)
     );
+  };
+
+  const onSelectVersionOfSnippetAtIndex = (
+    indexToChange: number,
+    heads: A.Heads
+  ) => {
+    // hack to get snippets
+    setSnippets((snippets) => {
+      const snippet = snippets[indexToChange];
+
+      setSelectedHeadsBySnippet((map) => ({
+        ...map,
+        [getSnippetId(snippet)]: heads,
+      }));
+
+      return snippets;
+    });
   };
 
   const snippetsWithVersions: SnippetWithVersions[] = useMemo(() => {
@@ -155,38 +169,29 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         from: snippet.from,
         to: snippet.to,
         versions,
-        selectedVersion: versions[0],
       });
     }
 
     return snippetsWithVersions;
   }, [snippets, debouncedGroupingNumericParameter, activeGroupingAlgorithm]);
 
-  // update editor width
-  useEffect(() => {
-    if (!editorRef) {
-      return;
-    }
-
-    setEditorWidth(editorRef.current.getBoundingClientRect().width);
-
-    const handleResize = () => {
-      setEditorWidth(editorRef.current.getBoundingClientRect().width);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, [editorRef.current]);
-
   const snippetsWithVersionsAndResolvedPos = useMemo(
     () =>
-      snippetsWithVersions.map((snippet) => ({
-        ...snippet,
-        from: A.getCursorPosition(doc, ["content"], snippet.from),
-        to: A.getCursorPosition(doc, ["content"], snippet.to),
-      })),
-    [snippetsWithVersions, doc]
+      snippetsWithVersions.map((snippet) => {
+        const selectedHeads = selectedHeadsBySnippet[getSnippetId(snippet)];
+
+        return {
+          ...snippet,
+          from: A.getCursorPosition(doc, ["content"], snippet.from),
+          to: A.getCursorPosition(doc, ["content"], snippet.to),
+          selectedVersion: selectedHeads
+            ? snippet.versions.find((version) =>
+                arraysEqual(version.heads, selectedHeads)
+              )
+            : snippet.versions[0],
+        };
+      }),
+    [snippetsWithVersions, selectedHeadsBySnippet, doc]
   );
 
   return (
@@ -279,6 +284,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 diffStyle="normal"
                 onOpenSnippet={onOpenSnippet}
                 onCloseSnippet={onCloseSnippetAtIndex}
+                onSelectVersionOfSnippet={onSelectVersionOfSnippetAtIndex}
                 snippets={snippetsWithVersionsAndResolvedPos}
               />
             </div>
@@ -320,4 +326,8 @@ export function useDebounce<T>(value: T, delay?: number): T {
   }, [value, delay]);
 
   return debouncedValue;
+}
+
+function getSnippetId(snippet: Snippet) {
+  return `${snippet.from}:${snippet.to}`;
 }
