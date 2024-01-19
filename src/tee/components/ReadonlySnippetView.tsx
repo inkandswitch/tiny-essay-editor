@@ -44,13 +44,6 @@ export function ReadonlySnippetView({
 }) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
-  // Propagate patches into the codemirror
-  useEffect(() => {
-    console.log("patches!", patches, editorRoot.current);
-    editorRoot.current?.dispatch({
-      effects: setPatchesEffect.of(patches),
-    });
-  }, [patches, editorRoot.current]);
 
   useEffect(() => {
     const source = text; // this should use path
@@ -80,7 +73,6 @@ export function ReadonlySnippetView({
         lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
-        console.log("dispatch", transaction, view);
         view.update([transaction]);
       },
       parent: containerRef.current,
@@ -142,8 +134,6 @@ const patchDecorations = (patches: A.Patch[], diffStyle: DiffStyle) => {
   const filteredPatches = patches.filter(
     (patch) => patch.path[0] === "content"
   );
-
-  console.log({ patches: filteredPatches });
 
   const decorations = filteredPatches.flatMap((patch) => {
     switch (patch.action) {

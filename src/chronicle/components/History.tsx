@@ -44,7 +44,6 @@ import { getRelativeTimeString } from "@/docExplorer/utils";
 import { ContactAvatar } from "@/docExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
 import { hashToColor } from "../utils";
-import { MarkdownEditor } from "@/tee/components/MarkdownEditor";
 import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
 
 const BLOBS_HEIGHT = 70;
@@ -740,17 +739,16 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           </>
         )}
         {mainPaneView === "snippets" && docUrl && (
-          <div className="h-full overflow-y-auto">
+          <div className="h-full overflow-y-auto bg-gray-50">
             {diffGroupedByParagraph.map((snippet) => (
               <div
-                className="border border-red-500 m-4"
-                key={`${docHeads}-${snippet.lineStartIndex}-${snippet.lineEndIndex}`}
+                className="bg-white border border-gray-300 m-4 max-w-[722px]"
+                key={JSON.stringify(snippet.patches)}
               >
-                <div className="w-96 text-xs">{JSON.stringify(snippet)}</div>
                 <ReadonlySnippetView
                   text={selectedDoc.content.slice(
-                    snippet.lineStartIndex,
-                    snippet.lineEndIndex
+                    snippet.groupStartIndex,
+                    snippet.groupEndIndex
                   )}
                   patches={snippet.patches}
                 />
