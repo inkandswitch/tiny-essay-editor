@@ -194,7 +194,7 @@ export const HorizontalMinimap: React.FC<{
     <div className={`${headingsExist && "mt-10"}`}>
       <div className="flex flex-row w-[75%]">
         {buckets.map((bucket) => (
-          <div className="relative w-[4%]">
+          <div className="relative w-[4%]" key={bucket.startIndex}>
             {bucket.headings.length > 0 && (
               <div
                 className={`absolute top-[-20px] left-0 text-xs text-gray-500 min-w-[100px] transform -rotate-[20deg] origin-left font-narrow bg-white bg-opacity-70 ${

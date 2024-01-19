@@ -74,17 +74,15 @@ export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
 
   // "batch size" param here means "max gap allowed, in ms"
   //
-  ByEditTime: (currentGroup, newChange, maxGapInSeconds) => {
+  ByEditTime: (currentGroup, newChange, maxGapInMinutes) => {
     if (
-      newChange.time === undefined ||
-      newChange.time === 0 ||
-      currentGroup.time === undefined ||
-      currentGroup.time === 0
+      (newChange.time === undefined || newChange.time === 0) &&
+      (currentGroup.time === undefined || currentGroup.time === 0)
     ) {
       return true;
     }
 
-    return newChange.time < currentGroup.time + maxGapInSeconds * 1000;
+    return newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
   },
 
   // Other groupings to try:
@@ -130,6 +128,18 @@ export const getGroupedChanges = (
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
+
+    // Omit the group if the diff didn't affect the doc text or the comments.
+    // (This is specific to TEE for now)
+    const groupAffectedTextOrComments =
+      currentGroup.diff.filter((patch) =>
+        ["content", "commentThreads"].includes(patch.path[0])
+      ).length > 0;
+
+    if (!groupAffectedTextOrComments) {
+      return;
+    }
+
     currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
     currentGroup.headings = extractHeadings(
       currentGroup.docAtEndOfChangeGroup,
@@ -141,6 +151,7 @@ export const getGroupedChanges = (
   for (let i = 0; i < changes.length; i++) {
     const change = changes[i];
     let decodedChange = decodeChange(change);
+
     decodedChange.metadata = {};
 
     try {

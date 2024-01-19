@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { truncate } from "lodash";
 import {
+  CalendarIcon,
   CopyIcon,
   EyeIcon,
   FileDiffIcon,
@@ -120,7 +121,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   // The grouping algorithm to use for the change log (because this is a playground!)
   const [activeGroupingAlgorithm, setActiveGroupingAlgorithm] =
-    useState<keyof typeof GROUPINGS>("ByAuthor");
+    useState<keyof typeof GROUPINGS>("ByEditTime");
 
   // The view mode for the main pane (either "wholeDoc" or "snippets")
   const [mainPaneView, setMainPaneView] = useState<MainPaneView>("wholeDoc");
@@ -128,17 +129,24 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
   const [groupingNumericParameter, setGroupingNumericParameter] =
-    useState<number>(1000);
+    useState<number>(60);
 
   // The grouping function returns change groups starting from the latest change.
-  const { changeGroups: groupedChanges, changeCount } = useMemo(() => {
-    if (!doc) return { changeGroups: [], changeCount: 0 };
-    return getGroupedChanges(doc, {
+  const { groupedChanges, changeCount } = useMemo(() => {
+    if (!doc) return { groupedChanges: [], changeCount: 0 };
+    const { changeCount, changeGroups } = getGroupedChanges(doc, {
       algorithm: activeGroupingAlgorithm,
       numericParameter: groupingNumericParameter,
       tags: doc.tags ?? [],
     });
+
+    return {
+      changeCount,
+      groupedChanges: changeGroups,
+    };
   }, [doc, activeGroupingAlgorithm, groupingNumericParameter]);
+
+  const changesForDisplay = groupedChanges.slice().reverse();
 
   // When the algorithm or batch size changes, the selection can get weird.
   // just reset whenever either of those changes.
@@ -307,10 +315,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 activeGroupingAlgorithm
               ) && (
                 <div className="flex">
-                  <div className="text-xs mr-2 w-36">Max gap (s)</div>
+                  <div className="text-xs mr-2 w-36">Max gap (m)</div>
                   <Slider
                     defaultValue={[groupingNumericParameter]}
-                    max={300}
+                    max={1000}
                     min={1}
                     step={1}
                     onValueChange={(value) =>
@@ -321,7 +329,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                   <input
                     type="number"
                     min={1}
-                    max={300}
+                    max={1000}
                     value={groupingNumericParameter}
                     onChange={(e) =>
                       setGroupingNumericParameter(parseInt(e.target.value))
@@ -396,280 +404,293 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         <div className="overflow-y-auto flex-grow border-t border-gray-400 pt-4 mt-2">
           {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
-          {groupedChanges
-            .slice()
-            .reverse()
-            .map((changeGroup) => (
-              <div className="relative">
-                {changeGroupSelection?.to === changeGroup.id &&
-                  changeGroup.tags.length === 0 && (
-                    <div
-                      className="absolute top-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+          {changesForDisplay.map((changeGroup, index) => (
+            <div className="relative">
+              {new Date(changeGroup.time).toDateString() !==
+                new Date(changesForDisplay[index - 1]?.time).toDateString() && (
+                <div className="text-sm text-gray-500 font-semibold mb-2 flex items-center bg-gray-200 p-1">
+                  <CalendarIcon size={14} className="mr-1" />
+                  {changeGroup.time &&
+                    new Date(changeGroup.time).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      weekday: "long",
+                    })}
+                  {!changeGroup.time && "Unknown time"}
+                </div>
+              )}
+              {changeGroupSelection?.to === changeGroup.id &&
+                changeGroup.tags.length === 0 && (
+                  <div
+                    className="absolute top-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                    onClick={() => {
+                      changeDoc((doc) => {
+                        if (!doc.tags) {
+                          doc.tags = [];
+                        }
+                        doc.tags.push({
+                          name: window.prompt("Tag name:"),
+                          heads: [changeGroup.id],
+                        });
+                      });
+                    }}
+                  >
+                    <TagIcon size={12} className="inline-block mr-1" />
+                    Add a tag
+                  </div>
+                )}
+              {changeGroup.tags.map((tag) => (
+                <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
+                  <TagIcon size={12} className="mr-1 mt-[2px]" />
+                  <div>{tag.name}</div>
+                  <div className="ml-auto">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
                       onClick={() => {
                         changeDoc((doc) => {
-                          if (!doc.tags) {
-                            doc.tags = [];
-                          }
-                          doc.tags.push({
-                            name: window.prompt("Tag name:"),
-                            heads: [changeGroup.id],
-                          });
+                          const tagIndex = doc.tags.indexOf(tag);
+                          doc.tags.splice(tagIndex, 1);
                         });
                       }}
                     >
-                      <TagIcon size={12} className="inline-block mr-1" />
-                      Add a tag
-                    </div>
-                  )}
-                {changeGroup.tags.map((tag) => (
-                  <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
-                    <TagIcon size={12} className="mr-1 mt-[2px]" />
-                    <div>{tag.name}</div>
-                    <div className="ml-auto">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={() => {
-                          changeDoc((doc) => {
-                            const tagIndex = doc.tags.indexOf(tag);
-                            doc.tags.splice(tagIndex, 1);
-                          });
-                        }}
-                      >
-                        <TrashIcon size={14} />
-                      </Button>
-                    </div>
+                      <TrashIcon size={14} />
+                    </Button>
                   </div>
-                ))}
-                <div
-                  className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
-                    selectedChangeGroups.includes(changeGroup)
-                      ? "bg-blue-100"
-                      : changeGroupSelection &&
-                        groupedChanges
-                          .map((c) => c.id)
-                          .indexOf(changeGroupSelection.to) <
-                          groupedChanges
-                            .map((c) => c.id)
-                            .indexOf(changeGroup.id)
-                      ? "opacity-50"
-                      : ""
-                  }`}
-                  data-id={changeGroup.id}
-                  key={changeGroup.id}
-                  onClick={(e) => {
-                    handleClickOnChangeGroup(e, changeGroup);
-                  }}
-                >
-                  <div className="flex justify-between text-xs mb-2">
-                    {visibleFieldsOnChangeGroup.authors &&
-                      changeGroup.authorUrls.length > 0 && (
-                        <div className="text-sm text-gray-600  mb-2">
-                          <div className="text-gray-500 uppercase text-xs font-bold">
-                            Authors
-                          </div>
-                          {changeGroup.authorUrls.map((contactUrl) => (
-                            <ContactAvatar
-                              key={contactUrl}
-                              url={contactUrl}
-                              showName={true}
-                              size="sm"
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                    <div className="text-xs text-gray-600 text-right font-semibold">
-                      <Hash key={changeGroup.id} hash={changeGroup.id} />
-                    </div>
-                  </div>
-                  {visibleFieldsOnChangeGroup.actorIds && (
-                    <div className="text-xs text-gray-600 font-semibold mb-2">
-                      <div className="text-gray-500 font-bold uppercase">
-                        Actors
-                      </div>
-                      {changeGroup.actorIds.map((id) => (
-                        <Hash key={id} hash={id} />
-                      ))}
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.diff && (
-                    <div className="mb-2">
-                      <div className="text-gray-500 font-bold uppercase text-xs">
-                        Diff
-                      </div>
-                      {changeGroup.diff.map((patch) => (
-                        <div className="mb-1">
-                          {patch.path[0] === "content" &&
-                            patch.action === "splice" && (
-                              <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
-                                {truncate(patch.value, {
-                                  length: 100,
-                                })}
-                              </div>
-                            )}
-
-                          {patch.path[0] === "content" &&
-                            patch.action === "del" && (
-                              <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
-                                Deleted {patch.length ?? 1} characters
-                              </div>
-                            )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.time && changeGroup.time && (
-                    <div className="text-gray-500 mb-2 text-sm">
-                      <div className="text-gray-500 font-bold uppercase text-xs">
-                        Last edited
-                      </div>
-
-                      {getRelativeTimeString(changeGroup.time)}
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.editStats && (
-                    <div className="mb-2 font-bold">
-                      <div className="inline">
-                        <div className="text-gray-500 uppercase">Stats</div>
-                        <span className="text-green-600  mr-2">
-                          +{changeGroup.charsAdded}
-                        </span>
-                        <span className="text-red-600 ">
-                          -{changeGroup.charsDeleted}
-                        </span>
-                      </div>
-                      <div className="inline ml-2">
-                        /{" "}
-                        {
-                          groupPatchesByParagraph(
-                            changeGroup.docAtEndOfChangeGroup,
-                            changeGroup.diff
-                          ).length
-                        }{" "}
-                        paragraphs
-                      </div>
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.blobs && (
-                    <div className="text-xs text-gray-600 font-semibold mb-2">
-                      <div className="text-gray-500 font-bold uppercase">
-                        Blobs
-                      </div>
-                      <div
-                        className={`w-48 min-h-8 h-[${BLOBS_HEIGHT}px] flex justify-center items-center border border-gray-200`}
-                      >
-                        <CircularPacking
-                          data={{
-                            type: "node",
-                            name: "root",
-                            value:
-                              changeGroup.charsAdded + changeGroup.charsDeleted,
-                            children: changeGroup.diff.map((patch) => ({
-                              type: "leaf",
-                              name: "",
-                              value:
-                                patch.action === "splice"
-                                  ? patch.value.length
-                                  : patch.action === "del"
-                                  ? patch.length
-                                  : 0,
-                              color:
-                                patch.action === "splice" ? "green" : "red",
-                            })),
-                          }}
-                          width={100}
-                          height={
-                            BLOBS_HEIGHT *
-                            Math.min(
-                              1,
-                              (changeGroup.charsAdded +
-                                changeGroup.charsDeleted) /
-                                // this constant here is a hack -- we're just trying to make the height
-                                // of the blobs proportional to the number of characters in the
-                                // change...
-                                // maybe would be better to pick this number based on the max
-                                // size of a change group in this doc's history?
-                                // One important note is that if the change size exceeds this maximum, it's fine, it doesn't overflow.
-                                // The problem is that if this constant is too big, smaller changes become invisibly tiny.
-                                200
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.minimapVertical && (
-                    <div className="mb-2">
-                      <div className="text-gray-500 font-bold uppercase">
-                        Minimap
-                      </div>
-                      <div>
-                        <MinimapWithDiff
-                          doc={changeGroup.docAtEndOfChangeGroup}
-                          patches={changeGroup.diff}
-                          size="compact"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.minibar && (
-                    <div className="mb-2">
-                      <div className="text-gray-500 font-bold uppercase">
-                        Minibar
-                      </div>
-                      <div>
-                        <HorizontalMinimap
-                          doc={changeGroup.docAtEndOfChangeGroup}
-                          patches={changeGroup.diff}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {visibleFieldsOnChangeGroup.sections && (
-                    <div className="text-gray-500 mb-2 text-sm">
-                      <div className="text-gray-500 font-bold uppercase text-xs">
-                        Sections
-                      </div>
-
-                      {changeGroup.headings.filter((h) => h.patches.length > 0)
-                        .length > 0 && (
-                        <ul>
-                          {changeGroup.headings
-                            .filter((h) => h.patches.length > 0)
-                            .map((heading) => {
-                              const { charsAdded, charsDeleted } =
-                                charsAddedAndDeletedByPatches(heading.patches);
-                              return (
-                                <li className="text-xs">
-                                  ## {truncate(heading.text, { length: 20 })}{" "}
-                                  {charsAdded > 0 && (
-                                    <span className="text-green-600  mr-2">
-                                      +{charsAdded}
-                                    </span>
-                                  )}
-                                  {charsDeleted > 0 && (
-                                    <span className="text-red-600 ">
-                                      -{charsDeleted}
-                                    </span>
-                                  )}
-                                </li>
-                              );
-                            })}
-                        </ul>
-                      )}
-                      {changeGroup.headings.filter((h) => h.patches.length > 0)
-                        .length === 0 && (
-                        <div className="text-xs text-gray-400 italic">
-                          No edited sections
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
+              ))}
+              <div
+                className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
+                  selectedChangeGroups.includes(changeGroup)
+                    ? "bg-blue-100"
+                    : changeGroupSelection &&
+                      groupedChanges
+                        .map((c) => c.id)
+                        .indexOf(changeGroupSelection.to) <
+                        groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+                    ? "opacity-50"
+                    : ""
+                }`}
+                data-id={changeGroup.id}
+                key={changeGroup.id}
+                onClick={(e) => {
+                  handleClickOnChangeGroup(e, changeGroup);
+                }}
+              >
+                <div className="flex justify-between text-xs mb-2">
+                  {visibleFieldsOnChangeGroup.authors &&
+                    changeGroup.authorUrls.length > 0 && (
+                      <div className="text-sm text-gray-600  mb-2">
+                        <div className="text-gray-500 uppercase text-xs font-bold">
+                          Authors
+                        </div>
+                        {changeGroup.authorUrls.map((contactUrl) => (
+                          <ContactAvatar
+                            key={contactUrl}
+                            url={contactUrl}
+                            showName={true}
+                            size="sm"
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                  <div className="text-xs text-gray-600 text-right font-semibold">
+                    <Hash key={changeGroup.id} hash={changeGroup.id} />
+                  </div>
+                </div>
+                {visibleFieldsOnChangeGroup.actorIds && (
+                  <div className="text-xs text-gray-600 font-semibold mb-2">
+                    <div className="text-gray-500 font-bold uppercase">
+                      Actors
+                    </div>
+                    {changeGroup.actorIds.map((id) => (
+                      <Hash key={id} hash={id} />
+                    ))}
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.diff && (
+                  <div className="mb-2">
+                    <div className="text-gray-500 font-bold uppercase text-xs">
+                      Diff
+                    </div>
+                    {changeGroup.diff.map((patch) => (
+                      <div className="mb-1">
+                        {patch.path[0] === "content" &&
+                          patch.action === "splice" && (
+                            <div className="text-green-900 bg-green-50 border border-green-700 p-1 rounded-md">
+                              {truncate(patch.value, {
+                                length: 100,
+                              })}
+                            </div>
+                          )}
+
+                        {patch.path[0] === "content" &&
+                          patch.action === "del" && (
+                            <div className="text-red-900 bg-red-50 border border-red-700 p-1 rounded-md">
+                              Deleted {patch.length ?? 1} characters
+                            </div>
+                          )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.time && changeGroup.time && (
+                  <div className="text-gray-500 mb-2 text-sm">
+                    <div className="text-gray-500 font-bold uppercase text-xs">
+                      Time
+                    </div>
+
+                    {new Date(changeGroup.time).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "numeric",
+                      hour12: true,
+                    })}
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.editStats && (
+                  <div className="mb-2 font-bold">
+                    <div className="inline">
+                      <div className="text-gray-500 uppercase">Stats</div>
+                      <span className="text-green-600  mr-2">
+                        +{changeGroup.charsAdded}
+                      </span>
+                      <span className="text-red-600 ">
+                        -{changeGroup.charsDeleted}
+                      </span>
+                    </div>
+                    <div className="inline ml-2">
+                      /{" "}
+                      {
+                        groupPatchesByParagraph(
+                          changeGroup.docAtEndOfChangeGroup,
+                          changeGroup.diff
+                        ).length
+                      }{" "}
+                      paragraphs
+                    </div>
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.blobs && (
+                  <div className="text-xs text-gray-600 font-semibold mb-2">
+                    <div className="text-gray-500 font-bold uppercase">
+                      Blobs
+                    </div>
+                    <div
+                      className={`w-48 min-h-8 h-[${BLOBS_HEIGHT}px] flex justify-center items-center border border-gray-200`}
+                    >
+                      <CircularPacking
+                        data={{
+                          type: "node",
+                          name: "root",
+                          value:
+                            changeGroup.charsAdded + changeGroup.charsDeleted,
+                          children: changeGroup.diff.map((patch) => ({
+                            type: "leaf",
+                            name: "",
+                            value:
+                              patch.action === "splice"
+                                ? patch.value.length
+                                : patch.action === "del"
+                                ? patch.length
+                                : 0,
+                            color: patch.action === "splice" ? "green" : "red",
+                          })),
+                        }}
+                        width={100}
+                        height={
+                          BLOBS_HEIGHT *
+                          Math.min(
+                            1,
+                            (changeGroup.charsAdded +
+                              changeGroup.charsDeleted) /
+                              // this constant here is a hack -- we're just trying to make the height
+                              // of the blobs proportional to the number of characters in the
+                              // change...
+                              // maybe would be better to pick this number based on the max
+                              // size of a change group in this doc's history?
+                              // One important note is that if the change size exceeds this maximum, it's fine, it doesn't overflow.
+                              // The problem is that if this constant is too big, smaller changes become invisibly tiny.
+                              200
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.minimapVertical && (
+                  <div className="mb-2">
+                    <div className="text-gray-500 font-bold uppercase">
+                      Minimap
+                    </div>
+                    <div>
+                      <MinimapWithDiff
+                        doc={changeGroup.docAtEndOfChangeGroup}
+                        patches={changeGroup.diff}
+                        size="compact"
+                      />
+                    </div>
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.minibar && (
+                  <div className="mb-2">
+                    <div className="text-gray-500 font-bold uppercase">
+                      Minibar
+                    </div>
+                    <div>
+                      <HorizontalMinimap
+                        doc={changeGroup.docAtEndOfChangeGroup}
+                        patches={changeGroup.diff}
+                      />
+                    </div>
+                  </div>
+                )}
+                {visibleFieldsOnChangeGroup.sections && (
+                  <div className="text-gray-500 mb-2 text-sm">
+                    <div className="text-gray-500 font-bold uppercase text-xs">
+                      Sections
+                    </div>
+
+                    {changeGroup.headings.filter((h) => h.patches.length > 0)
+                      .length > 0 && (
+                      <ul>
+                        {changeGroup.headings
+                          .filter((h) => h.patches.length > 0)
+                          .map((heading) => {
+                            const { charsAdded, charsDeleted } =
+                              charsAddedAndDeletedByPatches(heading.patches);
+                            return (
+                              <li className="text-xs">
+                                ## {truncate(heading.text, { length: 20 })}{" "}
+                                {charsAdded > 0 && (
+                                  <span className="text-green-600  mr-2">
+                                    +{charsAdded}
+                                  </span>
+                                )}
+                                {charsDeleted > 0 && (
+                                  <span className="text-red-600 ">
+                                    -{charsDeleted}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    )}
+                    {changeGroup.headings.filter((h) => h.patches.length > 0)
+                      .length === 0 && (
+                      <div className="text-xs text-gray-400 italic">
+                        No edited sections
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
+          ))}
         </div>
       </div>
       <div className="flex-grow overflow-hidden">
