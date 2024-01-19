@@ -69,9 +69,10 @@ export type EditorProps = {
   diffHeads?: A.Heads;
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
-  onOpenSnippet?: (range: SelectionRange) => void;
+  onOpenScrubbaleSection?: (range: SelectionRange) => void;
+  onCloseScrubbableSectionAt?: (index: number) => void;
   limitToRange?: { start: number; end: number };
-  scrubbableSections?: SnippetsWithVersionsAndResolvedPos[];
+  scrubbableSections?: SnippetWithVersionsAndResolvedPos[];
 };
 
 export function MarkdownEditor({
@@ -87,7 +88,7 @@ export function MarkdownEditor({
   diffStyle,
   debugHighlights,
   onOpenSnippet,
-  scrubbableSections = [],
+  scrubbableSections,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -136,6 +137,10 @@ export function MarkdownEditor({
   }, [threadsWithPositions]);
 
   useEffect(() => {
+    if (!scrubbableSections) {
+      return;
+    }
+
     editorRoot.current?.dispatch({
       effects: setScrubbableSectionsEffect.of(scrubbableSections),
     });
@@ -440,13 +445,22 @@ const debugHighlightsDecorations = EditorView.decorations.compute(
   }
 );
 
-import { SnippetsWithVersionsAndResolvedPos } from "@/chronicle/components/Spatial";
+import {
+  SnippetsWithVersionsAndResolvedPos as SnippetWithVersionsAndResolvedPos,
+  SnippetWithVersions,
+} from "@/chronicle/components/Spatial";
 import { RangeSetBuilder } from "@codemirror/state";
+import React from "react";
+import ReactDom from "react-dom/client";
+import { Button } from "@/components/ui/button";
+import { hashToColor } from "@/chronicle/utils";
+import { MarkdownViewer } from "./MarkdownViewer";
+import { X } from "lucide-react";
 
 const setScrubbableSectionsEffect =
-  StateEffect.define<SnippetsWithVersionsAndResolvedPos[]>();
+  StateEffect.define<SnippetWithVersionsAndResolvedPos[]>();
 const scrubbableSnippetsField = StateField.define<
-  SnippetsWithVersionsAndResolvedPos[]
+  SnippetWithVersionsAndResolvedPos[]
 >({
   create() {
     return [];
@@ -471,7 +485,7 @@ export const scrubbableSectionsDecorations = EditorView.decorations.compute(
 
     for (const scrubbableSection of scrubbableSections) {
       const widget = Decoration.widget({
-        widget: new SnippetWidget(),
+        widget: new SnippetWidget(scrubbableSection),
         side: 1,
       });
 
@@ -487,14 +501,93 @@ export const scrubbableSectionsDecorations = EditorView.decorations.compute(
 );
 
 class SnippetWidget extends WidgetType {
-  constructor() {
+  private snippet: SnippetWithVersionsAndResolvedPos;
+  private dom: HTMLDivElement;
+  private root: ReactDom.Root;
+
+  constructor(snippet: SnippetWithVersionsAndResolvedPos) {
     super();
+
+    this.snippet = snippet;
+
+    this.dom = document.createElement("div");
+    this.root = ReactDom.createRoot(this.dom);
   }
 
   toDOM() {
-    const dom = document.createElement("div");
-    dom.className = "snippet-widget";
-    dom.textContent = "this is a snippet";
-    return dom;
+    this.root.render(
+      React.createElement(SnippetView, { snippet: this.snippet })
+    );
+
+    return this.dom;
   }
+}
+
+interface SnippetViewProps {
+  snippet: SnippetWithVersionsAndResolvedPos;
+  /*  onRemoveSnippet: () => void;
+  onToggleExpand: () => void;
+  onSelectVersion: (version: SnippetVersion) => void; */
+}
+
+function SnippetView({ snippet }: SnippetViewProps) {
+  const { versions, selectedVersion } = snippet;
+  const [hoveredVersion, setHoveredVersion] = useState<SnippetVersion>();
+
+  const onMouseOverVersionAtIndex = (index: number) => {
+    setHoveredVersion(versions[index]);
+  };
+
+  const onMouseLeaveVersionAtIndex = (index: number) => {
+    setHoveredVersion(undefined);
+  };
+
+  const activeVersion = hoveredVersion ?? selectedVersion;
+
+  return (
+    <div>
+      <div className="flex items-center w-full justify-between overflow-hidden min-w-0">
+        <div className="flex min-w-0 overflow-auto no-scrollbar flex-shrink">
+          {versions.map((version, index) => {
+            const isActive = version === activeVersion;
+            const { actorIds, authorUrls } = version.changeGroup;
+
+            const authorHash =
+              authorUrls.length > 0 ? authorUrls.join(",") : actorIds.join(",");
+
+            return (
+              <button
+                onMouseOver={() => onMouseOverVersionAtIndex(index)}
+                onMouseLeave={() => onMouseLeaveVersionAtIndex(index)}
+                onClick={undefined /*() => onSelectVersion(version)*/}
+                key={index}
+                className="p-0.5"
+              >
+                <div
+                  className="w-[16px] h-[16px] rounded-full flex-shrink-0 bg-black"
+                  style={{
+                    opacity: isActive ? "1" : "0.5",
+                    background: hashToColor(authorHash),
+                  }}
+                ></div>
+              </button>
+            );
+          })}
+        </div>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            /*onRemoveSnippet()*/
+          }}
+        >
+          <X />
+        </Button>
+      </div>
+      <div className="shadow-xl border border-gray rounded">
+        {activeVersion && <MarkdownViewer text={activeVersion.text} />}
+      </div>
+    </div>
+  );
 }

@@ -41,7 +41,7 @@ export interface SnippetsWithVersionsAndResolvedPos
   to: number;
 }
 
-interface SnippetVersion {
+export interface SnippetVersion {
   heads: A.Heads;
   changeGroup: ChangeGroup;
   from: number;
@@ -66,10 +66,12 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   // Some grouping algorithms have a batch size parameter.
   // we can set this using a slider in the UI.
-  const [_groupingNumericParameter, setGroupingNumericParameter] =
+  const [groupingNumericParameter, setGroupingNumericParameter] =
     useState<number>(1000);
 
-  const groupingNumericParameter = useDebounce(_groupingNumericParameter);
+  const debouncedGroupingNumericParameter = useDebounce(
+    groupingNumericParameter
+  );
 
   const [snippets, setSnippets] = useState<Snippet[]>([]);
 
@@ -155,14 +157,12 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         from: snippet.from,
         to: snippet.to,
         versions,
-        selectedVersion: versions.find((v) =>
-          arraysEqual(v.heads, snippet.selectedHeads)
-        ),
+        selectedVersion: versions[0],
       });
     }
 
     return snippetsWithVersions;
-  }, [snippets, groupingNumericParameter, activeGroupingAlgorithm]);
+  }, [snippets, debouncedGroupingNumericParameter, activeGroupingAlgorithm]);
 
   // update editor width
   useEffect(() => {

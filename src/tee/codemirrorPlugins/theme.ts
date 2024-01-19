@@ -2,7 +2,7 @@ import { HighlightStyle } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 
-const ESSAY_STYLES = {
+export const ESSAY_STYLES = {
   "&": {},
   "&.cm-editor.cm-focused": {
     outline: "none",
@@ -19,14 +19,17 @@ const ESSAY_STYLES = {
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
-    padding: "10px 0",
-    margin: "0 var(--cm-padding-x)",
+    padding: "0",
+    margin: "0",
     // textAlign: "justify",
     textWrap: "pretty",
     lineHeight: "24px",
   },
   ".cm-content li": {
     marginBottom: 0,
+  },
+  ".cm-line": {
+    padding: 0,
   },
   ".cm-activeLine": {
     backgroundColor: "inherit",
