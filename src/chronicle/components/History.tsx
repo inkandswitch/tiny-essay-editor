@@ -405,7 +405,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
           {changesForDisplay.map((changeGroup, index) => (
-            <div className="relative">
+            <div className="relative" key={changeGroup.id}>
               {new Date(changeGroup.time).toDateString() !==
                 new Date(changesForDisplay[index - 1]?.time).toDateString() && (
                 <div className="text-sm text-gray-500 font-semibold mb-2 flex items-center bg-gray-200 p-1">
