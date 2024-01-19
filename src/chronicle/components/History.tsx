@@ -40,8 +40,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
 import { view } from "@automerge/automerge";
-import { getRelativeTimeString } from "@/docExplorer/utils";
-import { ContactAvatar } from "@/docExplorer/components/ContactAvatar";
+import { getRelativeTimeString } from "@/DocExplorer/utils";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
 import { hashToColor } from "../utils";
 import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";

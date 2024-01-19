@@ -8,7 +8,7 @@ import {
   AvatarImage,
   avatarVariants,
 } from "@/components/ui/avatar";
-import { useBlobUrl } from "@/docExplorer/utils";
+import { useBlobUrl } from "@/DocExplorer/utils";
 import { useMemo } from "react";
 import { User as UserIcon } from "lucide-react";
 
