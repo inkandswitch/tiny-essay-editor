@@ -14,7 +14,6 @@ import {
 
 import * as A from "@automerge/automerge/next";
 import { indentUnit, syntaxHighlighting } from "@codemirror/language";
-import { StateEffect, StateField } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   threadDecorations,
