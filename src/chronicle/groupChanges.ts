@@ -300,3 +300,84 @@ export const charsAddedAndDeletedByPatches = (
     { charsAdded: 0, charsDeleted: 0 }
   );
 };
+
+type PatchGroup = {
+  groupStartIndex: number;
+  groupEndIndex: number;
+  patches: Patch[];
+};
+
+// This is a quick hacky grouping
+// Probably better to iterate over patches rather than groups..?
+const groupPatchesByDelimiter =
+  (delimiter: string) =>
+  (doc: MarkdownDoc, patches: Patch[]): PatchGroup[] => {
+    if (!doc?.content) return [];
+    const patchGroups: PatchGroup[] = [];
+
+    let currentGroup: PatchGroup | null = null;
+
+    const createNewGroupFromPatch = (patch: Patch) => {
+      const patchStart = patch.path[1];
+      const patchEnd = patchStart + (patch.value?.length || patch.length);
+      const groupStartIndex =
+        doc.content.lastIndexOf(delimiter, patchStart) + 1;
+      const groupEndIndex = doc.content.indexOf(delimiter, patchEnd);
+      return {
+        groupStartIndex: groupStartIndex >= 0 ? groupStartIndex : patchStart,
+        groupEndIndex: groupEndIndex >= 0 ? groupEndIndex : patchEnd,
+        patches: [
+          patchWithAdjustedIndexes(
+            patch,
+            groupStartIndex >= 0 ? groupStartIndex : patchStart
+          ),
+        ],
+      };
+    };
+
+    const patchWithAdjustedIndexes = (patch: Patch, startIndex: number) => {
+      return {
+        ...patch,
+        path: [
+          patch.path[0],
+          patch.path[1] - startIndex,
+          ...patch.path.slice(2),
+        ],
+      };
+    };
+
+    for (let i = 0; i < patches.length; i++) {
+      const patch = patches[i];
+      if (!["splice", "del"].includes(patch.action)) {
+        continue;
+      }
+
+      const patchStart = patch.path[1];
+      const patchEnd = patchStart + (patch.value?.length || patch.length);
+
+      if (currentGroup) {
+        if (patchStart <= currentGroup.groupEndIndex) {
+          currentGroup.patches.push(
+            patchWithAdjustedIndexes(patch, currentGroup.groupStartIndex)
+          );
+          if (patchEnd > currentGroup.groupEndIndex) {
+            currentGroup.groupEndIndex = patchEnd;
+          }
+        } else {
+          patchGroups.push(currentGroup);
+          currentGroup = createNewGroupFromPatch(patch);
+        }
+      } else {
+        currentGroup = createNewGroupFromPatch(patch);
+      }
+    }
+
+    if (currentGroup) {
+      patchGroups.push(currentGroup);
+    }
+
+    return patchGroups;
+  };
+
+export const groupPatchesByLine = groupPatchesByDelimiter("\n");
+export const groupPatchesByParagraph = groupPatchesByDelimiter("\n\n");

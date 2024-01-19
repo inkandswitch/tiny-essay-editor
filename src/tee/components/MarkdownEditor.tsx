@@ -53,7 +53,7 @@ export type TextSelection = {
   yCoord: number;
 };
 
-export type DiffStyle = "normal" | "pencil";
+export type DiffStyle = "normal" | "private";
 
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
@@ -68,6 +68,7 @@ export type EditorProps = {
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
+  limitToRange?: { start: number; end: number };
 };
 
 export function MarkdownEditor({
@@ -352,7 +353,7 @@ class DeletionMarker extends WidgetType {
   }
 }
 
-const hiddenDecoration = Decoration.mark({ class: "cm-patch-pencil" });
+const privateDecoration = Decoration.mark({ class: "cm-patch-private" });
 const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
 const deleteDecoration = Decoration.widget({
   widget: new DeletionMarker(),
@@ -371,7 +372,7 @@ const patchDecorations = (diffStyle: DiffStyle) =>
           const from = patch.path[1];
           const length = patch.value.length;
           const decoration =
-            diffStyle === "pencil" ? hiddenDecoration : spliceDecoration;
+            diffStyle === "private" ? privateDecoration : spliceDecoration;
           return [decoration.range(from, from + length)];
         }
         case "del": {

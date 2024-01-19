@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "vitest";
-import { getSyncIndicatorMachine } from "../src/docExplorer/components/SyncIndicator";
+import { getSyncIndicatorMachine } from "../src/DocExplorer/components/SyncIndicator";
 import { interpret } from "xstate";
 
 const CONNECTION_INIT_TIMEOUT = 100;

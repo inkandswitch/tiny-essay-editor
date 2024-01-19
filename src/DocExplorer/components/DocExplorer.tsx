@@ -195,9 +195,6 @@ export const DocExplorer: React.FC = () => {
       >
         <div className="flex flex-col h-screen">
           <Topbar
-            tools={TOOLS}
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             selectedDocUrl={selectedDocUrl}
@@ -229,6 +226,20 @@ export const DocExplorer: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+      <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
+        <img src="/construction.png" className="h-6 mr-2"></img>
+        {TOOLS.map((tool) => (
+          <div
+            key={tool.id}
+            className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
+              tool.id === activeTool.id ? "bg-yellow-100 bg-opacity-70" : ""
+            } rounded-full`}
+            onClick={() => setActiveTool(tool)}
+          >
+            {tool.name}
+          </div>
+        ))}
       </div>
     </div>
   );

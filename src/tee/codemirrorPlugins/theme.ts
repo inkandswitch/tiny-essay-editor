@@ -53,11 +53,14 @@ const ESSAY_STYLES = {
     borderBottom: "rgb(0 202 0 / 50%) 2px solid",
     borderRadius: "3px",
   },
-  ".cm-patch-pencil": {
-    borderBottom: "rgb(0 0 0 / 10%) 2px solid",
-    color: "rgb(0 0 0 / 60%)",
-    fontFamily: "'Schoolbell', cursive",
-    fontSize: "1.1em",
+  ".cm-patch-private": {
+    backgroundColor: "rgb(184 0 255 / 12%)",
+    borderBottom: "rgb(184 0 255 / 40%) 2px solid",
+    borderRadius: "3px",
+  },
+  ".cm-patch-private::before": {
+    content: "🔒",
+    marginRight: "0.5em",
   },
 };
 

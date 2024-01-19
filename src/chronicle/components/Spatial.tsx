@@ -1,4 +1,3 @@
-import { hashToColor } from "@/chronicle/components/History";
 import {
   ChangeGroup,
   GROUPINGS,
@@ -15,16 +14,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { hashToColor } from "../utils";
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
 import { MarkdownViewer } from "@/tee/components/MarkdownViewer";
 import { MarkdownDoc } from "@/tee/schema";
 import { next as A, Doc } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { SelectionRange } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 interface Snippet {
   from: A.Cursor;
   to: A.Cursor;
