@@ -197,6 +197,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   );
 
   const foldRanges = useMemo(() => {
+    if (!selectedDoc) return [];
     const ranges: { from: number; to: number }[] = [];
     let lastTo = 0;
 
@@ -217,12 +218,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     return ranges;
   }, [diffGroupedByParagraph, selectedDoc]);
-
-  console.log({
-    diffGroupedByParagraph,
-    foldRanges,
-    length: selectedDoc.content.length,
-  });
 
   const handleClickOnChangeGroup = (
     e: React.MouseEvent,
