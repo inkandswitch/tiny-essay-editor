@@ -9,9 +9,7 @@ import {
   Patch,
   getAllChanges,
   view,
-  Heads,
 } from "@automerge/automerge/next";
-import { A } from "vitest/dist/reporters-5f784f42.js";
 
 type GenericChangeGroup = {
   id: string;
