@@ -46,7 +46,9 @@ export const CommentsSidebar = ({
     string | null
   >();
 
-  const addedComments: Array<{ threadId: string; commentIndex: number }> = diff
+  const addedComments: Array<{ threadId: string; commentIndex: number }> = (
+    diff ?? []
+  )
     .filter(
       (patch) =>
         patch.path.length === 4 &&
