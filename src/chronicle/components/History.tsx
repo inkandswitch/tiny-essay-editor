@@ -793,26 +793,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             )}
           </>
         )}
-        {/* {mainPaneView === "snippets" && docUrl && (
-          <div className="h-full overflow-y-auto bg-gray-50 py-8">
-            Hello
-
-            {diffGroupedByParagraph.map((snippet) => (
-              <div
-                className="bg-white border border-gray-300 m-4 max-w-[722px]"
-                key={JSON.stringify(snippet.patches)}
-              >
-                <ReadonlySnippetView
-                  text={selectedDoc.content.slice(
-                    snippet.groupStartIndex,
-                    snippet.groupEndIndex
-                  )}
-                  patches={snippet.patches}
-                />
-              </div>
-            ))}
-          </div>
-        )} */}
         {mainPaneView === "snippets" && docUrl && (
           <>
             <TinyEssayEditor

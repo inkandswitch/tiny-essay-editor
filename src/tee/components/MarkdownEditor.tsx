@@ -157,7 +157,6 @@ export function MarkdownEditor({
           {
             key: "Mod-o",
             run: () => {
-              console.log("do stuff");
               const selectedRange = view.state.selection.main;
               onOpenSnippet(selectedRange);
               return true;
