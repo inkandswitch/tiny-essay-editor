@@ -9,6 +9,7 @@ import { isEqual, truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   DeleteIcon,
+  EditIcon,
   MergeIcon,
   MoreHorizontal,
   PlusIcon,
@@ -102,6 +103,21 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       doc.copyMetadata.source.copyHeads = A.getHeads(docHandle.docSync());
     });
   };
+
+  const renameDraft = useCallback(
+    (draftUrl: AutomergeUrl, newName: string) => {
+      const docHandle = repo.find<MarkdownDoc>(docUrl);
+      docHandle.change((doc) => {
+        const copy = doc.copyMetadata.copies.find(
+          (copy) => copy.url === draftUrl
+        );
+        if (copy) {
+          copy.name = newName;
+        }
+      });
+    },
+    [docUrl, repo]
+  );
 
   // put handles on window for debug
   useEffect(() => {
@@ -221,6 +237,18 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                           >
                             <DeleteIcon className="mr-2" size={12} />
                             Delete
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              const newName = window.prompt("New name:");
+                              if (newName) {
+                                renameDraft(draft.url, newName);
+                              }
+                              e.stopPropagation();
+                            }}
+                          >
+                            <EditIcon className="mr-2" size={12} />
+                            Rename
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
