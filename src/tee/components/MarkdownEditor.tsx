@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -47,6 +47,7 @@ import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 
 export type TextSelection = {
   from: number;
@@ -188,6 +189,7 @@ export function MarkdownEditor({
         patchesField,
         patchDecorations(diffStyle ?? "normal"),
         previewFiguresPlugin,
+        previewImagesPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,

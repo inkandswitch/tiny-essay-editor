@@ -117,6 +117,7 @@ export const markdownStyles = HighlightStyle.define([
     color: "#555",
     fontFamily: "monospace",
   },
+  { tag: tags.quote, fontStyle: "italic" },
   {
     tag: tags.strong,
     fontWeight: "bold",
