@@ -134,13 +134,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     copyHeads: getHeads(selectedDocHandle.docSync()),
                   };
                 });
-                selectedDocHandle.change((doc) => {
-                  doc.copyMetadata.copies.push({
-                    name: "Untitled Draft",
-                    copyTimestamp: Date.now(),
-                    url: newHandle.url,
-                  });
-                });
+
                 const newDocLink: DocLink = {
                   url: newHandle.url,
                   name: getTitle(newHandle.docSync().content),
