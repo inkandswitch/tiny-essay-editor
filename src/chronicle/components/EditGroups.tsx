@@ -43,7 +43,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         <div className="mr-4 flex">
           <div>Diff base</div>
           {diffBase.map((hash) => (
-            <Hash hash={hash} />
+            <Hash key={hash} hash={hash} />
           ))}
         </div>
         <div className="flex items-center">

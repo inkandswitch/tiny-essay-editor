@@ -1,4 +1,4 @@
-import { Heads } from "@automerge/automerge";
+import * as A from "@automerge/automerge/next";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export type Comment = {
@@ -19,6 +19,7 @@ export type CommentThread = {
   resolved: boolean;
   fromCursor: string; // Automerge cursor
   toCursor: string; // Automerge cursor
+  patches?: A.Patch[];
 };
 
 export type CommentThreadForUI = CommentThread & {
@@ -45,7 +46,7 @@ export type Copyable = {
     /* A pointer to the source where this was copied from */
     source: {
       url: AutomergeUrl;
-      copyHeads: Heads;
+      copyHeads: A.Heads;
     } | null;
 
     /* A pointer to copies of this doc */

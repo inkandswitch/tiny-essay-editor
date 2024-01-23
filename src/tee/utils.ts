@@ -4,7 +4,7 @@ import {
   MarkdownDoc,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
-import { next as A } from "@automerge/automerge";
+import { next as A, uuid } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 
@@ -247,6 +247,21 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
   return div.firstElementChild as HTMLElement;
 };
 
+const textDescriptionOfPatch = (patch: A.Patch) => {
+  switch (patch.action) {
+    case "splice": {
+      return `EDIT insert: ${patch.value}`;
+    }
+    case "del": {
+      // TODO: show the deleted text here once Orion's branch lands
+      return `EDIT delete ${patch.length} chars (TODO: show the deleted text here once Orion's branch lands)`;
+    }
+    default: {
+      return "unknown patch";
+    }
+  }
+};
+
 // A React hook that gets the comment threads for the doc w/ positions
 // and manages caching.
 export const useThreadsWithPositions = ({
@@ -254,11 +269,13 @@ export const useThreadsWithPositions = ({
   view,
   activeThreadId,
   editorRef,
+  diff,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
   activeThreadId: string;
   editorRef: React.MutableRefObject<HTMLElement | null>;
+  diff: A.Patch[];
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(
@@ -276,10 +293,40 @@ export const useThreadsWithPositions = ({
   // to catch when things come near the screen)
   const scrollPosition = useScrollPosition(editorRef);
 
+  const threadsForDiff: CommentThreadForUI[] = (diff ?? []).map((patch) => {
+    if (patch.path[0] !== "content") return;
+    const patchStart = patch.path[1];
+    const patchEnd =
+      patch.action === "splice"
+        ? patchStart + patch.value.length
+        : patchStart + 1;
+    return {
+      id: uuid(),
+      comments: [
+        {
+          id: uuid(),
+          content: textDescriptionOfPatch(patch),
+          timestamp: Date.now(),
+        },
+      ],
+      resolved: false,
+      fromCursor: A.getCursor(doc, ["content"], patchStart),
+      toCursor: A.getCursor(doc, ["content"], patchEnd),
+      from: patchStart,
+      to: patchEnd,
+      active: false,
+    };
+  });
+
   const threadsWithPositions = useMemo(
     () =>
       view
-        ? getVisibleTheadsWithPos({ threads, doc, view, activeThreadId })
+        ? getVisibleTheadsWithPos({
+            threads: [...threads, ...threadsForDiff],
+            doc,
+            view,
+            activeThreadId,
+          })
         : [],
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;

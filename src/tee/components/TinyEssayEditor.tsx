@@ -42,6 +42,7 @@ export const TinyEssayEditor = ({
     view: editorView,
     activeThreadId,
     editorRef,
+    diff,
   });
 
   // todo: remove from this component and move up to DocExplorer?
