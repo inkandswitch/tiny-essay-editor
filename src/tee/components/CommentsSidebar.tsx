@@ -141,7 +141,7 @@ export const CommentsSidebar = ({
           {thread.patches?.length > 0 && (
             <div>
               {thread.patches.map((patch) => (
-                <div className="select-none">
+                <div key={`${JSON.stringify(patch)}`} className="select-none">
                   {patch.action === "splice" && (
                     <div className="text-xs">
                       <strong>Insert: </strong>

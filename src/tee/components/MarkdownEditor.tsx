@@ -121,6 +121,7 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
+
   useEffect(() => {
     if (!handleReady) {
       return;

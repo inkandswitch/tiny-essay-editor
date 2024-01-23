@@ -273,48 +273,46 @@ export const useThreadsWithPositions = ({
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff: A.Patch[];
 }) => {
-  const threadsForDiff: CommentThread[] = (diff ?? []).flatMap((patch) => {
-    if (
-      patch.path[0] !== "content" ||
-      !["splice", "del"].includes(patch.action)
-    )
-      return [];
-
-    const { patchStart, patchEnd } =
-      patch.action === "splice"
-        ? {
-            patchStart: patch.path[1],
-            patchEnd: Math.min(
-              patch.path[1] + patch.value.length,
-              doc.content.length - 1
-            ),
-          }
-        : {
-            patchStart: patch.path[1],
-            patchEnd: patch.path[1] + 1,
-          };
-
-    const fromCursor = A.getCursor(doc, ["content"], patchStart);
-    const toCursor = A.getCursor(doc, ["content"], patchEnd);
-    return [
-      {
-        // Experimenting with stable IDs for patches...
-        // ID a patch by its action + its from cursor? this feels not unique enough...
-        id: `${patch.action}-${fromCursor}`,
-        comments: [],
-        resolved: false,
-        fromCursor,
-        toCursor,
-        patches: [patch],
-      },
-    ];
-  });
-
   // We first get integer positions for each thread and cache that.
-  const threads = useMemo(
-    () => (doc ? getThreadsForUI(doc, activeThreadIds, threadsForDiff) : []),
-    [doc, threadsForDiff]
-  );
+  const threads = useMemo(() => {
+    const threadsForDiff: CommentThread[] = (diff ?? []).flatMap((patch) => {
+      if (
+        patch.path[0] !== "content" ||
+        !["splice", "del"].includes(patch.action)
+      )
+        return [];
+
+      const { patchStart, patchEnd } =
+        patch.action === "splice"
+          ? {
+              patchStart: patch.path[1],
+              patchEnd: Math.min(
+                patch.path[1] + patch.value.length,
+                doc.content.length - 1
+              ),
+            }
+          : {
+              patchStart: patch.path[1],
+              patchEnd: patch.path[1] + 1,
+            };
+
+      const fromCursor = A.getCursor(doc, ["content"], patchStart);
+      const toCursor = A.getCursor(doc, ["content"], patchEnd);
+      return [
+        {
+          // Experimenting with stable IDs for patches...
+          // ID a patch by its action + its from cursor? this feels not unique enough...
+          id: `${patch.action}-${fromCursor}`,
+          comments: [],
+          resolved: false,
+          fromCursor,
+          toCursor,
+          patches: [patch],
+        },
+      ];
+    });
+    return doc ? getThreadsForUI(doc, activeThreadIds, threadsForDiff) : [];
+  }, [doc, activeThreadIds]);
 
   // Next we get the vertical position for each thread.
 
@@ -339,7 +337,8 @@ export const useThreadsWithPositions = ({
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;
     // but actually it's critical for making comments appear correctly as scrolling happens
-    [doc, view, threads, scrollPosition]
+    [doc, view, threads, activeThreadIds, scrollPosition]
+    // [doc]
   );
 
   return threadsWithPositions;

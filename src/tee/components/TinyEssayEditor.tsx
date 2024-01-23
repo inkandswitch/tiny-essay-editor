@@ -39,8 +39,6 @@ export const TinyEssayEditor = ({
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
 
-  console.log({ activeThreadIds });
-
   const threadsWithPositions = useThreadsWithPositions({
     doc,
     view: editorView,
