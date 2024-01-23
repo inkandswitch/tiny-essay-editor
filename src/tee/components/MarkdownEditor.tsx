@@ -62,7 +62,7 @@ export type EditorProps = {
   path: A.Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
-  setActiveThreadId: (threadId: string | null) => void;
+  setActiveThreadIds: (threadIds: string[]) => void;
   threadsWithPositions: CommentThreadForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
@@ -78,7 +78,7 @@ export function MarkdownEditor({
   path,
   setSelection,
   setView,
-  setActiveThreadId,
+  setActiveThreadIds,
   threadsWithPositions,
   readOnly,
   docHeads,
@@ -121,14 +121,6 @@ export function MarkdownEditor({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
-
-  // Propagate activeThreadId into the codemirror
-  useEffect(() => {
-    editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(threadsWithPositions),
-    });
-  }, [threadsWithPositions]);
-
   useEffect(() => {
     if (!handleReady) {
       return;
@@ -223,10 +215,10 @@ export function MarkdownEditor({
                 thread.from <= newSelection.from &&
                 thread.to >= newSelection.to
               ) {
-                setActiveThreadId(thread.id);
+                setActiveThreadIds([thread.id]);
                 break;
               }
-              setActiveThreadId(null);
+              setActiveThreadIds([]);
             }
           }
           view.update([transaction]);

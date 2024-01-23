@@ -1,4 +1,5 @@
 import {
+  CommentThread,
   CommentThreadForUI,
   CommentThreadWithPosition,
   MarkdownDoc,
@@ -74,9 +75,14 @@ const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
 // Resolve comment thread cursors to integer positions in the document
 export const getThreadsForUI = (
   doc: MarkdownDoc,
-  activeThreadId: string | null
+  activeThreadIds: string[],
+  threadsForDiffPatches?: CommentThread[]
 ): CommentThreadForUI[] => {
-  return Object.values(doc.commentThreads ?? {})
+  const commentThreads = [
+    ...Object.values(doc.commentThreads ?? {}),
+    ...(threadsForDiffPatches ?? []),
+  ];
+  return commentThreads
     .filter((thread) => !thread.resolved) // hide resolved threads
     .flatMap((thread) => {
       let from = 0;
@@ -99,7 +105,7 @@ export const getThreadsForUI = (
           ...thread,
           from,
           to,
-          active: thread.id === activeThreadId,
+          active: activeThreadIds.includes(thread.id),
         },
       ];
     })
@@ -117,13 +123,17 @@ export const getVisibleTheadsWithPos = ({
   threads,
   doc,
   view,
-  activeThreadId,
+  activeThreadIds,
 }: {
   threads: CommentThreadForUI[];
   doc: MarkdownDoc;
   view: EditorView;
-  activeThreadId: string | null;
+  activeThreadIds: string[];
 }): CommentThreadWithPosition[] => {
+  // Arbitrarily use the first active thread as the "active" thread
+  // for the purposes of positioning.
+  const activeThreadId = activeThreadIds[0];
+
   // As an initial draft, put each thread right next to its comment
   const threadsWithPositions = threads.flatMap((thread) => {
     const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
@@ -151,6 +161,7 @@ export const getVisibleTheadsWithPos = ({
   // Now it's possible that we have comments which are overlapping one another.
   // Make a best effort to mostly avoid overlaps.
 
+  // Pick the first active thread we find
   let activeIndex = threadsWithPositions.findIndex(
     (thread) => thread.id === activeThreadId
   );
@@ -247,40 +258,62 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
   return div.firstElementChild as HTMLElement;
 };
 
-const textDescriptionOfPatch = (patch: A.Patch) => {
-  switch (patch.action) {
-    case "splice": {
-      return `EDIT insert: ${patch.value}`;
-    }
-    case "del": {
-      // TODO: show the deleted text here once Orion's branch lands
-      return `EDIT delete ${patch.length} chars (TODO: show the deleted text here once Orion's branch lands)`;
-    }
-    default: {
-      return "unknown patch";
-    }
-  }
-};
-
 // A React hook that gets the comment threads for the doc w/ positions
 // and manages caching.
 export const useThreadsWithPositions = ({
   doc,
   view,
-  activeThreadId,
+  activeThreadIds,
   editorRef,
   diff,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
-  activeThreadId: string;
+  activeThreadIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff: A.Patch[];
 }) => {
+  const threadsForDiff: CommentThread[] = (diff ?? []).flatMap((patch) => {
+    if (
+      patch.path[0] !== "content" ||
+      !["splice", "del"].includes(patch.action)
+    )
+      return [];
+
+    const { patchStart, patchEnd } =
+      patch.action === "splice"
+        ? {
+            patchStart: patch.path[1],
+            patchEnd: Math.min(
+              patch.path[1] + patch.value.length,
+              doc.content.length - 1
+            ),
+          }
+        : {
+            patchStart: patch.path[1],
+            patchEnd: patch.path[1] + 1,
+          };
+
+    const fromCursor = A.getCursor(doc, ["content"], patchStart);
+    const toCursor = A.getCursor(doc, ["content"], patchEnd);
+    return [
+      {
+        // Experimenting with stable IDs for patches...
+        // ID a patch by its action + its from cursor? this feels not unique enough...
+        id: `${patch.action}-${fromCursor}`,
+        comments: [],
+        resolved: false,
+        fromCursor,
+        toCursor,
+        patches: [patch],
+      },
+    ];
+  });
+
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(
-    () => (doc ? getThreadsForUI(doc, activeThreadId) : []),
-    [doc, activeThreadId]
+    () => (doc ? getThreadsForUI(doc, activeThreadIds, threadsForDiff) : []),
+    [doc, threadsForDiff]
   );
 
   // Next we get the vertical position for each thread.
@@ -293,45 +326,20 @@ export const useThreadsWithPositions = ({
   // to catch when things come near the screen)
   const scrollPosition = useScrollPosition(editorRef);
 
-  const threadsForDiff: CommentThreadForUI[] = (diff ?? []).map((patch) => {
-    if (patch.path[0] !== "content") return;
-    const patchStart = patch.path[1];
-    const patchEnd =
-      patch.action === "splice"
-        ? patchStart + patch.value.length
-        : patchStart + 1;
-    return {
-      id: uuid(),
-      comments: [
-        {
-          id: uuid(),
-          content: textDescriptionOfPatch(patch),
-          timestamp: Date.now(),
-        },
-      ],
-      resolved: false,
-      fromCursor: A.getCursor(doc, ["content"], patchStart),
-      toCursor: A.getCursor(doc, ["content"], patchEnd),
-      from: patchStart,
-      to: patchEnd,
-      active: false,
-    };
-  });
-
   const threadsWithPositions = useMemo(
     () =>
       view
         ? getVisibleTheadsWithPos({
-            threads: [...threads, ...threadsForDiff],
+            threads,
             doc,
             view,
-            activeThreadId,
+            activeThreadIds,
           })
         : [],
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;
     // but actually it's critical for making comments appear correctly as scrolling happens
-    [doc, view, activeThreadId, threads, scrollPosition]
+    [doc, view, threads, scrollPosition]
   );
 
   return threadsWithPositions;

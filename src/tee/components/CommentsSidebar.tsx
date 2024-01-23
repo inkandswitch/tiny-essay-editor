@@ -27,16 +27,16 @@ export const CommentsSidebar = ({
   changeDoc,
   selection,
   threadsWithPositions,
-  activeThreadId,
-  setActiveThreadId,
+  activeThreadIds,
+  setActiveThreadIds,
   diff,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
-  activeThreadId: string | null;
-  setActiveThreadId: (threadId: string | null) => void;
+  activeThreadIds: string[];
+  setActiveThreadIds: (threadIds: string[]) => void;
   diff?: Patch[];
 }) => {
   const account = useCurrentAccount();
@@ -122,7 +122,7 @@ export const CommentsSidebar = ({
         <div
           key={thread.id}
           className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            thread.id === activeThreadId
+            activeThreadIds.includes(thread.id)
               ? "z-50 shadow-sm border-gray-500"
               : "z-0"
           }`}
@@ -130,10 +130,39 @@ export const CommentsSidebar = ({
             top: thread.yCoord,
           }}
           onClick={(e) => {
-            setActiveThreadId(thread.id);
+            if (e.shiftKey) {
+              setActiveThreadIds([...activeThreadIds, thread.id]);
+            } else {
+              setActiveThreadIds([thread.id]);
+            }
             e.stopPropagation();
           }}
         >
+          {thread.patches?.length > 0 && (
+            <div>
+              {thread.patches.map((patch) => (
+                <div className="select-none">
+                  {patch.action === "splice" && (
+                    <div className="text-xs">
+                      <strong>Insert: </strong>
+                      <span className="font-serif">{patch.value}</span>
+                    </div>
+                  )}
+                  {patch.action === "del" && (
+                    <div className="text-xs">
+                      <strong>Delete: </strong>
+                      {patch.length} characters
+                    </div>
+                  )}
+                  {!["splice", "del"].includes(patch.action) && (
+                    <div className="font-mono">
+                      Unknown action: {patch.action}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             {thread.comments.map((comment, index) => {
               const legacyUserName =

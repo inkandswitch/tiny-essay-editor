@@ -22,6 +22,7 @@ export const TinyEssayEditor = ({
   readOnly,
   diffStyle,
   foldRanges,
+  showDiffAsComments,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
@@ -29,20 +30,23 @@ export const TinyEssayEditor = ({
   readOnly?: boolean;
   diffStyle?: DiffStyle;
   foldRanges?: { from: number; to: number }[];
+  showDiffAsComments?: boolean;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
-  const [activeThreadId, setActiveThreadId] = useState<string | null>();
+  const [activeThreadIds, setActiveThreadIds] = useState<string[]>([]);
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+
+  console.log({ activeThreadIds });
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,
     view: editorView,
-    activeThreadId,
+    activeThreadIds,
     editorRef,
-    diff,
+    diff: showDiffAsComments ? diff : undefined,
   });
 
   // todo: remove from this component and move up to DocExplorer?
@@ -66,7 +70,7 @@ export const TinyEssayEditor = ({
             setSelection={setSelection}
             setView={setEditorView}
             threadsWithPositions={threadsWithPositions}
-            setActiveThreadId={setActiveThreadId}
+            setActiveThreadIds={setActiveThreadIds}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
             diff={diff}
@@ -79,8 +83,8 @@ export const TinyEssayEditor = ({
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
-            activeThreadId={activeThreadId}
-            setActiveThreadId={setActiveThreadId}
+            activeThreadIds={activeThreadIds}
+            setActiveThreadIds={setActiveThreadIds}
             threadsWithPositions={threadsWithPositions}
             diff={diff}
           />
