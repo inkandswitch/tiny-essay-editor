@@ -4,35 +4,25 @@ import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { FileDiffIcon } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { marked } from "marked";
 
 import { next as A } from "@automerge/automerge";
 import { CopyIcon } from "lucide-react";
 import { hashToColor } from "../utils";
-import { arraysAreEqual } from "@/DocExplorer/utils";
+import clsx from "clsx";
 
-const Hash: React.FC<{ hash: string }> = ({ hash }) => {
-  const color = useMemo(() => hashToColor(hash), [hash]);
+interface Heading {
+  text: string;
+  isNew: boolean;
+}
 
-  return (
-    <div className="inline-flex items-center border border-gray-300 rounded-full pl-1">
-      <div
-        className="w-2 h-2 rounded-full mr-[2px]"
-        style={{ backgroundColor: color }}
-      ></div>
-      <div>{hash.substring(0, 6)}</div>
-      <div
-        className="cursor-pointer px-1 ml-1 hover:bg-gray-50 active:bg-gray-200 rounded-full"
-        onClick={() => {
-          navigator.clipboard.writeText(hash);
-        }}
-      >
-        <CopyIcon size={10} />
-      </div>
-    </div>
-  );
-};
+interface Revision {
+  heads: A.Heads[];
+  headings: Heading[];
+  combineWithPrevious?: boolean;
+  i: number;
+}
 
 export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -41,6 +31,8 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   // diffs can be shown either in the change log or in the doc itself.
   const [showDiffInDoc, setShowDiffInDoc] = useState<boolean>(true);
+
+  const [selectedRevisionIndex, setSelectedRevisionIndex] = useState<number>(0);
 
   const revisions = useMemo(() => {
     if (!doc) {
@@ -51,23 +43,65 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     let tempDoc = A.init<MarkdownDoc>();
 
-    let prevRevision: string[];
+    const revisions: Revision[] = [];
+    let prevRevision: Revision;
 
-    const revisions = [];
+    let i = 0;
 
     for (const change of changes) {
+      i++;
+
       [tempDoc] = A.applyChanges(tempDoc, [change]);
 
       if (!tempDoc.content) {
         continue;
       }
 
-      const newRevision = extractHeadings(tempDoc.content);
+      const currentRevision: Revision = {
+        headings: extractHeadings(tempDoc.content),
+        heads: A.getHeads(tempDoc),
+        i,
+      };
 
-      if (!prevRevision || !arraysAreEqual(prevRevision, newRevision)) {
-        revisions.unshift(newRevision);
-        prevRevision = newRevision;
+      // when is first revision create a new active revision
+      if (!prevRevision) {
+        currentRevision.headings.forEach((heading) => (heading.isNew = true));
+        prevRevision = currentRevision;
+        continue;
       }
+
+      let addNewRevision = false;
+
+      // compare
+      for (let i = 0; i < currentRevision.headings.length; i++) {
+        const prevHeading = prevRevision.headings[i];
+        const currentHeading = currentRevision.headings[i];
+
+        if (
+          !prevHeading ||
+          (prevHeading.text !== currentHeading.text && !prevHeading.isNew)
+        ) {
+          addNewRevision = true;
+          currentHeading.isNew = true;
+          continue;
+        }
+      }
+
+      if (addNewRevision) {
+        revisions.unshift(prevRevision);
+        prevRevision = currentRevision;
+      } else {
+        // set is new heading
+        currentRevision.headings.forEach(
+          (heading, index) =>
+            (heading.isNew = prevRevision.headings[index].isNew)
+        );
+        prevRevision = currentRevision;
+      }
+    }
+
+    if (prevRevision) {
+      revisions.unshift(prevRevision);
     }
 
     return revisions;
@@ -81,10 +115,24 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             Revisions ({revisions.length})
           </div>
           <div className="min-h-0 flex-1 overflow-auto">
-            {revisions.map((revision) => {
+            {revisions.map((revision, index) => {
               return (
-                <div className="border-b border-gray-100 p-2">
-                  <pre>{revision.join("\n")}</pre>
+                <div
+                  className={clsx("border-b border-gray-200 p-2", {
+                    "bg-blue-100": index === selectedRevisionIndex,
+                    "opacity-50": revision.combineWithPrevious,
+                  })}
+                  key={index}
+                  onClick={() => setSelectedRevisionIndex(index)}
+                >
+                  {revision.headings.map((heading, index) => (
+                    <div
+                      key={index}
+                      className={clsx({ "text-green-500": heading.isNew })}
+                    >
+                      {heading.text}
+                    </div>
+                  ))}
                 </div>
               );
             })}
@@ -108,19 +156,34 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             </label>
           </div>
         </div>
-        {docUrl && <TinyEssayEditor docUrl={docUrl} key={docUrl} diff={[]} />}
+        {docUrl && (
+          <TinyEssayEditor
+            docUrl={docUrl}
+            docHeads={
+              selectedRevisionIndex !== 0
+                ? revisions[selectedRevisionIndex].heads
+                : undefined
+            }
+            key={docUrl}
+            diff={[]}
+            readOnly={selectedRevisionIndex !== 0}
+          />
+        )}
       </div>
     </div>
   );
 };
 
-function extractHeadings(markdownText: string): string[] {
-  let headings = [];
+function extractHeadings(markdownText: string): Heading[] {
+  let headings: Heading[] = [];
 
   marked.parse(markdownText, {
     walkTokens: (token) => {
       if (token.type === "heading") {
-        headings.push(`${"#".repeat(token.depth)} ${token.text}`);
+        headings.push({
+          text: `${"#".repeat(token.depth)} ${token.text}`,
+          isNew: false,
+        });
       }
     },
   });
