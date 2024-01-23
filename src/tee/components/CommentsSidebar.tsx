@@ -101,6 +101,40 @@ export const CommentsSidebar = ({
     setPendingCommentText("");
   };
 
+  // This takes in a list of virtual threads representing diff patches,
+  // and then creates a new thread that combines all of the patches in one.
+  // By saving that thread in the actual doc, it will then supercede
+  // the previous virtual threads.
+  const startCommentForPatchGroup = (
+    virtualThreadsForPatches: CommentThread[]
+  ) => {
+    const thread: CommentThread = {
+      id: uuid(),
+      comments: [],
+      resolved: false,
+      // Position the group around the first virtual thread
+      fromCursor: virtualThreadsForPatches[0].fromCursor,
+      toCursor: virtualThreadsForPatches[0].toCursor,
+      // combine
+      patches: virtualThreadsForPatches.flatMap(
+        (thread) =>
+          thread.patches?.map((patch) => ({
+            ...patch,
+            /** The stable ID for a patch is its action + a from cursor?
+             * TODO: DRY this out with the duplication in utils.ts
+             */
+            id: `${patch.action}-${thread.fromCursor}`,
+          })) ?? []
+      ),
+    };
+
+    changeDoc((doc) => {
+      doc.commentThreads[thread.id] = thread;
+    });
+
+    setPendingCommentText("");
+  };
+
   const addReplyToThread = (threadId: string) => {
     const comment: Comment = {
       id: uuid(),
@@ -116,14 +150,36 @@ export const CommentsSidebar = ({
     setPendingCommentText("");
   };
 
+  const selectedPatches = activeThreadIds
+    .map((id) => threadsWithPositions.find((thread) => thread.id === id))
+    .filter((thread) => thread.patches.length > 0);
+
   return (
     <div>
+      {selectedPatches.length > 0 && (
+        <div className="w-48 text-xs font-gray-600 p-2">
+          {selectedPatches.length} edits selected
+          <Button
+            variant="outline"
+            className="h-6 ml-1"
+            onClick={() => {
+              const activeThreads = activeThreadIds.map((id) =>
+                threadsWithPositions.find((thread) => thread.id === id)
+              );
+              startCommentForPatchGroup(activeThreads);
+              setActiveThreadIds([]);
+            }}
+          >
+            Group
+          </Button>
+        </div>
+      )}
       {threadsWithPositions.map((thread) => (
         <div
           key={thread.id}
           className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
             activeThreadIds.includes(thread.id)
-              ? "z-50 shadow-sm border-gray-500"
+              ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
           }`}
           style={{
@@ -244,6 +300,7 @@ export const CommentsSidebar = ({
 
             <Button
               variant="outline"
+              className="select-none"
               onClick={() =>
                 changeDoc((d) => (d.commentThreads[thread.id].resolved = true))
               }

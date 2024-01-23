@@ -13,13 +13,27 @@ export type Comment = {
   userId?: string | null;
 };
 
+/** Attempting to give diff patches stable identity across doc versions,
+ * for the purposes of equivalence checks... TBD how this turns out.
+ **/
+type PatchWithStableID = A.Patch & { id: string };
+
 export type CommentThread = {
   id: string;
   comments: Comment[];
   resolved: boolean;
   fromCursor: string; // Automerge cursor
   toCursor: string; // Automerge cursor
-  patches?: A.Patch[];
+
+  /** Diff patches associated with this thread */
+  patches?: PatchWithStableID[];
+
+  /** Sometimes threads aren't really stored in the doc, they're
+   * just inferred from a diff. This flag marks those threads.
+   * (Once we have some manual metadata like a grouping or a note
+   * on a diff, then we actually store it in the doc.)
+   */
+  inferredFromDiff?: boolean;
 };
 
 export type CommentThreadForUI = CommentThread & {
@@ -58,7 +72,7 @@ export type Copyable = {
   };
 };
 
-export type Tag = { name: string; heads: Heads };
+export type Tag = { name: string; heads: A.Heads };
 export type Taggable = {
   // TODO: should we model this as a map instead?
   tags: Tag[];
