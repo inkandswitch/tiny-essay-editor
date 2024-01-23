@@ -5,10 +5,12 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { FileDiffIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { marked } from "marked";
 
 import { next as A } from "@automerge/automerge";
 import { CopyIcon } from "lucide-react";
 import { hashToColor } from "../utils";
+import { arraysAreEqual } from "@/DocExplorer/utils";
 
 const Hash: React.FC<{ hash: string }> = ({ hash }) => {
   const color = useMemo(() => hashToColor(hash), [hash]);
@@ -49,21 +51,43 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     let tempDoc = A.init<MarkdownDoc>();
 
-    for (const change of changes) {
-      const decodedChange = A.decodeChange(change);
+    let prevRevision: string[];
 
+    const revisions = [];
+
+    for (const change of changes) {
       [tempDoc] = A.applyChanges(tempDoc, [change]);
+
+      if (!tempDoc.content) {
+        continue;
+      }
+
+      const newRevision = extractHeadings(tempDoc.content);
+
+      if (!prevRevision || !arraysAreEqual(prevRevision, newRevision)) {
+        revisions.unshift(newRevision);
+        prevRevision = newRevision;
+      }
     }
 
-    return [];
+    return revisions;
   }, [doc]);
 
   return (
     <div className="flex overflow-y-hidden h-full ">
       <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col font-mono text-xs font-semibold text-gray-600">
-        <div className="p-1">
+        <div className="p-1 h-full flex flex-col">
           <div className="text-xs text-gray-500 uppercase font-bold mb-2">
-            Revisions
+            Revisions ({revisions.length})
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto">
+            {revisions.map((revision) => {
+              return (
+                <div className="border-b border-gray-100 p-2">
+                  <pre>{revision.join("\n")}</pre>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -84,10 +108,22 @@ export const RevisionsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             </label>
           </div>
         </div>
-        {false && docUrl && (
-          <TinyEssayEditor docUrl={docUrl} key={docUrl} diff={[]} />
-        )}
+        {docUrl && <TinyEssayEditor docUrl={docUrl} key={docUrl} diff={[]} />}
       </div>
     </div>
   );
 };
+
+function extractHeadings(markdownText: string): string[] {
+  let headings = [];
+
+  marked.parse(markdownText, {
+    walkTokens: (token) => {
+      if (token.type === "heading") {
+        headings.push(`${"#".repeat(token.depth)} ${token.text}`);
+      }
+    },
+  });
+
+  return headings;
+}

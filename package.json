@@ -56,6 +56,7 @@
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
+    "marked": "^11.1.1",
     "openai": "^4.11.0",
     "react": "^18.2.0",
     "react-arborist": "^3.3.1",
