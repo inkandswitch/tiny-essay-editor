@@ -152,7 +152,7 @@ export const CommentsSidebar = ({
 
   const selectedPatches = activeThreadIds
     .map((id) => threadsWithPositions.find((thread) => thread.id === id))
-    .filter((thread) => thread.patches.length > 0);
+    .filter((thread) => thread && thread.patches.length > 0);
 
   return (
     <div>
