@@ -25,7 +25,6 @@ import {
 import { truncate } from "lodash";
 import {
   CalendarIcon,
-  CopyIcon,
   EyeIcon,
   FileDiffIcon,
   TagIcon,
@@ -41,36 +40,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
 import { diff, view } from "@automerge/automerge";
-import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
-import { hashToColor } from "../utils";
-import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
-import { MarkdownEditor } from "@/tee/components/MarkdownEditor";
+import { Hash } from "./Hash";
 
 const BLOBS_HEIGHT = 70;
-
-const Hash: React.FC<{ hash: string }> = ({ hash }) => {
-  const color = useMemo(() => hashToColor(hash), [hash]);
-
-  return (
-    <div className="inline-flex items-center border border-gray-300 rounded-full pl-1">
-      <div
-        className="w-2 h-2 rounded-full mr-[2px]"
-        style={{ backgroundColor: color }}
-      ></div>
-      <div>{hash.substring(0, 6)}</div>
-      <div
-        className="cursor-pointer px-1 ml-1 hover:bg-gray-50 active:bg-gray-200 rounded-full"
-        onClick={() => {
-          navigator.clipboard.writeText(hash);
-        }}
-      >
-        <CopyIcon size={10} />
-      </div>
-    </div>
-  );
-};
 
 // the data structure that represents the range of change groups we've selected for showing diffs.
 type ChangeGroupSelection = {

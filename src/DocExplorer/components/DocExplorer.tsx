@@ -23,6 +23,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { HistoryPlayground } from "@/chronicle/components/History";
 import { DraftsPlayground } from "@/chronicle/components/Drafts";
 import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
+import { EditGroupsPlayground } from "@/chronicle/components/EditGroups";
 
 export type Tool = {
   id: string;
@@ -50,6 +51,11 @@ const TOOLS = [
     id: "drafts",
     name: "Drafts",
     component: DraftsPlayground,
+  },
+  {
+    id: "editGroups",
+    name: "Edit Groups",
+    component: EditGroupsPlayground,
   },
 ];
 
