@@ -21,7 +21,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { HistoryPlayground } from "@/chronicle/components/History";
-import { RewindPlayground } from "@/chronicle/components/Rewind";
+import { RevisionsPlayground } from "@/chronicle/components/Revisions";
 import { DraftsPlayground } from "@/chronicle/components/Drafts";
 import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 
@@ -43,6 +43,11 @@ const TOOLS = [
     component: HistoryPlayground,
   },
   {
+    id: "revisiions",
+    name: "Revisions",
+    component: RevisionsPlayground,
+  },
+  {
     id: "spatial",
     name: "Spatial",
     component: SpatialHistoryPlayground,
@@ -52,11 +57,6 @@ const TOOLS = [
     name: "Drafts",
     component: DraftsPlayground,
   },
-  {
-    id: "rewind",
-    name: "Rewind",
-    component: RewindPlayground,
-  },
 ];
 
 export const DocExplorer: React.FC = () => {
@@ -64,7 +64,7 @@ export const DocExplorer: React.FC = () => {
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const [activeTool, setActiveTool] = useState(TOOLS[4]);
+  const [activeTool, setActiveTool] = useState(TOOLS[2]);
 
   const ToolComponent = activeTool.component;
 
