@@ -1996,6 +1996,11 @@
   resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.11.tgz#2596fb352ee96a1379c657734d4b913a613ad563"
   integrity sha512-ga8y9v9uyeiLdpKddhxYQkxNDrfvuPrlFb0N1qnZZByvcElJaXthF1UhvCh9TLWJBEHeNtdnbysW7Y6Uq8CVng==
 
+"@types/random-seed@^0.3.3":
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/@types/random-seed/-/random-seed-0.3.5.tgz#a2514992e37aacf3f2da3b6b67d1258ec7fd85a0"
+  integrity sha512-CftxcDPAHgs0SLHU2dt+ZlDPJfGqLW3sZlC/ATr5vJDSe5tRLeOne7HMvCOJnFyF8e1U41wqzs3h6AMC613xtA==
+
 "@types/react-dom@^18.2.7":
   version "18.2.18"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.18.tgz#16946e6cd43971256d874bc3d0a72074bb8571dd"
@@ -3396,6 +3401,15 @@ graphemer@^1.4.0:
   resolved "https://registry.yarnpkg.com/graphemer/-/graphemer-1.4.0.tgz#fb2f1d55e0e3a1849aeffc90c4fa0dd53a0e66c6"
   integrity sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==
 
+haikunator@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/haikunator/-/haikunator-2.1.2.tgz#4e9c8105c22f05e4e28b54a7f74736e24af95a27"
+  integrity sha512-8xTQw2yomVQWG1mLJKD7RrwXN8PkgRYKDShOBhtlu2MqOTboc4O5dVYhPgLigcKMAtwJ0GZty5N44EbLGZN3FA==
+  dependencies:
+    "@types/random-seed" "^0.3.3"
+    lodash.defaults "^4.2.0"
+    random-seed "^0.3.0"
+
 has-flag@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/has-flag/-/has-flag-3.0.0.tgz#b5d454dc2199ae225699f3467e5a07f3b955bafd"
@@ -3637,6 +3651,11 @@ json-stable-stringify-without-jsonify@^1.0.1:
   resolved "https://registry.yarnpkg.com/json-stable-stringify-without-jsonify/-/json-stable-stringify-without-jsonify-1.0.1.tgz#9db7b59496ad3f3cfef30a75142d2d930ad72651"
   integrity sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==
 
+json-stringify-safe@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/json-stringify-safe/-/json-stringify-safe-5.0.1.tgz#1296a2d58fd45f19a0f6ce01d65701e2c735b6eb"
+  integrity sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA==
+
 json5@^2.2.3:
   version "2.2.3"
   resolved "https://registry.yarnpkg.com/json5/-/json5-2.2.3.tgz#78cd6f1a19bdc12b73db5ad0c61efd66c1e29283"
@@ -3688,6 +3707,11 @@ locate-path@^6.0.0:
   integrity sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==
   dependencies:
     p-locate "^5.0.0"
+
+lodash.defaults@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/lodash.defaults/-/lodash.defaults-4.2.0.tgz#d09178716ffea4dde9e5fb7b37f6f0802274580c"
+  integrity sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==
 
 lodash.merge@^4.6.2:
   version "4.6.2"
@@ -4151,6 +4175,13 @@ queue-microtask@^1.2.2:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
+
+random-seed@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/random-seed/-/random-seed-0.3.0.tgz#d945f2e1f38f49e8d58913431b8bf6bb937556cd"
+  integrity sha512-y13xtn3kcTlLub3HKWXxJNeC2qK4mB59evwZ5EkeRlolx+Bp2ztF7LbcZmyCnOqlHQrLnfuNbi1sVmm9lPDlDA==
+  dependencies:
+    json-stringify-safe "^5.0.1"
 
 react-arborist@^3.3.1:
   version "3.4.0"

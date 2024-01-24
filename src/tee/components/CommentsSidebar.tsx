@@ -5,8 +5,16 @@ import {
   CommentThreadWithPosition,
   MarkdownDoc,
 } from "../schema";
+import Haikunator from "haikunator";
 
-import { Check, MessageSquarePlus, PencilIcon, Reply } from "lucide-react";
+import {
+  Check,
+  Fullscreen,
+  MessageSquarePlus,
+  PencilIcon,
+  Reply,
+  ShrinkIcon,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
 
@@ -28,16 +36,20 @@ export const CommentsSidebar = ({
   changeDoc,
   selection,
   threadsWithPositions,
-  activeThreadIds,
-  setActiveThreadIds,
+  selectedThreadIds,
+  setSelectedThreadIds,
   diff,
+  focusedDraftThreadId,
+  setFocusedDraftThreadId,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
-  activeThreadIds: string[];
-  setActiveThreadIds: (threadIds: string[]) => void;
+  selectedThreadIds: string[];
+  setSelectedThreadIds: (threadIds: string[]) => void;
+  focusedDraftThreadId: string | null;
+  setFocusedDraftThreadId: (id: string | null) => void;
   diff?: Patch[];
 }) => {
   const account = useCurrentAccount();
@@ -47,6 +59,7 @@ export const CommentsSidebar = ({
     string | null
   >();
 
+  // figure out which comments were added in the diff being shown, to highlight in green
   const addedComments: Array<{ threadId: string; commentIndex: number }> = (
     diff ?? []
   )
@@ -74,7 +87,7 @@ export const CommentsSidebar = ({
   // select patch threads if selection changes
   useEffect(() => {
     if (!selection || selection.from === selection.to) {
-      setActiveThreadIds([]);
+      setSelectedThreadIds([]);
       return;
     }
 
@@ -90,7 +103,7 @@ export const CommentsSidebar = ({
       }
     });
 
-    setActiveThreadIds(highlightedDraftThreadIds);
+    setSelectedThreadIds(highlightedDraftThreadIds);
   }, [selection?.from, selection?.to]);
 
   const startCommentThreadAtSelection = (commentText: string) => {
@@ -129,17 +142,13 @@ export const CommentsSidebar = ({
   // By saving that thread in the actual doc, it will then supercede
   // the previous virtual threads.
   // todo: rename this to something like groupPatches, I'm trying to do minimal structural changes to avoid merge conflicts
-  const startCommentForPatchGroup = (
-    virtualThreadsForPatches: CommentThread[]
-  ) => {
-    const existingThreads = virtualThreadsForPatches.filter(
-      (thread) => !thread.inferredFromDiff
+  const startCommentForPatchGroup = (selectedThreads: CommentThread[]) => {
+    const existingDrafts = selectedThreads.filter(
+      (thread) => thread.type === "draft"
     );
 
-    console.log(existingThreads.length);
-
-    const patches = virtualThreadsForPatches
-      .filter((thread) => thread.inferredFromDiff)
+    const patches = selectedThreads
+      .filter((thread) => thread.type === "ephemeralPatch")
       .flatMap(
         (thread) =>
           thread.patches?.map((patch) => ({
@@ -152,15 +161,16 @@ export const CommentsSidebar = ({
       );
 
     // create new thread if all selected patches are virtual
-    if (existingThreads.length == 0) {
+    if (existingDrafts.length == 0) {
       const thread: CommentThread = {
+        type: "draft",
+        draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
         id: uuid(),
         comments: [],
         resolved: false,
         // Position the group around the first virtual thread
-        fromCursor: virtualThreadsForPatches[0].fromCursor,
-        toCursor: virtualThreadsForPatches[0].toCursor,
-        // combine
+        fromCursor: selectedThreads[0].fromCursor,
+        toCursor: selectedThreads[0].toCursor,
         patches,
       };
 
@@ -169,8 +179,8 @@ export const CommentsSidebar = ({
       });
 
       // add to existing thread if there is only one
-    } else if (existingThreads.length === 1) {
-      const existingThread = existingThreads[0];
+    } else if (existingDrafts.length === 1) {
+      const existingThread = existingDrafts[0];
       changeDoc((doc) => {
         const commentThread = doc.commentThreads[existingThread.id];
         for (const patch of patches) {
@@ -184,8 +194,8 @@ export const CommentsSidebar = ({
     }
   };
 
+  // reply to a comment thread.
   const addReplyToThread = (thread: CommentThread) => {
-    console.log("addReplyToThread", thread);
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
@@ -195,21 +205,27 @@ export const CommentsSidebar = ({
 
     changeDoc((doc) => {
       const existingThread = doc.commentThreads[thread.id];
-      // Materialize a thread for this patch if needed
       if (existingThread) {
         doc.commentThreads[thread.id].comments.push(comment);
       } else {
+        // We're replying to a thread that doesn't exist!
+        // This is actually fine because it might be an in-memory thread
+        // which represents some ephemeral patches. If that's the case,
+        // we gotta initialize a new thread in the automerge doc at this point.
         if (!thread.patches) {
           return;
         }
         const newThread: CommentThread = {
+          type: "draft",
+          draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
           id: thread.id,
           comments: [comment],
           resolved: false,
-          // Position the group around the first virtual thread
+          // Position the thread around the first patch.
+          // (in the future we should extend the system so that we can associate
+          // a single draft with multiple ranges in the document.)
           fromCursor: thread.fromCursor,
           toCursor: thread.toCursor,
-          // combine
           patches: thread.patches,
         };
         doc.commentThreads[newThread.id] = newThread;
@@ -235,27 +251,36 @@ export const CommentsSidebar = ({
     }
   };
 
-  const selectedPatches = activeThreadIds
+  const selectedThreadsThatContainEphemeralPatches = selectedThreadIds
     .map((id) => threadsWithPositions.find((thread) => thread.id === id))
-    .filter((thread) => thread?.patches && thread.patches.length > 0);
+    .filter(
+      (thread) =>
+        thread?.patches && thread.patches.length > 0 && thread.type !== "draft" // if the thread is already a draft we don't want to include it when we make new drafts
+    );
+
+  // If there's a focused draft, show nothing for now
+  // (TODO: show the comments for the parts of the diff...)
+  if (focusedDraftThreadId) {
+    return <div></div>;
+  }
 
   return (
     <div>
-      {selectedPatches.length > 1 && (
+      {selectedThreadsThatContainEphemeralPatches.length > 0 && (
         <div className="w-48 text-xs font-gray-600 p-2">
-          {selectedPatches.length} edits selected
+          {selectedThreadsThatContainEphemeralPatches.length} edits
           <Button
             variant="outline"
             className="h-6 ml-1"
             onClick={() => {
-              const activeThreads = activeThreadIds.map((id) =>
+              const selectedThreads = selectedThreadIds.map((id) =>
                 threadsWithPositions.find((thread) => thread.id === id)
               );
-              startCommentForPatchGroup(activeThreads);
-              setActiveThreadIds([]);
+              startCommentForPatchGroup(selectedThreads);
+              setSelectedThreadIds([]);
             }}
           >
-            Group
+            Make draft
           </Button>
         </div>
       )}
@@ -263,7 +288,7 @@ export const CommentsSidebar = ({
         <div
           key={thread.id}
           className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            activeThreadIds.includes(thread.id)
+            selectedThreadIds.includes(thread.id)
               ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
           }`}
@@ -272,13 +297,29 @@ export const CommentsSidebar = ({
           }}
           onClick={(e) => {
             if (e.shiftKey) {
-              setActiveThreadIds([...activeThreadIds, thread.id]);
+              setSelectedThreadIds([...selectedThreadIds, thread.id]);
             } else {
-              setActiveThreadIds([thread.id]);
+              setSelectedThreadIds([thread.id]);
             }
             e.stopPropagation();
           }}
         >
+          {thread.type === "draft" && (
+            <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
+              <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
+              <div className="text-xs">
+                {thread.draftTitle ?? "Unknown name"}
+              </div>
+              <Button
+                variant="outline"
+                className="ml-2 h-5 max-w-24"
+                onClick={() => setFocusedDraftThreadId(thread.id)}
+              >
+                <Fullscreen className="mr-2 h-4" />
+                Focus
+              </Button>
+            </div>
+          )}
           {thread.patches?.length > 0 && (
             <div className="mb-3 border-b border-gray-300 pb-2">
               {thread.patches.map((patch) => (
@@ -320,7 +361,9 @@ export const CommentsSidebar = ({
                     addedComments.find(
                       (c) =>
                         c.threadId === thread.id && c.commentIndex === index
-                    ) && "bg-green-100"
+                    ) &&
+                    !thread.patches &&
+                    "bg-green-100"
                   }`}
                 >
                   <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">

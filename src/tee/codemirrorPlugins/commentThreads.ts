@@ -29,6 +29,8 @@ export const threadDecorations = EditorView.decorations.compute(
   (state) => {
     const commentThreads = state.field(threadsField);
 
+    // TODO: for threads which represent edit groups and point to multiple ranges of text,
+    // we can highight all of those multiple ranges here.
     const decorations =
       sortBy(commentThreads ?? [], (thread) => thread.from)?.flatMap(
         (thread) => {
