@@ -81,8 +81,8 @@ export const TinyEssayEditor = ({
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
-            activeThreadIds={activeThreadIds}
-            setActiveThreadIds={setActiveThreadIds}
+            selectedThreadIds={activeThreadIds}
+            setSelectedThreadIds={setActiveThreadIds}
             threadsWithPositions={threadsWithPositions}
             diff={diff}
           />

@@ -7,7 +7,14 @@ import {
 } from "../schema";
 import Haikunator from "haikunator";
 
-import { Check, MessageSquarePlus, PencilIcon, Reply } from "lucide-react";
+import {
+  Check,
+  Fullscreen,
+  MessageSquarePlus,
+  PencilIcon,
+  Reply,
+  ShrinkIcon,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
 
@@ -29,16 +36,16 @@ export const CommentsSidebar = ({
   changeDoc,
   selection,
   threadsWithPositions,
-  activeThreadIds,
-  setActiveThreadIds,
+  selectedThreadIds,
+  setSelectedThreadIds,
   diff,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
   threadsWithPositions: CommentThreadWithPosition[];
-  activeThreadIds: string[];
-  setActiveThreadIds: (threadIds: string[]) => void;
+  selectedThreadIds: string[];
+  setSelectedThreadIds: (threadIds: string[]) => void;
   diff?: Patch[];
 }) => {
   const account = useCurrentAccount();
@@ -47,7 +54,11 @@ export const CommentsSidebar = ({
   const [activeReplyThreadId, setActiveReplyThreadId] = useState<
     string | null
   >();
+  const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<
+    string | null
+  >();
 
+  // figure out which comments were added in the diff being shown, to highlight in green
   const addedComments: Array<{ threadId: string; commentIndex: number }> = (
     diff ?? []
   )
@@ -72,6 +83,7 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
+  // start a (regular) comment thread at the current selection
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
 
@@ -137,6 +149,7 @@ export const CommentsSidebar = ({
     });
   };
 
+  // reply to a comment thread.
   const addReplyToThread = (thread: CommentThread) => {
     const comment: Comment = {
       id: uuid(),
@@ -147,10 +160,13 @@ export const CommentsSidebar = ({
 
     changeDoc((doc) => {
       const existingThread = doc.commentThreads[thread.id];
-      // Materialize a thread for this patch if needed
       if (existingThread) {
         doc.commentThreads[thread.id].comments.push(comment);
       } else {
+        // We're replying to a thread that doesn't exist!
+        // This is actually fine because it might be an in-memory thread
+        // which represents some ephemeral patches. If that's the case,
+        // we gotta initialize a new thread in the automerge doc at this point.
         if (!thread.patches) {
           return;
         }
@@ -160,10 +176,11 @@ export const CommentsSidebar = ({
           id: thread.id,
           comments: [comment],
           resolved: false,
-          // Position the group around the first virtual thread
+          // Position the thread around the first patch.
+          // (in the future we should extend the system so that we can associate
+          // a single draft with multiple ranges in the document.)
           fromCursor: thread.fromCursor,
           toCursor: thread.toCursor,
-          // combine
           patches: thread.patches,
         };
         doc.commentThreads[newThread.id] = newThread;
@@ -189,24 +206,160 @@ export const CommentsSidebar = ({
     }
   };
 
-  const selectedPatches = activeThreadIds
+  const selectedThreadsThatContainEphemeralPatches = selectedThreadIds
     .map((id) => threadsWithPositions.find((thread) => thread.id === id))
-    .filter((thread) => thread?.patches && thread.patches.length > 0);
+    .filter(
+      (thread) =>
+        thread?.patches && thread.patches.length > 0 && thread.type !== "draft" // if the thread is already a draft we don't want to include it when we make new drafts
+    );
+
+  if (focusedDraftThreadId) {
+    const thread = threadsWithPositions.find(
+      (thread) => thread.id === focusedDraftThreadId
+    );
+    return (
+      <div className="w-72">
+        <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
+          <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
+          <div className="text-xs">{thread.draftTitle ?? "Unknown name"}</div>
+          <Button
+            variant="outline"
+            className="ml-2 h-5 max-w-36"
+            onClick={() => setFocusedDraftThreadId(null)}
+          >
+            <ShrinkIcon className="mr-2 h-4" />
+            Unfocus
+          </Button>
+        </div>
+        <div>
+          {thread.comments.map((comment, index) => {
+            const legacyUserName =
+              doc.users?.find((user) => user.id === comment.userId)?.name ??
+              "Anonymous";
+
+            return (
+              <div
+                key={comment.id}
+                className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0 ${
+                  addedComments.find(
+                    (c) => c.threadId === thread.id && c.commentIndex === index
+                  ) &&
+                  !thread.patches &&
+                  "bg-green-100"
+                }`}
+              >
+                <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+                  {comment.contactUrl ? (
+                    <ContactAvatar
+                      url={comment.contactUrl}
+                      showName={true}
+                      size="sm"
+                    />
+                  ) : (
+                    legacyUserName
+                  )}
+                  <span className="ml-2 text-gray-400">
+                    {getRelativeTimeString(comment.timestamp)}
+                  </span>
+                </div>
+                <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
+                  {comment.content}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2">
+          <Popover
+            open={activeReplyThreadId === thread.id}
+            onOpenChange={(open) =>
+              open
+                ? setActiveReplyThreadId(thread.id)
+                : setActiveReplyThreadId(null)
+            }
+          >
+            <PopoverTrigger asChild>
+              {thread?.patches &&
+              thread.patches.length > 0 &&
+              thread.comments.length === 0 ? (
+                <Button className="mr-2" variant="outline">
+                  <PencilIcon className="mr-2 " /> Explain
+                </Button>
+              ) : (
+                <Button className="mr-2" variant="outline">
+                  <Reply className="mr-2 " /> Reply
+                </Button>
+              )}
+            </PopoverTrigger>
+            <PopoverContent>
+              <Textarea
+                className="mb-4"
+                value={pendingCommentText}
+                onChange={(event) => setPendingCommentText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.metaKey) {
+                    addReplyToThread(thread);
+                    setActiveReplyThreadId(null);
+                    event.preventDefault();
+                  }
+                }}
+              />
+
+              <PopoverClose>
+                <Button
+                  variant="outline"
+                  onClick={() => addReplyToThread(thread)}
+                >
+                  Comment
+                  <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+                </Button>
+              </PopoverClose>
+            </PopoverContent>
+          </Popover>
+
+          {!thread.patches ||
+            (thread.patches.length === 0 && (
+              <Button
+                variant="outline"
+                className="select-none"
+                onClick={() =>
+                  changeDoc(
+                    (d) => (d.commentThreads[thread.id].resolved = true)
+                  )
+                }
+              >
+                <Check className="mr-2" /> Resolve
+              </Button>
+            ))}
+
+          {thread.patches && thread.patches.length > 0 && (
+            <Button
+              variant="outline"
+              className="select-none"
+              onClick={() => undoPatchesForThread(thread)}
+            >
+              <Check className="mr-2" /> Undo
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {selectedPatches.length > 0 && (
+      {selectedThreadsThatContainEphemeralPatches.length > 0 && (
         <div className="w-48 text-xs font-gray-600 p-2">
-          {selectedPatches.length} edits
+          {selectedThreadsThatContainEphemeralPatches.length} edits
           <Button
             variant="outline"
             className="h-6 ml-1"
             onClick={() => {
-              const activeThreads = activeThreadIds.map((id) =>
+              const activeThreads = selectedThreadIds.map((id) =>
                 threadsWithPositions.find((thread) => thread.id === id)
               );
               startCommentForPatchGroup(activeThreads);
-              setActiveThreadIds([]);
+              setSelectedThreadIds([]);
             }}
           >
             Make draft
@@ -217,7 +370,7 @@ export const CommentsSidebar = ({
         <div
           key={thread.id}
           className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            activeThreadIds.includes(thread.id)
+            selectedThreadIds.includes(thread.id)
               ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
           }`}
@@ -226,19 +379,27 @@ export const CommentsSidebar = ({
           }}
           onClick={(e) => {
             if (e.shiftKey) {
-              setActiveThreadIds([...activeThreadIds, thread.id]);
+              setSelectedThreadIds([...selectedThreadIds, thread.id]);
             } else {
-              setActiveThreadIds([thread.id]);
+              setSelectedThreadIds([thread.id]);
             }
             e.stopPropagation();
           }}
         >
           {thread.type === "draft" && (
-            <div className="mb-3 border-b border-gray-300 pb-2 flex text-gray-500">
+            <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
               <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
               <div className="text-xs">
                 {thread.draftTitle ?? "Unknown name"}
               </div>
+              <Button
+                variant="outline"
+                className="ml-2 h-5 max-w-24"
+                onClick={() => setFocusedDraftThreadId(thread.id)}
+              >
+                <Fullscreen className="mr-2 h-4" />
+                Focus
+              </Button>
             </div>
           )}
           {thread.patches?.length > 0 && (
