@@ -73,17 +73,24 @@ const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
 };
 
 // Resolve comment thread cursors to integer positions in the document
-export const getThreadsForUI = (
-  doc: MarkdownDoc,
-  activeThreadIds: string[],
-  threadsForDiffPatches?: CommentThread[]
-): CommentThreadForUI[] => {
+export const getThreadsForUI = ({
+  doc,
+  activeThreadIds,
+  showDiff,
+  threadsForDiffPatches,
+}: {
+  doc: MarkdownDoc;
+  activeThreadIds: string[];
+  showDiff: boolean;
+  threadsForDiffPatches?: CommentThread[];
+}): CommentThreadForUI[] => {
   const commentThreads = [
     ...Object.values(doc.commentThreads ?? {}),
     ...(threadsForDiffPatches ?? []),
   ];
   return commentThreads
     .filter((thread) => !thread.resolved) // hide resolved threads
+    .filter((thread) => !(!showDiff && thread.patches?.length > 0)) // hide threads with patches if we're not showing diff
     .flatMap((thread) => {
       let from = 0;
       let to = 0;
@@ -271,7 +278,7 @@ export const useThreadsWithPositions = ({
   view: EditorView;
   activeThreadIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
-  diff: A.Patch[];
+  diff?: A.Patch[];
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
@@ -302,16 +309,18 @@ export const useThreadsWithPositions = ({
 
         const fromCursor = A.getCursor(doc, ["content"], patchStart);
         const toCursor = A.getCursor(doc, ["content"], patchEnd);
+        const patchId = `${patch.action}-${fromCursor}`;
         return [
           {
             // Experimenting with stable IDs for patches...
             // ID a patch by its action + its from cursor? this feels not unique enough...
-            id: `${patch.action}-${fromCursor}`,
+            id: patchId,
             comments: [],
             resolved: false,
             fromCursor,
             toCursor,
-            patches: [patch],
+            // this is a patch augmented with an id and cursors...
+            patches: [{ ...patch, id: patchId, fromCursor, toCursor }],
             inferredFromDiff: true,
           },
         ];
@@ -327,7 +336,12 @@ export const useThreadsWithPositions = ({
     );
 
     return doc
-      ? getThreadsForUI(doc, activeThreadIds, inferredThreadsToShow)
+      ? getThreadsForUI({
+          doc,
+          activeThreadIds,
+          threadsForDiffPatches: inferredThreadsToShow,
+          showDiff: diff !== undefined,
+        })
       : [];
   }, [doc, activeThreadIds, diff]);
 

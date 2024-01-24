@@ -6,7 +6,7 @@ import {
   MarkdownDoc,
 } from "../schema";
 
-import { Check, MessageSquarePlus, Reply } from "lucide-react";
+import { Check, MessageSquarePlus, PencilIcon, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
 
@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { truncate } from "lodash";
 
 export const CommentsSidebar = ({
   doc,
@@ -131,11 +132,10 @@ export const CommentsSidebar = ({
     changeDoc((doc) => {
       doc.commentThreads[thread.id] = thread;
     });
-
-    setPendingCommentText("");
   };
 
-  const addReplyToThread = (threadId: string) => {
+  const addReplyToThread = (thread: CommentThread) => {
+    console.log("addReplyToThread", thread);
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
@@ -144,15 +144,50 @@ export const CommentsSidebar = ({
     };
 
     changeDoc((doc) => {
-      doc.commentThreads[threadId].comments.push(comment);
+      const existingThread = doc.commentThreads[thread.id];
+      // Materialize a thread for this patch if needed
+      if (existingThread) {
+        doc.commentThreads[thread.id].comments.push(comment);
+      } else {
+        if (!thread.patches) {
+          return;
+        }
+        const newThread: CommentThread = {
+          id: thread.id,
+          comments: [comment],
+          resolved: false,
+          // Position the group around the first virtual thread
+          fromCursor: thread.fromCursor,
+          toCursor: thread.toCursor,
+          // combine
+          patches: thread.patches,
+        };
+        doc.commentThreads[newThread.id] = newThread;
+      }
     });
 
     setPendingCommentText("");
   };
 
+  const undoPatchesForThread = (thread: CommentThread) => {
+    for (const patch of thread.patches ?? []) {
+      if (!patch.fromCursor) {
+        throw new Error("expected patch to have fromCursor");
+      }
+      const from = A.getCursorPosition(doc, ["content"], patch.fromCursor);
+      if (patch.action === "splice") {
+        changeDoc((doc) => {
+          A.splice(doc, ["content"], from, patch.value.length);
+        });
+      } else if (patch.action === "del") {
+        alert("undoing deletions is not yet implemented");
+      }
+    }
+  };
+
   const selectedPatches = activeThreadIds
     .map((id) => threadsWithPositions.find((thread) => thread.id === id))
-    .filter((thread) => thread && thread.patches.length > 0);
+    .filter((thread) => thread?.patches && thread.patches.length > 0);
 
   return (
     <div>
@@ -195,13 +230,16 @@ export const CommentsSidebar = ({
           }}
         >
           {thread.patches?.length > 0 && (
-            <div>
+            <div className="mb-3 border-b border-gray-300 pb-2">
               {thread.patches.map((patch) => (
+                // todo: is this a terrible key?
                 <div key={`${JSON.stringify(patch)}`} className="select-none">
                   {patch.action === "splice" && (
                     <div className="text-xs">
                       <strong>Insert: </strong>
-                      <span className="font-serif">{patch.value}</span>
+                      <span className="font-serif">
+                        {truncate(patch.value, { length: 50 })}
+                      </span>
                     </div>
                   )}
                   {patch.action === "del" && (
@@ -266,9 +304,17 @@ export const CommentsSidebar = ({
               }
             >
               <PopoverTrigger asChild>
-                <Button className="mr-2" variant="outline">
-                  <Reply className="mr-2 " /> Reply
-                </Button>
+                {thread?.patches &&
+                thread.patches.length > 0 &&
+                thread.comments.length === 0 ? (
+                  <Button className="mr-2" variant="outline">
+                    <PencilIcon className="mr-2 " /> Explain
+                  </Button>
+                ) : (
+                  <Button className="mr-2" variant="outline">
+                    <Reply className="mr-2 " /> Reply
+                  </Button>
+                )}
               </PopoverTrigger>
               <PopoverContent>
                 <Textarea
@@ -279,7 +325,7 @@ export const CommentsSidebar = ({
                   }
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && event.metaKey) {
-                      addReplyToThread(thread.id);
+                      addReplyToThread(thread);
                       setActiveReplyThreadId(null);
                       event.preventDefault();
                     }
@@ -289,7 +335,7 @@ export const CommentsSidebar = ({
                 <PopoverClose>
                   <Button
                     variant="outline"
-                    onClick={() => addReplyToThread(thread.id)}
+                    onClick={() => addReplyToThread(thread)}
                   >
                     Comment
                     <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
@@ -298,15 +344,30 @@ export const CommentsSidebar = ({
               </PopoverContent>
             </Popover>
 
-            <Button
-              variant="outline"
-              className="select-none"
-              onClick={() =>
-                changeDoc((d) => (d.commentThreads[thread.id].resolved = true))
-              }
-            >
-              <Check className="mr-2" /> Resolve
-            </Button>
+            {!thread.patches ||
+              (thread.patches.length === 0 && (
+                <Button
+                  variant="outline"
+                  className="select-none"
+                  onClick={() =>
+                    changeDoc(
+                      (d) => (d.commentThreads[thread.id].resolved = true)
+                    )
+                  }
+                >
+                  <Check className="mr-2" /> Resolve
+                </Button>
+              ))}
+
+            {thread.patches && thread.patches.length > 0 && (
+              <Button
+                variant="outline"
+                className="select-none"
+                onClick={() => undoPatchesForThread(thread)}
+              >
+                <Check className="mr-2" /> Undo
+              </Button>
+            )}
           </div>
         </div>
       ))}

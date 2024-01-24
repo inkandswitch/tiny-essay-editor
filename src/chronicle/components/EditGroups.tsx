@@ -23,34 +23,6 @@ const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
   return diffBase;
 };
 
-// failed attempt at getting the deleted text in deletion patches
-// const diffWithDeletedText = (doc: A.Doc<MarkdownDoc>, from: A.Heads) => {
-//   if (!doc || from.length === 0) return [];
-//   const to = A.getHeads(doc);
-//   console.log("yo", doc, from, to);
-//   const diff = A.diff(doc, from, to);
-//   const fromDoc = A.view(doc, from);
-//   return diff.map((patch) => {
-//     if (patch.action !== "del") {
-//       return patch;
-//     }
-//     const patchCursor = A.getCursor(doc, ["content"], patch.path[1]);
-//     const positionOfPatchInFromDoc = A.getCursorPosition(
-//       fromDoc,
-//       ["content"],
-//       patchCursor
-//     );
-//     console.log({ patchCursor, positionOfPatchInFromDoc });
-//     return {
-//       ...patch,
-//       value: fromDoc.content.slice(
-//         positionOfPatchInFromDoc,
-//         positionOfPatchInFromDoc + patch.length
-//       ),
-//     };
-//   });
-// };
-
 export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
