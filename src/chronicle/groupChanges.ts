@@ -163,7 +163,6 @@ export const getGroupedChanges = (
       if (!isNewComment) {
         return total;
       } else {
-        console.log(patch);
         return total + 1;
       }
     }, 0);

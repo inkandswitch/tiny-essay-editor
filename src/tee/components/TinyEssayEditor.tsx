@@ -8,12 +8,16 @@ import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
-import { useThreadsWithPositions } from "../utils";
+import { getRelativeTimeString, useThreadsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
 import { Heads, Patch, view } from "@automerge/automerge/next";
+import { Button } from "@/components/ui/button";
+import { ShrinkIcon } from "lucide-react";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { Popover } from "@/components/ui/popover";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -38,6 +42,7 @@ export const TinyEssayEditor = ({
   const [activeThreadIds, setActiveThreadIds] = useState<string[]>([]);
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+  const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,
@@ -47,6 +52,15 @@ export const TinyEssayEditor = ({
     diff: showDiffAsComments ? diff : undefined,
   });
 
+  const focusedDraftThread = threadsWithPositions.find(
+    (thread) => thread.id === focusedDraftThreadId
+  );
+
+  const threadsForEditor = focusedDraftThread
+    ? [focusedDraftThread]
+    : threadsWithPositions;
+  const diffForEditor = focusedDraftThread ? focusedDraftThread.patches : diff;
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
@@ -55,6 +69,56 @@ export const TinyEssayEditor = ({
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
+      {focusedDraftThread && (
+        <div className="w-full p-4">
+          <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
+            <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
+            <div className="text-xs">
+              {focusedDraftThread.draftTitle ?? "Unknown name"}
+            </div>
+            <Button
+              variant="outline"
+              className="ml-2 h-5 max-w-36"
+              onClick={() => setFocusedDraftThreadId(null)}
+            >
+              <ShrinkIcon className="mr-2 h-4" />
+              Unfocus
+            </Button>
+          </div>
+          <div>
+            {focusedDraftThread.comments.map((comment, index) => {
+              const legacyUserName =
+                doc.users?.find((user) => user.id === comment.userId)?.name ??
+                "Anonymous";
+
+              return (
+                <div
+                  key={comment.id}
+                  className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0`}
+                >
+                  <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+                    {comment.contactUrl ? (
+                      <ContactAvatar
+                        url={comment.contactUrl}
+                        showName={true}
+                        size="sm"
+                      />
+                    ) : (
+                      legacyUserName
+                    )}
+                    <span className="ml-2 text-gray-400">
+                      {getRelativeTimeString(comment.timestamp)}
+                    </span>
+                  </div>
+                  <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
+                    {comment.content}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="@container flex bg-gray-50 justify-center">
         {/* This has some subtle behavior for responsiveness.
             - We use container queries to adjust the width of the editor based on the size of our container.
@@ -67,11 +131,11 @@ export const TinyEssayEditor = ({
             path={["content"]}
             setSelection={setSelection}
             setView={setEditorView}
-            threadsWithPositions={threadsWithPositions}
+            threadsWithPositions={threadsForEditor}
             setActiveThreadIds={setActiveThreadIds}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
-            diff={diff}
+            diff={diffForEditor}
             diffStyle={diffStyle ?? "normal"}
             foldRanges={foldRanges}
           />
@@ -83,8 +147,10 @@ export const TinyEssayEditor = ({
             selection={selection}
             selectedThreadIds={activeThreadIds}
             setSelectedThreadIds={setActiveThreadIds}
-            threadsWithPositions={threadsWithPositions}
-            diff={diff}
+            threadsWithPositions={threadsForEditor}
+            diff={diffForEditor}
+            focusedDraftThreadId={focusedDraftThreadId}
+            setFocusedDraftThreadId={setFocusedDraftThreadId}
           />
         </div>
       </div>
