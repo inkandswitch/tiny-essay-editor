@@ -5,6 +5,7 @@ import {
   CommentThreadWithPosition,
   MarkdownDoc,
 } from "../schema";
+import Haikunator from "haikunator";
 
 import { Check, MessageSquarePlus, PencilIcon, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +111,8 @@ export const CommentsSidebar = ({
     virtualThreadsForPatches: CommentThread[]
   ) => {
     const thread: CommentThread = {
+      type: "draft",
+      draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
       id: uuid(),
       comments: [],
       resolved: false,
@@ -135,7 +138,6 @@ export const CommentsSidebar = ({
   };
 
   const addReplyToThread = (thread: CommentThread) => {
-    console.log("addReplyToThread", thread);
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
@@ -153,6 +155,8 @@ export const CommentsSidebar = ({
           return;
         }
         const newThread: CommentThread = {
+          type: "draft",
+          draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
           id: thread.id,
           comments: [comment],
           resolved: false,
@@ -193,7 +197,7 @@ export const CommentsSidebar = ({
     <div>
       {selectedPatches.length > 0 && (
         <div className="w-48 text-xs font-gray-600 p-2">
-          {selectedPatches.length} edits selected
+          {selectedPatches.length} edits
           <Button
             variant="outline"
             className="h-6 ml-1"
@@ -205,7 +209,7 @@ export const CommentsSidebar = ({
               setActiveThreadIds([]);
             }}
           >
-            Group
+            Make draft
           </Button>
         </div>
       )}
@@ -229,6 +233,14 @@ export const CommentsSidebar = ({
             e.stopPropagation();
           }}
         >
+          {thread.type === "draft" && (
+            <div className="mb-3 border-b border-gray-300 pb-2 flex text-gray-500">
+              <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
+              <div className="text-xs">
+                {thread.draftTitle ?? "Unknown name"}
+              </div>
+            </div>
+          )}
           {thread.patches?.length > 0 && (
             <div className="mb-3 border-b border-gray-300 pb-2">
               {thread.patches.map((patch) => (
@@ -270,7 +282,9 @@ export const CommentsSidebar = ({
                     addedComments.find(
                       (c) =>
                         c.threadId === thread.id && c.commentIndex === index
-                    ) && "bg-green-100"
+                    ) &&
+                    !thread.patches &&
+                    "bg-green-100"
                   }`}
                 >
                   <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">

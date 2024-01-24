@@ -53,6 +53,7 @@
     "codemirror": "^6.0.1",
     "d3": "^7.8.5",
     "eventemitter3": "^5.0.1",
+    "haikunator": "^2.1.2",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",

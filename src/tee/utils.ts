@@ -321,7 +321,7 @@ export const useThreadsWithPositions = ({
             toCursor,
             // this is a patch augmented with an id and cursors...
             patches: [{ ...patch, id: patchId, fromCursor, toCursor }],
-            inferredFromDiff: true,
+            type: "ephemeralPatch",
           },
         ];
       }
