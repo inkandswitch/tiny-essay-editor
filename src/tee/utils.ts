@@ -322,7 +322,7 @@ export const useAnnotationsWithPositions = ({
     /** Create some virtual inferred threads based on the diff,
      *  for patches which haven't been manually stored yet
      */
-    const patchAnnotations = (diff.patches ?? []).flatMap(
+    const patchAnnotations = (diff?.patches ?? []).flatMap(
       (patch): PatchAnnotation[] => {
         if (
           patch.path[0] !== "content" ||

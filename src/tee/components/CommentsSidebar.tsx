@@ -108,13 +108,7 @@ export const CommentsSidebar = ({
     });
 
     setSelectedAnnotationIds(highlightedPatchIds);
-  }, [
-    annotationsWithPositions,
-    selection,
-    selection.from,
-    selection.to,
-    setSelectedAnnotationIds,
-  ]);
+  }, [selection?.from, selection?.to]);
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
@@ -159,8 +153,7 @@ export const CommentsSidebar = ({
       .map((annotation: PatchAnnotation) => ({
         fromCursor: annotation.fromCursor,
         toCursor: annotation.toCursor,
-        // todo: pass diff heads in so we have this info
-        fromHeads: [],
+        fromHeads: diff.fromHeads,
       }));
 
     // create new thread if all selected patches are virtual
