@@ -6,8 +6,7 @@
   "module": "index.js",
   "scripts": {
     "dev": "vite --force --port 5173",
-    "build": "yarn build:vendored-automerge-repo && tsc && vite build",
-    "build:vendored-automerge-repo": "cd src/vendor/vendored-automerge-repo && git checkout version-control-project && pnpm install && pnpm build && cd -",
+    "build": "tsc && vite build",
     "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
     "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
     "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
@@ -17,8 +16,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "vendor:init": "./scripts/init-repos.sh",
-    "vendor:build-automerge-repo": "./scripts/build-am-tarballs.sh",
-    "vendor:build-automerge": "./scripts/build-automerge.tarballs.sh"
+    "vendor:build-automerge-repo": "./scripts/build-automerge-repo.sh",
+    "vendor:build-automerge": "./scripts/build-automerge.sh"
   },
   "dependencies": {
     "@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
@@ -55,7 +54,6 @@
     "cmdk": "^0.2.0",
     "codemirror": "^6.0.1",
     "d3": "^7.8.5",
-    "esbuild-plugin-alias-path": "^2.0.2",
     "eventemitter3": "^5.0.1",
     "haikunator": "^2.1.2",
     "lodash": "^4.17.21",
