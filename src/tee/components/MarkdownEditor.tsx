@@ -46,7 +46,7 @@ import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
-import { CommentThreadForUI, MarkdownDoc } from "../schema";
+import { TextAnnotationForUI, MarkdownDoc } from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 
 export type TextSelection = {
@@ -63,7 +63,7 @@ export type EditorProps = {
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
   setActiveThreadIds: (threadIds: string[]) => void;
-  threadsWithPositions: CommentThreadForUI[];
+  threadsWithPositions: TextAnnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
   diff?: A.Patch[];

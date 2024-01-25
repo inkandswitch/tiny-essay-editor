@@ -1,7 +1,7 @@
 import {
-  CommentThread,
-  CommentThreadForUI,
-  CommentThreadWithPosition,
+  TextAnnotation,
+  TextAnnotationForUI,
+  TextAnnotationWithPosition,
   MarkdownDoc,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
@@ -62,7 +62,7 @@ export function getRelativeTimeString(
 }
 
 // a very rough approximation; needs to be better but being perfect seems hard
-const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
+const estimatedHeightOfThread = (thread: TextAnnotationForUI) => {
   const commentHeights = thread.comments.map(
     (comment) => 64 + Math.floor(comment.content.length / 60) * 20
   );
@@ -73,7 +73,7 @@ const estimatedHeightOfThread = (thread: CommentThreadForUI) => {
 };
 
 // Resolve comment thread cursors to integer positions in the document
-export const getThreadsForUI = ({
+export const getTextAnnotationsForUI = ({
   doc,
   activeThreadIds,
   showDiff,
@@ -82,10 +82,11 @@ export const getThreadsForUI = ({
   doc: MarkdownDoc;
   activeThreadIds: string[];
   showDiff: boolean;
-  threadsForDiffPatches?: CommentThread[];
-}): CommentThreadForUI[] => {
+  threadsForDiffPatches?: TextAnnotation[];
+}): TextAnnotationForUI[] => {
   const commentThreads = [
     ...Object.values(doc.commentThreads ?? {}),
+    ...Object.values(doc.drafts ?? {}),
     ...(threadsForDiffPatches ?? []),
   ];
   return commentThreads
@@ -132,11 +133,11 @@ export const getVisibleTheadsWithPos = ({
   view,
   activeThreadIds,
 }: {
-  threads: CommentThreadForUI[];
+  threads: TextAnnotationForUI[];
   doc: MarkdownDoc;
   view: EditorView;
   activeThreadIds: string[];
-}): CommentThreadWithPosition[] => {
+}): TextAnnotationWithPosition[] => {
   // Arbitrarily use the first active thread as the "active" thread
   // for the purposes of positioning.
   const activeThreadId = activeThreadIds[0];
@@ -285,8 +286,8 @@ export const useThreadsWithPositions = ({
     /** Create some virtual inferred threads based on the diff,
      *  for patches which haven't been manually stored yet
      */
-    const inferredThreadsForDiff: CommentThread[] = (diff ?? []).flatMap(
-      (patch): CommentThread[] => {
+    const inferredThreadsForDiff: TextAnnotation[] = (diff ?? []).flatMap(
+      (patch): TextAnnotation[] => {
         if (
           patch.path[0] !== "content" ||
           !["splice", "del"].includes(patch.action)
@@ -336,7 +337,7 @@ export const useThreadsWithPositions = ({
     );
 
     return doc
-      ? getThreadsForUI({
+      ? getTextAnnotationsForUI({
           doc,
           activeThreadIds,
           threadsForDiffPatches: inferredThreadsToShow,

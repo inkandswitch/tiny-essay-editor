@@ -16,43 +16,79 @@ export type Comment = {
 /** Attempting to give diff patches stable identity across doc versions,
  * for the purposes of equivalence checks... TBD how this turns out.
  **/
-type PatchWithStableID = A.Patch & { id: string }; // patch id = fromCursor + action
+// type PatchWithStableID = A.Patch & { id: string }; // patch id = fromCursor + action
 // two heads + a numeric extent?
 // just a mark?
 // "diff from heads" + spatial range (as cursor) + (optional to heads)
 // groupings as an input to the diff algorithm?
 
-export type CommentThread = {
+export type LivePatch = {
+  fromHeads: A.Heads;
+  // I think we will need toHeads eventually (when we yank drafts off main)
+  // but not yet?
+  // toHeads: A.Heads;
+  fromCursor: string;
+  toCursor: string;
+
+  // todo:
+  // - do we need action here?
+  // - do we want to store an ID?
+};
+
+export const idForLivePatch = (patch: LivePatch) =>
+  `${patch.fromHeads.join(",")}-${patch.fromCursor}-${patch.toCursor}`;
+
+export type ThreadAnnotation = {
+  type: "thread";
   id: string;
   comments: Comment[];
   resolved: boolean;
   fromCursor: string; // Automerge cursor
   toCursor: string; // Automerge cursor
-
-  /** Diff patches associated with this thread */
-  patches?: PatchWithStableID[];
-
-  /**  THIS IS A BAD TEMPORARY DESIGN, TO BE REFACTORED...
-   * There are 3 types of comment threads:
-   * - a regular comment thread
-   * - an ephemeral patch produced by a diff
-   * - a "draft": some edits which have been explicitly grouped.
-   */
-  type?: "comment" | "ephemeralPatch" | "draft";
-
-  /** This is sketchy type design; really a title always exists for draft type comments;
-   *  we'll clean this up later with better types.
-   */
-  draftTitle?: string;
 };
 
-export type CommentThreadForUI = CommentThread & {
+export type PatchAnnotation = {
+  type: "patch";
+  patch: A.Patch;
+  id: string;
+  fromHeads: A.Heads;
+  toHeads: A.Heads;
+  fromCursor: A.Cursor; // Automerge cursor
+  toCursor: A.Cursor; // Automerge cursor
+};
+
+export type DraftAnnotation = {
+  type: "draft";
+  id: string;
+  title: string;
+  /** Overall comments on the draft */
+  comments: Comment[];
+
+  /** Individual edits, each with their own comment thread */
+  livePatches: Array<{
+    livePatch: LivePatch;
+    comments: Comment[];
+  }>;
+};
+
+export type TextAnnotation =
+  | DraftAnnotation
+  | PatchAnnotation
+  | ThreadAnnotation;
+
+// TODO: define some helpers for TextAnnotation which switch on the type;
+// eg for seeing if the annotation overlaps with a given cursor position...
+
+/** Augment a persistent comment thread w/ ephemeral info for the UI */
+export type TextAnnotationForUI = TextAnnotation & {
   from: number;
   to: number;
   active: boolean;
 };
 
-export type CommentThreadWithPosition = CommentThreadForUI & { yCoord: number };
+export type TextAnnotationWithPosition = TextAnnotationForUI & {
+  yCoord: number;
+};
 
 export type User = {
   id: string;
@@ -61,7 +97,8 @@ export type User = {
 
 type _MarkdownDoc = {
   content: string;
-  commentThreads: { [key: string]: CommentThread };
+  commentThreads: { [key: string]: ThreadAnnotation };
+  drafts: { [key: string]: DraftAnnotation };
   users: User[];
 };
 

@@ -2,13 +2,16 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { MarkdownDoc } from "../schema";
+import { AnnotationPosition, DraftAnnotation, MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
-import { getRelativeTimeString, useThreadsWithPositions } from "../utils";
+import {
+  getRelativeTimeString,
+  useThreadsWithPositions as useAnnotationsWithPositions,
+} from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
@@ -17,7 +20,6 @@ import { Heads, Patch, view } from "@automerge/automerge/next";
 import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { Popover } from "@/components/ui/popover";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -44,7 +46,7 @@ export const TinyEssayEditor = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
 
-  const threadsWithPositions = useThreadsWithPositions({
+  const annotationsWithPositions = useAnnotationsWithPositions({
     doc,
     view: editorView,
     activeThreadIds,
@@ -52,14 +54,14 @@ export const TinyEssayEditor = ({
     diff: showDiffAsComments ? diff : undefined,
   });
 
-  const focusedDraftThread = threadsWithPositions.find(
+  const focusedDraft = annotationsWithPositions.find(
     (thread) => thread.id === focusedDraftThreadId
-  );
+  ) as (DraftAnnotation & AnnotationPosition & { yCoord: number }) | undefined;
 
-  const threadsForEditor = focusedDraftThread
-    ? [focusedDraftThread]
-    : threadsWithPositions;
-  const diffForEditor = focusedDraftThread ? focusedDraftThread.patches : diff;
+  const annotations = focusedDraft ? [focusedDraft] : annotationsWithPositions;
+
+  // todo: reify the live patches on the draft into actual patches
+  const diffForEditor = focusedDraft ? [] : diff;
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
@@ -69,13 +71,11 @@ export const TinyEssayEditor = ({
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
-      {focusedDraftThread && (
+      {focusedDraft && (
         <div className="w-full p-4">
           <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
             <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
-            <div className="text-xs">
-              {focusedDraftThread.draftTitle ?? "Unknown name"}
-            </div>
+            <div className="text-xs">{focusedDraft.title}</div>
             <Button
               variant="outline"
               className="ml-2 h-5 max-w-36"
@@ -86,7 +86,8 @@ export const TinyEssayEditor = ({
             </Button>
           </div>
           <div>
-            {focusedDraftThread.comments.map((comment, index) => {
+            {/* TODO: DRY This with comments sidebar */}
+            {focusedDraft.comments.map((comment) => {
               const legacyUserName =
                 doc.users?.find((user) => user.id === comment.userId)?.name ??
                 "Anonymous";
@@ -131,7 +132,7 @@ export const TinyEssayEditor = ({
             path={["content"]}
             setSelection={setSelection}
             setView={setEditorView}
-            threadsWithPositions={threadsForEditor}
+            threadsWithPositions={annotations}
             setActiveThreadIds={setActiveThreadIds}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
@@ -145,9 +146,9 @@ export const TinyEssayEditor = ({
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
-            selectedThreadIds={activeThreadIds}
+            selectedAnnotationIds={activeThreadIds}
             setSelectedThreadIds={setActiveThreadIds}
-            threadsWithPositions={threadsForEditor}
+            annotationsWithPositions={annotations}
             diff={diffForEditor}
             focusedDraftThreadId={focusedDraftThreadId}
             setFocusedDraftThreadId={setFocusedDraftThreadId}

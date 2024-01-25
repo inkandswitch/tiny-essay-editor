@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
 import {
   Comment,
-  CommentThread,
-  CommentThreadWithPosition,
+  TextAnnotation,
+  TextAnnotationWithPosition,
   MarkdownDoc,
+  LivePatch,
+  DraftAnnotation,
+  PatchAnnotation,
+  ThreadAnnotation,
 } from "../schema";
 import Haikunator from "haikunator";
 
@@ -13,7 +17,6 @@ import {
   MessageSquarePlus,
   PencilIcon,
   Reply,
-  ShrinkIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
@@ -35,9 +38,9 @@ export const CommentsSidebar = ({
   doc,
   changeDoc,
   selection,
-  threadsWithPositions,
-  selectedThreadIds,
-  setSelectedThreadIds,
+  annotationsWithPositions,
+  selectedAnnotationIds,
+  setSelectedThreadIds: setSelectedAnnotationIds,
   diff,
   focusedDraftThreadId,
   setFocusedDraftThreadId,
@@ -45,8 +48,8 @@ export const CommentsSidebar = ({
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
-  threadsWithPositions: CommentThreadWithPosition[];
-  selectedThreadIds: string[];
+  annotationsWithPositions: TextAnnotationWithPosition[];
+  selectedAnnotationIds: string[];
   setSelectedThreadIds: (threadIds: string[]) => void;
   focusedDraftThreadId: string | null;
   setFocusedDraftThreadId: (id: string | null) => void;
@@ -87,24 +90,30 @@ export const CommentsSidebar = ({
   // select patch threads if selection changes
   useEffect(() => {
     if (!selection || selection.from === selection.to) {
-      setSelectedThreadIds([]);
+      setSelectedAnnotationIds([]);
       return;
     }
 
     // find draft threads in selected range
-    const highlightedDraftThreadIds: string[] = [];
-    threadsWithPositions.forEach((thread) => {
+    const highlightedPatchIds: string[] = [];
+    annotationsWithPositions.forEach((annotation) => {
       if (
-        thread.from >= selection.from &&
-        thread.to <= selection.to &&
-        thread.patches
+        annotation.from >= selection.from &&
+        annotation.to <= selection.to &&
+        annotation.type === "patch"
       ) {
-        highlightedDraftThreadIds.push(thread.id);
+        highlightedPatchIds.push(annotation.id);
       }
     });
 
-    setSelectedThreadIds(highlightedDraftThreadIds);
-  }, [selection?.from, selection?.to]);
+    setSelectedAnnotationIds(highlightedPatchIds);
+  }, [
+    annotationsWithPositions,
+    selection,
+    selection.from,
+    selection.to,
+    setSelectedAnnotationIds,
+  ]);
 
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
@@ -122,7 +131,8 @@ export const CommentsSidebar = ({
       timestamp: Date.now(),
     };
 
-    const thread: CommentThread = {
+    const thread: ThreadAnnotation = {
+      type: "thread",
       id: uuid(),
       comments: [comment],
       resolved: false,
@@ -137,54 +147,48 @@ export const CommentsSidebar = ({
     setPendingCommentText("");
   };
 
-  // This takes in a list of virtual threads representing diff patches,
-  // and then creates a new thread that combines all of the patches in one.
-  // By saving that thread in the actual doc, it will then supercede
-  // the previous virtual threads.
-  // todo: rename this to something like groupPatches, I'm trying to do minimal structural changes to avoid merge conflicts
-  const startCommentForPatchGroup = (selectedThreads: CommentThread[]) => {
-    const existingDrafts = selectedThreads.filter(
+  // Start a draft for the selected patches
+  const groupPatches = (selectedAnnotations: TextAnnotation[]) => {
+    const existingDrafts: DraftAnnotation[] = selectedAnnotations.filter(
       (thread) => thread.type === "draft"
-    );
+    ) as DraftAnnotation[];
 
-    const patches = selectedThreads
-      .filter((thread) => thread.type === "ephemeralPatch")
-      .flatMap(
-        (thread) =>
-          thread.patches?.map((patch) => ({
-            ...patch,
-            /** The stable ID for a patch is its action + a from cursor?
-             * TODO: DRY this out with the duplication in utils.ts
-             */
-            id: `${patch.action}-${thread.fromCursor}`,
-          })) ?? []
-      );
+    const livePatches: LivePatch[] = selectedAnnotations
+      .filter((annotation) => annotation.type === "patch")
+      .map((annotation: PatchAnnotation) => ({
+        fromCursor: annotation.fromCursor,
+        toCursor: annotation.toCursor,
+        // todo: pass diff heads in so we have this info
+        fromHeads: [],
+      }));
 
     // create new thread if all selected patches are virtual
     if (existingDrafts.length == 0) {
-      const thread: CommentThread = {
+      const draft: DraftAnnotation = {
         type: "draft",
-        draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
+        title: new Haikunator().haikunate({ tokenLength: 0 }),
         id: uuid(),
         comments: [],
-        resolved: false,
-        // Position the group around the first virtual thread
-        fromCursor: selectedThreads[0].fromCursor,
-        toCursor: selectedThreads[0].toCursor,
-        patches,
+        livePatches: livePatches.map((livePatch) => ({
+          livePatch,
+          comments: [],
+        })),
       };
 
       changeDoc((doc) => {
-        doc.commentThreads[thread.id] = thread;
+        doc.drafts[draft.id] = draft;
       });
 
       // add to existing thread if there is only one
     } else if (existingDrafts.length === 1) {
-      const existingThread = existingDrafts[0];
+      const existingDraft = existingDrafts[0];
       changeDoc((doc) => {
-        const commentThread = doc.commentThreads[existingThread.id];
-        for (const patch of patches) {
-          commentThread.patches.push(patch);
+        const draft = doc.drafts[existingDraft.id];
+        for (const livePatch of livePatches) {
+          draft.livePatches.push({
+            livePatch,
+            comments: [],
+          });
         }
       });
 
@@ -195,7 +199,7 @@ export const CommentsSidebar = ({
   };
 
   // reply to a comment thread.
-  const addReplyToThread = (thread: CommentThread) => {
+  const replyToAnnotation = (annotation: TextAnnotation) => {
     const comment: Comment = {
       id: uuid(),
       content: pendingCommentText,
@@ -204,39 +208,53 @@ export const CommentsSidebar = ({
     };
 
     changeDoc((doc) => {
-      const existingThread = doc.commentThreads[thread.id];
-      if (existingThread) {
-        doc.commentThreads[thread.id].comments.push(comment);
-      } else {
-        // We're replying to a thread that doesn't exist!
-        // This is actually fine because it might be an in-memory thread
-        // which represents some ephemeral patches. If that's the case,
-        // we gotta initialize a new thread in the automerge doc at this point.
-        if (!thread.patches) {
+      switch (annotation.type) {
+        case "thread": {
+          const thread = doc.commentThreads[annotation.id];
+          if (!thread) {
+            throw new Error("expected thread to exist");
+          }
+          doc.commentThreads[annotation.id].comments.push(comment);
           return;
         }
-        const newThread: CommentThread = {
-          type: "draft",
-          draftTitle: new Haikunator().haikunate({ tokenLength: 0 }),
-          id: thread.id,
-          comments: [comment],
-          resolved: false,
-          // Position the thread around the first patch.
-          // (in the future we should extend the system so that we can associate
-          // a single draft with multiple ranges in the document.)
-          fromCursor: thread.fromCursor,
-          toCursor: thread.toCursor,
-          patches: thread.patches,
-        };
-        doc.commentThreads[newThread.id] = newThread;
+        case "draft": {
+          const draft = doc.drafts[annotation.id];
+          if (!draft) {
+            throw new Error("expected draft to exist");
+          }
+          doc.drafts[annotation.id].comments.push(comment);
+          return;
+        }
+        case "patch": {
+          // Make a draft for this patch
+          const draft: DraftAnnotation = {
+            type: "draft",
+            title: new Haikunator().haikunate({ tokenLength: 0 }),
+            id: uuid(),
+            comments: [comment],
+            livePatches: [
+              {
+                livePatch: {
+                  fromCursor: annotation.fromCursor,
+                  toCursor: annotation.toCursor,
+                  fromHeads: [],
+                },
+                comments: [],
+              },
+            ],
+          };
+          doc.drafts[draft.id] = draft;
+          return;
+        }
       }
     });
 
     setPendingCommentText("");
   };
 
-  const undoPatchesForThread = (thread: CommentThread) => {
-    for (const patch of thread.patches ?? []) {
+  const undoPatchesForThread = (annotation: TextAnnotation) => {
+    if (annotation.type === "patch") {
+      const patch = annotation.patch;
       if (!patch.fromCursor) {
         throw new Error("expected patch to have fromCursor");
       }
@@ -248,15 +266,16 @@ export const CommentsSidebar = ({
       } else if (patch.action === "del") {
         alert("undoing deletions is not yet implemented");
       }
+    } else if (annotation.type === "draft") {
+      alert("Undo on drafts not implemented yet");
     }
   };
 
-  const selectedThreadsThatContainEphemeralPatches = selectedThreadIds
-    .map((id) => threadsWithPositions.find((thread) => thread.id === id))
-    .filter(
-      (thread) =>
-        thread?.patches && thread.patches.length > 0 && thread.type !== "draft" // if the thread is already a draft we don't want to include it when we make new drafts
-    );
+  const selectedThreadsThatContainEphemeralPatches = selectedAnnotationIds
+    .map((id) =>
+      annotationsWithPositions.find((annotation) => annotation.id === id)
+    )
+    .filter((thread) => thread.type === "patch");
 
   // If there's a focused draft, show nothing for now
   // (TODO: show the comments for the parts of the diff...)
@@ -273,133 +292,141 @@ export const CommentsSidebar = ({
             variant="outline"
             className="h-6 ml-1"
             onClick={() => {
-              const selectedThreads = selectedThreadIds.map((id) =>
-                threadsWithPositions.find((thread) => thread.id === id)
+              const selectedThreads = selectedAnnotationIds.map((id) =>
+                annotationsWithPositions.find((thread) => thread.id === id)
               );
-              startCommentForPatchGroup(selectedThreads);
-              setSelectedThreadIds([]);
+              groupPatches(selectedThreads);
+              setSelectedAnnotationIds([]);
             }}
           >
             Make draft
           </Button>
         </div>
       )}
-      {threadsWithPositions.map((thread) => (
+      {annotationsWithPositions.map((annotation) => (
         <div
-          key={thread.id}
+          key={annotation.id}
           className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            selectedThreadIds.includes(thread.id)
+            selectedAnnotationIds.includes(annotation.id)
               ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
           }`}
           style={{
-            top: thread.yCoord,
+            top: annotation.yCoord,
           }}
           onClick={(e) => {
             if (e.shiftKey) {
-              setSelectedThreadIds([...selectedThreadIds, thread.id]);
+              setSelectedAnnotationIds([
+                ...selectedAnnotationIds,
+                annotation.id,
+              ]);
             } else {
-              setSelectedThreadIds([thread.id]);
+              setSelectedAnnotationIds([annotation.id]);
             }
             e.stopPropagation();
           }}
         >
-          {thread.type === "draft" && (
+          {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
               <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
-              <div className="text-xs">
-                {thread.draftTitle ?? "Unknown name"}
-              </div>
+              <div className="text-xs">{annotation.title}</div>
               <Button
                 variant="outline"
                 className="ml-2 h-5 max-w-24"
-                onClick={() => setFocusedDraftThreadId(thread.id)}
+                onClick={() => setFocusedDraftThreadId(annotation.id)}
               >
                 <Fullscreen className="mr-2 h-4" />
                 Focus
               </Button>
             </div>
           )}
-          {thread.patches?.length > 0 && (
+          {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2">
-              {thread.patches.map((patch) => (
-                // todo: is this a terrible key?
-                <div key={`${JSON.stringify(patch)}`} className="select-none">
-                  {patch.action === "splice" && (
-                    <div className="text-xs">
-                      <strong>Insert: </strong>
-                      <span className="font-serif">
-                        {truncate(patch.value, { length: 50 })}
-                      </span>
-                    </div>
-                  )}
-                  {patch.action === "del" && (
-                    <div className="text-xs">
-                      <strong>Delete: </strong>
-                      {patch.length} characters
-                    </div>
-                  )}
-                  {!["splice", "del"].includes(patch.action) && (
-                    <div className="font-mono">
-                      Unknown action: {patch.action}
-                    </div>
-                  )}
-                </div>
+              {annotation.livePatches.map((livePatch) => (
+                <div>{JSON.stringify(livePatch.livePatch)}</div>
               ))}
             </div>
           )}
-          <div>
-            {thread.comments.map((comment, index) => {
-              const legacyUserName =
-                doc.users?.find((user) => user.id === comment.userId)?.name ??
-                "Anonymous";
-
-              return (
-                <div
-                  key={comment.id}
-                  className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0 ${
-                    addedComments.find(
-                      (c) =>
-                        c.threadId === thread.id && c.commentIndex === index
-                    ) &&
-                    !thread.patches &&
-                    "bg-green-100"
-                  }`}
-                >
-                  <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
-                    {comment.contactUrl ? (
-                      <ContactAvatar
-                        url={comment.contactUrl}
-                        showName={true}
-                        size="sm"
-                      />
-                    ) : (
-                      legacyUserName
-                    )}
-                    <span className="ml-2 text-gray-400">
-                      {getRelativeTimeString(comment.timestamp)}
+          {annotation.type === "patch" && (
+            <div className="mb-3 border-b border-gray-300 pb-2">
+              <div
+                key={`${JSON.stringify(annotation.patch)}`}
+                className="select-none"
+              >
+                {annotation.patch.action === "splice" && (
+                  <div className="text-xs">
+                    <strong>Insert: </strong>
+                    <span className="font-serif">
+                      {truncate(annotation.patch.value, { length: 50 })}
                     </span>
                   </div>
-                  <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
-                    {comment.content}
+                )}
+                {annotation.patch.action === "del" && (
+                  <div className="text-xs">
+                    <strong>Delete: </strong>
+                    {annotation.patch.length} characters
                   </div>
-                </div>
-              );
-            })}
+                )}
+                {!["splice", "del"].includes(annotation.patch.action) && (
+                  <div className="font-mono">
+                    Unknown action: {annotation.patch.action}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div>
+            {(annotation.type === "thread" || annotation.type === "draft") &&
+              annotation.comments.map((comment, index) => {
+                const legacyUserName =
+                  doc.users?.find((user) => user.id === comment.userId)?.name ??
+                  "Anonymous";
+
+                return (
+                  <div
+                    key={comment.id}
+                    className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0 ${
+                      addedComments.find(
+                        (c) =>
+                          c.threadId === annotation.id &&
+                          c.commentIndex === index
+                      ) &&
+                      annotation.type === "thread" &&
+                      "bg-green-100"
+                    }`}
+                  >
+                    <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+                      {comment.contactUrl ? (
+                        <ContactAvatar
+                          url={comment.contactUrl}
+                          showName={true}
+                          size="sm"
+                        />
+                      ) : (
+                        legacyUserName
+                      )}
+                      <span className="ml-2 text-gray-400">
+                        {getRelativeTimeString(comment.timestamp)}
+                      </span>
+                    </div>
+                    <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
+                      {comment.content}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
           <div className="mt-2">
             <Popover
-              open={activeReplyThreadId === thread.id}
+              open={activeReplyThreadId === annotation.id}
               onOpenChange={(open) =>
                 open
-                  ? setActiveReplyThreadId(thread.id)
+                  ? setActiveReplyThreadId(annotation.id)
                   : setActiveReplyThreadId(null)
               }
             >
               <PopoverTrigger asChild>
-                {thread?.patches &&
-                thread.patches.length > 0 &&
-                thread.comments.length === 0 ? (
+                {annotation.type === "patch" ? (
                   <Button className="mr-2" variant="outline">
                     <PencilIcon className="mr-2 " /> Explain
                   </Button>
@@ -418,7 +445,7 @@ export const CommentsSidebar = ({
                   }
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && event.metaKey) {
-                      addReplyToThread(thread);
+                      replyToAnnotation(annotation);
                       setActiveReplyThreadId(null);
                       event.preventDefault();
                     }
@@ -428,7 +455,7 @@ export const CommentsSidebar = ({
                 <PopoverClose>
                   <Button
                     variant="outline"
-                    onClick={() => addReplyToThread(thread)}
+                    onClick={() => replyToAnnotation(annotation)}
                   >
                     Comment
                     <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
@@ -437,30 +464,30 @@ export const CommentsSidebar = ({
               </PopoverContent>
             </Popover>
 
-            {!thread.patches ||
-              (thread.patches.length === 0 && (
-                <Button
-                  variant="outline"
-                  className="select-none"
-                  onClick={() =>
-                    changeDoc(
-                      (d) => (d.commentThreads[thread.id].resolved = true)
-                    )
-                  }
-                >
-                  <Check className="mr-2" /> Resolve
-                </Button>
-              ))}
-
-            {thread.patches && thread.patches.length > 0 && (
+            {annotation.type === "thread" && (
               <Button
                 variant="outline"
                 className="select-none"
-                onClick={() => undoPatchesForThread(thread)}
+                onClick={() =>
+                  changeDoc(
+                    (d) => (d.commentThreads[annotation.id].resolved = true)
+                  )
+                }
               >
-                <Check className="mr-2" /> Undo
+                <Check className="mr-2" /> Resolve
               </Button>
             )}
+
+            {annotation.type === "patch" ||
+              (annotation.type === "draft" && (
+                <Button
+                  variant="outline"
+                  className="select-none"
+                  onClick={() => undoPatchesForThread(annotation)}
+                >
+                  <Check className="mr-2" /> Undo
+                </Button>
+              ))}
           </div>
         </div>
       ))}
