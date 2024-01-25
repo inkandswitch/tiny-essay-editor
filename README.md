@@ -43,7 +43,7 @@ This app is designed for normal webapp deployment as well as experimental deploy
 
 We are using vendored version for automerge and automerge-repo so we can use experimental features. These are checked into the repo as tarballs in the folder `vendor/tarballs`. Usually you don't have to worry about this. The following steps are only relevant if you want to change the vendored in version of automerge or automerge-repo.
 
-## Setup
+### Setup
 
 First you need to clone automerge and automerge-repo. The following command will clone both into the `vendor/repos` folder
 
@@ -51,7 +51,7 @@ First you need to clone automerge and automerge-repo. The following command will
 yarn run vendor:init
 ```
 
-## Vendoring in a differnt version of automerge-repo
+### Vendoring in a differnt version of automerge-repo
 
 Checkout the version you want in `vendor/repos/automerge-repo`. Then you can run:
 
@@ -59,7 +59,7 @@ Checkout the version you want in `vendor/repos/automerge-repo`. Then you can run
 yarn run vendor:build-automerge-repo
 ```
 
-## Vendoring in a different version of automerge
+### Vendoring in a different version of automerge
 
 If you want to vendor in a different version of automerge you need to make sure that you have installed the necessary dependencies.
 Instructions for that are in repo of automerge (https://github.com/automerge/automerge).
