@@ -71,13 +71,14 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
-  // select threads if selection changes
+  // select patch threads if selection changes
   useEffect(() => {
     if (!selection || selection.from === selection.to) {
       setActiveThreadIds([]);
       return;
     }
 
+    // find draft threads in selected range
     const highlightedDraftThreadIds: string[] = [];
     threadsWithPositions.forEach((thread) => {
       if (
@@ -88,8 +89,6 @@ export const CommentsSidebar = ({
         highlightedDraftThreadIds.push(thread.id);
       }
     });
-
-    console.log("select", highlightedDraftThreadIds);
 
     setActiveThreadIds(highlightedDraftThreadIds);
   }, [selection?.from, selection?.to]);
@@ -129,18 +128,19 @@ export const CommentsSidebar = ({
   // and then creates a new thread that combines all of the patches in one.
   // By saving that thread in the actual doc, it will then supercede
   // the previous virtual threads.
+  // todo: rename this to something like groupPatches, I'm trying to do minimal structural changes to avoid merge conflicts
   const startCommentForPatchGroup = (
     virtualThreadsForPatches: CommentThread[]
   ) => {
-    const thread: CommentThread = {
-      id: uuid(),
-      comments: [],
-      resolved: false,
-      // Position the group around the first virtual thread
-      fromCursor: virtualThreadsForPatches[0].fromCursor,
-      toCursor: virtualThreadsForPatches[0].toCursor,
-      // combine
-      patches: virtualThreadsForPatches.flatMap(
+    const existingThreads = virtualThreadsForPatches.filter(
+      (thread) => !thread.inferredFromDiff
+    );
+
+    console.log(existingThreads.length);
+
+    const patches = virtualThreadsForPatches
+      .filter((thread) => thread.inferredFromDiff)
+      .flatMap(
         (thread) =>
           thread.patches?.map((patch) => ({
             ...patch,
@@ -149,12 +149,39 @@ export const CommentsSidebar = ({
              */
             id: `${patch.action}-${thread.fromCursor}`,
           })) ?? []
-      ),
-    };
+      );
 
-    changeDoc((doc) => {
-      doc.commentThreads[thread.id] = thread;
-    });
+    // create new thread if all selected patches are virtual
+    if (existingThreads.length == 0) {
+      const thread: CommentThread = {
+        id: uuid(),
+        comments: [],
+        resolved: false,
+        // Position the group around the first virtual thread
+        fromCursor: virtualThreadsForPatches[0].fromCursor,
+        toCursor: virtualThreadsForPatches[0].toCursor,
+        // combine
+        patches,
+      };
+
+      changeDoc((doc) => {
+        doc.commentThreads[thread.id] = thread;
+      });
+
+      // add to existing thread if there is only one
+    } else if (existingThreads.length === 1) {
+      const existingThread = existingThreads[0];
+      changeDoc((doc) => {
+        const commentThread = doc.commentThreads[existingThread.id];
+        for (const patch of patches) {
+          commentThread.patches.push(patch);
+        }
+      });
+
+      // give up if multiple non virtual change groups are selected
+    } else {
+      alert("can't merge two groups");
+    }
   };
 
   const addReplyToThread = (thread: CommentThread) => {
