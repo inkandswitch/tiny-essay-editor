@@ -5,7 +5,6 @@ import {
   MarkdownDoc,
   PatchAnnotation,
   DiffWithProvenance,
-  idForLivePatch,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
@@ -82,11 +81,13 @@ const estimatedHeightOfThread = (thread: TextAnnotationForUI) => {
 export const getTextAnnotationsForUI = ({
   doc,
   activeThreadIds,
+  diff,
   showDiff,
   threadsForDiffPatches,
 }: {
   doc: MarkdownDoc;
   activeThreadIds: string[];
+  diff?: DiffWithProvenance;
   showDiff: boolean;
   threadsForDiffPatches?: TextAnnotation[];
 }): TextAnnotationForUI[] => {
@@ -95,7 +96,34 @@ export const getTextAnnotationsForUI = ({
   );
 
   if (showDiff) {
-    annotations = [...annotations, ...Object.values(doc.drafts ?? {})];
+    // Here we take the persisted drafts and "claim" patches from the current diff
+    // into the individual edit ranges. Any patches from the diff that overlap with
+    // the edit range on the draft get claimed for that edit range.
+    const draftAnnotations = Object.values(doc.drafts ?? {}).map((draft) => ({
+      ...draft,
+      editRangesWithComments: draft.editRangesWithComments.map((editRange) => ({
+        ...editRange,
+        patches:
+          diff?.patches.filter((patch) => {
+            const { fromCursor, toCursor } = editRange.editRange;
+            const from = A.getCursorPosition(doc, ["content"], fromCursor);
+            const to = A.getCursorPosition(doc, ["content"], toCursor);
+            if (patch.path[0] !== "content") return false;
+            if (patch.action === "splice") {
+              const patchFrom = patch.path[1];
+              const patchTo = patch.path[1] + patch.value.length;
+              return patchFrom <= to && patchTo >= from;
+            } else if (patch.action === "del") {
+              const patchFrom = patch.path[1];
+              const patchTo = patch.path[1] + 1; // TODO is this right...?
+              return patchFrom <= to && patchTo >= from;
+            } else {
+              return false;
+            }
+          }) ?? [],
+      })),
+    }));
+    annotations = [...annotations, ...draftAnnotations];
     annotations = [...annotations, ...(threadsForDiffPatches ?? [])];
   }
 
@@ -108,22 +136,22 @@ export const getTextAnnotationsForUI = ({
           from = A.getCursorPosition(doc, ["content"], annotation.fromCursor);
           to = A.getCursorPosition(doc, ["content"], annotation.toCursor);
         } else if (annotation.type === "draft") {
-          if (annotation.livePatchesWithComments.length === 0) {
+          if (annotation.editRangesWithComments.length === 0) {
             return [];
           }
           // For a draft with multiple patches, position the annotation by the first patch.
-          const patchPositions = annotation.livePatchesWithComments.map(
+          const patchPositions = annotation.editRangesWithComments.map(
             (livePatch) => {
               return {
                 from: A.getCursorPosition(
                   doc,
                   ["content"],
-                  livePatch.livePatch.fromCursor
+                  livePatch.editRange.fromCursor
                 ),
                 to: A.getCursorPosition(
                   doc,
                   ["content"],
-                  livePatch.livePatch.toCursor
+                  livePatch.editRange.toCursor
                 ),
               };
             }
@@ -363,25 +391,40 @@ export const useAnnotationsWithPositions = ({
       }
     );
 
-    const patchIDsInExistingDrafts = Object.values(doc?.drafts ?? {}).flatMap(
-      (draft) =>
-        draft.livePatchesWithComments.map((patch) =>
-          idForLivePatch(patch.livePatch)
-        )
-    );
+    if (!doc) return [];
 
-    const inferredThreadsToShow = patchAnnotations.filter(
-      (patch) => !patchIDsInExistingDrafts.includes(patch.id)
-    );
+    const docRangesClaimedByDrafts = Object.values(doc.drafts ?? {})
+      .flatMap((draft) =>
+        draft.editRangesWithComments.map((editRange) => editRange.editRange)
+      )
+      .map((range) => ({
+        from: A.getCursorPosition(doc, ["content"], range.fromCursor),
+        to: A.getCursorPosition(doc, ["content"], range.toCursor),
+      }));
 
-    return doc
-      ? getTextAnnotationsForUI({
-          doc,
-          activeThreadIds,
-          threadsForDiffPatches: inferredThreadsToShow,
-          showDiff: diff !== undefined,
-        })
-      : [];
+    // don't show a patch if it overlaps with a draft
+    const patchAnnotationsToShow = patchAnnotations.filter((annotation) => {
+      // This is a bit roundabout. We could have gotten this from the original patch in this case...
+      // But it feels safer to just always use annotation cursors, because in the general case
+      // patch indexes aren't usable (in case the patch is from a stale diff)
+      const from = A.getCursorPosition(doc, ["content"], annotation.fromCursor);
+      const to = A.getCursorPosition(doc, ["content"], annotation.toCursor);
+
+      const patchOverlapsWithDraft = docRangesClaimedByDrafts.some(
+        (draftRange) => from <= draftRange.to && to >= draftRange.from
+      );
+
+      return !patchOverlapsWithDraft;
+    });
+    console.log({ docRangesClaimedByDrafts, patchAnnotationsToShow });
+
+    return getTextAnnotationsForUI({
+      doc,
+      activeThreadIds,
+      threadsForDiffPatches: patchAnnotationsToShow,
+      diff,
+      showDiff: diff !== undefined,
+    });
   }, [doc, activeThreadIds, diff]);
 
   // Next we get the vertical position for each thread.

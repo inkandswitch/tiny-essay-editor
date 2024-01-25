@@ -4,11 +4,12 @@ import {
   TextAnnotation,
   TextAnnotationWithPosition,
   MarkdownDoc,
-  LivePatch,
+  EditRange,
   DraftAnnotation,
   PatchAnnotation,
   ThreadAnnotation,
   DiffWithProvenance,
+  PersistedDraft,
 } from "../schema";
 import Haikunator from "haikunator";
 
@@ -148,23 +149,33 @@ export const CommentsSidebar = ({
       (thread) => thread.type === "draft"
     ) as DraftAnnotation[];
 
-    const livePatches: LivePatch[] = selectedAnnotations
-      .filter((annotation) => annotation.type === "patch")
-      .map((annotation: PatchAnnotation) => ({
+    const selectedPatches = selectedAnnotations.filter(
+      (annotation) => annotation.type === "patch"
+    ) as PatchAnnotation[];
+
+    if (selectedPatches.length === 0) {
+      alert("no patches selected");
+      return;
+    }
+
+    const editRanges: EditRange[] = selectedPatches.map(
+      (annotation: PatchAnnotation) => ({
         fromCursor: annotation.fromCursor,
         toCursor: annotation.toCursor,
         fromHeads: annotation.fromHeads,
-      }));
+      })
+    );
 
     // create new thread if all selected patches are virtual
     if (existingDrafts.length == 0) {
-      const draft: DraftAnnotation = {
+      const draft: PersistedDraft = {
         type: "draft",
         title: new Haikunator().haikunate({ tokenLength: 0 }),
         id: uuid(),
         comments: [],
-        livePatchesWithComments: livePatches.map((livePatch) => ({
-          livePatch,
+        fromHeads: selectedPatches[0].fromHeads,
+        editRangesWithComments: editRanges.map((editRange) => ({
+          editRange,
           comments: [],
         })),
       };
@@ -182,9 +193,9 @@ export const CommentsSidebar = ({
       const existingDraft = existingDrafts[0];
       changeDoc((doc) => {
         const draft = doc.drafts[existingDraft.id];
-        for (const livePatch of livePatches) {
-          draft.livePatchesWithComments.push({
-            livePatch,
+        for (const livePatch of editRanges) {
+          draft.editRangesWithComments.push({
+            editRange: livePatch,
             comments: [],
           });
         }
@@ -225,17 +236,17 @@ export const CommentsSidebar = ({
         }
         case "patch": {
           // Make a draft for this patch
-          const draft: DraftAnnotation = {
+          const draft: PersistedDraft = {
             type: "draft",
             title: new Haikunator().haikunate({ tokenLength: 0 }),
             id: uuid(),
             comments: [comment],
-            livePatchesWithComments: [
+            fromHeads: annotation.fromHeads,
+            editRangesWithComments: [
               {
-                livePatch: {
+                editRange: {
                   fromCursor: annotation.fromCursor,
                   toCursor: annotation.toCursor,
-                  fromHeads: annotation.fromHeads,
                 },
                 comments: [],
               },
@@ -305,7 +316,7 @@ export const CommentsSidebar = ({
       {annotationsWithPositions.map((annotation) => (
         <div
           key={annotation.id}
-          className={`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+          className={`select-none bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
             selectedAnnotationIds.includes(annotation.id)
               ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
@@ -341,13 +352,31 @@ export const CommentsSidebar = ({
           )}
           {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2">
-              {annotation.livePatchesWithComments.map((livePatch) => (
-                <div className="w-full font-mono">
-                  <pre className="whitespace-pre-wrap text-xs text-gray-600">
-                    {JSON.stringify(livePatch.livePatch, null, 2)}
-                  </pre>
-                </div>
-              ))}
+              {annotation.editRangesWithComments
+                .flatMap((editRange) => editRange.patches)
+                .map((patch) => (
+                  <div key={`${JSON.stringify(patch)}`} className="select-none">
+                    {patch.action === "splice" && (
+                      <div className="text-xs">
+                        <strong>Insert: </strong>
+                        <span className="font-serif">
+                          {truncate(patch.value, { length: 50 })}
+                        </span>
+                      </div>
+                    )}
+                    {patch.action === "del" && (
+                      <div className="text-xs">
+                        <strong>Delete: </strong>
+                        {patch.length} characters
+                      </div>
+                    )}
+                    {!["splice", "del"].includes(patch.action) && (
+                      <div className="font-mono">
+                        Unknown action: {patch.action}
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           )}
           {annotation.type === "patch" && (
@@ -376,6 +405,11 @@ export const CommentsSidebar = ({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          {annotation.type === "draft" && (
+            <div className="text-xs text-gray-500 font-semibold mb-1">
+              Draft Comments
             </div>
           )}
           <div>

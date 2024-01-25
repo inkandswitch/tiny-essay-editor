@@ -22,21 +22,10 @@ export type Comment = {
 // "diff from heads" + spatial range (as cursor) + (optional to heads)
 // groupings as an input to the diff algorithm?
 
-export type LivePatch = {
-  fromHeads: A.Heads;
-  // I think we will need toHeads eventually (when we yank drafts off main)
-  // but not yet?
-  // toHeads: A.Heads;
+export type EditRange = {
   fromCursor: string;
   toCursor: string;
-
-  // todo:
-  // - do we need action here?
-  // - do we want to store an ID?
 };
-
-export const idForLivePatch = (patch: LivePatch) =>
-  `${patch.fromHeads.join(",")}-${patch.fromCursor}-${patch.toCursor}`;
 
 export type ThreadAnnotation = {
   type: "thread";
@@ -57,16 +46,26 @@ export type PatchAnnotation = {
   toCursor: A.Cursor; // Automerge cursor
 };
 
-export type DraftAnnotation = {
+export type PersistedDraft = {
   type: "draft";
   id: string;
   title: string;
   /** Overall comments on the draft */
   comments: Comment[];
+  fromHeads: A.Heads;
+  // in the future, add toHeads...?
 
   /** Individual edits, each with their own comment thread */
-  livePatchesWithComments: Array<{
-    livePatch: LivePatch;
+  editRangesWithComments: Array<{
+    editRange: EditRange;
+    comments: Comment[];
+  }>;
+};
+
+export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
+  editRangesWithComments: Array<{
+    editRange: EditRange;
+    patches: A.Patch[];
     comments: Comment[];
   }>;
 };
@@ -100,7 +99,7 @@ export type User = {
 type _MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
-  drafts: { [key: string]: DraftAnnotation };
+  drafts: { [key: string]: PersistedDraft };
   users: User[];
 };
 
