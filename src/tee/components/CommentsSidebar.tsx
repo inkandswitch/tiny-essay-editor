@@ -153,7 +153,7 @@ export const CommentsSidebar = ({
       .map((annotation: PatchAnnotation) => ({
         fromCursor: annotation.fromCursor,
         toCursor: annotation.toCursor,
-        fromHeads: diff.fromHeads,
+        fromHeads: annotation.fromHeads,
       }));
 
     // create new thread if all selected patches are virtual
@@ -170,6 +170,10 @@ export const CommentsSidebar = ({
       };
 
       changeDoc((doc) => {
+        // backwards compat for old docs without a drafts field
+        if (doc.drafts === undefined) {
+          doc.drafts = {};
+        }
         doc.drafts[draft.id] = draft;
       });
 
@@ -231,12 +235,16 @@ export const CommentsSidebar = ({
                 livePatch: {
                   fromCursor: annotation.fromCursor,
                   toCursor: annotation.toCursor,
-                  fromHeads: [],
+                  fromHeads: annotation.fromHeads,
                 },
                 comments: [],
               },
             ],
           };
+          // backwards compat for old docs without a drafts field
+          if (doc.drafts === undefined) {
+            doc.drafts = {};
+          }
           doc.drafts[draft.id] = draft;
           return;
         }
@@ -249,10 +257,7 @@ export const CommentsSidebar = ({
   const undoPatchesForThread = (annotation: TextAnnotation) => {
     if (annotation.type === "patch") {
       const patch = annotation.patch;
-      if (!patch.fromCursor) {
-        throw new Error("expected patch to have fromCursor");
-      }
-      const from = A.getCursorPosition(doc, ["content"], patch.fromCursor);
+      const from = A.getCursorPosition(doc, ["content"], annotation.fromCursor);
       if (patch.action === "splice") {
         changeDoc((doc) => {
           A.splice(doc, ["content"], from, patch.value.length);
@@ -269,7 +274,7 @@ export const CommentsSidebar = ({
     .map((id) =>
       annotationsWithPositions.find((annotation) => annotation.id === id)
     )
-    .filter((thread) => thread.type === "patch");
+    .filter((thread) => thread && thread.type === "patch");
 
   // If there's a focused draft, show nothing for now
   // (TODO: show the comments for the parts of the diff...)
@@ -337,7 +342,11 @@ export const CommentsSidebar = ({
           {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2">
               {annotation.livePatchesWithComments.map((livePatch) => (
-                <div>{JSON.stringify(livePatch.livePatch)}</div>
+                <div className="w-full font-mono">
+                  <pre className="whitespace-pre-wrap text-xs text-gray-600">
+                    {JSON.stringify(livePatch.livePatch, null, 2)}
+                  </pre>
+                </div>
               ))}
             </div>
           )}
@@ -472,16 +481,15 @@ export const CommentsSidebar = ({
               </Button>
             )}
 
-            {annotation.type === "patch" ||
-              (annotation.type === "draft" && (
-                <Button
-                  variant="outline"
-                  className="select-none"
-                  onClick={() => undoPatchesForThread(annotation)}
-                >
-                  <Check className="mr-2" /> Undo
-                </Button>
-              ))}
+            {(annotation.type === "patch" || annotation.type === "draft") && (
+              <Button
+                variant="outline"
+                className="select-none"
+                onClick={() => undoPatchesForThread(annotation)}
+              >
+                <Check className="mr-2" /> Undo
+              </Button>
+            )}
           </div>
         </div>
       ))}
