@@ -284,6 +284,10 @@ export const CommentsSidebar = ({
           undoPatch(patch);
         }
       }
+
+      changeDoc((doc) => {
+        delete doc.drafts[annotation.id];
+      });
     }
   };
 
