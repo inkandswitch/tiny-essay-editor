@@ -71,6 +71,29 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
+  // select threads if selection changes
+  useEffect(() => {
+    if (!selection || selection.from === selection.to) {
+      setActiveThreadIds([]);
+      return;
+    }
+
+    const highlightedDraftThreadIds: string[] = [];
+    threadsWithPositions.forEach((thread) => {
+      if (
+        thread.from >= selection.from &&
+        thread.to <= selection.to &&
+        thread.patches
+      ) {
+        highlightedDraftThreadIds.push(thread.id);
+      }
+    });
+
+    console.log("select", highlightedDraftThreadIds);
+
+    setActiveThreadIds(highlightedDraftThreadIds);
+  }, [selection?.from, selection?.to]);
+
   const startCommentThreadAtSelection = (commentText: string) => {
     if (!selection) return;
 
@@ -191,7 +214,7 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      {selectedPatches.length > 0 && (
+      {selectedPatches.length > 1 && (
         <div className="w-48 text-xs font-gray-600 p-2">
           {selectedPatches.length} edits selected
           <Button
