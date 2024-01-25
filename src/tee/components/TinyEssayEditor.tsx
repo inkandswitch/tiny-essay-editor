@@ -25,6 +25,7 @@ import { Heads, view } from "@automerge/automerge/next";
 import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { truncate } from "lodash";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -90,6 +91,33 @@ export const TinyEssayEditor = ({
               <ShrinkIcon className="mr-2 h-4" />
               Unfocus
             </Button>
+          </div>
+          <div className="mb-3 border-b border-gray-300 pb-2">
+            {focusedDraft.editRangesWithComments
+              .flatMap((editRange) => editRange.patches)
+              .map((patch) => (
+                <div key={`${JSON.stringify(patch)}`} className="select-none">
+                  {patch.action === "splice" && (
+                    <div className="text-xs">
+                      <strong>Insert: </strong>
+                      <span className="font-serif">
+                        {truncate(patch.value, { length: 50 })}
+                      </span>
+                    </div>
+                  )}
+                  {patch.action === "del" && (
+                    <div className="text-xs">
+                      <strong>Delete: </strong>
+                      {patch.length} characters
+                    </div>
+                  )}
+                  {!["splice", "del"].includes(patch.action) && (
+                    <div className="font-mono">
+                      Unknown action: {patch.action}
+                    </div>
+                  )}
+                </div>
+              ))}
           </div>
           <div>
             {/* TODO: DRY This with comments sidebar */}
