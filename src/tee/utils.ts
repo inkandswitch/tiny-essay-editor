@@ -66,9 +66,12 @@ export function getRelativeTimeString(
 
 // a very rough approximation; needs to be better but being perfect seems hard
 const estimatedHeightOfThread = (thread: TextAnnotationForUI) => {
-  const commentHeights = (thread.comments ?? []).map(
-    (comment) => 64 + Math.floor(comment.content.length / 60) * 20
-  );
+  const commentHeights =
+    thread.type === "thread"
+      ? thread.comments.map(
+          (comment) => 64 + Math.floor(comment.content.length / 60) * 20
+        )
+      : [];
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
   const PADDING = 32;
   const BUTTONS = 40;
