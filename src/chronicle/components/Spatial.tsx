@@ -300,7 +300,7 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 setSelection={() => {}}
                 setView={setEditorView}
                 threadsWithPositions={[]}
-                setActiveThreadId={() => {}}
+                setActiveThreadIds={() => {}}
                 readOnly={false}
                 diffStyle="normal"
                 onOpenSnippet={onOpenSnippet}
