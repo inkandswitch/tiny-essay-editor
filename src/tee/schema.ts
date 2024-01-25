@@ -65,7 +65,7 @@ export type DraftAnnotation = {
   comments: Comment[];
 
   /** Individual edits, each with their own comment thread */
-  livePatches: Array<{
+  livePatchesWithComments: Array<{
     livePatch: LivePatch;
     comments: Comment[];
   }>;
@@ -79,12 +79,14 @@ export type TextAnnotation =
 // TODO: define some helpers for TextAnnotation which switch on the type;
 // eg for seeing if the annotation overlaps with a given cursor position...
 
-/** Augment a persistent comment thread w/ ephemeral info for the UI */
-export type TextAnnotationForUI = TextAnnotation & {
+export type AnnotationPosition = {
   from: number;
   to: number;
   active: boolean;
 };
+
+/** Augment a persistent comment thread w/ ephemeral info for the UI */
+export type TextAnnotationForUI = TextAnnotation & AnnotationPosition;
 
 export type TextAnnotationWithPosition = TextAnnotationForUI & {
   yCoord: number;
@@ -126,3 +128,9 @@ export type Taggable = {
 };
 
 export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable;
+
+export type DiffWithProvenance = {
+  diff: A.Patch[];
+  fromHeads: A.Heads;
+  toHeads: A.Heads;
+};

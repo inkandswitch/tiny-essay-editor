@@ -3,9 +3,12 @@ import {
   TextAnnotationForUI,
   TextAnnotationWithPosition,
   MarkdownDoc,
+  PatchAnnotation,
+  DiffWithProvenance,
+  idForLivePatch,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
-import { next as A, uuid } from "@automerge/automerge";
+import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 
@@ -63,7 +66,7 @@ export function getRelativeTimeString(
 
 // a very rough approximation; needs to be better but being perfect seems hard
 const estimatedHeightOfThread = (thread: TextAnnotationForUI) => {
-  const commentHeights = thread.comments.map(
+  const commentHeights = (thread.comments ?? []).map(
     (comment) => 64 + Math.floor(comment.content.length / 60) * 20
   );
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
@@ -84,20 +87,50 @@ export const getTextAnnotationsForUI = ({
   showDiff: boolean;
   threadsForDiffPatches?: TextAnnotation[];
 }): TextAnnotationForUI[] => {
-  const commentThreads = [
-    ...Object.values(doc.commentThreads ?? {}),
-    ...Object.values(doc.drafts ?? {}),
-    ...(threadsForDiffPatches ?? []),
-  ];
-  return commentThreads
-    .filter((thread) => !thread.resolved) // hide resolved threads
-    .filter((thread) => !(!showDiff && thread.patches?.length > 0)) // hide threads with patches if we're not showing diff
-    .flatMap((thread) => {
+  let annotations: TextAnnotation[] = Object.values(doc.commentThreads).filter(
+    (thread) => !thread.resolved
+  );
+
+  if (showDiff) {
+    annotations = [...annotations, ...Object.values(doc.drafts ?? {})];
+    annotations = [...annotations, ...(threadsForDiffPatches ?? [])];
+  }
+
+  return annotations
+    .flatMap((annotation) => {
       let from = 0;
       let to = 0;
       try {
-        from = A.getCursorPosition(doc, ["content"], thread.fromCursor);
-        to = A.getCursorPosition(doc, ["content"], thread.toCursor);
+        if (annotation.type === "patch" || annotation.type === "thread") {
+          from = A.getCursorPosition(doc, ["content"], annotation.fromCursor);
+          to = A.getCursorPosition(doc, ["content"], annotation.toCursor);
+        } else if (annotation.type === "draft") {
+          if (annotation.livePatchesWithComments.length === 0) {
+            return [];
+          }
+          // For a draft with multiple patches, position the annotation by the first patch.
+          const patchPositions = annotation.livePatchesWithComments.map(
+            (livePatch) => {
+              return {
+                from: A.getCursorPosition(
+                  doc,
+                  ["content"],
+                  livePatch.livePatch.fromCursor
+                ),
+                to: A.getCursorPosition(
+                  doc,
+                  ["content"],
+                  livePatch.livePatch.toCursor
+                ),
+              };
+            }
+          );
+          const sortedPatchPositions = patchPositions.sort(
+            (a, b) => a.from - b.from
+          );
+          from = sortedPatchPositions[0].from;
+          to = sortedPatchPositions[0].to;
+        }
       } catch (e) {
         if (e instanceof RangeError) {
           // If the cursor isn't found in the content string, hide the comment.
@@ -110,10 +143,10 @@ export const getTextAnnotationsForUI = ({
       }
       return [
         {
-          ...thread,
+          ...annotation,
           from,
           to,
-          active: activeThreadIds.includes(thread.id),
+          active: activeThreadIds.includes(annotation.id),
         },
       ];
     })
@@ -266,9 +299,9 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
   return div.firstElementChild as HTMLElement;
 };
 
-// A React hook that gets the comment threads for the doc w/ positions
+// A React hook that gets the annotations for the doc w/ positions
 // and manages caching.
-export const useThreadsWithPositions = ({
+export const useAnnotationsWithPositions = ({
   doc,
   view,
   activeThreadIds,
@@ -279,15 +312,15 @@ export const useThreadsWithPositions = ({
   view: EditorView;
   activeThreadIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
-  diff?: A.Patch[];
+  diff?: DiffWithProvenance;
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
     /** Create some virtual inferred threads based on the diff,
      *  for patches which haven't been manually stored yet
      */
-    const inferredThreadsForDiff: TextAnnotation[] = (diff ?? []).flatMap(
-      (patch): TextAnnotation[] => {
+    const patchAnnotations = (diff.diff ?? []).flatMap(
+      (patch): PatchAnnotation[] => {
         if (
           patch.path[0] !== "content" ||
           !["splice", "del"].includes(patch.action)
@@ -313,27 +346,29 @@ export const useThreadsWithPositions = ({
         const patchId = `${patch.action}-${fromCursor}`;
         return [
           {
+            type: "patch",
             // Experimenting with stable IDs for patches...
             // ID a patch by its action + its from cursor? this feels not unique enough...
             id: patchId,
-            comments: [],
-            resolved: false,
             fromCursor,
             toCursor,
-            // this is a patch augmented with an id and cursors...
-            patches: [{ ...patch, id: patchId, fromCursor, toCursor }],
-            type: "ephemeralPatch",
+            patch,
+            fromHeads: diff.fromHeads,
+            toHeads: diff.toHeads,
           },
         ];
       }
     );
 
-    const patchIDsInExistingThreads = Object.values(doc?.commentThreads ?? {})
-      .flatMap((thread) => thread.patches ?? [])
-      .map((patch) => patch.id);
+    const patchIDsInExistingDrafts = Object.values(doc?.drafts ?? {}).flatMap(
+      (draft) =>
+        draft.livePatchesWithComments.map((patch) =>
+          idForLivePatch(patch.livePatch)
+        )
+    );
 
-    const inferredThreadsToShow = inferredThreadsForDiff.filter(
-      (thread) => !patchIDsInExistingThreads.includes(thread.id)
+    const inferredThreadsToShow = patchAnnotations.filter(
+      (patch) => !patchIDsInExistingDrafts.includes(patch.id)
     );
 
     return doc

@@ -169,7 +169,7 @@ export const CommentsSidebar = ({
         title: new Haikunator().haikunate({ tokenLength: 0 }),
         id: uuid(),
         comments: [],
-        livePatches: livePatches.map((livePatch) => ({
+        livePatchesWithComments: livePatches.map((livePatch) => ({
           livePatch,
           comments: [],
         })),
@@ -185,7 +185,7 @@ export const CommentsSidebar = ({
       changeDoc((doc) => {
         const draft = doc.drafts[existingDraft.id];
         for (const livePatch of livePatches) {
-          draft.livePatches.push({
+          draft.livePatchesWithComments.push({
             livePatch,
             comments: [],
           });
@@ -232,7 +232,7 @@ export const CommentsSidebar = ({
             title: new Haikunator().haikunate({ tokenLength: 0 }),
             id: uuid(),
             comments: [comment],
-            livePatches: [
+            livePatchesWithComments: [
               {
                 livePatch: {
                   fromCursor: annotation.fromCursor,
@@ -342,7 +342,7 @@ export const CommentsSidebar = ({
           )}
           {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2">
-              {annotation.livePatches.map((livePatch) => (
+              {annotation.livePatchesWithComments.map((livePatch) => (
                 <div>{JSON.stringify(livePatch.livePatch)}</div>
               ))}
             </div>

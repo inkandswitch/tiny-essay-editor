@@ -10,7 +10,7 @@ import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
 import {
   getRelativeTimeString,
-  useThreadsWithPositions as useAnnotationsWithPositions,
+  useAnnotationsWithPositions as useAnnotationsWithPositions,
 } from "../utils";
 
 // TODO: audit the CSS being imported here;
