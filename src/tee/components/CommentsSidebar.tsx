@@ -265,19 +265,25 @@ export const CommentsSidebar = ({
     setPendingCommentText("");
   };
 
+  const undoPatch = (patch: A.Patch) => {
+    if (patch.action === "splice") {
+      changeDoc((doc) => {
+        A.splice(doc, ["content"], patch.path[1], patch.value.length);
+      });
+    } else if (patch.action === "del") {
+      alert("undoing deletions is not yet implemented");
+    }
+  };
+
   const undoPatchesForThread = (annotation: TextAnnotation) => {
     if (annotation.type === "patch") {
-      const patch = annotation.patch;
-      const from = A.getCursorPosition(doc, ["content"], annotation.fromCursor);
-      if (patch.action === "splice") {
-        changeDoc((doc) => {
-          A.splice(doc, ["content"], from, patch.value.length);
-        });
-      } else if (patch.action === "del") {
-        alert("undoing deletions is not yet implemented");
-      }
+      undoPatch(annotation.patch);
     } else if (annotation.type === "draft") {
-      alert("Undo on drafts not implemented yet");
+      for (const editRange of annotation.editRangesWithComments) {
+        for (const patch of editRange.patches) {
+          undoPatch(patch);
+        }
+      }
     }
   };
 
