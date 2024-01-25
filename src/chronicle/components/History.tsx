@@ -39,7 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HorizontalMinimap, MinimapWithDiff } from "./MinimapWithDiff";
-import { diff, view } from "@automerge/automerge";
+import { view } from "@automerge/automerge";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { CircularPacking } from "./CircularPacking";
 import { Hash } from "./Hash";
@@ -147,26 +147,21 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // for now it works because the id of the group is the last change in the group...
   const docHeads = changeGroupSelection ? [changeGroupSelection.to] : undefined;
 
-  let diffHeads = docHeads;
-  if (changeGroupSelection) {
-    const indexOfDiffFrom = groupedChanges
-      .map((c) => c.id)
-      .indexOf(changeGroupSelection.from);
-    if (indexOfDiffFrom > 0) {
-      diffHeads = [groupedChanges[indexOfDiffFrom - 1].id];
-    } else {
-      diffHeads = [];
-    }
-  }
-
   // the diff for the selected change groups
-  const selectedDiff = selectedChangeGroups.flatMap((cg) => cg.diff);
-
+  const selectedDiff = useMemo(
+    () => ({
+      fromHeads: selectedChangeGroups[0]?.diff.fromHeads,
+      toHeads:
+        selectedChangeGroups[selectedChangeGroups.length - 1]?.diff.toHeads,
+      patches: selectedChangeGroups.flatMap((cg) => cg.diff.patches),
+    }),
+    [selectedChangeGroups]
+  );
   // the document state at the end of the selected change groups
   const selectedDoc = docHeads ? view(doc, docHeads) : doc;
 
   const diffGroupedByParagraph = useMemo(
-    () => groupPatchesByParagraph(selectedDoc, selectedDiff),
+    () => groupPatchesByParagraph(selectedDoc, selectedDiff.patches),
     [selectedDoc, selectedDiff]
   );
 
@@ -513,7 +508,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     <div className="text-gray-500 font-bold uppercase text-xs">
                       Diff
                     </div>
-                    {changeGroup.diff.map((patch) => (
+                    {changeGroup.diff.patches.map((patch) => (
                       <div className="mb-1">
                         {patch.path[0] === "content" &&
                           patch.action === "splice" && (
@@ -591,7 +586,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                           name: "root",
                           value:
                             changeGroup.charsAdded + changeGroup.charsDeleted,
-                          children: changeGroup.diff.map((patch) => ({
+                          children: changeGroup.diff.patches.map((patch) => ({
                             type: "leaf",
                             name: "",
                             value:
@@ -632,7 +627,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     <div>
                       <MinimapWithDiff
                         doc={changeGroup.docAtEndOfChangeGroup}
-                        patches={changeGroup.diff}
+                        patches={changeGroup.diff.patches}
                         size="compact"
                       />
                     </div>
@@ -646,7 +641,7 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     <div>
                       <HorizontalMinimap
                         doc={changeGroup.docAtEndOfChangeGroup}
-                        patches={changeGroup.diff}
+                        patches={changeGroup.diff.patches}
                       />
                     </div>
                   </div>
@@ -757,7 +752,10 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             />
             {doc && changeGroupSelection && showDiffInDoc && (
               <div className="absolute top-20 right-6">
-                <MinimapWithDiff doc={selectedDoc} patches={selectedDiff} />
+                <MinimapWithDiff
+                  doc={selectedDoc}
+                  patches={selectedDiff.patches}
+                />
               </div>
             )}
           </>

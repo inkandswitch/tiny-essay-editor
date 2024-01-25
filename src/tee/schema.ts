@@ -129,8 +129,10 @@ export type Taggable = {
 
 export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable;
 
+// A data structure that lets us pass around diffs while remembering
+// where they came from
 export type DiffWithProvenance = {
-  diff: A.Patch[];
+  patches: A.Patch[];
   fromHeads: A.Heads;
   toHeads: A.Heads;
 };

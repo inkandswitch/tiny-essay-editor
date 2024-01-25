@@ -8,6 +8,7 @@ import {
   DraftAnnotation,
   PatchAnnotation,
   ThreadAnnotation,
+  DiffWithProvenance,
 } from "../schema";
 import Haikunator from "haikunator";
 
@@ -19,7 +20,7 @@ import {
   Reply,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { next as A, ChangeFn, Patch, uuid } from "@automerge/automerge";
+import { next as A, ChangeFn, uuid } from "@automerge/automerge";
 
 import {
   Popover,
@@ -53,7 +54,7 @@ export const CommentsSidebar = ({
   setSelectedThreadIds: (threadIds: string[]) => void;
   focusedDraftThreadId: string | null;
   setFocusedDraftThreadId: (id: string | null) => void;
-  diff?: Patch[];
+  diff?: DiffWithProvenance;
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
@@ -64,7 +65,7 @@ export const CommentsSidebar = ({
 
   // figure out which comments were added in the diff being shown, to highlight in green
   const addedComments: Array<{ threadId: string; commentIndex: number }> = (
-    diff ?? []
+    diff?.patches ?? []
   )
     .filter(
       (patch) =>

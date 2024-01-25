@@ -1,8 +1,7 @@
-import { MarkdownDoc, Tag } from "@/tee/schema";
+import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
 import { AutomergeUrl } from "@/vendor/vendored-automerge-repo/packages/automerge-repo/dist";
 import {
   Doc,
-  diff,
   decodeChange,
   ActorId,
   DecodedChange,
@@ -10,6 +9,7 @@ import {
   getAllChanges,
   view,
 } from "@automerge/automerge/next";
+import { diffWithProvenance } from "./utils";
 
 type GenericChangeGroup = {
   id: string;
@@ -18,7 +18,7 @@ type GenericChangeGroup = {
   authorUrls: AutomergeUrl[];
   // TODO make this a generic type
   docAtEndOfChangeGroup: Doc<MarkdownDoc>;
-  diff: Patch[];
+  diff: DiffWithProvenance;
   tags: Tag[];
   time?: number;
 };
@@ -128,44 +128,53 @@ export const getGroupedChanges = (
   const pushCurrentGroup = () => {
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
-    currentGroup.diff = diff(doc, diffHeads, [currentGroup.id]);
+    currentGroup.diff = diffWithProvenance(doc, diffHeads, [currentGroup.id]);
 
     // Finalize the stats on the group based on the diff
 
-    currentGroup.charsAdded = currentGroup.diff.reduce((total, patch) => {
-      if (patch.path[0] !== "content") {
-        return total;
-      }
-      if (patch.action === "splice") {
-        return total + patch.value.length;
-      } else {
-        return total;
-      }
-    }, 0);
+    currentGroup.charsAdded = currentGroup.diff.patches.reduce(
+      (total, patch) => {
+        if (patch.path[0] !== "content") {
+          return total;
+        }
+        if (patch.action === "splice") {
+          return total + patch.value.length;
+        } else {
+          return total;
+        }
+      },
+      0
+    );
 
-    currentGroup.charsDeleted = currentGroup.diff.reduce((total, patch) => {
-      if (patch.path[0] !== "content") {
-        return total;
-      }
-      if (patch.action === "del") {
-        return total + patch.length;
-      } else {
-        return total;
-      }
-    }, 0);
+    currentGroup.charsDeleted = currentGroup.diff.patches.reduce(
+      (total, patch) => {
+        if (patch.path[0] !== "content") {
+          return total;
+        }
+        if (patch.action === "del") {
+          return total + patch.length;
+        } else {
+          return total;
+        }
+      },
+      0
+    );
 
-    currentGroup.commentsAdded = currentGroup.diff.reduce((total, patch) => {
-      const isNewComment =
-        patch.path[0] === "commentThreads" &&
-        patch.path.length === 4 &&
-        patch.action === "insert";
+    currentGroup.commentsAdded = currentGroup.diff.patches.reduce(
+      (total, patch) => {
+        const isNewComment =
+          patch.path[0] === "commentThreads" &&
+          patch.path.length === 4 &&
+          patch.action === "insert";
 
-      if (!isNewComment) {
-        return total;
-      } else {
-        return total + 1;
-      }
-    }, 0);
+        if (!isNewComment) {
+          return total;
+        } else {
+          return total + 1;
+        }
+      },
+      0
+    );
 
     // GL 1/19: For now, only show a group if it edited the text or added a comment.
     // THIS IS A HACK, revisit this logic and think about it more carefully!
@@ -180,7 +189,7 @@ export const getGroupedChanges = (
     currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
     currentGroup.headings = extractHeadings(
       currentGroup.docAtEndOfChangeGroup,
-      currentGroup.diff
+      currentGroup.diff.patches
     );
     changeGroups.push(currentGroup);
   };
@@ -245,7 +254,7 @@ export const getGroupedChanges = (
           return op.action === "del" ? total + 1 : total;
         }, 0),
         commentsAdded: 0,
-        diff: [],
+        diff: { patches: [], fromHeads: [], toHeads: [] },
         tags: [],
         time:
           decodedChange.time && decodedChange.time > 0

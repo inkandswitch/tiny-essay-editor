@@ -1,3 +1,7 @@
+import { DiffWithProvenance } from "@/tee/schema";
+import * as A from "@automerge/automerge/next";
+
+// Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
   let hashInt = 0;
   for (let i = 0; i < hash.length; i++) {
@@ -10,3 +14,14 @@ export const hashToColor = (hash: string) => {
   }
   return color;
 };
+
+// A helper that returns a diff and remembers what the heads were that went into it
+export const diffWithProvenance = (
+  doc: A.Doc<any>,
+  fromHeads: A.Heads,
+  toHeads: A.Heads
+): DiffWithProvenance => ({
+  fromHeads,
+  toHeads,
+  patches: A.diff(doc, fromHeads, toHeads),
+});

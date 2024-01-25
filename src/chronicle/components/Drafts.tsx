@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentAccount } from "@/DocExplorer/account";
+import { diffWithProvenance } from "../utils";
 
 export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -368,7 +369,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           key={docUrl}
           diff={
             showDiffOverlay && selectedDraftDoc
-              ? A.diff(
+              ? diffWithProvenance(
                   selectedDraftDoc,
                   selectedDraftDoc.copyMetadata.source.copyHeads,
                   A.getHeads(selectedDraftDoc)

@@ -2,7 +2,12 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { AnnotationPosition, DraftAnnotation, MarkdownDoc } from "../schema";
+import {
+  AnnotationPosition,
+  DiffWithProvenance,
+  DraftAnnotation,
+  MarkdownDoc,
+} from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
 
@@ -16,7 +21,7 @@ import {
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Heads, Patch, view } from "@automerge/automerge/next";
+import { Heads, view } from "@automerge/automerge/next";
 import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -32,7 +37,7 @@ export const TinyEssayEditor = ({
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
-  diff?: Patch[];
+  diff?: DiffWithProvenance;
   readOnly?: boolean;
   diffStyle?: DiffStyle;
   foldRanges?: { from: number; to: number }[];
@@ -61,7 +66,8 @@ export const TinyEssayEditor = ({
   const annotations = focusedDraft ? [focusedDraft] : annotationsWithPositions;
 
   // todo: reify the live patches on the draft into actual patches
-  const diffForEditor = focusedDraft ? [] : diff;
+  const diffForEditor = focusedDraft ? undefined : diff;
+  const patchesForEditor = diff ? diff.patches : undefined;
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
@@ -136,7 +142,7 @@ export const TinyEssayEditor = ({
             setActiveThreadIds={setActiveThreadIds}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
-            diff={diffForEditor}
+            diff={patchesForEditor}
             diffStyle={diffStyle ?? "normal"}
             foldRanges={foldRanges}
           />
