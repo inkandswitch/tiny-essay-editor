@@ -25,3 +25,6 @@ tsc
 *.sln
 *.sw?
 .env
+
+# Vendored repos
+vendor/repos

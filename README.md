@@ -34,18 +34,19 @@ git submodule init
 git submodule update --init --remote
 ```
 
-Check out the `chronicle` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
-
-```
-cd src/vendor/vendored-automerge-repo
-git checkout chronicle
-```
-
 Install and build automerge-repo
 
 ```
+cd src/vendor/vendored-automerge-repo
 pnpm install
 pnpm build
+```
+
+Build the vendored automerge (follow the instructions on https://github.com/automerge/automerge)
+Make sure you're using node 18 when running the build script
+
+```
+cd ../vendored-automerge
 ```
 
 Install dependencies for tiny-essay-editor and start the dev server
@@ -71,6 +72,3 @@ This app is designed for normal webapp deployment as well as experimental deploy
 
 - `src/main.tsx` is the normal app entry point
 - `src/index.ts` is an experimental entry point which just exports some functions to a host environment
-
-
-
