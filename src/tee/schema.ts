@@ -49,7 +49,11 @@ export type PatchAnnotation = {
 export type PersistedDraft = {
   type: "draft";
   id: string;
-  title: string;
+  title?: string;
+
+  /** generating unique numbers concurrently isn't possible... */
+  /** what to do? haiku names...? */
+  number: number;
   /** Overall comments on the draft */
   comments: Comment[];
   fromHeads: A.Heads;

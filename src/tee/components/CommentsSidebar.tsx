@@ -11,7 +11,6 @@ import {
   DiffWithProvenance,
   PersistedDraft,
 } from "../schema";
-import Haikunator from "haikunator";
 
 import {
   Check,
@@ -170,7 +169,6 @@ export const CommentsSidebar = ({
     if (existingDrafts.length == 0) {
       const draft: PersistedDraft = {
         type: "draft",
-        title: new Haikunator().haikunate({ tokenLength: 0 }),
         id: uuid(),
         comments: [],
         fromHeads: selectedPatches[0].fromHeads,
@@ -178,6 +176,8 @@ export const CommentsSidebar = ({
           editRange,
           comments: [],
         })),
+        // TODO not concurrency safe
+        number: Object.values(doc.drafts ?? {}).length + 1,
       };
 
       changeDoc((doc) => {
@@ -201,7 +201,7 @@ export const CommentsSidebar = ({
         }
       });
 
-      // give up if multiple non virtual change groups are selected
+      // give up if multiple drafts are selected
     } else {
       alert("can't merge two groups");
     }
@@ -238,7 +238,8 @@ export const CommentsSidebar = ({
           // Make a draft for this patch
           const draft: PersistedDraft = {
             type: "draft",
-            title: new Haikunator().haikunate({ tokenLength: 0 }),
+            // TODO not concurrency safe
+            number: Object.values(doc.drafts ?? {}).length + 1,
             id: uuid(),
             comments: [comment],
             fromHeads: annotation.fromHeads,
@@ -291,11 +292,17 @@ export const CommentsSidebar = ({
     }
   };
 
-  const selectedThreadsThatContainEphemeralPatches = selectedAnnotationIds
-    .map((id) =>
-      annotationsWithPositions.find((annotation) => annotation.id === id)
-    )
-    .filter((thread) => thread && thread.type === "patch");
+  const selectedAnnotations = selectedAnnotationIds.map((id) =>
+    annotationsWithPositions.find((annotation) => annotation.id === id)
+  );
+
+  const selectedPatchAnnotations = selectedAnnotations.filter(
+    (thread) => thread && thread.type === "patch"
+  );
+
+  const selectedDraftAnnotations = selectedAnnotations.filter(
+    (thread) => thread && thread.type === "draft"
+  ) as DraftAnnotation[];
 
   // If there's a focused draft, show nothing for now
   // (TODO: show the comments for the parts of the diff...)
@@ -305,28 +312,35 @@ export const CommentsSidebar = ({
 
   return (
     <div>
-      {selectedThreadsThatContainEphemeralPatches.length > 0 && (
-        <div className="w-48 text-xs font-gray-600 p-2">
-          {selectedThreadsThatContainEphemeralPatches.length} edits
-          <Button
-            variant="outline"
-            className="h-6 ml-1"
-            onClick={() => {
-              const selectedThreads = selectedAnnotationIds.map((id) =>
-                annotationsWithPositions.find((thread) => thread.id === id)
-              );
-              groupPatches(selectedThreads);
-              setSelectedAnnotationIds([]);
-            }}
-          >
-            Make draft
-          </Button>
-        </div>
-      )}
+      {selectedPatchAnnotations.length > 0 &&
+        selectedDraftAnnotations.length <= 1 && (
+          <div className="w-48 text-xs font-gray-600 p-2">
+            {selectedPatchAnnotations.length} edits
+            <Button
+              variant="outline"
+              className="h-6 ml-1"
+              onClick={() => {
+                const selectedThreads = selectedAnnotationIds.map((id) =>
+                  annotationsWithPositions.find((thread) => thread.id === id)
+                );
+                groupPatches(selectedThreads);
+                setSelectedAnnotationIds([]);
+              }}
+            >
+              {selectedDraftAnnotations.length === 0 && "New draft"}
+              {selectedDraftAnnotations.length === 1 &&
+                `Add to draft #${selectedDraftAnnotations[0].number}`}
+            </Button>
+          </div>
+        )}
+      {selectedPatchAnnotations.length > 0 &&
+        selectedDraftAnnotations.length > 1 && (
+          <div className="text-red-500">Multiple drafts selected</div>
+        )}
       {annotationsWithPositions.map((annotation) => (
         <div
           key={annotation.id}
-          className={`select-none bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+          className={`select-none bg-white hover:border-gray-400 hover:bg-gray-50 p-3 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
             selectedAnnotationIds.includes(annotation.id)
               ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
               : "z-0"
@@ -348,15 +362,31 @@ export const CommentsSidebar = ({
         >
           {annotation.type === "draft" && (
             <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
-              <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
-              <div className="text-xs">{annotation.title}</div>
+              <input
+                type="text"
+                value={annotation.title}
+                placeholder="Untitled Draft"
+                onChange={(e) => {
+                  const newTitle = e.target.value;
+                  changeDoc((doc) => {
+                    const draft = doc.drafts[annotation.id];
+                    if (!draft) {
+                      throw new Error("expected draft to exist");
+                    }
+                    draft.title = newTitle;
+                  });
+                }}
+                className={`${
+                  annotation.title ? "text-gray-700" : "text-gray-400"
+                }`}
+              />
+              <div>#{annotation.number}</div>
               <Button
                 variant="outline"
-                className="ml-2 h-5 max-w-24"
+                className="ml-2 h-8 w-8 p-0 pl-[1px]"
                 onClick={() => setFocusedDraftThreadId(annotation.id)}
               >
-                <Fullscreen className="mr-2 h-4" />
-                Focus
+                <Fullscreen className="mr-2 h-6" />
               </Button>
             </div>
           )}
@@ -415,11 +445,6 @@ export const CommentsSidebar = ({
                   </div>
                 )}
               </div>
-            </div>
-          )}
-          {annotation.type === "draft" && (
-            <div className="text-xs text-gray-500 font-semibold mb-1">
-              Draft Comments
             </div>
           )}
           <div>

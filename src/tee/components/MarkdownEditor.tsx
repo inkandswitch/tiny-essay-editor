@@ -79,7 +79,7 @@ export function MarkdownEditor({
   setSelection,
   setView,
   setActiveThreadIds,
-  threadsWithPositions,
+  threadsWithPositions: annotationsWithPositions,
   readOnly,
   docHeads,
   diff,
@@ -118,9 +118,11 @@ export function MarkdownEditor({
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(threadsWithPositions),
+      effects: setThreadsEffect.of(
+        annotationsWithPositions.filter((thread) => thread.type === "thread")
+      ),
     });
-  }, [threadsWithPositions]);
+  }, [annotationsWithPositions]);
 
   useEffect(() => {
     if (!handleReady) {
