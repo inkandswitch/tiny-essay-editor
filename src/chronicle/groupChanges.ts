@@ -1,5 +1,5 @@
 import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
-import { AutomergeUrl } from "@/vendor/vendored-automerge-repo/packages/automerge-repo/dist";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   Doc,
   decodeChange,

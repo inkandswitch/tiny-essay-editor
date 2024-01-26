@@ -20,8 +20,15 @@ export const diffWithProvenance = (
   doc: A.Doc<any>,
   fromHeads: A.Heads,
   toHeads: A.Heads
-): DiffWithProvenance => ({
-  fromHeads,
-  toHeads,
-  patches: A.diff(doc, fromHeads, toHeads),
-});
+): DiffWithProvenance => {
+  const patches = A.diff(doc, fromHeads, toHeads);
+
+  console.log("patches", patches);
+  debugger;
+
+  return {
+    fromHeads,
+    toHeads,
+    patches,
+  };
+};
