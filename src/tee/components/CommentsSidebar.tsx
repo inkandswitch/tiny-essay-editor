@@ -12,6 +12,9 @@ import {
   PersistedDraft,
 } from "../schema";
 
+import { groupBy, sortBy } from "lodash";
+import { isValidAutomergeUrl } from "@automerge/automerge-repo";
+
 import {
   Check,
   Fullscreen,
@@ -34,6 +37,7 @@ import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export const CommentsSidebar = ({
   doc,
@@ -416,17 +420,15 @@ export const CommentsSidebar = ({
             </div>
           )}
           {annotation.type === "draft" && (
-            <div className="">
-              {annotation.editRangesWithComments
-                .flatMap((editRange) => editRange.patches)
-                .map((patch) => (
-                  <Patch key={JSON.stringify(patch)} patch={patch} />
-                ))}
-            </div>
+            <PatchesGroupedByAuthor
+              patches={annotation.editRangesWithComments.flatMap(
+                (editRange) => editRange.patches
+              )}
+            />
           )}
           {annotation.type === "patch" && (
             <div className="mb-3">
-              <Patch patch={annotation.patch} />
+              <PatchesGroupedByAuthor patches={[annotation.patch]} />
             </div>
           )}
           <div>
@@ -595,6 +597,38 @@ export const CommentsSidebar = ({
           </PopoverClose>
         </PopoverContent>
       </Popover>
+    </div>
+  );
+};
+
+export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
+  const patchesByAuthor = groupBy(
+    patches,
+    (patch: A.Patch) => patch?.attr?.author
+  );
+
+  console.log(patchesByAuthor, patches);
+
+  return (
+    <div>
+      {Object.entries(patchesByAuthor).map(([author, patches]) => (
+        <div key={author}>
+          <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
+            <ContactAvatar
+              url={
+                isValidAutomergeUrl(author as AutomergeUrl)
+                  ? (author as AutomergeUrl)
+                  : undefined
+              }
+              size="sm"
+              showName
+            />
+          </div>
+          {sortBy(patches, (patch) => patch?.attr?.time).map((patch, index) => (
+            <Patch patch={patch} key={index} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 };

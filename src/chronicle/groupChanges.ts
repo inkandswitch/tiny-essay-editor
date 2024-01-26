@@ -9,7 +9,7 @@ import {
   getAllChanges,
   view,
 } from "@automerge/automerge/next";
-import { diffWithProvenance } from "./utils";
+import { diffWithProvenanceAndAttribution } from "./utils";
 
 type GenericChangeGroup = {
   id: string;
@@ -128,7 +128,9 @@ export const getGroupedChanges = (
   const pushCurrentGroup = () => {
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
-    currentGroup.diff = diffWithProvenance(doc, diffHeads, [currentGroup.id]);
+    currentGroup.diff = diffWithProvenanceAndAttribution(doc, diffHeads, [
+      currentGroup.id,
+    ]);
 
     // Finalize the stats on the group based on the diff
 

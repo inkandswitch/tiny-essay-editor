@@ -16,12 +16,42 @@ export const hashToColor = (hash: string) => {
 };
 
 // A helper that returns a diff and remembers what the heads were that went into it
-export const diffWithProvenance = (
+export const diffWithProvenanceAndAttribution = (
   doc: A.Doc<any>,
   fromHeads: A.Heads,
   toHeads: A.Heads
-): DiffWithProvenance => ({
-  fromHeads,
-  toHeads,
-  patches: A.diff(doc, fromHeads, toHeads),
-});
+): DiffWithProvenance => {
+  const patches = diffWithAttributionToAuthors(doc, fromHeads, toHeads);
+
+  console.log("patches", patches);
+
+  return {
+    fromHeads,
+    toHeads,
+    patches,
+  };
+};
+
+// A helper that returns a diff with patches attributed to authors
+export const diffWithAttributionToAuthors = (
+  doc: A.Doc<any>,
+  fromHeads: A.Heads,
+  toHeads: A.Heads
+): A.Patch[] => {
+  const actorIdToAuthor = {};
+  A.getAllChanges(doc).map((change) => {
+    const decodedChange = A.decodeChange(change);
+
+    let metadata;
+    try {
+      metadata = JSON.parse(decodedChange.message);
+    } catch (e) {}
+
+    actorIdToAuthor[decodedChange.actor] = {
+      author: metadata?.author,
+      time: decodedChange.time,
+    };
+  });
+
+  return A.diffWithAttribution(doc, fromHeads, toHeads, actorIdToAuthor);
+};

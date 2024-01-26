@@ -5,10 +5,6 @@ import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as Automerge, diffWithAttribution } from "@automerge/automerge";
 
-import * as aw from "@automerge/automerge-wasm";
-
-console.log(aw);
-
 import "./index.css";
 import { mount } from "./mount.js";
 import { getAccount } from "./account.js";

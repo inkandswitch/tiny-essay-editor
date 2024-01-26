@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import * as A from "@automerge/automerge/next";
 import { Hash } from "./Hash";
-import { diffWithProvenance } from "../utils";
+import { diffWithProvenanceAndAttribution } from "../utils";
 
 const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
   const changes = A.getAllChanges(doc);
@@ -39,7 +39,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
     if (!doc || diffBase.length === 0) return undefined;
-    return diffWithProvenance(doc, diffBase, A.getHeads(doc));
+    return diffWithProvenanceAndAttribution(doc, diffBase, A.getHeads(doc));
   }, [doc, diffBase]);
 
   if (!doc) return <div>Loading...</div>;
