@@ -13,21 +13,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  worker: {
-    format: "es",
-    plugins: [wasm()],
-  },
 
   optimizeDeps: {
-    // This is necessary because otherwise `vite dev` includes two separate
-    // versions of the JS wrapper. This causes problems because the JS
-    // wrapper has a module level variable to track JS side heap
-    // allocations, and initializing this twice causes horrible breakage
-    exclude: [
-      "@automerge/automerge-wasm",
-      "@automerge/automerge-wasm/bundler/bindgen_bg.wasm",
-      "@syntect/wasm",
-    ],
+    esbuildOptions: {
+      alias: {
+        "@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
+      },
+    },
+  },
+
+  worker: {
+    format: "es",
+    plugins: () => [wasm()],
   },
 
   build: {

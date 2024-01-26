@@ -27,43 +27,24 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 
 ## Run it
 
-Setup the automerge-repo submodule
-
 ```
-git submodule init
-git submodule update --init --remote
-```
-
-Check out the `chronicle` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
-
-```
-cd src/vendor/vendored-automerge-repo
-git checkout chronicle
-```
-
-Install and build automerge-repo
-
-```
-pnpm install
-pnpm build
-```
-
-Install dependencies for tiny-essay-editor and start the dev server
-
-```
-cd ../../..
 yarn
 yarn dev
 ```
 
-To pull in subsequent updates for the submodule run:
+when the vendored version of automerge or automerge-repo are updated you need to run:
 
 ```
-git submodule update --remote --rebase
+yarn clean cache
+rm yarn.lock
+yarn
 ```
 
-> --remote ensures we are getting the latest changes <br>
-> --rebase ensures that the changes are pulled into the checked out "version-control-branch" instead of checking out a detached HEAD
+This is necessary because we want to install automerge / automerge-repo on a
+specific branch without having to bump the version every time. Unfortunately
+yarn caches tarballs based on the version number in the package.json
+and the yarn file has a integretiy checksum that prohibits installing a different version
+if the version number hasn't changed.
 
 ## Dual deployment
 
@@ -72,5 +53,33 @@ This app is designed for normal webapp deployment as well as experimental deploy
 - `src/main.tsx` is the normal app entry point
 - `src/index.ts` is an experimental entry point which just exports some functions to a host environment
 
+## Vendored dependencies
 
+We are using vendored version for automerge and automerge-repo so we can use experimental features. These are checked into the repo as tarballs in the folder `vendor/tarballs`. Usually you don't have to worry about this.
 
+### Setup
+
+First you need to clone automerge and automerge-repo. The following command will clone both into the `vendor/repos` folder
+
+```
+yarn run vendor:init
+```
+
+### Vendoring in a differnt version of automerge-repo
+
+Checkout the version you want in `vendor/repos/automerge-repo`. Then you can run:
+
+```
+yarn run vendor:build-automerge-repo
+```
+
+### Vendoring in a different version of automerge
+
+If you want to vendor in a different version of automerge you need to make sure that you have installed the necessary dependencies.
+Instructions for that are in repo of automerge (https://github.com/automerge/automerge).
+
+Once you have done that you can checkout the version you want in `vendor/repos/automerge`. Then you can run:
+
+```
+yarn run vendor:build-automerge
+```
