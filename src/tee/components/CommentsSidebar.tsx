@@ -272,7 +272,9 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1], patch.value.length);
       });
     } else if (patch.action === "del") {
-      alert("undoing deletions is not yet implemented");
+      changeDoc((doc) => {
+        A.splice(doc, ["content"], patch.path[1], 0, patch.removed);
+      });
     }
   };
 
@@ -290,7 +292,7 @@ export const CommentsSidebar = ({
         .flatMap((range) => range.patches)
         .map((patch) => ({
           ...patch,
-          fromCursor: A.getCursor(doc, ["content"], patch.path[1]),
+          fromCursor: A.getCursor(doc, ["content"], patch.path[1] as number),
         }));
 
       for (const patch of patchesWithCursors) {
@@ -595,7 +597,6 @@ export const CommentsSidebar = ({
 };
 
 export const Patch = ({ patch }: { patch: A.Patch }) => {
-  console.log(patch);
   return (
     <div className="pb-2 mb-2 border-b border-gray-200">
       {patch.action === "splice" && (
@@ -607,8 +608,9 @@ export const Patch = ({ patch }: { patch: A.Patch }) => {
       )}
       {patch.action === "del" && (
         <div className="text-xs">
-          <strong>Delete: </strong>
-          {patch.length} characters
+          <span className="font-serif bg-red-50 border-b border-red-400">
+            {truncate(patch.removed, { length: 45 })}
+          </span>
         </div>
       )}
       {!["splice", "del"].includes(patch.action) && (

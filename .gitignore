@@ -27,4 +27,4 @@ tsc
 .env
 
 # Vendored repos
-vendor/repos
+vendor/repos/*
