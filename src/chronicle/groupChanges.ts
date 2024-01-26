@@ -364,7 +364,6 @@ const groupPatchesByDelimiter =
   (delimiter: string) =>
   (doc: MarkdownDoc, patches: Patch[]): PatchGroup[] => {
     if (!doc?.content) return [];
-    console.log("grouping", patches);
     const patchGroups: PatchGroup[] = [];
 
     let currentGroup: PatchGroup | null = null;

@@ -431,7 +431,6 @@ export const useAnnotationsWithPositions = ({
 
       return !patchOverlapsWithDraft;
     });
-    console.log({ docRangesClaimedByDrafts, patchAnnotationsToShow });
 
     return getTextAnnotationsForUI({
       doc,

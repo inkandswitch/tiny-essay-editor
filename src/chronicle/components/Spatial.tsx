@@ -182,8 +182,6 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     return resolvedSnippets;
   }, [snippets, doc, groupingNumericParameter, activeGroupingAlgorithm]);
 
-  console.log({ resolvedSnippets, snippets });
-
   // update editor width
   useEffect(() => {
     if (!editorRef) {

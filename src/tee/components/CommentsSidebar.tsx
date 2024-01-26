@@ -276,14 +276,34 @@ export const CommentsSidebar = ({
     }
   };
 
-  const undoPatchesForThread = (annotation: TextAnnotation) => {
+  const undoEditsFromAnnotation = (annotation: TextAnnotation) => {
+    console.log("undo", annotation);
     if (annotation.type === "patch") {
       undoPatch(annotation.patch);
     } else if (annotation.type === "draft") {
-      for (const editRange of annotation.editRangesWithComments) {
-        for (const patch of editRange.patches) {
-          undoPatch(patch);
-        }
+      // Undoing multiple patches at once is a bit subtle!
+      // If we use the numeric indexes on the patches, things get messed up.
+      // So we gotta get cursors for the patches and then get numeric indexes
+      // after each undo.
+
+      const patchesWithCursors = annotation.editRangesWithComments
+        .flatMap((range) => range.patches)
+        .map((patch) => ({
+          ...patch,
+          fromCursor: A.getCursor(doc, ["content"], patch.path[1]),
+        }));
+
+      for (const patch of patchesWithCursors) {
+        const adjustedIndex = A.getCursorPosition(
+          doc,
+          ["content"],
+          patch.fromCursor
+        );
+
+        undoPatch({
+          ...patch,
+          path: [patch.path[0], adjustedIndex, ...patch.path.slice(2)],
+        });
       }
 
       changeDoc((doc) => {
@@ -511,7 +531,7 @@ export const CommentsSidebar = ({
               <Button
                 variant="outline"
                 className="select-none"
-                onClick={() => undoPatchesForThread(annotation)}
+                onClick={() => undoEditsFromAnnotation(annotation)}
               >
                 <Check className="mr-2" /> Undo
               </Button>
