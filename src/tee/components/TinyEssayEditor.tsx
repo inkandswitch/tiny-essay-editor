@@ -21,7 +21,7 @@ export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const store = useAutomergeStore({ handle, userId })
 
   return (
-    <div className="tldraw__editor">
+    <div className="tldraw__editor h-full overflow-auto">
       <Tldraw autoFocus store={store}/>
     </div>
   )
