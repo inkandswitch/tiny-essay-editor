@@ -7,6 +7,7 @@ import {
   DiffWithProvenance,
   DraftAnnotation,
   MarkdownDoc,
+  PatchAnnotation,
 } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
@@ -21,7 +22,7 @@ import {
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Heads, view } from "@automerge/automerge/next";
+import { Heads, getHeads, view, getCursor } from "@automerge/automerge/next";
 import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -60,6 +61,11 @@ export const TinyEssayEditor = ({
     diff: showDiffAsComments ? diff : undefined,
   });
 
+  // todo: remove from this component and move up to DocExplorer?
+  if (!doc) {
+    return <LoadingScreen docUrl={docUrl} handle={handle} />;
+  }
+
   const focusedDraft = annotationsWithPositions.find(
     (thread) => thread.id === focusedDraftThreadId
   ) as (DraftAnnotation & AnnotationPosition & { yCoord: number }) | undefined;
@@ -67,13 +73,14 @@ export const TinyEssayEditor = ({
   const annotations = focusedDraft ? [focusedDraft] : annotationsWithPositions;
 
   // todo: reify the live patches on the draft into actual patches
-  const diffForEditor = focusedDraft ? undefined : diff;
-  const patchesForEditor = diff ? diff.patches : undefined;
-
-  // todo: remove from this component and move up to DocExplorer?
-  if (!doc) {
-    return <LoadingScreen docUrl={docUrl} handle={handle} />;
-  }
+  const diffForEditor: DiffWithProvenance = focusedDraft
+    ? {
+        fromHeads: focusedDraft.fromHeads,
+        toHeads: docHeads ?? getHeads(doc),
+        patches: [], // TODO fill in patches here
+      }
+    : diff;
+  const patchesForEditor = diffForEditor ? diffForEditor.patches : undefined;
 
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
