@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
+import { editText } from "../llm";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -85,6 +86,19 @@ export const TinyEssayEditor = ({
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
+      <Button
+        variant="outline"
+        className="ml-2 h-5 max-w-36"
+        onClick={async () => {
+          const result = await editText(
+            "Fix any spelling errors. For each error, output the snippet of text before the fix, and then the fixed text.",
+            doc.content
+          );
+          console.log(result);
+        }}
+      >
+        AI feedback
+      </Button>
       {focusedDraft && (
         <div className="w-full p-4">
           <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
