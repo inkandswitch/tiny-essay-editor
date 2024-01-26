@@ -391,60 +391,17 @@ export const CommentsSidebar = ({
             </div>
           )}
           {annotation.type === "draft" && (
-            <div className="mb-3 border-b border-gray-300 pb-2">
+            <div className="">
               {annotation.editRangesWithComments
                 .flatMap((editRange) => editRange.patches)
                 .map((patch) => (
-                  <div key={`${JSON.stringify(patch)}`} className="select-none">
-                    {patch.action === "splice" && (
-                      <div className="text-xs">
-                        <strong>Insert: </strong>
-                        <span className="font-serif">
-                          {truncate(patch.value, { length: 50 })}
-                        </span>
-                      </div>
-                    )}
-                    {patch.action === "del" && (
-                      <div className="text-xs">
-                        <strong>Delete: </strong>
-                        {patch.length} characters
-                      </div>
-                    )}
-                    {!["splice", "del"].includes(patch.action) && (
-                      <div className="font-mono">
-                        Unknown action: {patch.action}
-                      </div>
-                    )}
-                  </div>
+                  <Patch key={JSON.stringify(patch)} patch={patch} />
                 ))}
             </div>
           )}
           {annotation.type === "patch" && (
-            <div className="mb-3 border-b border-gray-300 pb-2">
-              <div
-                key={`${JSON.stringify(annotation.patch)}`}
-                className="select-none"
-              >
-                {annotation.patch.action === "splice" && (
-                  <div className="text-xs">
-                    <strong>Insert: </strong>
-                    <span className="font-serif">
-                      {truncate(annotation.patch.value, { length: 50 })}
-                    </span>
-                  </div>
-                )}
-                {annotation.patch.action === "del" && (
-                  <div className="text-xs">
-                    <strong>Delete: </strong>
-                    {annotation.patch.length} characters
-                  </div>
-                )}
-                {!["splice", "del"].includes(annotation.patch.action) && (
-                  <div className="font-mono">
-                    Unknown action: {annotation.patch.action}
-                  </div>
-                )}
-              </div>
+            <div className="mb-3">
+              <Patch patch={annotation.patch} />
             </div>
           )}
           <div>
@@ -613,6 +570,29 @@ export const CommentsSidebar = ({
           </PopoverClose>
         </PopoverContent>
       </Popover>
+    </div>
+  );
+};
+
+export const Patch = ({ patch }: { patch: A.Patch }) => {
+  return (
+    <div className="pb-2 mb-2 border-b border-gray-200">
+      {patch.action === "splice" && (
+        <div className="text-xs">
+          <span className="font-serif bg-green-50 border-b border-green-400">
+            {truncate(patch.value, { length: 45 })}
+          </span>
+        </div>
+      )}
+      {patch.action === "del" && (
+        <div className="text-xs">
+          <strong>Delete: </strong>
+          {patch.length} characters
+        </div>
+      )}
+      {!["splice", "del"].includes(patch.action) && (
+        <div className="font-mono">Unknown action: {patch.action}</div>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
+import { sortBy } from "lodash";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -99,30 +100,44 @@ export const getTextAnnotationsForUI = ({
     // Here we take the persisted drafts and "claim" patches from the current diff
     // into the individual edit ranges. Any patches from the diff that overlap with
     // the edit range on the draft get claimed for that edit range.
-    const draftAnnotations = Object.values(doc.drafts ?? {}).map((draft) => ({
-      ...draft,
-      editRangesWithComments: draft.editRangesWithComments.map((editRange) => ({
-        ...editRange,
-        patches:
-          diff?.patches.filter((patch) => {
-            const { fromCursor, toCursor } = editRange.editRange;
-            const from = A.getCursorPosition(doc, ["content"], fromCursor);
-            const to = A.getCursorPosition(doc, ["content"], toCursor);
-            if (patch.path[0] !== "content") return false;
-            if (patch.action === "splice") {
-              const patchFrom = patch.path[1];
-              const patchTo = patch.path[1] + patch.value.length;
-              return patchFrom <= to && patchTo >= from;
-            } else if (patch.action === "del") {
-              const patchFrom = patch.path[1];
-              const patchTo = patch.path[1] + 1; // TODO is this right...?
-              return patchFrom <= to && patchTo >= from;
-            } else {
-              return false;
-            }
-          }) ?? [],
-      })),
-    }));
+    const draftAnnotations = Object.values(doc.drafts ?? {}).map((draft) => {
+      const editRangesWithComments = draft.editRangesWithComments.map(
+        (editRange) => {
+          const patchesForEditRange =
+            diff?.patches.filter((patch) => {
+              const { fromCursor, toCursor } = editRange.editRange;
+              const from = A.getCursorPosition(doc, ["content"], fromCursor);
+              const to = A.getCursorPosition(doc, ["content"], toCursor);
+              if (patch.path[0] !== "content") return false;
+              if (patch.action === "splice") {
+                const patchFrom = patch.path[1];
+                const patchTo = patch.path[1] + patch.value.length;
+                return patchFrom <= to && patchTo >= from;
+              } else if (patch.action === "del") {
+                const patchFrom = patch.path[1];
+                const patchTo = patch.path[1] + 1; // TODO is this right...?
+                return patchFrom <= to && patchTo >= from;
+              } else {
+                return false;
+              }
+            }) ?? [];
+          return {
+            ...editRange,
+            patches: patchesForEditRange,
+          };
+        }
+      );
+
+      const sortedEditRangesWithComments = sortBy(
+        editRangesWithComments,
+        (range) =>
+          A.getCursorPosition(doc, ["content"], range.editRange.fromCursor)
+      );
+      return {
+        ...draft,
+        editRangesWithComments: sortedEditRangesWithComments,
+      };
+    });
     annotations = [...annotations, ...draftAnnotations];
     annotations = [...annotations, ...(threadsForDiffPatches ?? [])];
   }
