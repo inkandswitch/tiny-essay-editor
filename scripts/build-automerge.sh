@@ -4,7 +4,9 @@
 tar_dir="$(pwd)/vendor/tarballs"
 
 # build automerge
-./vendor/repos/automerge/scripts/ci/run
+cd ./vendor/repos/automerge/javascript/e2e
+yarn e2e buildjs
+cd -
 
 # Directory to pack
 dir="vendor/repos/automerge/javascript"

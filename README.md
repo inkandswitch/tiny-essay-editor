@@ -32,6 +32,19 @@ yarn
 yarn dev
 ```
 
+when the vendored version of automerge or automerge-repo are updated you need to run:
+
+```
+yarn clean cache
+rm yarn.lock
+```
+
+This is necessary because we want to install automerge / automerge-repo on a
+specific branch without having to bump the version every time. Unfortunately
+yarn caches tarballs based on the version number in the package.json
+and the yarn file has a integretiy checksum that prohibits installing a different version
+if the version number hasn't changed.
+
 ## Dual deployment
 
 This app is designed for normal webapp deployment as well as experimental deployment to an internal I&S platform. The code is almost entirely shared but there are two entry points:
@@ -41,7 +54,7 @@ This app is designed for normal webapp deployment as well as experimental deploy
 
 ## Vendored dependencies
 
-We are using vendored version for automerge and automerge-repo so we can use experimental features. These are checked into the repo as tarballs in the folder `vendor/tarballs`. Usually you don't have to worry about this. The following steps are only relevant if you want to change the vendored in version of automerge or automerge-repo.
+We are using vendored version for automerge and automerge-repo so we can use experimental features. These are checked into the repo as tarballs in the folder `vendor/tarballs`. Usually you don't have to worry about this.
 
 ### Setup
 
