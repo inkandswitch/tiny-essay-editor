@@ -9,6 +9,8 @@ export function patchesToUpdatesAndRemoves(
   const updatedObjects: { [id: string]: TLRecord } = {}
 
   patches.forEach((patch) => {
+    if (!isStorePatch(patch)) return
+
     const id = pathToId(patch.path)
     const record =
       updatedObjects[id] || JSON.parse(JSON.stringify(store.get(id) || {}))
@@ -42,15 +44,20 @@ export function patchesToUpdatesAndRemoves(
   const toPut = Object.values(updatedObjects)
 
   // put / remove the records in the store
+  console.log({patches, toPut})
   store.mergeRemoteChanges(() => {
     if (toRemove.length) store.remove(toRemove)
     if (toPut.length) store.put(toPut)
   })
 }
 
-// path: "/camera:page:page/x" => "camera:page:page"
+const isStorePatch = (patch: Automerge.Patch): boolean => {
+  return patch.path[0] === "store"
+}
+
+// path: ["store", "camera:page:page", "x"] => "camera:page:page"
 const pathToId = (path: string[]): RecordId<any> => {
-  return path[0] as RecordId<any>
+  return path[1] as RecordId<any>
 }
 
 const applyInsertToObject = (patch: Automerge.Patch, object: any): TLRecord => {
@@ -58,7 +65,7 @@ const applyInsertToObject = (patch: Automerge.Patch, object: any): TLRecord => {
   let current = object
   const insertionPoint = path[path.length - 1]
   const pathEnd = path[path.length - 2]
-  const parts = path.slice(1, -2)
+  const parts = path.slice(2, -2)
   for (const part of parts) {
     if (current[part] === undefined) {
       throw new Error("NO WAY")
@@ -81,11 +88,11 @@ const applyPutToObject = (patch: Automerge.Patch, object: any): TLRecord => {
     return object
   }
 
-  const parts = path.slice(1, -2)
+  const parts = path.slice(2, -2)
   const property = path[path.length - 1]
   const target = path[path.length - 2]
 
-  if (path.length === 2) {
+  if (path.length === 3) {
     return { ...object, [property]: value }
   }
 
@@ -100,7 +107,7 @@ const applyPutToObject = (patch: Automerge.Patch, object: any): TLRecord => {
 const applyUpdateToObject = (patch: Automerge.Patch, object: any): TLRecord => {
   const { path, value } = patch
   let current = object
-  const parts = path.slice(1, -1)
+  const parts = path.slice(2, -1)
   const pathEnd = path[path.length - 1]
   for (const part of parts) {
     if (current[part] === undefined) {
@@ -117,7 +124,7 @@ const applySpliceToObject = (patch: Automerge.Patch, object: any): TLRecord => {
   let current = object
   const insertionPoint = path[path.length - 1]
   const pathEnd = path[path.length - 2]
-  const parts = path.slice(1, -2)
+  const parts = path.slice(2, -2)
   for (const part of parts) {
     if (current[part] === undefined) {
       throw new Error("NO WAY")

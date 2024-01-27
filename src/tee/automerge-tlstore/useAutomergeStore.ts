@@ -138,6 +138,14 @@ export function useAutomergeStore({
     /* Defer rendering until the document is ready */
     // TODO: need to think through the various status possibilities here and how they map
     handle.whenReady().then(() => {
+      const doc = handle.docSync()
+
+      if (doc.store !== undefined) {
+        store.mergeRemoteChanges(() => {
+          store.loadSnapshot({store: JSON.parse(JSON.stringify(doc.store)), schema: doc.schema})
+        })
+      }
+
       setStoreWithStatus({
         store,
         status: "synced-remote",

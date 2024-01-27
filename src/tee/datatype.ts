@@ -5,10 +5,13 @@
 import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
 
+import { DEFAULT_STORE } from "./automerge-tlstore/default_store";
 export const init = (doc: any) => {
-  doc.content = "# Untitled\n\n";
-  doc.commentThreads = {};
-};
+  doc.title = "Drawing"
+  doc.content = "# DRAWING?"
+  Object.assign(doc, DEFAULT_STORE)
+}
+
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.

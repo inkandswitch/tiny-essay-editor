@@ -6,15 +6,15 @@ export function applyChangesToAutomerge(
   changes: RecordsDiff<TLRecord>
 ) {
   Object.values(changes.added).forEach((record) => {
-    doc[record.id] = record
+    doc.store[record.id] = record
   })
 
   Object.values(changes.updated).forEach(([_, record]) => {
-    deepCompareAndUpdate(doc[record.id], record)
+    deepCompareAndUpdate(doc.store[record.id], record)
   })
 
   Object.values(changes.removed).forEach((record) => {
-    delete doc[record.id]
+    delete doc.store[record.id]
   })
 }
 
@@ -57,6 +57,12 @@ function deepCompareAndUpdate(objectA: any, objectB: any) {
           // update the value
           objectA[key] = value
         }
+      }
+    })
+    _.forIn(objectA, (_, key) => {
+      if (objectB[key] === undefined) {
+        // if key is not in objectB, remove it
+        delete objectA[key]
       }
     })
   }
