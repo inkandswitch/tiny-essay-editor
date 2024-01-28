@@ -1,7 +1,10 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback } from "react";
 import {
+  Bot,
+  BotIcon,
   Download,
+  EditIcon,
   GitForkIcon,
   Menu,
   MoreHorizontal,
@@ -31,7 +34,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
@@ -49,9 +51,10 @@ export const Topbar: React.FC<TopbarProps> = ({
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const selectedDocName = rootFolderDoc?.docs.find(
+  const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )?.name;
+  );
+  const selectedDocName = selectedDocLink?.name;
   const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
@@ -100,7 +103,39 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      <div className="ml-auto mr-4">
+      {selectedDocLink?.type === "essay" && (
+        <div className="ml-auto mr-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Bot
+                size={18}
+                className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="mr-4">
+              {rootFolderDoc?.docs
+                .filter((doc) => doc.type === "bot")
+                .map((botDoc) => (
+                  <DropdownMenuItem
+                    key={botDoc.url}
+                    onClick={() => alert("hey")}
+                  >
+                    Run {botDoc.name}
+                    <EditIcon
+                      size={14}
+                      className="inline-block ml-2 cursor-pointer"
+                      onClick={(e) => {
+                        selectDoc(botDoc.url);
+                        e.stopPropagation();
+                      }}
+                    />
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+      <div className={`mr-4 ${selectedDocLink?.type !== "essay" && "ml-auto"}`}>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <MoreHorizontal

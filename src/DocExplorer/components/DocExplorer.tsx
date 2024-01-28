@@ -22,6 +22,10 @@ import { HistoryPlayground } from "@/chronicle/components/History";
 import { DraftsPlayground } from "@/chronicle/components/Drafts";
 import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 
+import queryString from "query-string";
+import { BotEditor } from "@/bots/BotEditor";
+import { setUrlHashForDoc } from "../utils";
+
 export type Tool = {
   id: string;
   name: string;
@@ -61,8 +65,10 @@ export const DocExplorer: React.FC = () => {
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
-    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
+  const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({
+    rootFolderDoc,
+    changeRootFolderDoc,
+  });
 
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -263,16 +269,13 @@ export const DocExplorer: React.FC = () => {
   );
 };
 
-type UrlHashParams = {
+export type UrlHashParams = {
   docUrl: AutomergeUrl;
   docType: DocType;
 } | null;
 
 const isDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
-
-import queryString from "query-string";
-import { BotEditor } from "@/bots/BotEditor";
 
 const parseCurrentUrlHash = (): UrlHashParams => {
   const hash = window.location.hash;
@@ -310,22 +313,6 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     docUrl,
     docType,
   };
-};
-
-// Update the URL hash to reflect a given doc
-export const setUrlHashForDoc = (params: UrlHashParams) => {
-  if (!params) {
-    window.location.hash = "";
-    return;
-  }
-
-  const { docUrl, docType } = params;
-
-  const newHash = queryString.stringify({
-    docUrl,
-    docType,
-  });
-  window.location.hash = newHash;
 };
 
 // Drive the currently selected doc using the URL hash

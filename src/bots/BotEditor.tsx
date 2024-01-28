@@ -5,7 +5,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Bot } from "lucide-react";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
 import { MarkdownDoc } from "@/tee/schema";
-import { setUrlHashForDoc } from "@/DocExplorer/components/DocExplorer";
+import { setUrlHashForDoc } from "@/DocExplorer/utils";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const [doc, changeDoc] = useDocument<EssayEditingBot>(docUrl);
