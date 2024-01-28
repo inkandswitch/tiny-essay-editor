@@ -35,12 +35,14 @@ import {
 import { getHeads, save } from "@automerge/automerge";
 import { toast } from "sonner";
 import { runBot } from "@/bots/llm";
+import { DocType } from "../docTypes";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocUrl: AutomergeUrl | null;
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
+  addNewDocument: (doc: { type: DocType }) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -49,6 +51,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
+  addNewDocument,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
@@ -85,6 +88,8 @@ export const Topbar: React.FC<TopbarProps> = ({
     ]);
   }, [selectedDocUrl, selectedDoc]);
 
+  const botDocLinks = rootFolderDoc?.docs.filter((doc) => doc.type === "bot");
+
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
       {!showSidebar && (
@@ -117,35 +122,41 @@ export const Topbar: React.FC<TopbarProps> = ({
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="mr-4">
-              {rootFolderDoc?.docs
-                .filter((doc) => doc.type === "bot")
-                .map((botDoc) => (
-                  <DropdownMenuItem
-                    key={botDoc.url}
-                    onClick={async () => {
-                      const resultPromise = runBot({
-                        botDocUrl: botDoc.url,
-                        targetDocHandle: selectedDocHandle,
-                        repo,
-                      });
-                      toast.promise(resultPromise, {
-                        loading: `Running ${botDoc.name}...`,
-                        success: `${botDoc.name} ran successfully`,
-                        error: `${botDoc.name} failed, see console`,
-                      });
+              {botDocLinks.length === 0 && (
+                <div>
+                  <div className="text-gray-500 max-w-48 p-2">
+                    No bots in sidebar. <br />
+                    Click "New Bot" or get a share link from someone.
+                  </div>
+                </div>
+              )}
+              {botDocLinks.map((botDocLink) => (
+                <DropdownMenuItem
+                  key={botDocLink.url}
+                  onClick={async () => {
+                    const resultPromise = runBot({
+                      botDocUrl: botDocLink.url,
+                      targetDocHandle: selectedDocHandle,
+                      repo,
+                    });
+                    toast.promise(resultPromise, {
+                      loading: `Running ${botDocLink.name}...`,
+                      success: `${botDocLink.name} ran successfully`,
+                      error: `${botDocLink.name} failed, see console`,
+                    });
+                  }}
+                >
+                  Run {botDocLink.name}
+                  <EditIcon
+                    size={14}
+                    className="inline-block ml-2 cursor-pointer"
+                    onClick={(e) => {
+                      selectDoc(botDocLink.url);
+                      e.stopPropagation();
                     }}
-                  >
-                    Run {botDoc.name}
-                    <EditIcon
-                      size={14}
-                      className="inline-block ml-2 cursor-pointer"
-                      onClick={(e) => {
-                        selectDoc(botDoc.url);
-                        e.stopPropagation();
-                      }}
-                    />
-                  </DropdownMenuItem>
-                ))}
+                  />
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -226,6 +226,7 @@ export const DocExplorer: React.FC = () => {
               selectedDocUrl={selectedDocUrl}
               selectDoc={selectDoc}
               deleteFromAccountDocList={deleteFromRootFolder}
+              addNewDocument={addNewDocument}
             />
             <div className="flex-grow overflow-hidden">
               {!selectedDocUrl && (
