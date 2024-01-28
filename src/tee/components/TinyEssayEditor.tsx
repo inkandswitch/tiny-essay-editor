@@ -84,6 +84,7 @@ export const TinyEssayEditor = ({
   const patchesForEditor = diffForEditor ? diffForEditor.patches : undefined;
 
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
+
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
       <Button
@@ -92,7 +93,7 @@ export const TinyEssayEditor = ({
         onClick={async () => {
           const result = await editText(
             "Fix any spelling errors. For each error, output the snippet of text before the fix, and then the fixed text.",
-            doc.content
+            handle
           );
           console.log(result);
         }}

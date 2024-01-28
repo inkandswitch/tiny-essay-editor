@@ -20,14 +20,14 @@
     "vendor:build-automerge": "./scripts/build-automerge.sh"
   },
   "dependencies": {
+    "@automerge/automerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
     "@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
-    "@automerge/automerge-codemirror": "^0.0.7",
     "@automerge/automerge-repo": "file:./vendor/tarballs/automerge-repo.tgz",
     "@automerge/automerge-repo-network-broadcastchannel": "file:./vendor/tarballs/automerge-repo-network-broadcastchannel.tgz",
     "@automerge/automerge-repo-network-websocket": "file:./vendor/tarballs/automerge-repo-network-websocket.tgz",
     "@automerge/automerge-repo-react-hooks": "file:./vendor/tarballs/automerge-repo-react-hooks.tgz",
     "@automerge/automerge-repo-storage-indexeddb": "file:./vendor/tarballs/automerge-repo-storage-indexeddb.tgz",
-    "@automerge/automerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
+    "@automerge/automerge-codemirror": "^0.0.7",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -57,7 +57,6 @@
     "d3": "^7.8.5",
     "eventemitter3": "^5.0.1",
     "haikunator": "^2.1.2",
-    "llm-api": "^1.2.0",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
@@ -70,8 +69,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-resize-observer": "^9.1.0",
     "uuid": "^9.0.1",
-    "xstate": "^4.38.3",
-    "zod-gpt": "^0.12.1"
+    "xstate": "^4.38.3"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",

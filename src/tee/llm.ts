@@ -1,4 +1,9 @@
+import { splice } from "@automerge/automerge/next";
+import { DocHandle } from "@automerge/automerge-repo";
 import OpenAI from "openai";
+import { MarkdownDoc } from "./schema";
+
+const SPELLCHECK_CONTACT_URL = "automerge:25h59mDYt9KwnTkifwjw6Nshab7k";
 
 const openai = new OpenAI({
   apiKey: import.meta.env["VITE_OPENAI_API_KEY"],
@@ -30,7 +35,7 @@ const functionsSpec = [
 
 export const editText = async (
   prompt: string,
-  text: string
+  handle: DocHandle<MarkdownDoc>
 ): Promise<{ _type: "ok"; result: any } | { _type: "error" }> => {
   const systemPrompt = `${prompt}
 
@@ -41,7 +46,7 @@ ${JSON.stringify(functionsSpec)}
 
   const message = `Here is my document:
 
-  ${text}
+  ${handle.docSync().content}
   `;
 
   console.log(systemPrompt);
@@ -70,10 +75,22 @@ ${JSON.stringify(functionsSpec)}
   try {
     const parsed: any = JSON.parse(output.function_call.arguments);
 
-    return {
+    const result = {
       _type: "ok",
       result: parsed,
     };
+
+    console.log("parsed", parsed);
+
+    for (const edit of parsed.edits) {
+      handle.change(
+        (doc) => {
+          const from = doc.content.indexOf(edit.before);
+          splice(doc, ["content"], from, edit.before.length, edit.after);
+        },
+        { metadata: { author: SPELLCHECK_CONTACT_URL } }
+      );
+    }
   } catch {
     console.error("Failed to parse output", output);
     return {
