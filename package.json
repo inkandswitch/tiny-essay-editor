@@ -57,6 +57,7 @@
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
     "openai": "^4.11.0",
+    "query-string": "^8.1.0",
     "react": "^18.2.0",
     "react-arborist": "^3.3.1",
     "react-dom": "^18.2.0",

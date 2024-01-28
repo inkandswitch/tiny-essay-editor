@@ -12,8 +12,7 @@ import { EventEmitter } from "eventemitter3";
 import { useEffect, useReducer, useState } from "react";
 import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
-
-export type DocType = "essay"; // | ... | future other types
+import { DocType } from "./docTypes";
 
 export type DocLink = {
   name: string;

@@ -5,7 +5,8 @@ import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
 
-import { DocLink, DocType, useCurrentRootFolderDoc } from "../account";
+import { DocLink, useCurrentRootFolderDoc } from "../account";
+import { DocType } from "../docTypes";
 import {
   Popover,
   PopoverContent,

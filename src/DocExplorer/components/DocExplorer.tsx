@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { MarkdownDoc } from "@/tee/schema";
 import { getTitle } from "@/tee/datatype";
 import {
-  DocType,
   useCurrentAccount,
   useCurrentAccountDoc,
   useCurrentRootFolderDoc,
 } from "../account";
+import { DocType, docTypes } from "../docTypes";
 
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -245,6 +245,48 @@ export const DocExplorer: React.FC = () => {
   );
 };
 
+type UrlHashParams = {
+  docUrl: AutomergeUrl;
+  docType: DocType;
+};
+
+const isDocType = (x: string): x is DocType => docTypes.includes(x as DocType);
+
+import queryString from "query-string";
+
+const parseCurrentUrlHash = (): UrlHashParams => {
+  const hash = window.location.hash;
+
+  // This is a backwards compatibility shim for old URLs where we
+  // only had one parameter, the Automerge URL.
+  // We just assume it's a TEE essay in that case.
+  const possibleAutomergeUrl = hash.slice(1);
+  if (isValidAutomergeUrl(possibleAutomergeUrl)) {
+    return {
+      docUrl: possibleAutomergeUrl,
+      docType: "essay",
+    };
+  }
+
+  // Now on to the main logic where we look for a url and type both.
+  const parsedHash = queryString.parse(hash);
+  const { docUrl, docType } = parsedHash;
+
+  if (typeof docUrl !== "string" || !isValidAutomergeUrl(docUrl)) {
+    alert(`Invalid Automerge URL in URL: ${parsedHash.docUrl}`);
+    return null;
+  }
+
+  if (typeof docType !== "string" || !isDocType(docType)) {
+    alert(`Invalid doc type in URL: ${docType}`);
+    return null;
+  }
+
+  return {
+    docUrl,
+    docType,
+  };
+};
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
@@ -292,15 +334,8 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   // observe the URL hash to change the selected document
   useEffect(() => {
     const hashChangeHandler = () => {
-      const hash = window.location.hash;
-      if (hash && hash.length > 1) {
-        const docUrl = hash.slice(1);
-        if (!isValidAutomergeUrl(docUrl)) {
-          console.error(`Invalid Automerge URL in URL: ${docUrl}`);
-          return;
-        }
-        openDocFromUrl(docUrl);
-      }
+      const urlParams = parseCurrentUrlHash();
+      openDocFromUrl(urlParams.docUrl);
     };
 
     hashChangeHandler();
