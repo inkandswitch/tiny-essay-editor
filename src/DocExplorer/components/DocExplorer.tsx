@@ -1,15 +1,13 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
 import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/datatype";
 import {
   useCurrentAccount,
   useCurrentAccountDoc,
@@ -30,38 +28,37 @@ export type Tool = {
   component: React.FC;
 };
 
-const TOOLS = [
-  {
-    id: "tee",
-    name: "Editor",
-    component: TinyEssayEditor,
-  },
-  {
-    id: "history",
-    name: "History",
-    component: HistoryPlayground,
-  },
-  {
-    id: "spatial",
-    name: "Spatial",
-    component: SpatialHistoryPlayground,
-  },
-  {
-    id: "drafts",
-    name: "Drafts",
-    component: DraftsPlayground,
-  },
-];
+const TOOLS = {
+  essay: [
+    {
+      id: "tee",
+      name: "Editor",
+      component: TinyEssayEditor,
+    },
+    {
+      id: "history",
+      name: "History",
+      component: HistoryPlayground,
+    },
+    {
+      id: "spatial",
+      name: "Spatial",
+      component: SpatialHistoryPlayground,
+    },
+    {
+      id: "drafts",
+      name: "Drafts",
+      component: DraftsPlayground,
+    },
+  ],
+  bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
+};
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const [activeTool, setActiveTool] = useState(TOOLS[0]);
-
-  const ToolComponent = activeTool.component;
-
   const [showSidebar, setShowSidebar] = useState(true);
 
   const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
@@ -73,6 +70,17 @@ export const DocExplorer: React.FC = () => {
 
   const selectedDocName = selectedDocLink?.name;
 
+  const availableTools = useMemo(
+    () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
+    [selectedDocLink]
+  );
+  console.log(availableTools);
+  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
+  useEffect(() => {
+    setActiveTool(availableTools[0]);
+  }, [availableTools]);
+  const ToolComponent = activeTool?.component;
+
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
       if (!docTypes[type]) {
@@ -80,7 +88,8 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create<MarkdownDoc>();
-      newDocHandle.change(init);
+
+      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
 
       if (!rootFolderDoc) {
         return;
@@ -97,25 +106,30 @@ export const DocExplorer: React.FC = () => {
       // By updating the URL to the new doc, we'll trigger a navigation
       setUrlHashForDoc({ docUrl: newDocHandle.url, docType: type });
     },
-    [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
+    [changeRootFolderDoc, repo, rootFolderDoc]
   );
 
   // sync doc names up from TEE docs to the sidebar list.
   useEffect(() => {
-    if (selectedDoc === undefined || selectedDocLink === undefined) {
-      return;
-    }
-
-    const title = getTitle(selectedDoc.content);
-
-    changeRootFolderDoc((doc) => {
-      const existingDocLink = doc.docs.find(
-        (link) => link.url === selectedDocUrl
-      );
-      if (existingDocLink && existingDocLink.name !== title) {
-        existingDocLink.name = title;
+    (async () => {
+      if (selectedDoc === undefined || selectedDocLink === undefined) {
+        return;
       }
-    });
+
+      const title = await docTypes[selectedDocLink.type].getTitle(
+        selectedDoc,
+        repo
+      );
+
+      changeRootFolderDoc((doc) => {
+        const existingDocLink = doc.docs.find(
+          (link) => link.url === selectedDocUrl
+        );
+        if (existingDocLink && existingDocLink.name !== title) {
+          existingDocLink.name = title;
+        }
+      });
+    })();
   }, [
     selectedDoc,
     selectedDocUrl,
@@ -123,6 +137,7 @@ export const DocExplorer: React.FC = () => {
     rootFolderDoc,
     changeRootFolderDoc,
     selectedDocLink,
+    repo,
   ]);
 
   // update tab title to be the selected doc
@@ -189,7 +204,6 @@ export const DocExplorer: React.FC = () => {
           selectDoc={selectDoc}
           hideSidebar={() => setShowSidebar(false)}
           addNewDocument={addNewDocument}
-          openDocFromUrl={openDocFromUrl}
         />
       </div>
       <div
@@ -225,7 +239,7 @@ export const DocExplorer: React.FC = () => {
 
             {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-            {selectedDocUrl && selectedDoc && (
+            {selectedDocUrl && selectedDoc && ToolComponent && (
               <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
             )}
           </div>
@@ -233,11 +247,11 @@ export const DocExplorer: React.FC = () => {
       </div>
       <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
         <img src="/construction.png" className="h-6 mr-2"></img>
-        {TOOLS.map((tool) => (
+        {availableTools.map((tool) => (
           <div
             key={tool.id}
             className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
-              tool.id === activeTool.id ? "bg-yellow-100 bg-opacity-70" : ""
+              tool.id === activeTool?.id ? "bg-yellow-100 bg-opacity-70" : ""
             } rounded-full`}
             onClick={() => setActiveTool(tool)}
           >
@@ -258,6 +272,7 @@ const isDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
 
 import queryString from "query-string";
+import { BotEditor } from "@/bots/BotEditor";
 
 const parseCurrentUrlHash = (): UrlHashParams => {
   const hash = window.location.hash;
@@ -298,7 +313,7 @@ const parseCurrentUrlHash = (): UrlHashParams => {
 };
 
 // Update the URL hash to reflect a given doc
-const setUrlHashForDoc = (params: UrlHashParams) => {
+export const setUrlHashForDoc = (params: UrlHashParams) => {
   if (!params) {
     window.location.hash = "";
     return;
@@ -318,14 +333,14 @@ const setUrlHashForDoc = (params: UrlHashParams) => {
 // API for changing the selection is properly thru the URL)
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
+  const selectedDocHandle = useHandle(selectedDocUrl);
 
   useEffect(() => {
     // @ts-expect-error window global for debugging
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument(selectedDocUrl);
 
   // Calling selectDoc
   const selectDoc = (docUrl: AutomergeUrl | null) => {
@@ -343,7 +358,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
 
   // Add an existing doc to our collection
   const openDocFromUrl = useCallback(
-    (docUrl: AutomergeUrl) => {
+    ({ docUrl, docType }: { docUrl: AutomergeUrl; docType: DocType }) => {
       if (!rootFolderDoc) {
         return;
       }
@@ -351,7 +366,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
       if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
         changeRootFolderDoc((doc) =>
           doc.docs.unshift({
-            type: "essay",
+            type: docType,
             name: "Unknown document", // TODO: sync up the name once we load the data
             url: docUrl,
           })
@@ -368,7 +383,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     const hashChangeHandler = () => {
       const urlParams = parseCurrentUrlHash();
       if (!urlParams) return;
-      openDocFromUrl(urlParams.docUrl);
+      openDocFromUrl(urlParams);
     };
 
     hashChangeHandler();

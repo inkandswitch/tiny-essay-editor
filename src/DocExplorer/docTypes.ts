@@ -1,7 +1,8 @@
-import { Bot, Text } from "lucide-react";
+import { BotDocType } from "@/bots/datatype";
+import { EssayDatatype } from "@/tee/datatype";
 
 export const docTypes = {
-  essay: { name: "Essay", icon: Text },
-  bot: { name: "Bot", icon: Bot },
+  essay: EssayDatatype,
+  bot: BotDocType,
 } as const;
 export type DocType = keyof typeof docTypes;

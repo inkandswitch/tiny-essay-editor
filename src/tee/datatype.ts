@@ -2,6 +2,7 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
+import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
 
@@ -52,4 +53,12 @@ export const getTitle = (content: string) => {
   }
 
   return `${title} ${subtitle && `: ${subtitle}`}`;
+};
+
+export const EssayDatatype = {
+  id: "essay",
+  name: "Essay",
+  icon: Text,
+  init,
+  getTitle: async (doc: any) => getTitle(doc.content),
 };
