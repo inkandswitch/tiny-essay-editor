@@ -25,6 +25,7 @@ import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 import queryString from "query-string";
 import { BotEditor } from "@/bots/BotEditor";
 import { setUrlHashForDoc } from "../utils";
+import { Toaster } from "@/components/ui/sonner";
 
 export type Tool = {
   id: string;
@@ -199,72 +200,75 @@ export const DocExplorer: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-row w-screen h-screen overflow-hidden">
-      <div
-        className={`${
-          showSidebar ? "w-64" : "w-0 translate-x-[-100%]"
-        } flex-shrink-0 bg-gray-100 border-r border-gray-400 transition-all duration-100 overflow-hidden  `}
-      >
-        <Sidebar
-          selectedDocUrl={selectedDocUrl}
-          selectDoc={selectDoc}
-          hideSidebar={() => setShowSidebar(false)}
-          addNewDocument={addNewDocument}
-        />
-      </div>
-      <div
-        className={`flex-grow relative h-screen ${
-          !selectedDocUrl ? "bg-gray-200" : ""
-        }`}
-      >
-        <div className="flex flex-col h-screen">
-          <Topbar
-            showSidebar={showSidebar}
-            setShowSidebar={setShowSidebar}
+    <div>
+      <div className="flex flex-row w-screen h-screen overflow-hidden">
+        <div
+          className={`${
+            showSidebar ? "w-64" : "w-0 translate-x-[-100%]"
+          } flex-shrink-0 bg-gray-100 border-r border-gray-400 transition-all duration-100 overflow-hidden  `}
+        >
+          <Sidebar
             selectedDocUrl={selectedDocUrl}
             selectDoc={selectDoc}
-            deleteFromAccountDocList={deleteFromRootFolder}
+            hideSidebar={() => setShowSidebar(false)}
+            addNewDocument={addNewDocument}
           />
-          <div className="flex-grow overflow-hidden">
-            {!selectedDocUrl && (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div>
-                  <p className="text-center cursor-default select-none mb-4">
-                    No document selected
-                  </p>
-                  <Button
-                    onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
-                    variant="outline"
-                  >
-                    Create new document
-                    <span className="ml-2">(&#9166;)</span>
-                  </Button>
+        </div>
+        <div
+          className={`flex-grow relative h-screen ${
+            !selectedDocUrl ? "bg-gray-200" : ""
+          }`}
+        >
+          <div className="flex flex-col h-screen">
+            <Topbar
+              showSidebar={showSidebar}
+              setShowSidebar={setShowSidebar}
+              selectedDocUrl={selectedDocUrl}
+              selectDoc={selectDoc}
+              deleteFromAccountDocList={deleteFromRootFolder}
+            />
+            <div className="flex-grow overflow-hidden">
+              {!selectedDocUrl && (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div>
+                    <p className="text-center cursor-default select-none mb-4">
+                      No document selected
+                    </p>
+                    <Button
+                      onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
+                      variant="outline"
+                    >
+                      Create new document
+                      <span className="ml-2">(&#9166;)</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
+              {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-            {selectedDocUrl && selectedDoc && ToolComponent && (
-              <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
-            )}
+              {selectedDocUrl && selectedDoc && ToolComponent && (
+                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+              )}
+            </div>
           </div>
         </div>
+        <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
+          <img src="/construction.png" className="h-6 mr-2"></img>
+          {availableTools.map((tool) => (
+            <div
+              key={tool.id}
+              className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
+                tool.id === activeTool?.id ? "bg-yellow-100 bg-opacity-70" : ""
+              } rounded-full`}
+              onClick={() => setActiveTool(tool)}
+            >
+              {tool.name}
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
-        <img src="/construction.png" className="h-6 mr-2"></img>
-        {availableTools.map((tool) => (
-          <div
-            key={tool.id}
-            className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
-              tool.id === activeTool?.id ? "bg-yellow-100 bg-opacity-70" : ""
-            } rounded-full`}
-            onClick={() => setActiveTool(tool)}
-          >
-            {tool.name}
-          </div>
-        ))}
-      </div>
+      <Toaster />
     </div>
   );
 };

@@ -2,7 +2,6 @@ import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback } from "react";
 import {
   Bot,
-  BotIcon,
   Download,
   EditIcon,
   GitForkIcon,
@@ -22,7 +21,7 @@ import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { MarkdownDoc } from "@/tee/schema";
 import { getTitle } from "@/tee/datatype";
-import { saveFile } from "../utils";
+import { saveFile, setUrlHashForDoc } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
 
 import {
@@ -34,6 +33,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
+import { toast } from "sonner";
+import { runBot } from "@/bots/llm";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
@@ -103,6 +104,9 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
+      {/* todo: the logic for running bots and when to show the menu should
+       probably live inside the bots directory --
+       how do datatypes contribute things to the global topbar? */}
       {selectedDocLink?.type === "essay" && (
         <div className="ml-auto mr-4">
           <DropdownMenu>
@@ -118,7 +122,18 @@ export const Topbar: React.FC<TopbarProps> = ({
                 .map((botDoc) => (
                   <DropdownMenuItem
                     key={botDoc.url}
-                    onClick={() => alert("hey")}
+                    onClick={async () => {
+                      const resultPromise = runBot({
+                        botDocUrl: botDoc.url,
+                        targetDocHandle: selectedDocHandle,
+                        repo,
+                      });
+                      toast.promise(resultPromise, {
+                        loading: `Running ${botDoc.name}...`,
+                        success: `${botDoc.name} ran successfully`,
+                        error: `${botDoc.name} failed, see console`,
+                      });
+                    }}
                   >
                     Run {botDoc.name}
                     <EditIcon
@@ -169,7 +184,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 const newDocLink: DocLink = {
                   url: newHandle.url,
                   name: getTitle(newHandle.docSync().content),
-                  type: "essay",
+                  type: selectedDocLink.type,
                 };
 
                 const index = rootFolderDoc.docs.findIndex(
@@ -179,7 +194,10 @@ export const Topbar: React.FC<TopbarProps> = ({
                   doc.docs.splice(index + 1, 0, newDocLink)
                 );
 
-                selectDoc(newDocLink.url);
+                setUrlHashForDoc({
+                  docUrl: newDocLink.url,
+                  docType: newDocLink.type,
+                });
               }}
             >
               <GitForkIcon
