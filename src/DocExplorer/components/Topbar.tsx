@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { Tool } from "./DocExplorer";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -112,10 +111,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <DropdownMenuContent className="mr-4">
             <DropdownMenuItem
               onClick={() => {
-                // todo: is this a reasonable way to get the base URL?
-                // We could also get a base URL more explicitly somehow?
-                const baseUrl = window.location.href.split("#")[0];
-                navigator.clipboard.writeText(`${baseUrl}#${selectedDocUrl}`);
+                navigator.clipboard.writeText(window.location.href);
               }}
             >
               <ShareIcon

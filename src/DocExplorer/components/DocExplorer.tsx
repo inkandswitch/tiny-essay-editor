@@ -67,14 +67,16 @@ export const DocExplorer: React.FC = () => {
   const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
     useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
 
-  const selectedDocName = rootFolderDoc?.docs.find(
+  const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )?.name;
+  );
+
+  const selectedDocName = selectedDocLink?.name;
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
-      if (type !== "essay") {
-        throw new Error("Only essays are supported right now");
+      if (!docTypes[type]) {
+        throw new Error(`Unsupported document type: ${type}`);
       }
 
       const newDocHandle = repo.create<MarkdownDoc>();
@@ -86,20 +88,21 @@ export const DocExplorer: React.FC = () => {
 
       changeRootFolderDoc((doc) =>
         doc.docs.unshift({
-          type: "essay",
+          type: type,
           name: "Untitled document",
           url: newDocHandle.url,
         })
       );
 
-      selectDoc(newDocHandle.url);
+      // By updating the URL to the new doc, we'll trigger a navigation
+      setUrlHashForDoc({ docUrl: newDocHandle.url, docType: type });
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
   );
 
   // sync doc names up from TEE docs to the sidebar list.
   useEffect(() => {
-    if (selectedDoc === undefined) {
+    if (selectedDoc === undefined || selectedDocLink === undefined) {
       return;
     }
 
@@ -119,6 +122,7 @@ export const DocExplorer: React.FC = () => {
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
+    selectedDocLink,
   ]);
 
   // update tab title to be the selected doc
@@ -209,7 +213,7 @@ export const DocExplorer: React.FC = () => {
                     No document selected
                   </p>
                   <Button
-                    onClick={() => addNewDocument({ type: "essay" })}
+                    onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
                     variant="outline"
                   >
                     Create new document
@@ -248,9 +252,10 @@ export const DocExplorer: React.FC = () => {
 type UrlHashParams = {
   docUrl: AutomergeUrl;
   docType: DocType;
-};
+} | null;
 
-const isDocType = (x: string): x is DocType => docTypes.includes(x as DocType);
+const isDocType = (x: string): x is DocType =>
+  Object.keys(docTypes).includes(x as DocType);
 
 import queryString from "query-string";
 
@@ -272,12 +277,16 @@ const parseCurrentUrlHash = (): UrlHashParams => {
   const parsedHash = queryString.parse(hash);
   const { docUrl, docType } = parsedHash;
 
-  if (typeof docUrl !== "string" || !isValidAutomergeUrl(docUrl)) {
+  if (typeof docUrl !== "string" || typeof docType !== "string") {
+    return null;
+  }
+
+  if (typeof docUrl === "string" && !isValidAutomergeUrl(docUrl)) {
     alert(`Invalid Automerge URL in URL: ${parsedHash.docUrl}`);
     return null;
   }
 
-  if (typeof docType !== "string" || !isDocType(docType)) {
+  if (typeof docType === "string" && !isDocType(docType)) {
     alert(`Invalid doc type in URL: ${docType}`);
     return null;
   }
@@ -287,6 +296,23 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     docType,
   };
 };
+
+// Update the URL hash to reflect a given doc
+const setUrlHashForDoc = (params: UrlHashParams) => {
+  if (!params) {
+    window.location.hash = "";
+    return;
+  }
+
+  const { docUrl, docType } = params;
+
+  const newHash = queryString.stringify({
+    docUrl,
+    docType,
+  });
+  window.location.hash = newHash;
+};
+
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
@@ -301,9 +327,15 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
 
   const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
 
+  // Calling selectDoc
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     if (docUrl) {
-      window.location.hash = docUrl;
+      const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
+      if (!doc) {
+        alert(`Could not find document with URL: ${docUrl}`);
+        return;
+      }
+      setUrlHashForDoc({ docUrl, docType: doc.type });
     } else {
       window.location.hash = "";
     }
@@ -335,6 +367,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   useEffect(() => {
     const hashChangeHandler = () => {
       const urlParams = parseCurrentUrlHash();
+      if (!urlParams) return;
       openDocFromUrl(urlParams.docUrl);
     };
 

@@ -6,7 +6,7 @@ import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
 
 import { DocLink, useCurrentRootFolderDoc } from "../account";
-import { DocType } from "../docTypes";
+import { DocType, docTypes } from "../docTypes";
 import {
   Popover,
   PopoverContent,
@@ -14,9 +14,12 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
-import { HistoryPlayground } from "@/chronicle/components/History";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
+  if (!docTypes[node.data.type]) {
+    return <div>Unknown doc type {node.data.type}</div>;
+  }
+  const Icon = docTypes[node.data.type]?.icon;
   return (
     <div
       style={style}
@@ -27,7 +30,7 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
           : "text-gray-600 hover:bg-gray-200"
       }`}
     >
-      <Text
+      <Icon
         size={12}
         className={`${
           node.isSelected ? "text-gray-800" : "text-gray-500"
