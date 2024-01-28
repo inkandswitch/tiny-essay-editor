@@ -1,8 +1,9 @@
-import { Doc, splice } from "@automerge/automerge/next";
+import { Doc, getCursor, splice } from "@automerge/automerge/next";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import OpenAI from "openai";
-import { MarkdownDoc } from "../tee/schema";
+import { Comment, CommentThread, MarkdownDoc } from "../tee/schema";
 import { EssayEditingBot } from "./datatype";
+import { uuid } from "@automerge/automerge";
 
 const openai = new OpenAI({
   apiKey: import.meta.env["VITE_OPENAI_API_KEY"],
@@ -94,7 +95,37 @@ ${JSON.stringify(functionsSpec)}
       targetDocHandle.change(
         (doc) => {
           const from = doc.content.indexOf(edit.before);
+
+          // edit the text
           splice(doc, ["content"], from, edit.before.length, edit.after);
+
+          // leave a comment
+          const fromCursor = getCursor(doc, ["content"], from);
+          const toCursor = getCursor(
+            doc,
+            ["content"],
+            from + edit.after.length
+          );
+
+          const comment: Comment = {
+            id: uuid(),
+            content: edit.reasoning,
+            contactUrl: botDoc.contactUrl,
+            timestamp: Date.now(),
+            userId: null,
+          };
+
+          const thread: CommentThread = {
+            id: uuid(),
+            comments: [comment],
+            resolved: false,
+            fromCursor,
+            toCursor,
+          };
+
+          console.log(thread);
+
+          doc.commentThreads[thread.id] = thread;
         },
         { metadata: { author: botDoc.contactUrl } }
       );
