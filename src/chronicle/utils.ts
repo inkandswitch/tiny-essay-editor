@@ -1,5 +1,9 @@
 import { DiffWithProvenance } from "@/tee/schema";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
+import { useEffect, useRef } from "react";
+import { useForceUpdate } from "@/lib/utils";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -16,14 +20,15 @@ export const hashToColor = (hash: string) => {
 };
 
 // A helper that returns a diff and remembers what the heads were that went into it
-export const diffWithProvenanceAndAttribution = (
+export const diffWithProvenance = (
   doc: A.Doc<any>,
   fromHeads: A.Heads,
-  toHeads: A.Heads
+  toHeads: A.Heads,
+  actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>
 ): DiffWithProvenance => {
-  const patches = diffWithAttributionToAuthors(doc, fromHeads, toHeads);
-
-  console.log("patches", patches);
+  const patches = actorIdToAuthor
+    ? A.diffWithAttribution(doc, fromHeads, toHeads, actorIdToAuthor)
+    : A.diff(doc, fromHeads, toHeads);
 
   return {
     fromHeads,
@@ -32,26 +37,55 @@ export const diffWithProvenanceAndAttribution = (
   };
 };
 
-// A helper that returns a diff with patches attributed to authors
-export const diffWithAttributionToAuthors = (
-  doc: A.Doc<any>,
-  fromHeads: A.Heads,
-  toHeads: A.Heads
-): A.Patch[] => {
-  const actorIdToAuthor = {};
-  A.getAllChanges(doc).map((change) => {
-    const decodedChange = A.decodeChange(change);
+// hook to create an incrementally maintained map of actorId -> authorUrl
+export const useActorIdToAuthorMap = (
+  url: AutomergeUrl
+): Record<A.ActorId, AutomergeUrl> => {
+  const handle = useHandle<any>(url);
+  const forceUpdate = useForceUpdate();
+  const actorIdToAuthorRef = useRef<Record<A.ActorId, AutomergeUrl>>({});
 
-    let metadata;
-    try {
-      metadata = JSON.parse(decodedChange.message);
-    } catch (e) {}
+  useEffect(() => {
+    let lastHeads: A.Heads;
 
-    actorIdToAuthor[decodedChange.actor] = {
-      author: metadata?.author,
-      time: decodedChange.time,
+    const addChangesToActorIdMap = (changes: A.Change[]) => {
+      changes.map((change) => {
+        const decodedChange = A.decodeChange(change);
+
+        console.log("change", decodedChange);
+
+        let metadata;
+        try {
+          metadata = JSON.parse(decodedChange.message);
+        } catch (e) {}
+
+        actorIdToAuthorRef.current[decodedChange.actor] = metadata?.author;
+      });
+
+      forceUpdate();
     };
-  });
 
-  return A.diffWithAttribution(doc, fromHeads, toHeads, actorIdToAuthor);
+    handle.doc().then((doc) => {
+      lastHeads = A.getHeads(doc);
+      addChangesToActorIdMap(A.getAllChanges(doc));
+    });
+
+    const onChange = () => {
+      if (!lastHeads) {
+        return;
+      }
+
+      const doc = handle.docSync();
+      const changes = A.getChanges(A.view(doc, lastHeads), doc);
+      addChangesToActorIdMap(changes);
+    };
+
+    handle.on("change", onChange);
+
+    return () => {
+      handle.off("change", onChange);
+    };
+  }, []);
+
+  return actorIdToAuthorRef.current;
 };

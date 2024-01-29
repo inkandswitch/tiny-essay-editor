@@ -9,9 +9,10 @@ import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { useDocument } from "@/useDocumentVendored";
 import { EventEmitter } from "eventemitter3";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
+import { useForceUpdate } from "@/lib/utils";
 
 export type DocType = "essay"; // | ... | future other types
 
@@ -208,11 +209,6 @@ const createAccount = (
 
   return { accountHandle, contactHandle, rootFolderHandle };
 };
-
-function useForceUpdate() {
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
-  return forceUpdate;
-}
 
 export function useCurrentAccount(): Account | undefined {
   const repo = useRepo();

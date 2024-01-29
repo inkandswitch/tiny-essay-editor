@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import * as A from "@automerge/automerge/next";
 import { Hash } from "./Hash";
-import { diffWithProvenanceAndAttribution } from "../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 
 const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
   const changes = A.getAllChanges(doc);
@@ -27,10 +27,10 @@ const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
 export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const repo = useRepo();
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
   const [diffBase, setDiffBase] = useState<A.Heads>([]);
+  const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
   useEffect(() => {
     if (!doc) return;
@@ -39,7 +39,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
     if (!doc || diffBase.length === 0) return undefined;
-    return diffWithProvenanceAndAttribution(doc, diffBase, A.getHeads(doc));
+    return diffWithProvenance(doc, diffBase, A.getHeads(doc), actorIdToAuthor);
   }, [doc, diffBase]);
 
   if (!doc) return <div>Loading...</div>;

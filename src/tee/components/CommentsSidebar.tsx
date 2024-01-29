@@ -12,7 +12,7 @@ import {
   PersistedDraft,
 } from "../schema";
 
-import { groupBy, sortBy } from "lodash";
+import { groupBy } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
@@ -602,12 +602,7 @@ export const CommentsSidebar = ({
 };
 
 export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
-  const patchesByAuthor = groupBy(
-    patches,
-    (patch: A.Patch) => patch?.attr?.author
-  );
-
-  console.log(patchesByAuthor, patches);
+  const patchesByAuthor = groupBy(patches, (patch: A.Patch) => patch?.attr);
 
   return (
     <div>
@@ -624,7 +619,7 @@ export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
               showName
             />
           </div>
-          {sortBy(patches, (patch) => patch?.attr?.time).map((patch, index) => (
+          {patches.map((patch, index) => (
             <Patch patch={patch} key={index} />
           ))}
         </div>
