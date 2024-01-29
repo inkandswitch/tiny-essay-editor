@@ -96,7 +96,7 @@
     "vitest": "^0.34.6"
   },
   "resolutions": {
-    "**/@automerge/autmerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
+    "**/@automerge/automerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
     "**/@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
     "**/@automerge/automerge-repo": "file:./vendor/tarballs/automerge-repo.tgz",
     "**/@automerge/automerge-repo-network-broadcastchannel": "file:./vendor/tarballs/automerge-repo-network-broadcastchannel.tgz",
