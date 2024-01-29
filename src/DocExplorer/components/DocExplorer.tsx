@@ -1,48 +1,48 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useCallback, useEffect, useState } from "react";
-import { TinyEssayEditor } from "../../tee/components/TinyEssayEditor";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { init } from "../../tee/datatype";
-import { Button } from "@/components/ui/button";
-import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/datatype";
+import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo"
+import React, { useCallback, useEffect, useState } from "react"
+import { TLDraw } from "../../tldraw/components/TLDraw"
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks"
+import { init } from "../../tldraw/datatype"
+import { Button } from "@/components/ui/button"
+import { TLDrawDoc } from "@/tldraw/schema"
+import { getTitle } from "@/tldraw/datatype"
 import {
   DocType,
   useCurrentAccount,
   useCurrentAccountDoc,
   useCurrentRootFolderDoc,
-} from "../account";
+} from "../account"
 
-import { Sidebar } from "./Sidebar";
-import { Topbar } from "./Topbar";
-import { LoadingScreen } from "./LoadingScreen";
+import { Sidebar } from "./Sidebar"
+import { Topbar } from "./Topbar"
+import { LoadingScreen } from "./LoadingScreen"
 
 export const DocExplorer: React.FC = () => {
-  const repo = useRepo();
-  const currentAccount = useCurrentAccount();
-  const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
+  const repo = useRepo()
+  const currentAccount = useCurrentAccount()
+  const [accountDoc, changeAccountDoc] = useCurrentAccountDoc()
+  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc()
 
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true)
 
   const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
-    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
+    useSelectedDoc({ rootFolderDoc, changeRootFolderDoc })
 
   const selectedDocName = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )?.name;
+  )?.name
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
       if (type !== "essay") {
-        throw new Error("Only essays are supported right now");
+        throw new Error("Only essays are supported right now")
       }
 
-      const newDocHandle = repo.create<MarkdownDoc>();
-      newDocHandle.change(init);
+      const newDocHandle = repo.create<TLDrawDoc>()
+      newDocHandle.change(init)
 
       if (!rootFolderDoc) {
-        return;
+        return
       }
 
       changeRootFolderDoc((doc) =>
@@ -51,79 +51,79 @@ export const DocExplorer: React.FC = () => {
           name: "Untitled document",
           url: newDocHandle.url,
         })
-      );
+      )
 
-      selectDoc(newDocHandle.url);
+      selectDoc(newDocHandle.url)
     },
     [changeRootFolderDoc, repo, rootFolderDoc, selectDoc]
-  );
+  )
 
   // sync doc names up from TEE docs to the sidebar list.
   useEffect(() => {
     if (selectedDoc === undefined) {
-      return;
+      return
     }
 
-    const title = getTitle(selectedDoc.content);
+    const title = getTitle(selectedDoc)
 
     changeRootFolderDoc((doc) => {
       const existingDocLink = doc.docs.find(
         (link) => link.url === selectedDocUrl
-      );
+      )
       if (existingDocLink && existingDocLink.name !== title) {
-        existingDocLink.name = title;
+        existingDocLink.name = title
       }
-    });
+    })
   }, [
     selectedDoc,
     selectedDocUrl,
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
-  ]);
+  ])
 
   // update tab title to be the selected doc
   useEffect(() => {
-    document.title = selectedDocName ?? "Essay Editor"; // TODO: generalize beyond TEE
-  }, [selectedDocName]);
+    document.title = selectedDocName ?? "Essay Editor" // TODO: generalize beyond TEE
+  }, [selectedDocName])
 
   // keyboard shortcuts
   useEffect(() => {
     const keydownHandler = (event: KeyboardEvent) => {
       // toggle the sidebar open/closed when the user types cmd-backslash
       if (event.key === "\\" && event.metaKey) {
-        setShowSidebar((prev) => !prev);
+        setShowSidebar((prev) => !prev)
       }
 
       // if there's no document selected and the user hits enter, make a new document
       if (!selectedDocUrl && event.key === "Enter") {
-        addNewDocument({ type: "essay" });
+        addNewDocument({ type: "essay" })
       }
-    };
+    }
 
-    window.addEventListener("keydown", keydownHandler);
+    window.addEventListener("keydown", keydownHandler)
 
     // Clean up listener on unmount
     return () => {
-      window.removeEventListener("keydown", keydownHandler);
-    };
-  }, [addNewDocument, selectedDocUrl]);
+      window.removeEventListener("keydown", keydownHandler)
+    }
+  }, [addNewDocument, selectedDocUrl])
 
   const deleteFromRootFolder = (id: string) => {
-    const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id);
+    const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id)
     if (itemIndex >= 0) {
       if (itemIndex < rootFolderDoc?.docs.length - 1) {
-        selectDoc(rootFolderDoc?.docs[itemIndex + 1].url);
+        selectDoc(rootFolderDoc?.docs[itemIndex + 1].url)
       } else if (itemIndex > 1) {
-        selectDoc(rootFolderDoc?.docs[itemIndex - 1].url);
+        selectDoc(rootFolderDoc?.docs[itemIndex - 1].url)
       } else {
-        selectDoc(null);
+        selectDoc(null)
       }
       changeRootFolderDoc((doc) => {
-        doc.docs.splice(itemIndex, 1);
-      });
+        doc.docs.splice(itemIndex, 1)
+      })
     }
-  };
+  }
 
   if (!accountDoc || !rootFolderDoc) {
     return (
@@ -131,7 +131,7 @@ export const DocExplorer: React.FC = () => {
         docUrl={currentAccount?.handle?.url}
         handle={currentAccount?.handle}
       />
-    );
+    )
   }
 
   return (
@@ -183,35 +183,35 @@ export const DocExplorer: React.FC = () => {
             {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
             {selectedDocUrl && selectedDoc && (
-              <TinyEssayEditor docUrl={selectedDocUrl} key={selectedDocUrl} />
+              <TLDraw docUrl={selectedDocUrl} key={selectedDocUrl} />
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
-  const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+  const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null)
+  const [selectedDoc] = useDocument<TLDrawDoc>(selectedDocUrl)
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     if (docUrl) {
-      window.location.hash = docUrl;
+      window.location.hash = docUrl
     } else {
-      window.location.hash = "";
+      window.location.hash = ""
     }
-  };
+  }
 
   // Add an existing doc to our collection
   const openDocFromUrl = useCallback(
     (docUrl: AutomergeUrl) => {
       if (!rootFolderDoc) {
-        return;
+        return
       }
       // TODO: validate the doc's data schema here before adding to our collection
       if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
@@ -221,43 +221,43 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
             name: "Unknown document", // TODO: sync up the name once we load the data
             url: docUrl,
           })
-        );
+        )
       }
 
-      setSelectedDocUrl(docUrl);
+      setSelectedDocUrl(docUrl)
     },
     [rootFolderDoc, changeRootFolderDoc, selectDoc]
-  );
+  )
 
   // observe the URL hash to change the selected document
   useEffect(() => {
     const hashChangeHandler = () => {
-      const hash = window.location.hash;
+      const hash = window.location.hash
       if (hash && hash.length > 1) {
-        const docUrl = hash.slice(1);
+        const docUrl = hash.slice(1)
         if (!isValidAutomergeUrl(docUrl)) {
-          console.error(`Invalid Automerge URL in URL: ${docUrl}`);
-          return;
+          console.error(`Invalid Automerge URL in URL: ${docUrl}`)
+          return
         }
-        openDocFromUrl(docUrl);
+        openDocFromUrl(docUrl)
       }
-    };
+    }
 
-    hashChangeHandler();
+    hashChangeHandler()
 
     // Listen for hash changes
-    window.addEventListener("hashchange", hashChangeHandler, false);
+    window.addEventListener("hashchange", hashChangeHandler, false)
 
     // Clean up listener on unmount
     return () => {
-      window.removeEventListener("hashchange", hashChangeHandler, false);
-    };
-  }, [openDocFromUrl]);
+      window.removeEventListener("hashchange", hashChangeHandler, false)
+    }
+  }, [openDocFromUrl])
 
   return {
     selectedDocUrl,
     selectedDoc,
     selectDoc,
     openDocFromUrl,
-  };
-};
+  }
+}
