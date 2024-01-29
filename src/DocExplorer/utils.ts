@@ -1,11 +1,29 @@
 import { useMemo } from "react";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import queryString from "query-string";
+import { UrlHashParams } from "./components/DocExplorer";
 
 export interface FileDoc {
   type: string;
   data: ArrayBuffer;
 }
+
+// Update the URL hash to reflect a given doc
+export const setUrlHashForDoc = (params: UrlHashParams) => {
+  if (!params) {
+    window.location.hash = "";
+    return;
+  }
+
+  const { docUrl, docType } = params;
+
+  const newHash = queryString.stringify({
+    docUrl,
+    docType,
+  });
+  window.location.hash = newHash;
+};
 
 export const useBlobUrl = (url: AutomergeUrl) => {
   const [file] = useDocument<FileDoc>(url);

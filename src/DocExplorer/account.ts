@@ -14,7 +14,7 @@ import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
 import { useForceUpdate } from "@/lib/utils";
 
-export type DocType = "essay"; // | ... | future other types
+import { DocType } from "./doctypes";
 
 export type DocLink = {
   name: string;

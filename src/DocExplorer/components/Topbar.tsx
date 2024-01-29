@@ -14,11 +14,8 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { asMarkdownFile, markCopy } from "../../tee/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
-import { MarkdownDoc } from "@/tee/schema";
-import { getTitle } from "@/tee/datatype";
 import { saveFile } from "../utils";
 import { DocLink, useCurrentRootFolderDoc } from "../account";
 
@@ -33,12 +30,16 @@ import {
 import { getHeads, save } from "@automerge/automerge";
 import { Tool } from "./DocExplorer";
 
+import { DocType, docTypes } from "../doctypes";
+import { asMarkdownFile } from "@/tee/datatype";
+import { MarkdownDoc } from "@/tee/schema";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocUrl: AutomergeUrl | null;
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
+  addNewDocument: (doc: { type: DocType }) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -47,19 +48,25 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
+  addNewDocument,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const selectedDocName = rootFolderDoc?.docs.find(
+  const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )?.name;
-  const selectedDocHandle = useHandle<MarkdownDoc>(selectedDocUrl);
+  );
+  const selectedDocName = selectedDocLink?.name;
+  const selectedDocType = selectedDocLink?.type;
+  const selectedDocHandle = useHandle(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<MarkdownDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument(selectedDocUrl);
 
   const exportAsMarkdown = useCallback(() => {
-    const file = asMarkdownFile(selectedDoc);
+    if (selectedDocType !== "essay") {
+      throw new Error("Not supported");
+    }
+    const file = asMarkdownFile(selectedDoc as MarkdownDoc);
     saveFile(file, "index.md", [
       {
         accept: {
@@ -67,7 +74,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         },
       },
     ]);
-  }, [selectedDoc]);
+  }, [selectedDoc, selectedDocType]);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
@@ -112,10 +119,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <DropdownMenuContent className="mr-4">
             <DropdownMenuItem
               onClick={() => {
-                // todo: is this a reasonable way to get the base URL?
-                // We could also get a base URL more explicitly somehow?
-                const baseUrl = window.location.href.split("#")[0];
-                navigator.clipboard.writeText(`${baseUrl}#${selectedDocUrl}`);
+                navigator.clipboard.writeText(window.location.href);
               }}
             >
               <ShareIcon
@@ -126,9 +130,9 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<MarkdownDoc>(selectedDocHandle);
-                newHandle.change((doc) => {
-                  markCopy(doc);
+                const newHandle = repo.clone(selectedDocHandle);
+                newHandle.change((doc: any) => {
+                  docTypes[selectedDocType].markCopy(doc);
                   doc.branchMetadata.source = {
                     url: selectedDocUrl,
                     branchHeads: getHeads(selectedDocHandle.docSync()),
@@ -137,8 +141,8 @@ export const Topbar: React.FC<TopbarProps> = ({
 
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: getTitle(newHandle.docSync().content),
-                  type: "essay",
+                  name: docTypes[selectedDocType].getTitle(newHandle.docSync()),
+                  type: selectedDocLink.type,
                 };
 
                 const index = rootFolderDoc.docs.findIndex(

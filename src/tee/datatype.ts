@@ -2,6 +2,7 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
+import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
 
@@ -30,7 +31,8 @@ export const asMarkdownFile = (doc: MarkdownDoc): Blob => {
 // looks first for yaml frontmatter from the i&s essay format;
 // then looks for the first H1.
 
-export const getTitle = (content: string) => {
+export const getTitle = (doc: any) => {
+  const content = doc.content;
   const frontmatterRegex = /---\n([\s\S]+?)\n---/;
   const frontmatterMatch = content.match(frontmatterRegex);
   const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
@@ -52,4 +54,13 @@ export const getTitle = (content: string) => {
   }
 
   return `${title} ${subtitle && `: ${subtitle}`}`;
+};
+
+export const EssayDatatype = {
+  id: "essay",
+  name: "Essay",
+  icon: Text,
+  init,
+  getTitle,
+  markCopy, // TODO: this shouldn't be here
 };

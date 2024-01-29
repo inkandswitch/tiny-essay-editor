@@ -5,7 +5,9 @@ import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
 
-import { DocLink, DocType, useCurrentRootFolderDoc } from "../account";
+import { DocLink, useCurrentRootFolderDoc } from "../account";
+import { DocType, docTypes } from "../doctypes";
+
 import {
   Popover,
   PopoverContent,
@@ -15,6 +17,11 @@ import {
 import { Input } from "@/components/ui/input";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
+  if (!docTypes[node.data.type]) {
+    return <div>Unknown doc type {node.data.type}</div>;
+  }
+  const Icon = docTypes[node.data.type]?.icon;
+
   return (
     <div
       style={style}
@@ -25,7 +32,7 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
           : "text-gray-600 hover:bg-gray-200"
       }`}
     >
-      <Text
+      <Icon
         size={12}
         className={`${
           node.isSelected ? "text-gray-800" : "text-gray-500"
@@ -41,7 +48,6 @@ type SidebarProps = {
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   hideSidebar: () => void;
   addNewDocument: (doc: { type: DocType }) => void;
-  openDocFromUrl: (url: AutomergeUrl) => void;
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,7 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectDoc,
   hideSidebar,
   addNewDocument,
-  openDocFromUrl,
 }) => {
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
 
@@ -86,16 +91,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        <div
-          className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-          onClick={() => addNewDocument({ type: "essay" })}
-        >
-          <Plus
-            size={14}
-            className="inline-block font-bold mr-2 align-top mt-[2px]"
-          />
-          New document
-        </div>
+        {Object.entries(docTypes).map(([id, docType]) => (
+          <div key={docType.id}>
+            {" "}
+            <div
+              className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
+              onClick={() => addNewDocument({ type: id as DocType })}
+            >
+              <docType.icon
+                size={14}
+                className="inline-block font-bold mr-2 align-top mt-[2px]"
+              />
+              New {docType.name}
+            </div>
+          </div>
+        ))}
+
         <div
           className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
           onClick={() => setOpenNewDocPopoverVisible(true)}
@@ -119,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onChange={(e) => setOpenUrlInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && automergeUrlToOpen) {
-                    openDocFromUrl(automergeUrlToOpen);
+                    // openDocFromUrl(automergeUrlToOpen); // TODO FIX THIS
                     setOpenUrlInput("");
                     setOpenNewDocPopoverVisible(false);
                   }
