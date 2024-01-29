@@ -112,11 +112,10 @@ export const getTextAnnotationsForUI = ({
               if (patch.action === "splice") {
                 const patchFrom = patch.path[1];
                 const patchTo = patch.path[1] + patch.value.length;
-                return patchFrom <= to && patchTo >= from;
+                return patchFrom < to && patchTo > from;
               } else if (patch.action === "del") {
-                const patchFrom = patch.path[1];
-                const patchTo = patch.path[1] + 1; // TODO is this right...?
-                return patchFrom <= to && patchTo >= from;
+                const deleteAt = patch.path[1];
+                return from < deleteAt && to == deleteAt;
               } else {
                 return false;
               }
