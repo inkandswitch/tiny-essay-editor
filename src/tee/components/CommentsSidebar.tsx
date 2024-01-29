@@ -16,6 +16,7 @@ import {
   Check,
   Fullscreen,
   MessageSquarePlus,
+  MoreHorizontalIcon,
   PencilIcon,
   Reply,
 } from "lucide-react";
@@ -31,9 +32,10 @@ import {
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
-import { useCurrentAccount } from "@/DocExplorer/account";
+import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
+import { useDocument } from "@/useDocumentVendored";
 
 export const CommentsSidebar = ({
   doc,
@@ -426,44 +428,11 @@ export const CommentsSidebar = ({
           )}
           <div>
             {(annotation.type === "thread" || annotation.type === "draft") &&
-              annotation.comments.map((comment, index) => {
-                const legacyUserName =
-                  doc.users?.find((user) => user.id === comment.userId)?.name ??
-                  "Anonymous";
-
-                return (
-                  <div
-                    key={comment.id}
-                    className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0 ${
-                      addedComments.find(
-                        (c) =>
-                          c.threadId === annotation.id &&
-                          c.commentIndex === index
-                      ) &&
-                      annotation.type === "thread" &&
-                      "bg-green-100"
-                    }`}
-                  >
-                    <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
-                      {comment.contactUrl ? (
-                        <ContactAvatar
-                          url={comment.contactUrl}
-                          showName={true}
-                          size="sm"
-                        />
-                      ) : (
-                        legacyUserName
-                      )}
-                      <span className="ml-2 text-gray-400">
-                        {getRelativeTimeString(comment.timestamp)}
-                      </span>
-                    </div>
-                    <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
-                      {comment.content}
-                    </div>
-                  </div>
-                );
-              })}
+              annotation.comments.map((comment) => (
+                <div key={comment.id}>
+                  <CommentView comment={comment} />
+                </div>
+              ))}
           </div>
           <div className="mt-2">
             <Popover
@@ -616,3 +585,33 @@ export const Patch = ({ patch }: { patch: A.Patch }) => {
     </div>
   );
 };
+
+function CommentView({ comment }: { comment: Comment }) {
+  const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
+  if (!contactDoc) return <div></div>;
+  const name = contactDoc.type === "anonymous" ? "Anonymous" : contactDoc.name;
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 p-1.5 text-sm">
+        <div className="flex-0">
+          <ContactAvatar url={comment.contactUrl} showName={false} size="sm" />
+        </div>
+
+        <div className="flex-1">
+          <div className="font-bold">{name}</div>
+          <div className="text-xs text-gray-400">
+            {getRelativeTimeString(comment.timestamp)}
+          </div>
+        </div>
+
+        <div className="flex-0 text-gray-500">
+          <MoreHorizontalIcon size={14} />
+        </div>
+      </div>
+
+      <div className="p-1.5 pt-0">
+        <p>{comment.content}</p>
+      </div>
+    </div>
+  );
+}
