@@ -14,7 +14,6 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { markCopy } from "../../tldraw/datatype";
 import { SyncIndicatorWrapper } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { save } from "@automerge/automerge";
-import { DocType } from "../doctypes";
+import { DocType, docTypes } from "../doctypes";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 type TopbarProps = {
@@ -128,13 +127,13 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<TLDrawDoc>(selectedDocHandle);
-                newHandle.change((doc) => {
-                  markCopy(doc);
+                const newHandle = repo.clone(selectedDocHandle);
+                newHandle.change((doc: any) => {
+                  docTypes[selectedDocType].markCopy(doc);
                 });
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: getTitle(newHandle.docSync()),
+                  name: docTypes[selectedDocType].getTitle(newHandle.docSync()),
                   type: selectedDocLink.type,
                 };
 
