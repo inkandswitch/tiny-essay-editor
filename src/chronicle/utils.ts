@@ -59,6 +59,8 @@ export const useActorIdToAuthorMap = (
           metadata = JSON.parse(decodedChange.message);
         } catch (e) {}
 
+        
+
         actorIdToAuthorRef.current[decodedChange.actor] = metadata?.author;
       });
 

@@ -6,6 +6,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import * as A from "@automerge/automerge/next";
 import { Hash } from "./Hash";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
+import { sortBy } from "lodash";
 
 const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
   const changes = A.getAllChanges(doc);
@@ -39,7 +40,12 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
     if (!doc || diffBase.length === 0) return undefined;
-    return diffWithProvenance(doc, diffBase, A.getHeads(doc), actorIdToAuthor);
+    const diff = diffWithProvenance(doc, diffBase, A.getHeads(doc), actorIdToAuthor);
+
+    return {
+      ...diff,
+      patches: filterUndoPatches(diff.patches)
+    }
   }, [doc, diffBase]);
 
   if (!doc) return <div>Loading...</div>;
@@ -75,3 +81,70 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
+
+
+const filterUndoPatches = (patches: A.Patch[]) => {
+  let filteredPatches: A.Patch[] = [];
+
+  for (let i = 0; i < patches.length; i++) {
+    let currentPatch = patches[i];
+    let nextPatch = patches[i + 1];
+    
+
+    if (nextPatch) {
+      console.log(currentPatch.path[1],  )
+    }
+
+    // Skip if the current and next patches cancel each other out
+    if (
+      nextPatch &&    
+      currentPatch.path[0] === "content" &&
+      nextPatch.path[0] === "content" &&  
+      currentPatch.action === 'splice' &&
+      nextPatch.action === 'del' &&
+      currentPatch.path[1] === ((nextPatch.path[1] as number) -  currentPatch.value.length)
+    ) {
+      const deleted = nextPatch.removed
+      const inserted = currentPatch.value
+        if (inserted.length > deleted.length && inserted.startsWith(deleted)) {
+          const partialInsertPatch = {
+            ...currentPatch,
+            path: ["content", currentPatch.path[1] + deleted.length],
+            value: inserted.slice(deleted.length)
+          }
+          filteredPatches.push(partialInsertPatch)
+
+        i+= 2; // Skip patches
+        continue;
+
+        } else if (deleted.length > inserted.length && deleted.startsWith(inserted)) {
+          const removed = deleted.slice(inserted.length)
+          const partialDeletePatch = {
+            ...nextPatch,
+            path: ["content", currentPatch.path[1] - inserted.length],
+            length: removed.length, 
+            removed
+          }
+          filteredPatches.push(partialDeletePatch)
+
+        i+= 2; // Skip patches
+        continue;
+        } else if (deleted === inserted)  {
+          i+= 2; // Skip patches
+          continue;
+        }
+
+    }
+    
+    // If the patches don't cancel each other out, add the current patch to the filtered patches
+    filteredPatches.push(currentPatch);
+  }
+  
+  const result =  sortBy(filteredPatches, (patch) => patch.path[1]);
+
+  console.log(patches, result)
+
+  return result
+};
+
+
