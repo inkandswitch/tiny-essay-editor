@@ -702,6 +702,11 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
     annotation.editRangesWithComments.flatMap((editRange) => editRange.patches)
   );
 
+  // State to track if the component is hovered
+  const [isHovered, setIsHovered] = useState(false);
+
+  const expanded = selected || isHovered;
+
   // When the annotation changes reset the patches list
   useEffect(() => {
     setPatches(
@@ -747,10 +752,20 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
     };
   }, []); // Empty dependency array ensures this effect runs only once
 
+  // Handlers for mouse enter and leave to manage hover state
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => setIsHovered(false);
+
   // Setting a manual height and width on this div is a hack.
   // The reason we do it is to make this div big enough to include the absolutely positioned children.
+  // That in turn makes sure that we can capture scroll events.
   return (
-    <div className=" h-12 w-40" ref={scrollCaptureRef}>
+    <div
+      className=" min-h-12 min-w-40"
+      ref={scrollCaptureRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="flex text-xs text-gray-400 items-center">
         <FolderEditIcon size={12} className="inline-block mr-1 text-gray-500" />{" "}
         {patches.length} edits
@@ -758,14 +773,15 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
 
       {patches.map((patch, index) => (
         <div
-          className={`absolute select-none w-36 h-6 mr-2 px-2 py-1 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
-            selected
-              ? "z-50  ring-2 ring-blue-600 "
-              : "z-0  hover:bg-gray-50  hover:border-gray-400 "
+          key={JSON.stringify(patch)}
+          className={`select-none mr-2 px-2 py-1 w-48 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
+            expanded
+              ? "z-50  mb-2 "
+              : "z-0 absolute hover:bg-gray-50  hover:border-gray-400 "
           }`}
           style={
             // if group selected: a neat list
-            selected
+            expanded
               ? {
                   top: 20 + index * 30,
                   left: 0,
