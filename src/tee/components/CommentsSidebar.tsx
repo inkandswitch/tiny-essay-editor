@@ -278,9 +278,6 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1], patch.value.length);
       });
     } else if (patch.action === "del") {
-alert("undoing deletes is not implemented");
-      return;
-      // todo: figure out how to undo deletes so they don't show up in the diff
       changeDoc((doc) => {
         A.splice(doc, ["content"], patch.path[1], 0, patch.removed);
       });

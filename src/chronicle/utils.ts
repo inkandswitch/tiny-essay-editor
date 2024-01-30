@@ -52,8 +52,6 @@ export const useActorIdToAuthorMap = (
       changes.map((change) => {
         const decodedChange = A.decodeChange(change);
 
-        console.log("change", decodedChange);
-
         let metadata;
         try {
           metadata = JSON.parse(decodedChange.message);
