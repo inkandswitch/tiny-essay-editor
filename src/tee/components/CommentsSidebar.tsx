@@ -12,7 +12,7 @@ import {
   PersistedDraft,
 } from "../schema";
 
-import { groupBy, throttle } from "lodash";
+import { groupBy, sortBy, throttle } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
@@ -22,6 +22,8 @@ import {
   FolderGit,
   FolderIcon,
   Fullscreen,
+  GroupIcon,
+  MessageCircleIcon,
   MessageSquarePlus,
   MoreHorizontalIcon,
   PencilIcon,
@@ -335,7 +337,7 @@ export const CommentsSidebar = ({
 
   const selectedDraftAnnotations = selectedAnnotations.filter(
     (thread) => thread && thread.type === "draft"
-  ) as DraftAnnotation[];
+  );
 
   // If there's a focused draft, show nothing for now
   // (TODO: show the comments for the parts of the diff...)
@@ -343,47 +345,47 @@ export const CommentsSidebar = ({
     return <div></div>;
   }
 
+  const showGroupingButton =
+    selectedPatchAnnotations.length > 1 && selectedDraftAnnotations.length <= 1;
+
   return (
     <div>
-      {selectedPatchAnnotations.length > 0 &&
-        selectedDraftAnnotations.length <= 1 && (
-          <div className="w-48 text-xs font-gray-600 p-2">
-            {selectedPatchAnnotations.length} edits
-            <Button
-              variant="outline"
-              className="h-6 ml-1"
-              onClick={() => {
-                const selectedThreads = selectedAnnotationIds.map((id) =>
-                  annotationsWithPositions.find((thread) => thread.id === id)
-                );
-                groupPatches(selectedThreads);
-                setSelectedAnnotationIds([]);
-              }}
-            >
-              {selectedDraftAnnotations.length === 0 && "New draft"}
-              {selectedDraftAnnotations.length === 1 &&
-                `Add to draft #${selectedDraftAnnotations[0].number}`}
-            </Button>
-          </div>
-        )}
-      {selectedPatchAnnotations.length > 0 &&
-        selectedDraftAnnotations.length > 1 && (
-          <div className="text-red-500">Multiple drafts selected</div>
-        )}
+      {showGroupingButton && (
+        <div className="group w-12 hover:w-20 text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex">
+          <div className="hidden group-hover:block mt-2">Group</div>
+          <Button
+            variant="outline"
+            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/90 backdrop-blur text-white rounded-full px-0 hover:bg-black/80 hover:text-white"
+            onClick={() => {
+              const selectedThreads = selectedAnnotationIds.map((id) =>
+                annotationsWithPositions.find((thread) => thread.id === id)
+              );
+              groupPatches(selectedThreads);
+              setSelectedAnnotationIds([]);
+            }}
+          >
+            <GroupIcon className="inline m-1" />
+          </Button>
+        </div>
+      )}
+
       {annotationsWithPositions.map((annotation) => (
-        <div key={annotation.id}>
+        <div
+          key={annotation.id}
+          className="absolute group"
+          style={{
+            top: annotation.yCoord,
+          }}
+        >
           <div
-            className={`select-none  mr-2 absolute rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+            className={`select-none mr-2 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
               selectedAnnotationIds.includes(annotation.id)
-                ? "z-50 shadow-sm   ring-2 ring-blue-600 "
-                : "z-0  hover:bg-gray-50  hover:border-gray-400 "
+                ? "z-50 shadow-sm ring-2 ring-blue-600"
+                : "z-0 hover:bg-gray-50 hover:border-gray-400"
             } ${
               (annotation.type === "patch" || annotation.type === "thread") &&
-              "px-2 py-1 bg-white  border border-gray-200"
+              "px-2 py-1 bg-white border border-gray-200"
             }`}
-            style={{
-              top: annotation.yCoord,
-            }}
             onClick={(e) => {
               if (e.shiftKey) {
                 setSelectedAnnotationIds([
@@ -411,78 +413,10 @@ export const CommentsSidebar = ({
                   </div>
                 ))}
             </div>
-            {/* <div className="mt-2">
-            <Popover
-              open={activeReplyThreadId === annotation.id}
-              onOpenChange={(open) =>
-                open
-                  ? setActiveReplyThreadId(annotation.id)
-                  : setActiveReplyThreadId(null)
-              }
-            >
-              <PopoverTrigger asChild>
-                {annotation.type === "patch" ? (
-                  <Button className="mr-2" variant="outline">
-                    <PencilIcon className="mr-2 " /> Explain
-                  </Button>
-                ) : (
-                  <Button className="mr-2" variant="outline">
-                    <Reply className="mr-2 " /> Reply
-                  </Button>
-                )}
-              </PopoverTrigger>
-              <PopoverContent>
-                <Textarea
-                  className="mb-4"
-                  value={pendingCommentText}
-                  onChange={(event) =>
-                    setPendingCommentText(event.target.value)
-                  }
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && event.metaKey) {
-                      replyToAnnotation(annotation);
-                      setActiveReplyThreadId(null);
-                      event.preventDefault();
-                    }
-                  }}
-                />
-
-                <PopoverClose>
-                  <Button
-                    variant="outline"
-                    onClick={() => replyToAnnotation(annotation)}
-                  >
-                    Comment
-                    <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
-                  </Button>
-                </PopoverClose>
-              </PopoverContent>
-            </Popover>
-
-            {annotation.type === "thread" && (
-              <Button
-                variant="outline"
-                className="select-none"
-                onClick={() =>
-                  changeDoc(
-                    (d) => (d.commentThreads[annotation.id].resolved = true)
-                  )
-                }
-              >
-                <Check className="mr-2" /> Resolve
-              </Button>
-            )}
-
-            {(annotation.type === "patch" || annotation.type === "draft") && (
-              <Button
-                variant="outline"
-                className="select-none"
-                onClick={() => undoEditsFromAnnotation(annotation)}
-              >
-                <Check className="mr-2" /> Undo
-              </Button>
-            )}
-          </div> */}
+          </div>
+          <div className="text-xs text-gray-500 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out">
+            <MessageCircleIcon size={14} className="" />
+            Add comment
           </div>
         </div>
       ))}
