@@ -206,7 +206,7 @@ export const DocExplorer: React.FC = () => {
               deleteFromAccountDocList={deleteFromRootFolder}
               addNewDocument={addNewDocument}
             />
-            <div className="flex-grow overflow-hidden">
+            <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div>
