@@ -64,7 +64,6 @@ export const DocExplorer: React.FC = () => {
     () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
     [selectedDocLink]
   );
-  console.log(availableTools);
   const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
   useEffect(() => {
     setActiveTool(availableTools[0]);

@@ -30,6 +30,8 @@ import {
 
 import { save } from "@automerge/automerge";
 import { DocType } from "../doctypes";
+import { asMarkdownFile } from "@/tee/datatype";
+import { MarkdownDoc } from "@/tee/schema";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
@@ -53,15 +55,17 @@ export const Topbar: React.FC<TopbarProps> = ({
     (doc) => doc.url === selectedDocUrl
   );
   const selectedDocName = selectedDocLink?.name;
-  const selectedDocHandle = useHandle<TLDrawDoc>(selectedDocUrl);
+  const selectedDocType = selectedDocLink?.type;
+  const selectedDocHandle = useHandle(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<TLDrawDoc>(selectedDocUrl);
+  const [selectedDoc] = useDocument(selectedDocUrl);
 
   const exportAsMarkdown = useCallback(() => {
-    console.log("exportAsMarkdown", selectedDoc);
-    throw new Error("Not supported");
-    const file = null; // asMarkdownFile(selectedDoc)
+    if (selectedDocType !== "essay") {
+      throw new Error("Not supported");
+    }
+    const file = asMarkdownFile(selectedDoc as MarkdownDoc);
     saveFile(file, "index.md", [
       {
         accept: {
@@ -69,7 +73,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         },
       },
     ]);
-  }, [selectedDoc]);
+  }, [selectedDoc, selectedDocType]);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
