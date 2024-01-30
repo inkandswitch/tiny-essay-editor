@@ -1,5 +1,5 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo"
-import React, { useCallback } from "react"
+import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import React, { useCallback } from "react";
 import {
   Download,
   GitForkIcon,
@@ -8,17 +8,17 @@ import {
   SaveIcon,
   ShareIcon,
   Trash2Icon,
-} from "lucide-react"
+} from "lucide-react";
 import {
   useDocument,
   useHandle,
   useRepo,
-} from "@automerge/automerge-repo-react-hooks"
-import { markCopy } from "../../tldraw/datatype"
-import { SyncIndicatorWrapper } from "./SyncIndicator"
-import { AccountPicker } from "./AccountPicker"
-import { saveFile } from "../utils"
-import { DocLink, useCurrentRootFolderDoc } from "../account"
+} from "@automerge/automerge-repo-react-hooks";
+import { markCopy } from "../../tldraw/datatype";
+import { SyncIndicatorWrapper } from "./SyncIndicator";
+import { AccountPicker } from "./AccountPicker";
+import { saveFile } from "../utils";
+import { DocLink, useCurrentRootFolderDoc } from "../account";
 
 import {
   DropdownMenu,
@@ -26,18 +26,18 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
-import { save } from "@automerge/automerge"
-import { DocType } from "../doctypes"
+import { save } from "@automerge/automerge";
+import { DocType } from "../doctypes";
 type TopbarProps = {
-  showSidebar: boolean
-  setShowSidebar: (showSidebar: boolean) => void
-  selectedDocUrl: AutomergeUrl | null
-  selectDoc: (docUrl: AutomergeUrl | null) => void
-  deleteFromAccountDocList: (docUrl: AutomergeUrl) => void
-  addNewDocument: (doc: { type: DocType }) => void
-}
+  showSidebar: boolean;
+  setShowSidebar: (showSidebar: boolean) => void;
+  selectedDocUrl: AutomergeUrl | null;
+  selectDoc: (docUrl: AutomergeUrl | null) => void;
+  deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
+  addNewDocument: (doc: { type: DocType }) => void;
+};
 
 export const Topbar: React.FC<TopbarProps> = ({
   showSidebar,
@@ -47,42 +47,42 @@ export const Topbar: React.FC<TopbarProps> = ({
   deleteFromAccountDocList,
   addNewDocument,
 }) => {
-  const repo = useRepo()
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc()
+  const repo = useRepo();
+  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )
-  const selectedDocName = selectedDocLink?.name
-  const selectedDocHandle = useHandle<TLDrawDoc>(selectedDocUrl)
+  );
+  const selectedDocName = selectedDocLink?.name;
+  const selectedDocHandle = useHandle<TLDrawDoc>(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument<TLDrawDoc>(selectedDocUrl)
+  const [selectedDoc] = useDocument<TLDrawDoc>(selectedDocUrl);
 
   const exportAsMarkdown = useCallback(() => {
-    console.log("exportAsMarkdown", selectedDoc)
-    throw new Error("Not supported")
-    const file = null // asMarkdownFile(selectedDoc)
+    console.log("exportAsMarkdown", selectedDoc);
+    throw new Error("Not supported");
+    const file = null; // asMarkdownFile(selectedDoc)
     saveFile(file, "index.md", [
       {
         accept: {
           "text/markdown": [".md"],
         },
       },
-    ])
-  }, [selectedDoc])
+    ]);
+  }, [selectedDoc]);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
       type: "application/octet-stream",
-    })
+    });
     saveFile(file, `${selectedDocUrl}.automerge`, [
       {
         accept: {
           "application/octet-stream": [".automerge"],
         },
       },
-    ])
-  }, [selectedDocUrl, selectedDoc])
+    ]);
+  }, [selectedDocUrl, selectedDoc]);
 
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
@@ -113,7 +113,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <DropdownMenuContent className="mr-4">
             <DropdownMenuItem
               onClick={() => {
-                navigator.clipboard.writeText(window.location.href)
+                navigator.clipboard.writeText(window.location.href);
               }}
             >
               <ShareIcon
@@ -124,24 +124,24 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                const newHandle = repo.clone<TLDrawDoc>(selectedDocHandle)
+                const newHandle = repo.clone<TLDrawDoc>(selectedDocHandle);
                 newHandle.change((doc) => {
-                  markCopy(doc)
-                })
+                  markCopy(doc);
+                });
                 const newDocLink: DocLink = {
                   url: newHandle.url,
                   name: getTitle(newHandle.docSync()),
                   type: selectedDocLink.type,
-                }
+                };
 
                 const index = rootFolderDoc.docs.findIndex(
                   (doc) => doc.url === selectedDocUrl
-                )
+                );
                 changeRootFolderDoc((doc) =>
                   doc.docs.splice(index + 1, 0, newDocLink)
-                )
+                );
 
-                selectDoc(newDocLink.url)
+                selectDoc(newDocLink.url);
               }}
             >
               <GitForkIcon
@@ -177,5 +177,5 @@ export const Topbar: React.FC<TopbarProps> = ({
         <AccountPicker />
       </div>
     </div>
-  )
-}
+  );
+};

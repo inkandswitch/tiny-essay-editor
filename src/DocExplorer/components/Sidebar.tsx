@@ -1,26 +1,26 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo"
-import React, { useState } from "react"
-import { ChevronsLeft, FolderInput, Plus, Text } from "lucide-react"
-import { Tree, NodeRendererProps } from "react-arborist"
-import { FillFlexParent } from "./FillFlexParent"
-import { AccountPicker } from "./AccountPicker"
+import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import React, { useState } from "react";
+import { ChevronsLeft, FolderInput, Plus, Text } from "lucide-react";
+import { Tree, NodeRendererProps } from "react-arborist";
+import { FillFlexParent } from "./FillFlexParent";
+import { AccountPicker } from "./AccountPicker";
 
-import { DocLink, useCurrentRootFolderDoc } from "../account"
-import { DocType, docTypes } from "../doctypes"
+import { DocLink, useCurrentRootFolderDoc } from "../account";
+import { DocType, docTypes } from "../doctypes";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
   if (!docTypes[node.data.type]) {
-    return <div>Unknown doc type {node.data.type}</div>
+    return <div>Unknown doc type {node.data.type}</div>;
   }
-  const Icon = docTypes[node.data.type]?.icon
+  const Icon = docTypes[node.data.type]?.icon;
 
   return (
     <div
@@ -40,15 +40,15 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
       />
       {node.data.name}
     </div>
-  )
+  );
 }
 
 type SidebarProps = {
-  selectedDocUrl: AutomergeUrl | null
-  selectDoc: (docUrl: AutomergeUrl | null) => void
-  hideSidebar: () => void
-  addNewDocument: (doc: { type: DocType }) => void
-}
+  selectedDocUrl: AutomergeUrl | null;
+  selectDoc: (docUrl: AutomergeUrl | null) => void;
+  hideSidebar: () => void;
+  addNewDocument: (doc: { type: DocType }) => void;
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   selectedDocUrl,
@@ -56,26 +56,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   hideSidebar,
   addNewDocument,
 }) => {
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc()
+  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
 
   // state related to open popover
   const [openNewDocPopoverVisible, setOpenNewDocPopoverVisible] =
-    useState(false)
-  const [openUrlInput, setOpenUrlInput] = useState("")
-  const automergeUrlMatch = openUrlInput.match(/(automerge:[a-zA-Z0-9]*)/)
+    useState(false);
+  const [openUrlInput, setOpenUrlInput] = useState("");
+  const automergeUrlMatch = openUrlInput.match(/(automerge:[a-zA-Z0-9]*)/);
   const automergeUrlToOpen =
     automergeUrlMatch &&
     automergeUrlMatch[1] &&
     isValidAutomergeUrl(automergeUrlMatch[1])
       ? automergeUrlMatch[1]
-      : null
+      : null;
 
   if (!rootFolderDoc) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-400 text-sm">Loading...</p>
       </div>
-    )
+    );
   }
   return (
     <div className="flex flex-col h-screen">
@@ -130,9 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onChange={(e) => setOpenUrlInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && automergeUrlToOpen) {
-                    openDocFromUrl(automergeUrlToOpen)
-                    setOpenUrlInput("")
-                    setOpenNewDocPopoverVisible(false)
+                    openDocFromUrl(automergeUrlToOpen);
+                    setOpenUrlInput("");
+                    setOpenNewDocPopoverVisible(false);
                   }
                 }}
                 className={`outline-none ${
@@ -167,10 +167,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 idAccessor={(item) => item.url}
                 onSelect={(selections) => {
                   if (!selections) {
-                    return false
+                    return false;
                   }
                   if (isValidAutomergeUrl(selections[0]?.id)) {
-                    selectDoc(selections[0].id as AutomergeUrl)
+                    selectDoc(selections[0].id as AutomergeUrl);
                   }
                 }}
                 // For now, don't allow deleting w/ backspace key in the sidebar—
@@ -183,37 +183,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onMove={({ dragIds, parentId, index: dragTargetIndex }) => {
                   if (parentId !== null) {
                     // shouldn't get here since we don't do directories yet
-                    return
+                    return;
                   }
 
                   for (const dragId of dragIds) {
                     const dragItemIndex = rootFolderDoc.docs.findIndex(
                       (item) => item.url === dragId
-                    )
+                    );
                     if (dragItemIndex !== undefined) {
                       // TODO: is this the right way to do an array move in automerge?
                       // Pretty sure it is, since there's no array move operation?
                       const copiedItem = JSON.parse(
                         JSON.stringify(rootFolderDoc.docs[dragItemIndex])
-                      )
+                      );
 
                       // If we're dragging to the right of the array, we need to account for
                       // the fact that the array will be shorter after we remove the original element
                       const adjustedTargetIndex =
                         dragItemIndex < dragTargetIndex
                           ? dragTargetIndex - 1
-                          : dragTargetIndex
+                          : dragTargetIndex;
                       changeRootFolderDoc((doc) => {
-                        doc.docs.splice(dragItemIndex, 1)
-                        doc.docs.splice(adjustedTargetIndex, 0, copiedItem)
-                      })
+                        doc.docs.splice(dragItemIndex, 1);
+                        doc.docs.splice(adjustedTargetIndex, 0, copiedItem);
+                      });
                     }
                   }
                 }}
               >
                 {Node}
               </Tree>
-            )
+            );
           }}
         </FillFlexParent>
       </div>
@@ -221,5 +221,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <AccountPicker showName />
       </div>
     </div>
-  )
-}
+  );
+};
