@@ -369,10 +369,10 @@ export const CommentsSidebar = ({
       {annotationsWithPositions.map((annotation) => (
         <div
           key={annotation.id}
-          className={`select-none bg-white hover:border-gray-400 hover:bg-gray-50 p-3 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+          className={`select-none px-2 py-1 mr-2 absolute border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
             selectedAnnotationIds.includes(annotation.id)
-              ? "z-50 shadow-sm border-gray-500 bg-blue-50 hover:bg-blue-50"
-              : "z-0"
+              ? "z-50 shadow-sm border-gray-500 bg-blue-100 hover:border-gray-700"
+              : "z-0 bg-white hover:bg-gray-50  hover:border-gray-400 "
           }`}
           style={{
             top: annotation.yCoord,
@@ -634,14 +634,14 @@ export const Patch = ({ patch }: { patch: A.Patch }) => {
   return (
     <div className="">
       {patch.action === "splice" && (
-        <div className="text-xs">
+        <div className="text-sm">
           <span className="font-serif bg-green-50 border-b border-green-400">
             {truncate(patch.value, { length: 45 })}
           </span>
         </div>
       )}
       {patch.action === "del" && (
-        <div className="text-xs">
+        <div className="text-sm">
           <span className="font-serif bg-red-50 border-b border-red-400">
             {truncate(patch.removed, { length: 45 })}
           </span>
