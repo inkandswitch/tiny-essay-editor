@@ -17,6 +17,10 @@ import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
   Check,
+  FileDiffIcon,
+  FolderEditIcon,
+  FolderGit,
+  FolderIcon,
   Fullscreen,
   MessageSquarePlus,
   MoreHorizontalIcon,
@@ -367,46 +371,83 @@ export const CommentsSidebar = ({
           <div className="text-red-500">Multiple drafts selected</div>
         )}
       {annotationsWithPositions.map((annotation) => (
-        <div
-          key={annotation.id}
-          className={`select-none px-2 py-1 mr-2 absolute border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            selectedAnnotationIds.includes(annotation.id)
-              ? "z-50 shadow-sm border-gray-500 bg-blue-100 hover:border-gray-700"
-              : "z-0 bg-white hover:bg-gray-50  hover:border-gray-400 "
-          }`}
-          style={{
-            top: annotation.yCoord,
-          }}
-          onClick={(e) => {
-            if (e.shiftKey) {
-              setSelectedAnnotationIds([
-                ...selectedAnnotationIds,
-                annotation.id,
-              ]);
-            } else {
-              setSelectedAnnotationIds([annotation.id]);
-            }
-            e.stopPropagation();
-          }}
-        >
-          {annotation.type === "draft" && (
-            <PatchesGroupedBySentence
-              text={doc.content}
-              patches={annotation.editRangesWithComments.flatMap(
-                (editRange) => editRange.patches
-              )}
-            />
-          )}
-          {annotation.type === "patch" && <Patch patch={annotation.patch} />}
-          <div>
-            {(annotation.type === "thread" || annotation.type === "draft") &&
-              annotation.comments.map((comment) => (
-                <div key={comment.id}>
-                  <CommentView comment={comment} />
+        <div key={annotation.id}>
+          <div
+            className={`select-none  mr-2 absolute rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+              selectedAnnotationIds.includes(annotation.id)
+                ? "z-50 shadow-sm   ring-2 ring-blue-600 "
+                : "z-0  hover:bg-gray-50  hover:border-gray-400 "
+            } ${
+              (annotation.type === "patch" || annotation.type === "thread") &&
+              "px-2 py-1 bg-white  border border-gray-200"
+            }`}
+            style={{
+              top: annotation.yCoord,
+            }}
+            onClick={(e) => {
+              if (e.shiftKey) {
+                setSelectedAnnotationIds([
+                  ...selectedAnnotationIds,
+                  annotation.id,
+                ]);
+              } else {
+                setSelectedAnnotationIds([annotation.id]);
+              }
+              e.stopPropagation();
+            }}
+          >
+            {annotation.type === "draft" && (
+              <div>
+                <div className="flex text-xs text-gray-400 items-center">
+                  <FolderEditIcon
+                    size={12}
+                    className="inline-block mr-1 text-gray-500"
+                  />{" "}
+                  {annotation.editRangesWithComments.length} edits
                 </div>
-              ))}
-          </div>
-          {/* <div className="mt-2">
+
+                {annotation.editRangesWithComments
+                  .flatMap((editRange) => editRange.patches)
+                  .map((patch, index) => (
+                    <div
+                      className={`absolute select-none w-36 h-6 mr-2 px-2 py-1 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
+                        selectedAnnotationIds.includes(annotation.id)
+                          ? "z-50  ring-2 ring-blue-600 "
+                          : "z-0  hover:bg-gray-50  hover:border-gray-400 "
+                      }`}
+                      style={
+                        // if group selected: a neat list
+                        selectedAnnotationIds.includes(annotation.id)
+                          ? {
+                              top: index * 30,
+                              left: 0,
+                            }
+                          : {
+                              // If group not selected: a messy stack in the z-axis
+                              top: [0, -5, 3, -2, 6][index % 5],
+                              left: [0, -5, 3, -2, 6][index % 5],
+                              zIndex: index * -1,
+                              transform: `rotate(${
+                                index % 2 === 0 ? 1.2 : -1.5
+                              }deg)`,
+                            }
+                      }
+                    >
+                      <Patch patch={patch} />
+                    </div>
+                  ))}
+              </div>
+            )}
+            {annotation.type === "patch" && <Patch patch={annotation.patch} />}
+            <div>
+              {(annotation.type === "thread" || annotation.type === "draft") &&
+                annotation.comments.map((comment) => (
+                  <div key={comment.id}>
+                    <CommentView comment={comment} />
+                  </div>
+                ))}
+            </div>
+            {/* <div className="mt-2">
             <Popover
               open={activeReplyThreadId === annotation.id}
               onOpenChange={(open) =>
@@ -478,6 +519,7 @@ export const CommentsSidebar = ({
               </Button>
             )}
           </div> */}
+          </div>
         </div>
       ))}
       <Popover
