@@ -99,7 +99,7 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
     let currentPatch = patches[i];
     let nextPatch = patches[i + 1];
 
-    // Skip if the current and next patches cancel each other out
+    // check insert followed by a delete ....
     if (
       nextPatch &&
       currentPatch.path[0] === "content" &&
@@ -111,58 +111,57 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
       const deleted = nextPatch.removed
       const inserted = currentPatch.value
 
-      // if they have different length we have to be careful and see if they match at the start or end
-      if (inserted.length > deleted.length) {
-        if (inserted.startsWith(deleted)) {
-          const partialInsertPatch = {
+      const overlapStart = getOverlapStart(inserted, deleted)
+
+      // combine if there is some overlap
+
+      if (overlapStart > 0) {
+        if (inserted.length > overlapStart) {
+          filteredPatches.push({
             ...currentPatch,
-            path: ["content", currentPatch.path[1] + deleted.length],
-            value: inserted.slice(deleted.length)
-          }
-          filteredPatches.push(partialInsertPatch)
+            path: ["content", currentPatch.path[1] + overlapStart],
+            value: inserted.slice(overlapStart)
+          })
+        }
 
-          i++; // Skip patches
-          continue;      
-        } else if (inserted.endsWith(deleted)) {
-          const partialInsertPatch = {
-            ...currentPatch,
-            value: inserted.slice(0, inserted.length - deleted.length)
-          }
-          filteredPatches.push(partialInsertPatch)
-
-          i++; // Skip patches
-          continue;
-        } 
-
-      } else if (deleted.length > inserted.length) {
-        if (deleted.startsWith(inserted)) {  
+        if (deleted.length > overlapStart) {
           const removed = deleted.slice(inserted.length)
-          const partialDeletePatch = {
+
+          filteredPatches.push({
             ...nextPatch,
             length: removed.length,
             removed
-          }
-          filteredPatches.push(partialDeletePatch)
+          })
+        }
 
-          i++; // Skip patches
-          continue;
-        } else if (deleted.endsWith(inserted)) {
-          const removed = deleted.slice(0, deleted.length - inserted.length)
-          const partialDeletePatch = {
-            ...nextPatch,
-            length: removed.length,
-            removed
-          }
-          filteredPatches.push(partialDeletePatch)
-
-          i++; // Skip patches
-          continue;
-        } 
-      } else if (deleted === inserted) {
-        i++; // Skip patches
-        continue;
+        i++;
+        continue
       }
 
+      const overlapEnd = getOverlapEnd(inserted, deleted)
+      if (overlapEnd > 0) {
+        if (overlapEnd > 0) {
+          if (inserted.length > overlapEnd) {
+            filteredPatches.push({
+              ...currentPatch,
+              value: inserted.slice(0, inserted.length - overlapEnd)
+            })
+          }
+  
+          if (deleted.length > overlapEnd) {
+            const removed = deleted.slice(0, deleted.length - overlapEnd)
+  
+            filteredPatches.push({
+              ...nextPatch,
+              length: removed.length,
+              removed
+            })
+          }
+  
+          i++;
+          continue
+        }
+      }
     }
 
     // If the patches don't cancel each other out, add the current patch to the filtered patches
@@ -171,3 +170,28 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
 
   return sortBy(filteredPatches, (patch) => patch.path[1]);
 };
+
+const getOverlapStart = (str1: string, str2: string) => {
+  let overlapLength = 0;
+  for (let i = 0; i < str1.length && i < str2.length; i++) {
+    if (str1[i] === str2[i]) {
+      overlapLength++;
+    } else {
+      break;
+    }
+  }
+  return overlapLength;
+}
+
+const getOverlapEnd = (str1: string, str2: string) => {
+  let overlapLength = 0;
+  const minLength = Math.min(str1.length, str2.length);
+  for (let i = 1; i <= minLength; i++) {
+    if (str1[str1.length - i] === str2[str2.length - i]) {
+      overlapLength++;
+    } else {
+      break;
+    }
+  }
+  return overlapLength;
+}
