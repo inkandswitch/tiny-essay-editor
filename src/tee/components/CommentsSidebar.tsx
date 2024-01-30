@@ -40,6 +40,7 @@ import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
 import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import { ReadonlySnippetView } from "./ReadonlySnippetView";
 
 export const CommentsSidebar = ({
   doc,
@@ -419,7 +420,8 @@ export const CommentsSidebar = ({
             </div>
           )}
           {annotation.type === "draft" && (
-            <PatchesGroupedByAuthor
+            <PatchesGroupedBySentence
+              text={doc.content}
               patches={annotation.editRangesWithComments.flatMap(
                 (editRange) => editRange.patches
               )}
@@ -566,6 +568,56 @@ export const CommentsSidebar = ({
     </div>
   );
 };
+
+const getSentenceFromPatch = (text: string, patch: A.SpliceTextPatch | A.DelPatch) : Sentence => {
+  const from = patch.path[1] as number
+  const length = patch.action === "splice" ? patch.value.length : 0
+  const to = from + length
+
+  const start = Math.max(text.lastIndexOf('.', from), text.lastIndexOf('\n', from)) + 1;
+  const end = Math.min(text.indexOf('.', to), text.indexOf('\n', to));
+  return { text: text.slice(start, end).trim(), offset: start, patches: [ ] };
+}
+
+interface Sentence {
+  offset: number
+  text: string
+  patches: A.Patch[]
+}
+
+const groupPatchesBySentence = (text: string, patches: A.Patch[]) => {
+  const filteredPatches = patches.filter(patch => patch.action === 'splice' || patch.action === 'del') as (A.SpliceTextPatch | A.DelPatch)[];
+  const sentences : Sentence[] = []
+
+  for (const patch of filteredPatches) {
+    const sentence = getSentenceFromPatch(text, patch);
+    const existingSentence = sentences.find((s) => s.offset === sentence.offset && s.text === sentence.text)
+    const offsetPatch = {
+      ...patch,
+      path: ["content", (patch.path[1] as number) - sentence.offset]
+    }
+
+    if (existingSentence) {
+      existingSentence.patches.push(offsetPatch)
+    } else {
+      sentence.patches.push(offsetPatch)
+      sentences.push(sentence)
+    }
+  }
+
+  return sentences;
+};
+
+
+export const PatchesGroupedBySentence = ({ text, patches }: { text: string, patches : A.Patch[] }) => {
+  return (
+    <div>
+      {groupPatchesBySentence(text, patches).map((sentence) => {
+        return <ReadonlySnippetView text={sentence.text} patches={sentence.patches}/> 
+      })}
+    </div>
+  )
+}
 
 export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
   const patchesByAuthor = groupBy(patches, (patch: A.Patch) => patch?.attr);

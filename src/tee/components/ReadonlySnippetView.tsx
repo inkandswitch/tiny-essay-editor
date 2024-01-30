@@ -78,6 +78,10 @@ export function ReadonlySnippetView({
     });
 
     editorRoot.current = view;
+
+    return () => {
+      view.destroy()
+    }
   }, [text, patches]);
 
   return (
