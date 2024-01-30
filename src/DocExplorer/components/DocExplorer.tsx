@@ -256,7 +256,7 @@ const parseCurrentUrlHash = (): UrlHashParams => {
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
       docUrl: possibleAutomergeUrl,
-      docType: "essay",
+      docType: "tldraw",
     }
   }
 
@@ -292,11 +292,12 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDoc] = useDocument(selectedDocUrl)
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
-    if (docUrl) {
-      window.location.hash = docUrl
-    } else {
-      window.location.hash = ""
+    const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl)
+    if (!doc) {
+      alert(`Could not find document with URL: ${docUrl}`)
+      return
     }
+    setUrlHashForDoc({ docUrl, docType: doc.type })
   }
 
   // Add an existing doc to our collection
