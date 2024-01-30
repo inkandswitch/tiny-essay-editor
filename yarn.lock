@@ -2599,10 +2599,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-automerge-tldraw@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/automerge-tldraw/-/automerge-tldraw-0.1.0.tgz#0e84e399193abd040844b3f8be1f1c9b941e2fd6"
-  integrity sha512-MzTnnuNN3mYTEl2jSfJ3sI/UzMkZVlfFT3jk+UZGIwycZ5nD6FfD9qyL6LHuUvEFuorpBeiSuPT4Q7I5vj1Kmg==
+automerge-tldraw@0.1.5:
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/automerge-tldraw/-/automerge-tldraw-0.1.5.tgz#5abecb78de41105a48883a85cbae281fb7404453"
+  integrity sha512-Hf9Zn+YBimtWUieahk9dyRsAssXTiwTZTDiykSo6l4sAN9zVGNpy49iAtuWXXh3fH18GVWcF5DaPmcVk47jRyA==
   dependencies:
     lodash "^4.17.21"
 

@@ -44,7 +44,7 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "@tldraw/tldraw": "2.0.0-alpha.17",
     "@xstate/react": "^3.2.2",
-    "automerge-tldraw": "^0.1.0",
+    "automerge-tldraw": "0.1.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
