@@ -17,8 +17,6 @@ import {
 import { markCopy } from "../../tldraw/datatype"
 import { SyncIndicatorWrapper } from "./SyncIndicator"
 import { AccountPicker } from "./AccountPicker"
-import { TLDrawDoc } from "@/tldraw/schema"
-import { getTitle } from "@/tldraw/datatype"
 import { saveFile } from "../utils"
 import { DocLink, useCurrentRootFolderDoc } from "../account"
 
@@ -31,13 +29,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { save } from "@automerge/automerge"
-
+import { DocType } from "../doctypes"
 type TopbarProps = {
   showSidebar: boolean
   setShowSidebar: (showSidebar: boolean) => void
   selectedDocUrl: AutomergeUrl | null
   selectDoc: (docUrl: AutomergeUrl | null) => void
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void
+  addNewDocument: (doc: { type: DocType }) => void
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -46,19 +45,22 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
+  addNewDocument,
 }) => {
   const repo = useRepo()
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc()
-  const selectedDocName = rootFolderDoc?.docs.find(
+  const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
-  )?.name
+  )
+  const selectedDocName = selectedDocLink?.name
   const selectedDocHandle = useHandle<TLDrawDoc>(selectedDocUrl)
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
   const [selectedDoc] = useDocument<TLDrawDoc>(selectedDocUrl)
 
   const exportAsMarkdown = useCallback(() => {
-    return false
+    console.log("exportAsMarkdown", selectedDoc)
+    throw new Error("Not supported")
     const file = null // asMarkdownFile(selectedDoc)
     saveFile(file, "index.md", [
       {
@@ -111,10 +113,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <DropdownMenuContent className="mr-4">
             <DropdownMenuItem
               onClick={() => {
-                // todo: is this a reasonable way to get the base URL?
-                // We could also get a base URL more explicitly somehow?
-                const baseUrl = window.location.href.split("#")[0]
-                navigator.clipboard.writeText(`${baseUrl}#${selectedDocUrl}`)
+                navigator.clipboard.writeText(window.location.href)
               }}
             >
               <ShareIcon
@@ -132,7 +131,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 const newDocLink: DocLink = {
                   url: newHandle.url,
                   name: getTitle(newHandle.docSync()),
-                  type: "essay",
+                  type: selectedDocLink.type,
                 }
 
                 const index = rootFolderDoc.docs.findIndex(
