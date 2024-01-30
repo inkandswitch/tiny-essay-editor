@@ -12,7 +12,7 @@ import {
   PersistedDraft,
 } from "../schema";
 
-import { groupBy } from "lodash";
+import { groupBy, throttle } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
@@ -37,7 +37,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -397,46 +397,10 @@ export const CommentsSidebar = ({
             }}
           >
             {annotation.type === "draft" && (
-              <div>
-                <div className="flex text-xs text-gray-400 items-center">
-                  <FolderEditIcon
-                    size={12}
-                    className="inline-block mr-1 text-gray-500"
-                  />{" "}
-                  {annotation.editRangesWithComments.length} edits
-                </div>
-
-                {annotation.editRangesWithComments
-                  .flatMap((editRange) => editRange.patches)
-                  .map((patch, index) => (
-                    <div
-                      className={`absolute select-none w-36 h-6 mr-2 px-2 py-1 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
-                        selectedAnnotationIds.includes(annotation.id)
-                          ? "z-50  ring-2 ring-blue-600 "
-                          : "z-0  hover:bg-gray-50  hover:border-gray-400 "
-                      }`}
-                      style={
-                        // if group selected: a neat list
-                        selectedAnnotationIds.includes(annotation.id)
-                          ? {
-                              top: index * 30,
-                              left: 0,
-                            }
-                          : {
-                              // If group not selected: a messy stack in the z-axis
-                              top: [0, -5, 3, -2, 6][index % 5],
-                              left: [0, -5, 3, -2, 6][index % 5],
-                              zIndex: index * -1,
-                              transform: `rotate(${
-                                index % 2 === 0 ? 1.2 : -1.5
-                              }deg)`,
-                            }
-                      }
-                    >
-                      <Patch patch={patch} />
-                    </div>
-                  ))}
-              </div>
+              <Draft
+                annotation={annotation}
+                selected={selectedAnnotationIds.includes(annotation.id)}
+              />
             )}
             {annotation.type === "patch" && <Patch patch={annotation.patch} />}
             <div>
@@ -725,3 +689,99 @@ function CommentView({ comment }: { comment: Comment }) {
     </div>
   );
 }
+
+// A component for rendering a Draft (to be renamed Edit Group)
+const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
+  annotation,
+  selected,
+}) => {
+  const scrollCaptureRef = useRef<HTMLDivElement>(null);
+
+  // We store patches locally because we may reorder in response to interactions
+  const [patches, setPatches] = useState<A.Patch[]>(
+    annotation.editRangesWithComments.flatMap((editRange) => editRange.patches)
+  );
+
+  // When the annotation changes reset the patches list
+  useEffect(() => {
+    setPatches(
+      annotation.editRangesWithComments.flatMap(
+        (editRange) => editRange.patches
+      )
+    );
+  }, [annotation]);
+
+  const throttledHandleScroll = throttle((deltaY: number) => {
+    console.log("running throttled");
+    setPatches((patches) => {
+      if (deltaY > 0) {
+        const firstPatch = patches.shift();
+        if (firstPatch) {
+          return [...patches, firstPatch];
+        }
+      } else if (deltaY < 0) {
+        const lastPatch = patches.pop();
+        if (lastPatch) {
+          return [lastPatch, ...patches];
+        }
+      }
+      return patches;
+    });
+  }, 200);
+
+  useEffect(() => {
+    const handleScroll = (event: WheelEvent) => {
+      event.preventDefault(); // Prevent scrolling the page
+      console.log("yo");
+      throttledHandleScroll(event.deltaY);
+    };
+    const element = scrollCaptureRef.current;
+    if (element) {
+      element.addEventListener("wheel", handleScroll, { passive: false }); // Add event listener
+    }
+
+    return () => {
+      if (element) {
+        element.removeEventListener("wheel", handleScroll); // Clean up event listener
+      }
+    };
+  }, []); // Empty dependency array ensures this effect runs only once
+
+  // Setting a manual height and width on this div is a hack.
+  // The reason we do it is to make this div big enough to include the absolutely positioned children.
+  return (
+    <div className=" h-12 w-40" ref={scrollCaptureRef}>
+      <div className="flex text-xs text-gray-400 items-center">
+        <FolderEditIcon size={12} className="inline-block mr-1 text-gray-500" />{" "}
+        {patches.length} edits
+      </div>
+
+      {patches.map((patch, index) => (
+        <div
+          className={`absolute select-none w-36 h-6 mr-2 px-2 py-1 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
+            selected
+              ? "z-50  ring-2 ring-blue-600 "
+              : "z-0  hover:bg-gray-50  hover:border-gray-400 "
+          }`}
+          style={
+            // if group selected: a neat list
+            selected
+              ? {
+                  top: 20 + index * 30,
+                  left: 0,
+                }
+              : {
+                  // If group not selected: a messy stack in the z-axis
+                  top: 20 + [0, -5, 3, -2, 6][index % 5],
+                  left: [0, -5, 3, -2, 6][index % 5],
+                  zIndex: index * -1,
+                  transform: `rotate(${index % 2 === 0 ? 1.2 : -1.5}deg)`,
+                }
+          }
+        >
+          <Patch patch={patch} />
+        </div>
+      ))}
+    </div>
+  );
+};
