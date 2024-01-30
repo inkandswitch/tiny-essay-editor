@@ -390,36 +390,6 @@ export const CommentsSidebar = ({
           }}
         >
           {annotation.type === "draft" && (
-            <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
-              <input
-                type="text"
-                value={annotation.title}
-                placeholder="Untitled Draft"
-                onChange={(e) => {
-                  const newTitle = e.target.value;
-                  changeDoc((doc) => {
-                    const draft = doc.drafts[annotation.id];
-                    if (!draft) {
-                      throw new Error("expected draft to exist");
-                    }
-                    draft.title = newTitle;
-                  });
-                }}
-                className={`${
-                  annotation.title ? "text-gray-700" : "text-gray-400"
-                }`}
-              />
-              <div>#{annotation.number}</div>
-              <Button
-                variant="outline"
-                className="ml-2 h-8 w-8 p-0 pl-[1px]"
-                onClick={() => setFocusedDraftThreadId(annotation.id)}
-              >
-                <Fullscreen className="mr-2 h-6" />
-              </Button>
-            </div>
-          )}
-          {annotation.type === "draft" && (
             <PatchesGroupedBySentence
               text={doc.content}
               patches={annotation.editRangesWithComments.flatMap(
@@ -427,11 +397,7 @@ export const CommentsSidebar = ({
               )}
             />
           )}
-          {annotation.type === "patch" && (
-            <div className="mb-3">
-              <PatchesGroupedByAuthor patches={[annotation.patch]} />
-            </div>
-          )}
+          {annotation.type === "patch" && <Patch patch={annotation.patch} />}
           <div>
             {(annotation.type === "thread" || annotation.type === "draft") &&
               annotation.comments.map((comment) => (
@@ -440,7 +406,7 @@ export const CommentsSidebar = ({
                 </div>
               ))}
           </div>
-          <div className="mt-2">
+          {/* <div className="mt-2">
             <Popover
               open={activeReplyThreadId === annotation.id}
               onOpenChange={(open) =>
@@ -511,7 +477,7 @@ export const CommentsSidebar = ({
                 <Check className="mr-2" /> Undo
               </Button>
             )}
-          </div>
+          </div> */}
         </div>
       ))}
       <Popover
@@ -569,61 +535,79 @@ export const CommentsSidebar = ({
   );
 };
 
-const getSentenceFromPatch = (text: string, patch: A.SpliceTextPatch | A.DelPatch) : Sentence => {
-  const from = patch.path[1] as number
-  const length = patch.action === "splice" ? patch.value.length : 0
-  const to = from + length
+const getSentenceFromPatch = (
+  text: string,
+  patch: A.SpliceTextPatch | A.DelPatch
+): Sentence => {
+  const from = patch.path[1] as number;
+  const length = patch.action === "splice" ? patch.value.length : 0;
+  const to = from + length;
 
-  const start = Math.max(text.lastIndexOf('.', from), text.lastIndexOf('\n', from)) + 1;
-  const end = Math.min(text.indexOf('.', to), text.indexOf('\n', to));
-  return { text: text.slice(start, end).trim(), offset: start, patches: [ ] };
-}
+  const start =
+    Math.max(text.lastIndexOf(".", from), text.lastIndexOf("\n", from)) + 1;
+  const end = Math.min(text.indexOf(".", to), text.indexOf("\n", to));
+  return { text: text.slice(start, end).trim(), offset: start, patches: [] };
+};
 
 interface Sentence {
-  offset: number
-  text: string
-  patches: A.Patch[]
+  offset: number;
+  text: string;
+  patches: A.Patch[];
 }
 
 const groupPatchesBySentence = (text: string, patches: A.Patch[]) => {
-  const filteredPatches = patches.filter(patch => patch.action === 'splice' || patch.action === 'del') as (A.SpliceTextPatch | A.DelPatch)[];
-  const sentences : Sentence[] = []
+  const filteredPatches = patches.filter(
+    (patch) => patch.action === "splice" || patch.action === "del"
+  ) as (A.SpliceTextPatch | A.DelPatch)[];
+  const sentences: Sentence[] = [];
 
   for (const patch of filteredPatches) {
     const sentence = getSentenceFromPatch(text, patch);
-    const existingSentence = sentences.find((s) => s.offset === sentence.offset && s.text === sentence.text)
+    const existingSentence = sentences.find(
+      (s) => s.offset === sentence.offset && s.text === sentence.text
+    );
     const offsetPatch = {
       ...patch,
-      path: ["content", (patch.path[1] as number) - sentence.offset]
-    }
+      path: ["content", (patch.path[1] as number) - sentence.offset],
+    };
 
     if (existingSentence) {
-      existingSentence.patches.push(offsetPatch)
+      existingSentence.patches.push(offsetPatch);
     } else {
-      sentence.patches.push(offsetPatch)
-      sentences.push(sentence)
+      sentence.patches.push(offsetPatch);
+      sentences.push(sentence);
     }
   }
 
   return sentences;
 };
 
-
-export const PatchesGroupedBySentence = ({ text, patches }: { text: string, patches : A.Patch[] }) => {
+export const PatchesGroupedBySentence = ({
+  text,
+  patches,
+}: {
+  text: string;
+  patches: A.Patch[];
+}) => {
   return (
-    <div>
+    <div className="text-xs mx-[-10px]">
       {groupPatchesBySentence(text, patches).map((sentence) => {
-        return <ReadonlySnippetView text={sentence.text} patches={sentence.patches}/> 
+        return (
+          <ReadonlySnippetView
+            text={sentence.text}
+            patches={sentence.patches}
+          />
+        );
       })}
     </div>
-  )
-}
+  );
+};
 
 export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
   const patchesByAuthor = groupBy(patches, (patch: A.Patch) => patch?.attr);
 
   return (
-    <div>
+    <div className="text-xs">
       {Object.entries(patchesByAuthor).map(([author, patches]) => (
         <div key={author}>
           <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
@@ -648,7 +632,7 @@ export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
 
 export const Patch = ({ patch }: { patch: A.Patch }) => {
   return (
-    <div className="pb-2 mb-2 border-b border-gray-200">
+    <div className="">
       {patch.action === "splice" && (
         <div className="text-xs">
           <span className="font-serif bg-green-50 border-b border-green-400">

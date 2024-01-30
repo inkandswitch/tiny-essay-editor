@@ -23,7 +23,7 @@ const ESSAY_STYLES = {
     margin: "0 var(--cm-padding-x)",
     // textAlign: "justify",
     textWrap: "pretty",
-    lineHeight: "24px",
+    lineHeight: "1.5rem",
   },
   ".cm-content li": {
     marginBottom: 0,
