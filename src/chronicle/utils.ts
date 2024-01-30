@@ -125,7 +125,7 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
         }
 
         if (deleted.length > overlapStart) {
-          const removed = deleted.slice(inserted.length)
+          const removed = deleted.slice(overlapStart)
 
           filteredPatches.push({
             ...nextPatch,
