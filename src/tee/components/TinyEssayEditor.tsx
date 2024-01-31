@@ -80,8 +80,9 @@ export const TinyEssayEditor = ({
 
   // only show a diff in the text editor if we have edits or edit groups on in the sidebar
   const patchesForEditor =
-    (diff && visibleAnnotationTypes.includes("draft")) ||
-    visibleAnnotationTypes.includes("patch")
+    diff &&
+    (visibleAnnotationTypes.includes("draft") ||
+      visibleAnnotationTypes.includes("patch"))
       ? diff.patches
       : undefined;
 
