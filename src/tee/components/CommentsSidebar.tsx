@@ -443,14 +443,14 @@ export const CommentsSidebar = ({
         return (
           <div
             key={annotation.id}
-            className="absolute group"
+            className="absolute group transition-all duration-100 ease-in-out select-none"
             style={{
               top: annotation.yCoord,
             }}
           >
             <div className="flex items-start relative">
               <div
-                className={`select-none mr-2 mb-1 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+                className={` mr-2 mb-1 rounded-sm max-w-lg  ${
                   selectedAnnotationIds.includes(annotation.id)
                     ? "z-50 shadow-sm ring-2 ring-blue-600"
                     : "z-0 "

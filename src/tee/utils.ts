@@ -73,16 +73,29 @@ export function getRelativeTimeString(
 // a very rough approximation; needs to be better but being perfect seems hard
 const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
   // Patches and drafts are always pretty short in their collapsed form
-  if (annotation.type === "draft" || annotation.type === "patch") {
+  if (
+    annotation.type === "patch" ||
+    (annotation.type === "draft" && !annotation.active)
+  ) {
     return 40;
   }
+
   const commentHeights = annotation.comments.map(
     (comment) => 64 + Math.floor(comment.content.length / 60) * 20
   );
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
-  const PADDING = 32;
-  const BUTTONS = 40;
-  return PADDING + BUTTONS + commentsHeight + 20;
+
+  if (annotation.type === "draft") {
+    const patchesHeight = annotation.editRangesWithComments
+      .map((range) => range.patches.length)
+      .reduce((a, b) => a + b * 40, 0);
+
+    return patchesHeight + commentsHeight + 20;
+  } else if (annotation.type === "thread") {
+    const PADDING = 32;
+    const BUTTONS = 40;
+    return PADDING + BUTTONS + commentsHeight + 20;
+  }
 };
 
 // Resolve comment thread cursors to integer positions in the document
