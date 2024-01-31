@@ -130,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onChange={(e) => setOpenUrlInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && automergeUrlToOpen) {
-                    openDocFromUrl(automergeUrlToOpen);
+                    // openDocFromUrl(automergeUrlToOpen); // TODO FIX THIS
                     setOpenUrlInput("");
                     setOpenNewDocPopoverVisible(false);
                   }

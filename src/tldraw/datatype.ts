@@ -13,7 +13,7 @@ const getTitle = (doc: any) => {
   return doc.store["page:page"].name || "Drawing";
 };
 
-const init = (doc: any) => {
+export const init = (doc: any) => {
   tldrawinit(doc);
   doc.store["page:page"].name = "Drawing";
 };

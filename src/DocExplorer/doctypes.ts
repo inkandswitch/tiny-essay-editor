@@ -13,6 +13,6 @@ export interface DataType {
 export const docTypes = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
-} as { [typeName: string]: DataType };
+} as const;
 
 export type DocType = keyof typeof docTypes;
