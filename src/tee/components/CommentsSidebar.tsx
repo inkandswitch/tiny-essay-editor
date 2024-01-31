@@ -493,7 +493,7 @@ export const CommentsSidebar = ({
                     onClick={() => undoEditsFromAnnotation(annotation)}
                   >
                     <UndoIcon size={14} className="" />
-                    Undo
+                    Revert
                   </div>
                 </div>
               )}
