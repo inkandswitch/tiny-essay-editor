@@ -38,7 +38,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -136,13 +136,13 @@ export const CommentsSidebar = ({
               break;
             }
           }
+          break;
         }
         default: {
+          break;
         }
       }
     });
-
-    console.log(selectedAnnotationIds);
 
     setSelectedAnnotationIds(selectedAnnotationIds);
   }, [selection?.from, selection?.to]);

@@ -105,14 +105,14 @@ export const getTextAnnotationsForUI = ({
   diff,
   diffBase,
   showDiff,
-  threadsForDiffPatches,
+  patchAnnotations,
 }: {
   doc: MarkdownDoc;
   activeThreadIds: string[];
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
   showDiff: boolean;
-  threadsForDiffPatches?: TextAnnotation[];
+  patchAnnotations?: PatchAnnotation[];
 }): TextAnnotationForUI[] => {
   let annotations: TextAnnotation[] = Object.values(doc.commentThreads).filter(
     (thread) => !thread.resolved
@@ -175,7 +175,7 @@ export const getTextAnnotationsForUI = ({
       }
     );
     annotations = [...annotations, ...draftAnnotations];
-    annotations = [...annotations, ...(threadsForDiffPatches ?? [])];
+    annotations = [...annotations, ...(patchAnnotations ?? [])];
   }
 
   return annotations
@@ -475,7 +475,7 @@ export const useAnnotationsWithPositions = ({
       doc,
       diffBase,
       activeThreadIds: selectedAnnotationIds,
-      threadsForDiffPatches: patchAnnotationsToShow,
+      patchAnnotations: patchAnnotationsToShow,
       diff,
       showDiff: diff !== undefined,
     });
