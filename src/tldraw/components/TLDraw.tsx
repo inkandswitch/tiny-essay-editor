@@ -1,33 +1,32 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 
-import { TLDrawDoc } from "../schema";
-import { useAutomergeStore } from "automerge-tldraw";
-import { Tldraw } from "@tldraw/tldraw";
+import { useAutomergeStore, useAutomergePresence } from "automerge-tldraw";
+import { TLStoreSnapshot, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { useAutomergePresence } from "automerge-tldraw";
 
 export const TLDraw = ({ docUrl }: { docUrl: AutomergeUrl }) => {
-  useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
-  const handle = useHandle<TLDrawDoc>(docUrl);
+  useDocument<TLStoreSnapshot>(docUrl); // used to trigger re-rendering when the doc loads
+  const handle = useHandle<TLStoreSnapshot>(docUrl);
   const account = useCurrentAccount();
   const userId = account ? account.contactHandle.url : "no-account";
 
-  let userMetadata
+  const userMetadata = {
+    userId: "no-account",
+    color: "blue",
+    name: "Anonymous",
+  }
+
+  if (account && account.contactHandle) {
+    userMetadata.userId = account.contactHandle.url;
+  }
+
   if (account && account.contactHandle && account.contactHandle.docSync()) {
     const userDoc = account.contactHandle.docSync();
-
-    userMetadata = {
-      userId: account.contactHandle.url,
-      color: userDoc.color || "red",
-      name: userDoc.name || "Anonymous",
-    }
-  } else {
-    userMetadata = {
-      userId: "no-account",
-      color: "blue",
-      name: "Anonymous Coward",
+    if (userDoc.type == "registered") {
+      userMetadata.color = userDoc.color || "blue";
+      userMetadata.name = userDoc.name || "Unnamed User";
     }
   }
 
