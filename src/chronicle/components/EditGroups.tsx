@@ -62,7 +62,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const onForwardHistory = () => {
     if (
       confirm(
-        "Any edits that are currently highlighted will be no longer reviewable"
+        "Are you sure you want to forward the history? Any edits that are currently highlighted will be no longer reviewable."
       )
     ) {
       changeDoc((doc) => {
