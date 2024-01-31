@@ -33,12 +33,26 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
-  const diffBase = useMemo(() => {
+  const [selectedDiffBaseIndex, setSelectedDiffBaseIndex] = useState(0);
+
+  const selectedDiffBase = useMemo(() => {
     if (!doc || !doc.diffBaseSnapshots) {
       return [];
     }
-    return JSON.parse(JSON.stringify(doc?.diffBaseSnapshots[0])); // turn into raw js object
-  }, [doc?.diffBaseSnapshots]);
+    return JSON.parse(
+      JSON.stringify(doc.diffBaseSnapshots[selectedDiffBaseIndex])
+    ); // turn into raw js object
+  }, [doc?.diffBaseSnapshots, selectedDiffBaseIndex]);
+
+  // only set if looking at a previous version
+  const documentHeads = useMemo(() => {
+    if (!doc || !doc.diffBaseSnapshots || selectedDiffBaseIndex === 0) {
+      return undefined;
+    }
+    return JSON.parse(
+      JSON.stringify(doc.diffBaseSnapshots[selectedDiffBaseIndex - 1])
+    );
+  }, [selectedDiffBaseIndex, doc]);
 
   // initialize diff base
   useEffect(() => {
@@ -54,7 +68,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         return (
           !draft.reviews ||
           (Object.values(draft.reviews).length === 0 &&
-            arraysAreEqual(draft.fromHeads, diffBase))
+            arraysAreEqual(draft.fromHeads, selectedDiffBase))
         );
       })
     : [];
@@ -72,10 +86,10 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   };
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
-    if (!doc || diffBase.length === 0) return undefined;
+    if (!doc || selectedDiffBase.length === 0) return undefined;
     const diff = diffWithProvenance(
       doc,
-      diffBase,
+      selectedDiffBase,
       A.getHeads(doc),
       actorIdToAuthor
     );
@@ -84,20 +98,21 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       ...diff,
       patches: combineRedundantPatches(diff.patches),
     };
-  }, [doc, diffBase]);
+  }, [doc, selectedDiffBase]);
 
   if (!doc) return <div>Loading...</div>;
 
   const canForwardHistory =
+    selectedDiffBaseIndex === 0 &&
     unreviewedEditGroups.length === 0 &&
-    !arraysAreEqual(A.getHeads(doc), diffBase);
+    !arraysAreEqual(A.getHeads(doc), selectedDiffBase);
 
   return (
     <div className="h-full overflow-hidden">
       <div className="flex p-1 font-mono text-xs font-semibold">
         <div className="mr-4 flex items-center">
           <div className="mr-1">Diff base:</div>
-          {diffBase.map((hash) => (
+          {selectedDiffBase.map((hash) => (
             <Hash key={hash} hash={hash} />
           ))}
         </div>
@@ -116,26 +131,43 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
         <div className="flex-1"></div>
 
-        <div>
-          {unreviewedEditGroups.length > 0 && (
-            <span className="pl-1">
-              {unreviewedEditGroups.length} unreviewed{" "}
-              {unreviewedEditGroups.length === 1 ? "change" : "changes"}
-            </span>
-          )}
+        <div className="mr-2">
+          <>
+            {unreviewedEditGroups.length > 0 && (
+              <span className="pl-1">
+                {unreviewedEditGroups.length} unreviewed{" "}
+                {unreviewedEditGroups.length === 1 ? "change" : "changes"}
+              </span>
+            )}
 
-          <button
-            className={clsx(`border border-gray-300 rounded p-1`, {
-              "opacity-50": !canForwardHistory,
-            })}
-            disabled={!canForwardHistory}
-            onClick={onForwardHistory}
-          >
-            forward history
-          </button>
+            <button
+              className={clsx(`border border-gray-300 rounded p-1`, {
+                "opacity-50": !canForwardHistory,
+              })}
+              disabled={!canForwardHistory}
+              onClick={onForwardHistory}
+            >
+              forward history
+            </button>
+          </>
+        </div>
+
+        <div className="flex gap-1 items-center">
+          {(doc?.diffBaseSnapshots ?? []).map((heads, index) => {
+            return (
+              <button
+                className={`w-[15px] h-[16px] bg-gray-500 rounded-full ${
+                  selectedDiffBaseIndex === index ? "" : "opacity-50"
+                }`}
+                onClick={() => setSelectedDiffBaseIndex(index)}
+              ></button>
+            );
+          })}
         </div>
       </div>
       <TinyEssayEditor
+        docHeads={documentHeads}
+        readOnly={documentHeads !== undefined}
         docUrl={docUrl}
         key={docUrl}
         diff={showDiffOverlay ? diff : undefined}
