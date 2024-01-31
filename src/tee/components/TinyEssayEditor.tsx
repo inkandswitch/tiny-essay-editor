@@ -33,6 +33,7 @@ export const TinyEssayEditor = ({
   diffStyle,
   foldRanges,
   showDiffAsComments,
+  diffBase,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
@@ -41,6 +42,7 @@ export const TinyEssayEditor = ({
   diffStyle?: DiffStyle;
   foldRanges?: { from: number; to: number }[];
   showDiffAsComments?: boolean;
+  diffBase?: Heads;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -56,6 +58,7 @@ export const TinyEssayEditor = ({
     selectedAnnotationIds: activeThreadIds,
     editorRef,
     diff: showDiffAsComments ? diff : undefined,
+    diffBase,
   });
 
   // todo: remove from this component and move up to DocExplorer?

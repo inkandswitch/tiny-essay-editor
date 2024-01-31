@@ -166,6 +166,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       </div>
       <TinyEssayEditor
+        diffBase={selectedDiffBase}
         docHeads={documentHeads}
         readOnly={documentHeads !== undefined}
         docUrl={docUrl}

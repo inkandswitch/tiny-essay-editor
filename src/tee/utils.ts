@@ -86,12 +86,14 @@ export const getTextAnnotationsForUI = ({
   doc,
   activeThreadIds,
   diff,
+  diffBase,
   showDiff,
   threadsForDiffPatches,
 }: {
   doc: MarkdownDoc;
   activeThreadIds: string[];
   diff?: DiffWithProvenance;
+  diffBase?: A.Heads;
   showDiff: boolean;
   threadsForDiffPatches?: TextAnnotation[];
 }): TextAnnotationForUI[] => {
@@ -100,15 +102,13 @@ export const getTextAnnotationsForUI = ({
   );
 
   if (showDiff) {
-    const diffBase = getDiffBaseOfDoc(doc);
-
     // Here we take the persisted drafts and "claim" patches from the current diff
     // into the individual edit ranges. Any patches from the diff that overlap with
     // the edit range on the draft get claimed for that edit range.
     const draftAnnotations = Object.values(doc.drafts ?? {}).flatMap(
       (draft) => {
         // filter out drafts that are not based on the current diffBase
-        if (!arraysAreEqual(draft.fromHeads, diffBase)) {
+        if (diffBase && !arraysAreEqual(draft.fromHeads, diffBase)) {
           return [];
         }
 
@@ -370,12 +370,14 @@ export const useAnnotationsWithPositions = ({
   selectedAnnotationIds,
   editorRef,
   diff,
+  diffBase,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
   selectedAnnotationIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff?: DiffWithProvenance;
+  diffBase?: A.Heads;
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
@@ -452,6 +454,7 @@ export const useAnnotationsWithPositions = ({
 
     return getTextAnnotationsForUI({
       doc,
+      diffBase,
       activeThreadIds: selectedAnnotationIds,
       threadsForDiffPatches: patchAnnotationsToShow,
       diff,
