@@ -101,14 +101,14 @@ const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
 // Resolve comment thread cursors to integer positions in the document
 export const getTextAnnotationsForUI = ({
   doc,
-  activeThreadIds,
+  selectedAnnotationIds,
   diff,
   diffBase,
   showDiff,
   patchAnnotations,
 }: {
   doc: MarkdownDoc;
-  activeThreadIds: string[];
+  selectedAnnotationIds: string[];
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
   showDiff: boolean;
@@ -228,7 +228,7 @@ export const getTextAnnotationsForUI = ({
           ...annotation,
           from,
           to,
-          active: activeThreadIds.includes(annotation.id),
+          active: selectedAnnotationIds.includes(annotation.id),
         },
       ];
     })
@@ -474,7 +474,7 @@ export const useAnnotationsWithPositions = ({
     return getTextAnnotationsForUI({
       doc,
       diffBase,
-      activeThreadIds: selectedAnnotationIds,
+      selectedAnnotationIds: selectedAnnotationIds,
       patchAnnotations: patchAnnotationsToShow,
       diff,
       showDiff: diff !== undefined,
