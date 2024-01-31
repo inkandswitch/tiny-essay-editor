@@ -513,9 +513,8 @@ export const CommentsSidebar = ({
             <div className="flex items-start relative">
               <div
                 className={` mr-2 mb-1 rounded-sm max-w-lg  ${
-                  selectedAnnotationIds.includes(annotation.id)
-                    ? "z-50 shadow-sm ring-2 ring-blue-600"
-                    : "z-0 "
+                  selectedAnnotationIds.includes(annotation.id) &&
+                  "z-50 shadow-sm ring-2 ring-blue-600"
                 } ${
                   (annotation.type === "patch" ||
                     annotation.type === "thread") &&
@@ -540,7 +539,9 @@ export const CommentsSidebar = ({
                   />
                 )}
                 {annotation.type === "patch" && (
-                  <Patch patch={annotation.patch} />
+                  <div className="z-0">
+                    <Patch patch={annotation.patch} />
+                  </div>
                 )}
                 <div>
                   {annotation.type === "thread" &&
@@ -551,7 +552,7 @@ export const CommentsSidebar = ({
                     ))}
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-75 scale-75 -ml-4 -mt-1 ">
+              <div className="flex items-center gap-1 opacity-75 scale-75 -ml-4 ">
                 {authors.map((author) => (
                   <ContactAvatar
                     url={author}
@@ -885,6 +886,29 @@ function CommentView({ comment }: { comment: Comment }) {
         </div>
       </div>
 
+      <div className="p-1.5 pt-0 text-sm">
+        <p>{comment.content}</p>
+      </div>
+    </div>
+  );
+}
+
+function CompactCommentView({ comment }: { comment: Comment }) {
+  const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
+  if (!contactDoc) return <div></div>;
+  const name = contactDoc.type === "anonymous" ? "Anonymous" : contactDoc.name;
+  return (
+    <div className="text-xs">
+      <div className="flex items-center">
+        <div className="flex-0 scale-75">
+          <ContactAvatar url={comment.contactUrl} showName={false} size="sm" />
+        </div>
+
+        <div className="flex-1">
+          <div className="font-medium">{name}</div>
+        </div>
+      </div>
+
       <div className="p-1.5 pt-0">
         <p>{comment.content}</p>
       </div>
@@ -925,22 +949,20 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
 
   const Icon = expanded ? FolderOpenIcon : FolderIcon;
 
+  const firstComment = annotation.comments[0];
+
   // Setting a manual height and width on this div is a hack.
   // The reason we do it is to make this div big enough to include the absolutely positioned children.
   // That in turn makes sure that we can capture scroll events.
   return (
     <div
       className={`pl-1 min-h-12 min-w-40 rounded-md ${
-        expanded && "bg-black/50"
+        expanded && "bg-gray-100 border border-gray-300 z-50 relative"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div
-        className={`flex text-xs items-center gap-1  ${
-          expanded ? "text-white" : "text-gray-400"
-        }`}
-      >
+      <div className={`flex text-xs items-center gap-1 text-gray-400`}>
         <Icon size={12} className="inline-block " /> {patches.length} edits
         {annotation.comments.length > 0 &&
           ` · ${annotation.comments.length} comments`}
@@ -958,7 +980,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
             key={JSON.stringify(patch)}
             className={`select-none mr-2 px-2 py-1 w-48 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
               expanded
-                ? "z-50  mb-1 "
+                ? "z-50  mb-1 relative"
                 : "z-0 absolute hover:bg-gray-50  hover:border-gray-400 "
             }`}
             style={
@@ -979,10 +1001,23 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
         ))}
       </div>
 
+      {/* Preview first comment in collapsed state */}
+      {firstComment && !expanded && (
+        <div className="mt-8">
+          <CompactCommentView comment={firstComment} />
+        </div>
+      )}
+
+      {annotation.comments.length > 1 && !expanded && (
+        <div className="text-gray-500 text-xs">
+          +{annotation.comments.length - 1} more
+        </div>
+      )}
+
       {expanded && (
         <div>
           {annotation.comments.map((comment) => (
-            <div key={comment.id} className={`${expanded && "text-white"}`}>
+            <div key={comment.id}>
               <CommentView comment={comment} />
             </div>
           ))}

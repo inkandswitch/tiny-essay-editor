@@ -73,11 +73,19 @@ export function getRelativeTimeString(
 // a very rough approximation; needs to be better but being perfect seems hard
 const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
   // Patches and drafts are always pretty short in their collapsed form
-  if (
-    annotation.type === "patch" ||
-    (annotation.type === "draft" && !annotation.active)
-  ) {
+  if (annotation.type === "patch") {
     return 40;
+  }
+
+  if (annotation.type === "draft" && !annotation.active) {
+    let height = 40;
+    if (annotation.comments.length > 0) {
+      height = height + 64 + 20;
+    }
+    if (annotation.comments.length > 1) {
+      height = height + 20;
+    }
+    return height;
   }
 
   const commentHeights = annotation.comments.map(
