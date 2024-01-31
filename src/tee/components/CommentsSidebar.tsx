@@ -397,7 +397,7 @@ export const CommentsSidebar = ({
   return (
     <div className="">
       {showGroupingButton && (
-        <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center">
+        <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center z-[1000]">
           <Button
             variant="outline"
             className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"

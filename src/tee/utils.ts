@@ -5,14 +5,18 @@ import {
   MarkdownDoc,
   PatchAnnotation,
   DiffWithProvenance,
+  ResolvedEditRange,
+  Comment,
 } from "./schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 import { sortBy } from "lodash";
-import { getDiffBaseOfDoc } from "@/chronicle/components/EditGroups";
+// import { getDiffBaseOfDoc } from "@/chronicle/components/EditGroups";
 import { arraysAreEqual } from "@/DocExplorer/utils";
+import { PatchWithAttr } from "@automerge/automerge-wasm";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -112,35 +116,37 @@ export const getTextAnnotationsForUI = ({
           return [];
         }
 
-        const editRangesWithComments = draft.editRangesWithComments.map(
-          (editRange) => {
-            const patchesForEditRange =
-              diff?.patches.filter((patch) => {
-                const { fromCursor, toCursor } = editRange.editRange;
-                const from = A.getCursorPosition(doc, ["content"], fromCursor);
-                const to = A.getCursorPosition(doc, ["content"], toCursor);
-                if (patch.path[0] !== "content") return false;
-                if (patch.action === "splice") {
-                  const patchFrom = patch.path[1] as number;
-                  const patchTo =
-                    (patch.path[1] as number) + patch.value.length;
-                  return patchFrom < to && patchTo > from;
-                } else if (patch.action === "del") {
-                  const deleteAt = patch.path[1] as number;
-                  // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
-                  // but with the old logic deletes where included twice when grouping things
-                  // old: return from <= deleteAt && to >= deleteAt;
-                  return from === deleteAt && to === deleteAt + 1;
-                } else {
-                  return false;
-                }
-              }) ?? [];
-            return {
-              ...editRange,
-              patches: patchesForEditRange,
-            };
-          }
-        );
+        const editRangesWithComments: Array<{
+          editRange: ResolvedEditRange;
+          patches: (A.Patch | PatchWithAttr<AutomergeUrl>)[];
+          comments: Comment[];
+        }> = draft.editRangesWithComments.map((editRange) => {
+          const { fromCursor, toCursor } = editRange.editRange;
+          const from = A.getCursorPosition(doc, ["content"], fromCursor);
+          const to = A.getCursorPosition(doc, ["content"], toCursor);
+          const patchesForEditRange =
+            diff?.patches.filter((patch) => {
+              if (patch.path[0] !== "content") return false;
+              if (patch.action === "splice") {
+                const patchFrom = patch.path[1] as number;
+                const patchTo = (patch.path[1] as number) + patch.value.length;
+                return patchFrom < to && patchTo > from;
+              } else if (patch.action === "del") {
+                const deleteAt = patch.path[1] as number;
+                // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
+                // but with the old logic deletes where included twice when grouping things
+                // old: return from <= deleteAt && to >= deleteAt;
+                return from === deleteAt && to === deleteAt + 1;
+              } else {
+                return false;
+              }
+            }) ?? [];
+          return {
+            ...editRange,
+            patches: patchesForEditRange,
+            editRange: { ...editRange.editRange, from, to },
+          };
+        });
 
         const sortedEditRangesWithComments = sortBy(
           editRangesWithComments,

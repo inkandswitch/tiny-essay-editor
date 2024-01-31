@@ -36,10 +36,10 @@ import { searchKeymap } from "@codemirror/search";
 import { StateEffect, StateField, SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
-  setThreadsEffect,
+  setAnnotationsEffect,
   annotationDecorations,
-  threadsField,
-} from "../codemirrorPlugins/commentThreads";
+  annotationsField,
+} from "../codemirrorPlugins/annotations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
@@ -115,10 +115,31 @@ export function MarkdownEditor({
     });
   }, [diff, editorRoot.current]);
 
-  // Propagate activeThreadId into the codemirror
+  // Propagate comments and edit group annotations into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(annotationsWithPositions),
+      effects: setAnnotationsEffect.of(
+        annotationsWithPositions.flatMap((annotation) => {
+          switch (annotation.type) {
+            case "thread": {
+              return annotation;
+            }
+            case "patch": {
+              return annotation;
+            }
+            case "draft": {
+              return annotation.editRangesWithComments.map((range) => ({
+                from: range.editRange.from,
+                to: range.editRange.to,
+                active: annotation.active,
+              }));
+            }
+            default: {
+              return [];
+            }
+          }
+        })
+      ),
     });
   }, [annotationsWithPositions]);
 
@@ -177,7 +198,7 @@ export function MarkdownEditor({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
         frontmatterPlugin,
-        threadsField,
+        annotationsField,
         annotationDecorations,
         patchesField,
         patchDecorations(diffStyle ?? "normal"),
@@ -211,7 +232,7 @@ export function MarkdownEditor({
           const newSelection = transaction.newSelection.ranges[0];
           if (transaction.newSelection !== view.state.selection) {
             // set the active thread id if our selection is in a thread
-            for (const thread of view.state.field(threadsField)) {
+            for (const thread of view.state.field(annotationsField)) {
               if (
                 thread.from <= newSelection.from &&
                 thread.to >= newSelection.to

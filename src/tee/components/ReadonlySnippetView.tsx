@@ -17,8 +17,8 @@ import { indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   annotationDecorations,
-  threadsField,
-} from "../codemirrorPlugins/commentThreads";
+  annotationsField,
+} from "../codemirrorPlugins/annotations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
@@ -62,7 +62,7 @@ export function ReadonlySnippetView({
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
         frontmatterPlugin,
-        threadsField,
+        annotationsField,
         annotationDecorations,
         patchDecorations(patches, "normal"),
         previewFiguresPlugin,

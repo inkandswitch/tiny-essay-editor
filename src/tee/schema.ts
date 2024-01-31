@@ -28,6 +28,11 @@ export type EditRange = {
   toCursor: string;
 };
 
+export type ResolvedEditRange = EditRange & {
+  from: number;
+  to: number;
+};
+
 export type ThreadAnnotation = {
   type: "thread";
   id: string;
@@ -73,9 +78,12 @@ export type PersistedDraft = {
   reviews: Record<AutomergeUrl, A.Heads>;
 };
 
+// An in-memory draft annotation, derived from a persisted draft
+// - Turn edit ranges into numbers
+// - Claim some patches from the current diff
 export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
   editRangesWithComments: Array<{
-    editRange: EditRange;
+    editRange: ResolvedEditRange;
     patches: (A.Patch | PatchWithAttr<AutomergeUrl>)[];
     comments: Comment[];
   }>;
