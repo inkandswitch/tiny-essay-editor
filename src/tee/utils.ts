@@ -106,6 +106,7 @@ export const getTextAnnotationsForUI = ({
   diffBase,
   showDiff,
   patchAnnotations,
+  visibleAnnotationTypes,
 }: {
   doc: MarkdownDoc;
   selectedAnnotationIds: string[];
@@ -113,10 +114,16 @@ export const getTextAnnotationsForUI = ({
   diffBase?: A.Heads;
   showDiff: boolean;
   patchAnnotations?: PatchAnnotation[];
+  visibleAnnotationTypes: TextAnnotation["type"][];
 }): TextAnnotationForUI[] => {
-  let annotations: TextAnnotation[] = Object.values(doc.commentThreads).filter(
-    (thread) => !thread.resolved
-  );
+  let annotations: TextAnnotation[] = [];
+
+  if (visibleAnnotationTypes.includes("thread")) {
+    annotations = [
+      ...annotations,
+      ...Object.values(doc.commentThreads).filter((thread) => !thread.resolved),
+    ];
+  }
 
   if (showDiff) {
     // Here we take the persisted drafts and "claim" patches from the current diff
@@ -174,8 +181,14 @@ export const getTextAnnotationsForUI = ({
         ];
       }
     );
-    annotations = [...annotations, ...draftAnnotations];
-    annotations = [...annotations, ...(patchAnnotations ?? [])];
+
+    if (visibleAnnotationTypes.includes("draft")) {
+      annotations = [...annotations, ...draftAnnotations];
+    }
+
+    if (visibleAnnotationTypes.includes("patch")) {
+      annotations = [...annotations, ...(patchAnnotations ?? [])];
+    }
   }
 
   return annotations
@@ -383,6 +396,7 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
 
 // A React hook that gets the annotations for the doc w/ positions
 // and manages caching.
+// The main thing the hook helps with is figuring out the patch annotations.
 export const useAnnotationsWithPositions = ({
   doc,
   view,
@@ -390,6 +404,7 @@ export const useAnnotationsWithPositions = ({
   editorRef,
   diff,
   diffBase,
+  visibleAnnotationTypes,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
@@ -397,6 +412,7 @@ export const useAnnotationsWithPositions = ({
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
+  visibleAnnotationTypes: TextAnnotation["type"][];
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
@@ -474,12 +490,13 @@ export const useAnnotationsWithPositions = ({
     return getTextAnnotationsForUI({
       doc,
       diffBase,
-      selectedAnnotationIds: selectedAnnotationIds,
+      selectedAnnotationIds,
       patchAnnotations: patchAnnotationsToShow,
       diff,
       showDiff: diff !== undefined,
+      visibleAnnotationTypes,
     });
-  }, [doc, selectedAnnotationIds, diff]);
+  }, [doc, selectedAnnotationIds, diff, visibleAnnotationTypes]);
 
   // Next we get the vertical position for each thread.
 

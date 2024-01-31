@@ -7,6 +7,7 @@ import {
   DiffWithProvenance,
   DraftAnnotation,
   MarkdownDoc,
+  TextAnnotation,
 } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
@@ -50,8 +51,9 @@ export const TinyEssayEditor = ({
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
-
-  console.log(selection);
+  const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<
+    TextAnnotation["type"][]
+  >(["thread", "draft", "patch"]);
 
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc,
@@ -60,6 +62,7 @@ export const TinyEssayEditor = ({
     editorRef,
     diff: showDiffAsComments ? diff : undefined,
     diffBase,
+    visibleAnnotationTypes,
   });
 
   // todo: remove from this component and move up to DocExplorer?
@@ -194,6 +197,8 @@ export const TinyEssayEditor = ({
             diff={diffForEditor}
             focusedDraftThreadId={focusedDraftThreadId}
             setFocusedDraftThreadId={setFocusedDraftThreadId}
+            visibleAnnotationTypes={visibleAnnotationTypes}
+            setVisibleAnnotationTypes={setVisibleAnnotationTypes}
           />
         </div>
       </div>

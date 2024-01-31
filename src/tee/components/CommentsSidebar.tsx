@@ -26,6 +26,7 @@ import {
   Reply,
   UndoIcon,
   CheckIcon,
+  EditIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -47,6 +48,7 @@ import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const CommentsSidebar = ({
   doc,
@@ -58,6 +60,8 @@ export const CommentsSidebar = ({
   diff,
   focusedDraftThreadId,
   setFocusedDraftThreadId,
+  visibleAnnotationTypes,
+  setVisibleAnnotationTypes,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
@@ -68,6 +72,8 @@ export const CommentsSidebar = ({
   focusedDraftThreadId: string | null;
   setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
+  visibleAnnotationTypes: TextAnnotation["type"][];
+  setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
@@ -393,7 +399,64 @@ export const CommentsSidebar = ({
     selectedDraftAnnotations.length <= 1;
 
   return (
-    <div className="">
+    <div className="w-72">
+      <div className="mt-2">
+        <div className="text-gray-500 text-xs uppercase font-semibold mb-1">
+          Filters
+        </div>
+        {["thread", "patch", "draft"].map((annotationType) => {
+          let Icon;
+          let label;
+
+          switch (annotationType) {
+            case "thread":
+              Icon = MessageCircleIcon;
+              label = "Comments";
+              break;
+            case "patch":
+              Icon = EditIcon;
+              label = "Edits";
+              break;
+            case "draft":
+              Icon = FolderOpenIcon;
+              label = "Edit Groups";
+              break;
+          }
+
+          return (
+            <div className="flex items-center">
+              <Checkbox
+                id={`toggle-${annotationType}`}
+                className="mr-2"
+                checked={visibleAnnotationTypes.includes(
+                  annotationType as TextAnnotation["type"]
+                )}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setVisibleAnnotationTypes([
+                      ...visibleAnnotationTypes,
+                      annotationType as TextAnnotation["type"],
+                    ]);
+                  } else {
+                    setVisibleAnnotationTypes(
+                      visibleAnnotationTypes.filter(
+                        (type) => type !== annotationType
+                      )
+                    );
+                  }
+                }}
+              />
+              <label
+                htmlFor={`toggle-${annotationType}`}
+                className="text-gray-700 text-sm"
+              >
+                {label}
+              </label>
+              <Icon size={14} className="ml-1 text-gray-500" />
+            </div>
+          );
+        })}
+      </div>
       <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center z-[1000]">
         <Button
           variant="outline"
@@ -560,62 +623,62 @@ export const CommentsSidebar = ({
                   </div>
                 </div>
               )}
-              {annotation.type === "thread" && (
-                <div className="mt-2">
-                  <Popover
-                    open={activeReplyThreadId === annotation.id}
-                    onOpenChange={(open) =>
-                      open
-                        ? setActiveReplyThreadId(annotation.id)
-                        : setActiveReplyThreadId(null)
-                    }
-                  >
-                    <PopoverTrigger asChild>
-                      <Button className="mr-2" variant="outline">
-                        <Reply className="mr-2 " /> Reply
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <Textarea
-                        className="mb-4"
-                        value={pendingCommentText}
-                        onChange={(event) =>
-                          setPendingCommentText(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" && event.metaKey) {
-                            replyToAnnotation(annotation);
-                            setActiveReplyThreadId(null);
-                            event.preventDefault();
-                          }
-                        }}
-                      />
-
-                      <PopoverClose>
-                        <Button
-                          variant="outline"
-                          onClick={() => replyToAnnotation(annotation)}
-                        >
-                          Comment
-                          <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
-                        </Button>
-                      </PopoverClose>
-                    </PopoverContent>
-                  </Popover>
-                  <Button
-                    variant="outline"
-                    className="select-none"
-                    onClick={() =>
-                      changeDoc(
-                        (d) => (d.commentThreads[annotation.id].resolved = true)
-                      )
-                    }
-                  >
-                    <Check className="mr-2" /> Resolve
-                  </Button>
-                </div>
-              )}
             </div>
+            {annotation.type === "thread" && (
+              <div className="mt-1">
+                <Popover
+                  open={activeReplyThreadId === annotation.id}
+                  onOpenChange={(open) =>
+                    open
+                      ? setActiveReplyThreadId(annotation.id)
+                      : setActiveReplyThreadId(null)
+                  }
+                >
+                  <PopoverTrigger asChild>
+                    <Button className="mr-2 px-2 h-8" variant="outline">
+                      <Reply className="mr-2 " /> Reply
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    <Textarea
+                      className="mb-4"
+                      value={pendingCommentText}
+                      onChange={(event) =>
+                        setPendingCommentText(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && event.metaKey) {
+                          replyToAnnotation(annotation);
+                          setActiveReplyThreadId(null);
+                          event.preventDefault();
+                        }
+                      }}
+                    />
+
+                    <PopoverClose>
+                      <Button
+                        variant="outline"
+                        onClick={() => replyToAnnotation(annotation)}
+                      >
+                        Comment
+                        <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+                      </Button>
+                    </PopoverClose>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  variant="outline"
+                  className="select-none h-8 px-2"
+                  onClick={() =>
+                    changeDoc(
+                      (d) => (d.commentThreads[annotation.id].resolved = true)
+                    )
+                  }
+                >
+                  <Check className="mr-2" /> Resolve
+                </Button>
+              </div>
+            )}
           </div>
         );
       })}
