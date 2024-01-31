@@ -49,6 +49,8 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { HistoryFilter } from "./HistoryFilter";
 
 export const CommentsSidebar = ({
   doc,
@@ -407,63 +409,14 @@ export const CommentsSidebar = ({
 
   return (
     <div className="w-72">
-      <div className="mt-2">
-        <div className="text-gray-500 text-xs uppercase font-semibold mb-1">
-          Filters
+      {diff && (
+        <div className="mt-4 z-[1000] relative ">
+          <HistoryFilter
+            visibleAnnotationTypes={visibleAnnotationTypes}
+            setVisibleAnnotationTypes={setVisibleAnnotationTypes}
+          />
         </div>
-        {["thread", "patch", "draft"].map((annotationType) => {
-          let Icon;
-          let label;
-
-          switch (annotationType) {
-            case "thread":
-              Icon = MessageCircleIcon;
-              label = "Comments";
-              break;
-            case "patch":
-              Icon = EditIcon;
-              label = "Edits";
-              break;
-            case "draft":
-              Icon = FolderOpenIcon;
-              label = "Edit Groups";
-              break;
-          }
-
-          return (
-            <div className="flex items-center">
-              <Checkbox
-                id={`toggle-${annotationType}`}
-                className="mr-2"
-                checked={visibleAnnotationTypes.includes(
-                  annotationType as TextAnnotation["type"]
-                )}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setVisibleAnnotationTypes([
-                      ...visibleAnnotationTypes,
-                      annotationType as TextAnnotation["type"],
-                    ]);
-                  } else {
-                    setVisibleAnnotationTypes(
-                      visibleAnnotationTypes.filter(
-                        (type) => type !== annotationType
-                      )
-                    );
-                  }
-                }}
-              />
-              <label
-                htmlFor={`toggle-${annotationType}`}
-                className="text-gray-700 text-sm"
-              >
-                {label}
-              </label>
-              <Icon size={14} className="ml-1 text-gray-500" />
-            </div>
-          );
-        })}
-      </div>
+      )}
       <div className="fixed top-[40vh] right-0 z-[1000]">
         <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
           <Button

@@ -78,15 +78,12 @@ export const TinyEssayEditor = ({
 
   const annotations = focusedDraft ? [focusedDraft] : annotationsWithPositions;
 
-  // todo: reify the live patches on the draft into actual patches
-  const diffForEditor: DiffWithProvenance = focusedDraft
-    ? {
-        fromHeads: focusedDraft.fromHeads,
-        toHeads: docHeads ?? getHeads(doc),
-        patches: [], // TODO fill in patches here
-      }
-    : diff;
-  const patchesForEditor = diffForEditor ? diffForEditor.patches : undefined;
+  // only show a diff in the text editor if we have edits or edit groups on in the sidebar
+  const patchesForEditor =
+    (diff && visibleAnnotationTypes.includes("draft")) ||
+    visibleAnnotationTypes.includes("patch")
+      ? diff.patches
+      : undefined;
 
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
@@ -196,7 +193,7 @@ export const TinyEssayEditor = ({
             selectedAnnotationIds={selectedAnnotationIds}
             setSelectedAnnotationIds={setSelectedAnnotationIds}
             annotationsWithPositions={annotations}
-            diff={diffForEditor}
+            diff={diff}
             focusedDraftThreadId={focusedDraftThreadId}
             setFocusedDraftThreadId={setFocusedDraftThreadId}
             visibleAnnotationTypes={visibleAnnotationTypes}
