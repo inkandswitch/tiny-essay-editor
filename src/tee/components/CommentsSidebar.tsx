@@ -624,63 +624,14 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   annotation,
   selected,
 }) => {
-  const scrollCaptureRef = useRef<HTMLDivElement>(null);
-
-  // We store patches locally because we may reorder in response to interactions
-  const [patches, setPatches] = useState<A.Patch[]>(
-    annotation.editRangesWithComments.flatMap((editRange) => editRange.patches)
+  const patches = annotation.editRangesWithComments.flatMap(
+    (range) => range.patches
   );
 
   // State to track if the component is hovered
   const [isHovered, setIsHovered] = useState(false);
 
   const expanded = selected || isHovered;
-
-  // When the annotation changes reset the patches list
-  useEffect(() => {
-    setPatches(
-      annotation.editRangesWithComments.flatMap(
-        (editRange) => editRange.patches
-      )
-    );
-  }, [annotation]);
-
-  const throttledHandleScroll = throttle((deltaY: number) => {
-    console.log("running throttled");
-    setPatches((patches) => {
-      if (deltaY > 0) {
-        const firstPatch = patches.shift();
-        if (firstPatch) {
-          return [...patches, firstPatch];
-        }
-      } else if (deltaY < 0) {
-        const lastPatch = patches.pop();
-        if (lastPatch) {
-          return [lastPatch, ...patches];
-        }
-      }
-      return patches;
-    });
-  }, 200);
-
-  useEffect(() => {
-    const handleScroll = (event: WheelEvent) => {
-      event.preventDefault(); // Prevent scrolling the page
-      console.log("yo");
-      throttledHandleScroll(event.deltaY);
-    };
-    const element = scrollCaptureRef.current;
-    if (element) {
-      element.addEventListener("wheel", handleScroll, { passive: false }); // Add event listener
-    }
-
-    return () => {
-      if (element) {
-        element.removeEventListener("wheel", handleScroll); // Clean up event listener
-      }
-    };
-  }, []); // Empty dependency array ensures this effect runs only once
-
   // Handlers for mouse enter and leave to manage hover state
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
@@ -691,7 +642,6 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   return (
     <div
       className=" min-h-12 min-w-40"
-      ref={scrollCaptureRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
