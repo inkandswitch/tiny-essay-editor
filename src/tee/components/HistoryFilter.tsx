@@ -52,8 +52,8 @@ function TypeIcon({ annotationType }: { annotationType: string }) {
   const symbol = annotationType[0].toUpperCase();
 
   const colorMap: Record<string, string> = {
-    thread: "bg-yellow-500 border-yellow-600",
-    change: "bg-green-500 border-green-600",
+    Comments: "bg-yellow-500 border-yellow-600",
+    Edits: "bg-green-500 border-green-600",
   };
 
   const colorClasses =
@@ -121,7 +121,7 @@ const FilterSettings: React.FC<{
                       }
                     }}
                   />
-                  <TypeIcon annotationType={annotationType} />
+                  <TypeIcon annotationType={label} />
                   <div>{label}</div>
                 </div>
               </div>
