@@ -12,15 +12,17 @@ import {
   PersistedDraft,
 } from "../schema";
 
-import { groupBy, sortBy, throttle } from "lodash";
+import { groupBy } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
-  FolderEditIcon,
+  FolderIcon,
+  FolderOpenIcon,
   GroupIcon,
   MessageCircleIcon,
   MessageSquarePlus,
   MoreHorizontalIcon,
+  UndoIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -345,7 +347,7 @@ export const CommentsSidebar = ({
   return (
     <div>
       {showGroupingButton && (
-        <div className="group  text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center">
+        <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center">
           <Button
             variant="outline"
             className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
@@ -374,7 +376,7 @@ export const CommentsSidebar = ({
           }}
         >
           <div
-            className={`select-none mr-2 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
+            className={`select-none mr-2 mb-1 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
               selectedAnnotationIds.includes(annotation.id)
                 ? "z-50 shadow-sm ring-2 ring-blue-600"
                 : "z-0 hover:bg-gray-50 hover:border-gray-400"
@@ -410,9 +412,18 @@ export const CommentsSidebar = ({
                 ))}
             </div>
           </div>
-          <div className="text-xs text-gray-500 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out">
-            <MessageCircleIcon size={14} className="" />
-            Add comment
+          <div className="text-xs text-gray-500 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out cursor-pointer">
+            <div className="flex mr-2">
+              <MessageCircleIcon size={14} className="" />
+              Comment
+            </div>
+            <div
+              className="flex"
+              onClick={() => undoEditsFromAnnotation(annotation)}
+            >
+              <UndoIcon size={14} className="" />
+              Undo
+            </div>
           </div>
         </div>
       ))}
@@ -636,6 +647,8 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
+  const Icon = expanded ? FolderOpenIcon : FolderIcon;
+
   // Setting a manual height and width on this div is a hack.
   // The reason we do it is to make this div big enough to include the absolutely positioned children.
   // That in turn makes sure that we can capture scroll events.
@@ -646,7 +659,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
       onMouseLeave={handleMouseLeave}
     >
       <div className="flex text-xs text-gray-400 items-center">
-        <FolderEditIcon size={12} className="inline-block mr-1 text-gray-500" />{" "}
+        <Icon size={12} className="inline-block mr-1 text-gray-500" />{" "}
         {patches.length} edits
       </div>
 
