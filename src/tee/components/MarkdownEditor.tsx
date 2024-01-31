@@ -37,7 +37,7 @@ import { StateEffect, StateField, SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   setThreadsEffect,
-  threadDecorations,
+  annotationDecorations,
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
@@ -118,9 +118,7 @@ export function MarkdownEditor({
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(
-        annotationsWithPositions.filter((thread) => thread.type === "thread")
-      ),
+      effects: setThreadsEffect.of(annotationsWithPositions),
     });
   }, [annotationsWithPositions]);
 
@@ -180,7 +178,7 @@ export function MarkdownEditor({
         automergePlugin,
         frontmatterPlugin,
         threadsField,
-        threadDecorations,
+        annotationDecorations,
         patchesField,
         patchDecorations(diffStyle ?? "normal"),
         previewFiguresPlugin,

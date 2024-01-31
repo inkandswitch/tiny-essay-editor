@@ -7,7 +7,6 @@ import {
   DiffWithProvenance,
   DraftAnnotation,
   MarkdownDoc,
-  PatchAnnotation,
 } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useRef, useState } from "react";
@@ -19,7 +18,7 @@ import { getRelativeTimeString, useAnnotationsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Heads, getHeads, view, getCursor } from "@automerge/automerge/next";
+import { Heads, getHeads, view } from "@automerge/automerge/next";
 import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -51,6 +50,8 @@ export const TinyEssayEditor = ({
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
+
+  console.log(selection);
 
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc,

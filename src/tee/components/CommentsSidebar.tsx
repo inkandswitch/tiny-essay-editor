@@ -103,24 +103,50 @@ export const CommentsSidebar = ({
 
   // select patch threads if selection changes
   useEffect(() => {
-    if (!selection || selection.from === selection.to) {
+    console.log(selection);
+    if (!selection) {
       setSelectedAnnotationIds([]);
       return;
     }
 
     // find draft threads in selected range
-    const highlightedPatchIds: string[] = [];
+    const selectedAnnotationIds: string[] = [];
     annotationsWithPositions.forEach((annotation) => {
-      if (
-        annotation.from >= selection.from &&
-        annotation.to <= selection.to &&
-        annotation.type === "patch"
-      ) {
-        highlightedPatchIds.push(annotation.id);
+      switch (annotation.type) {
+        case "patch": {
+          if (
+            !(annotation.to < selection.from || annotation.from > selection.to)
+          ) {
+            selectedAnnotationIds.push(annotation.id);
+          }
+          break;
+        }
+        case "draft": {
+          for (const editRange of annotation.editRangesWithComments) {
+            const from = A.getCursorPosition(
+              doc,
+              ["content"],
+              editRange.editRange.fromCursor
+            );
+            const to = A.getCursorPosition(
+              doc,
+              ["content"],
+              editRange.editRange.toCursor
+            );
+            if (!(to < selection.from || from > selection.to)) {
+              selectedAnnotationIds.push(annotation.id);
+              break;
+            }
+          }
+        }
+        default: {
+        }
       }
     });
 
-    setSelectedAnnotationIds(highlightedPatchIds);
+    console.log(selectedAnnotationIds);
+
+    setSelectedAnnotationIds(selectedAnnotationIds);
   }, [selection?.from, selection?.to]);
 
   const startCommentThreadAtSelection = (commentText: string) => {
@@ -369,7 +395,7 @@ export const CommentsSidebar = ({
     selectedDraftAnnotations.length <= 1;
 
   return (
-    <div>
+    <div className="">
       {showGroupingButton && (
         <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center">
           <Button
@@ -419,7 +445,7 @@ export const CommentsSidebar = ({
               top: annotation.yCoord,
             }}
           >
-            <div className="flex">
+            <div className="flex items-start">
               <div
                 className={`select-none mr-2 mb-1 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
                   selectedAnnotationIds.includes(annotation.id)
@@ -471,7 +497,7 @@ export const CommentsSidebar = ({
                 ))}
               </div>
               {(annotation.type === "draft" || annotation.type === "patch") && (
-                <div className="text-xs text-gray-500 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out cursor-pointer">
+                <div className="ml-2 text-sm text-gray-500 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out cursor-pointer">
                   <Popover
                     open={activeReplyThreadId === annotation.id}
                     onOpenChange={(open) =>
@@ -481,7 +507,7 @@ export const CommentsSidebar = ({
                     }
                   >
                     <PopoverTrigger asChild>
-                      <div className="flex mr-2">
+                      <div className="flex mr-2 hover:text-gray-800">
                         <MessageCircleIcon size={14} className="" />
                         Comment
                       </div>
@@ -515,7 +541,7 @@ export const CommentsSidebar = ({
                   </Popover>
 
                   <div
-                    className="flex"
+                    className="flex hover:text-gray-800"
                     onClick={() => undoEditsFromAnnotation(annotation)}
                   >
                     <UndoIcon size={14} className="" />
@@ -523,7 +549,7 @@ export const CommentsSidebar = ({
                   </div>
 
                   <div
-                    className="flex"
+                    className="flex hover:text-gray-800"
                     onClick={() => toggleAnnotationIsMarkedReviewed(annotation)}
                   >
                     <CheckIcon size={14} className="" />
@@ -840,7 +866,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   return (
     <div
       className={`min-h-12 min-w-40 ${
-        expanded && "bg-gray-100 border border-gray-200 z-100"
+        expanded && "bg-gray-100 border border-gray-200 z-50"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -884,7 +910,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
       ))}
 
       {expanded && (
-        <div className="z-100">
+        <div className="z-50">
           {annotation.comments.map((comment) => (
             <div key={comment.id}>
               <CommentView comment={comment} />

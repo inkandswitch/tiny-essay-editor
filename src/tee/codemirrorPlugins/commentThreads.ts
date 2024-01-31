@@ -24,7 +24,7 @@ const activeThreadDecoration = Decoration.mark({
   class: "cm-comment-thread active",
 });
 
-export const threadDecorations = EditorView.decorations.compute(
+export const annotationDecorations = EditorView.decorations.compute(
   [threadsField],
   (state) => {
     const commentThreads = state.field(threadsField);

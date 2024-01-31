@@ -16,7 +16,7 @@ import * as A from "@automerge/automerge/next";
 import { indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
-  threadDecorations,
+  annotationDecorations,
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
@@ -63,7 +63,7 @@ export function ReadonlySnippetView({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         frontmatterPlugin,
         threadsField,
-        threadDecorations,
+        annotationDecorations,
         patchDecorations(patches, "normal"),
         previewFiguresPlugin,
         highlightKeywordsPlugin,
