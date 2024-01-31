@@ -116,7 +116,10 @@ export const getTextAnnotationsForUI = ({
                 return patchFrom < to && patchTo > from;
               } else if (patch.action === "del") {
                 const deleteAt = patch.path[1] as number;
-                return from <= deleteAt && to >= deleteAt;
+                // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
+                // but with the old logic deletes where included twice when grouping things
+                // old: return from <= deleteAt && to >= deleteAt;
+                return from === deleteAt && to === deleteAt + 1;
               } else {
                 return false;
               }
