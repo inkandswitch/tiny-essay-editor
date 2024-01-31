@@ -2385,6 +2385,26 @@
     "@typescript-eslint/types" "6.18.1"
     eslint-visitor-keys "^3.4.1"
 
+"@uiw/color-convert@2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@uiw/color-convert/-/color-convert-2.0.6.tgz#5b2a0e64b9291a78662ccc74f59dab18155cf115"
+  integrity sha512-LDu9r8geEjUgGzsuTkUu6rV5SCqR9r2liVYQxH42tZ5NkFx87Oswz/lpwthCoulhgjSWA+QEjjE3XB8Z9ove1g==
+
+"@uiw/react-color-circle@^2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@uiw/react-color-circle/-/react-color-circle-2.0.6.tgz#9d8e5542bd49ea5dd13ff88422e1546e60fe885c"
+  integrity sha512-jCwzlKXC0YVQPP6zhogYjFifNxS8J6VBx2ADKv8t50We0lc3gcicrT2Db/EAC0WGp8yigp/J+4OD5BROiST2rw==
+  dependencies:
+    "@uiw/color-convert" "2.0.6"
+    "@uiw/react-color-swatch" "2.0.6"
+
+"@uiw/react-color-swatch@2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@uiw/react-color-swatch/-/react-color-swatch-2.0.6.tgz#3245222b86c1bbb4a8834983a9df8d7a557cf83b"
+  integrity sha512-fDS5oo25tJEW+Xzm8ZM+0t6WjTE7poOQhxbw9ePxVdlcg12SGIvOCiY0kQrox3QjCAgyjTx33poYNEa3uO6BAg==
+  dependencies:
+    "@uiw/color-convert" "2.0.6"
+
 "@ungap/structured-clone@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
