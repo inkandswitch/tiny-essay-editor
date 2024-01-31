@@ -23,11 +23,9 @@ import {
   MessageCircleIcon,
   MessageSquarePlus,
   MoreHorizontalIcon,
-  PencilIcon,
   Reply,
   UndoIcon,
   CheckIcon,
-  CheckCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -450,12 +448,12 @@ export const CommentsSidebar = ({
               top: annotation.yCoord,
             }}
           >
-            <div className="flex items-start">
+            <div className="flex items-start relative">
               <div
                 className={`select-none mr-2 mb-1 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
                   selectedAnnotationIds.includes(annotation.id)
                     ? "z-50 shadow-sm ring-2 ring-blue-600"
-                    : "z-0 hover:bg-gray-50 hover:border-gray-400"
+                    : "z-0 "
                 } ${
                   (annotation.type === "patch" ||
                     annotation.type === "thread") &&
@@ -870,15 +868,18 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   // That in turn makes sure that we can capture scroll events.
   return (
     <div
-      className={`min-h-12 min-w-40 ${
-        expanded && "bg-gray-100 border border-gray-200 z-50"
+      className={`pl-1 min-h-12 min-w-40 rounded-md ${
+        expanded && "bg-black/50"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="flex text-xs text-gray-400 items-center gap-1">
-        <Icon size={12} className="inline-block text-gray-500" />{" "}
-        {patches.length} edits
+      <div
+        className={`flex text-xs items-center gap-1  ${
+          expanded ? "text-white" : "text-gray-400"
+        }`}
+      >
+        <Icon size={12} className="inline-block " /> {patches.length} edits
         {annotation.comments.length > 0 &&
           ` · ${annotation.comments.length} comments`}
         {isMarkedAsReviewedByAnyone && (
@@ -889,35 +890,37 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
         )}
       </div>
 
-      {patches.map((patch, index) => (
-        <div
-          key={JSON.stringify(patch)}
-          className={`select-none mr-2 px-2 py-1 w-48 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
-            expanded
-              ? "z-50  mb-1 "
-              : "z-0 absolute hover:bg-gray-50  hover:border-gray-400 "
-          }`}
-          style={
-            // if group selected: a neat list
-            expanded
-              ? {}
-              : {
-                  // If group not selected: a messy stack in the z-axis
-                  top: 20 + [0, -5, 3, -2, 6][index % 5],
-                  left: [0, -5, 3, -2, 6][index % 5],
-                  zIndex: index * -1,
-                  transform: `rotate(${index % 2 === 0 ? 1.2 : -1.5}deg)`,
-                }
-          }
-        >
-          <Patch patch={patch} />
-        </div>
-      ))}
+      <div className="p-1">
+        {patches.map((patch, index) => (
+          <div
+            key={JSON.stringify(patch)}
+            className={`select-none mr-2 px-2 py-1 w-48 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
+              expanded
+                ? "z-50  mb-1 "
+                : "z-0 absolute hover:bg-gray-50  hover:border-gray-400 "
+            }`}
+            style={
+              // if group selected: a neat list
+              expanded
+                ? {}
+                : {
+                    // If group not selected: a messy stack in the z-axis
+                    top: 21 + [0, 6, 2, 3, 5][index % 5],
+                    left: [5, 1, 3, 3, 6][index % 5],
+                    zIndex: index * -1,
+                    transform: `rotate(${index % 2 === 0 ? 1.2 : -1.5}deg)`,
+                  }
+            }
+          >
+            <Patch patch={patch} />
+          </div>
+        ))}
+      </div>
 
       {expanded && (
-        <div className="z-50">
+        <div>
           {annotation.comments.map((comment) => (
-            <div key={comment.id}>
+            <div key={comment.id} className={`${expanded && "text-white"}`}>
               <CommentView comment={comment} />
             </div>
           ))}
