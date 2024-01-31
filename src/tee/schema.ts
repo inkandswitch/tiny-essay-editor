@@ -112,6 +112,7 @@ type _MarkdownDoc = {
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
+  diffBaseSnapshots: A.Heads[];
 };
 
 export type Copyable = {

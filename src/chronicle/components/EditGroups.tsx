@@ -7,6 +7,8 @@ import * as A from "@automerge/automerge/next";
 import { Hash } from "./Hash";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import { combineRedundantPatches } from "../utils";
+import clsx from "clsx";
+import { arraysAreEqual } from "@/DocExplorer/utils";
 
 const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
   const changes = A.getAllChanges(doc);
@@ -28,15 +30,46 @@ const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
 export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const [doc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(true);
-  const [diffBase, setDiffBase] = useState<A.Heads>([]);
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
+  const diffBase = useMemo(() => {
+    if (!doc || !doc.diffBaseSnapshots) {
+      return [];
+    }
+    return JSON.parse(JSON.stringify(doc?.diffBaseSnapshots[0])); // turn into raw js object
+  }, [doc?.diffBaseSnapshots]);
 
+  // initialize diff base
   useEffect(() => {
-    if (!doc) return;
-    setDiffBase(inferDiffBase(doc));
+    if (!doc || doc.diffBaseSnapshots) return;
+
+    changeDoc((doc) => {
+      doc.diffBaseSnapshots = [A.getHeads(doc)];
+    });
   }, [doc]);
+
+  const unreviewedEditGroups = doc
+    ? Object.values(doc.drafts ?? {}).filter((draft) => {
+        return (
+          !draft.reviews ||
+          (Object.values(draft.reviews).length === 0 &&
+            arraysAreEqual(draft.fromHeads, diffBase))
+        );
+      })
+    : [];
+
+  const onForwardHistory = () => {
+    if (
+      confirm(
+        "Any edits that are currently highlighted will be no longer reviewable"
+      )
+    ) {
+      changeDoc((doc) => {
+        doc.diffBaseSnapshots.unshift(A.getHeads(doc));
+      });
+    }
+  };
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
     if (!doc || diffBase.length === 0) return undefined;
@@ -55,16 +88,20 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   if (!doc) return <div>Loading...</div>;
 
+  const canForwardHistory =
+    unreviewedEditGroups.length === 0 &&
+    !arraysAreEqual(A.getHeads(doc), diffBase);
+
   return (
     <div className="h-full overflow-hidden">
       <div className="flex p-1 font-mono text-xs font-semibold">
-        <div className="mr-4 flex">
-          <div>Diff base</div>
+        <div className="mr-4 flex items-center">
+          <div className="mr-1">Diff base:</div>
           {diffBase.map((hash) => (
             <Hash key={hash} hash={hash} />
           ))}
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center mr-2">
           <label htmlFor="toggleDiff" className="mr-2">
             Show Diff:
           </label>
@@ -76,6 +113,27 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             className="toggle-checkbox"
           />
         </div>
+
+        <div className="flex-1"></div>
+
+        <div>
+          {unreviewedEditGroups.length > 0 && (
+            <span className="pl-1">
+              {unreviewedEditGroups.length} unreviewed{" "}
+              {unreviewedEditGroups.length === 1 ? "change" : "changes"}
+            </span>
+          )}
+
+          <button
+            className={clsx(`border border-gray-300 rounded p-1`, {
+              "opacity-50": !canForwardHistory,
+            })}
+            disabled={!canForwardHistory}
+            onClick={onForwardHistory}
+          >
+            forward history
+          </button>
+        </div>
       </div>
       <TinyEssayEditor
         docUrl={docUrl}
@@ -86,3 +144,6 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
+
+export const getDiffBaseOfDoc = (doc: MarkdownDoc): A.Heads =>
+  doc?.diffBaseSnapshots ? doc?.diffBaseSnapshots[0] : [];

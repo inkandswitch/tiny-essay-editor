@@ -71,7 +71,6 @@ export const CommentsSidebar = ({
   setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
 }) => {
-  console.log("change", doc);
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
   const [commentBoxOpen, setCommentBoxOpen] = useState(false);
@@ -267,7 +266,9 @@ export const CommentsSidebar = ({
                 comments: [],
               },
             ],
+            reviews: {},
           };
+
           // backwards compat for old docs without a drafts field
           if (doc.drafts === undefined) {
             doc.drafts = {};

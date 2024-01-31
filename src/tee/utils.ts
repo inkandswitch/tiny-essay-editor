@@ -11,6 +11,8 @@ import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 import { sortBy } from "lodash";
+import { getDiffBaseOfDoc } from "@/chronicle/components/EditGroups";
+import { arraysAreEqual } from "@/DocExplorer/utils";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -98,49 +100,61 @@ export const getTextAnnotationsForUI = ({
   );
 
   if (showDiff) {
+    const diffBase = getDiffBaseOfDoc(doc);
+
     // Here we take the persisted drafts and "claim" patches from the current diff
     // into the individual edit ranges. Any patches from the diff that overlap with
     // the edit range on the draft get claimed for that edit range.
-    const draftAnnotations = Object.values(doc.drafts ?? {}).map((draft) => {
-      const editRangesWithComments = draft.editRangesWithComments.map(
-        (editRange) => {
-          const patchesForEditRange =
-            diff?.patches.filter((patch) => {
-              const { fromCursor, toCursor } = editRange.editRange;
-              const from = A.getCursorPosition(doc, ["content"], fromCursor);
-              const to = A.getCursorPosition(doc, ["content"], toCursor);
-              if (patch.path[0] !== "content") return false;
-              if (patch.action === "splice") {
-                const patchFrom = patch.path[1] as number;
-                const patchTo = (patch.path[1] as number) + patch.value.length;
-                return patchFrom < to && patchTo > from;
-              } else if (patch.action === "del") {
-                const deleteAt = patch.path[1] as number;
-                // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
-                // but with the old logic deletes where included twice when grouping things
-                // old: return from <= deleteAt && to >= deleteAt;
-                return from === deleteAt && to === deleteAt + 1;
-              } else {
-                return false;
-              }
-            }) ?? [];
-          return {
-            ...editRange,
-            patches: patchesForEditRange,
-          };
+    const draftAnnotations = Object.values(doc.drafts ?? {}).flatMap(
+      (draft) => {
+        // filter out drafts that are not based on the current diffBase
+        if (!arraysAreEqual(draft.fromHeads, diffBase)) {
+          return [];
         }
-      );
 
-      const sortedEditRangesWithComments = sortBy(
-        editRangesWithComments,
-        (range) =>
-          A.getCursorPosition(doc, ["content"], range.editRange.fromCursor)
-      );
-      return {
-        ...draft,
-        editRangesWithComments: sortedEditRangesWithComments,
-      };
-    });
+        const editRangesWithComments = draft.editRangesWithComments.map(
+          (editRange) => {
+            const patchesForEditRange =
+              diff?.patches.filter((patch) => {
+                const { fromCursor, toCursor } = editRange.editRange;
+                const from = A.getCursorPosition(doc, ["content"], fromCursor);
+                const to = A.getCursorPosition(doc, ["content"], toCursor);
+                if (patch.path[0] !== "content") return false;
+                if (patch.action === "splice") {
+                  const patchFrom = patch.path[1] as number;
+                  const patchTo =
+                    (patch.path[1] as number) + patch.value.length;
+                  return patchFrom < to && patchTo > from;
+                } else if (patch.action === "del") {
+                  const deleteAt = patch.path[1] as number;
+                  // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
+                  // but with the old logic deletes where included twice when grouping things
+                  // old: return from <= deleteAt && to >= deleteAt;
+                  return from === deleteAt && to === deleteAt + 1;
+                } else {
+                  return false;
+                }
+              }) ?? [];
+            return {
+              ...editRange,
+              patches: patchesForEditRange,
+            };
+          }
+        );
+
+        const sortedEditRangesWithComments = sortBy(
+          editRangesWithComments,
+          (range) =>
+            A.getCursorPosition(doc, ["content"], range.editRange.fromCursor)
+        );
+        return [
+          {
+            ...draft,
+            editRangesWithComments: sortedEditRangesWithComments,
+          },
+        ];
+      }
+    );
     annotations = [...annotations, ...draftAnnotations];
     annotations = [...annotations, ...(threadsForDiffPatches ?? [])];
   }
@@ -404,6 +418,7 @@ export const useAnnotationsWithPositions = ({
             patch,
             fromHeads: diff.fromHeads,
             toHeads: diff.toHeads,
+            reviews: {},
           },
         ];
       }
