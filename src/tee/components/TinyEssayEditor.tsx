@@ -14,10 +14,7 @@ import { useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
-import {
-  getRelativeTimeString,
-  useAnnotationsWithPositions as useAnnotationsWithPositions,
-} from "../utils";
+import { getRelativeTimeString, useAnnotationsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries

@@ -26,6 +26,8 @@ import {
   PencilIcon,
   Reply,
   UndoIcon,
+  CheckIcon,
+  CheckCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -69,7 +71,7 @@ export const CommentsSidebar = ({
   setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
 }) => {
-  console.log(doc);
+  console.log("change", doc);
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
   const [commentBoxOpen, setCommentBoxOpen] = useState(false);
@@ -188,6 +190,7 @@ export const CommentsSidebar = ({
           editRange,
           comments: [],
         })),
+        reviews: {},
         // TODO not concurrency safe
         number: Object.values(doc.drafts ?? {}).length + 1,
       };
@@ -326,6 +329,22 @@ export const CommentsSidebar = ({
     }
   };
 
+  const toggleAnnotationIsMarkedReviewed = (annotation: TextAnnotation) => {
+    changeDoc((doc) => {
+      let reviews = doc.drafts[annotation.id].reviews;
+      if (!reviews) {
+        doc.drafts[annotation.id].reviews = {};
+        reviews = doc.drafts[annotation.id].reviews;
+      }
+
+      if (reviews[account.contactHandle.url]) {
+        delete reviews[account.contactHandle.url];
+      } else {
+        reviews[account.contactHandle.url] = A.getHeads(doc);
+      }
+    });
+  };
+
   const selectedAnnotations = selectedAnnotationIds.map((id) =>
     annotationsWithPositions.find((annotation) => annotation.id === id)
   );
@@ -385,6 +404,12 @@ export const CommentsSidebar = ({
             .map((patch) => getAttrOfPatch(patch))
             .filter((attr) => isValidAutomergeUrl(attr))
         ) as AutomergeUrl[];
+
+        // todo: check if the edit hasn't changed since the last time the user marked it reviewed
+        const isMarkedAsReviewed =
+          "reviews" in annotation &&
+          annotation.reviews &&
+          annotation.reviews[account.contactHandle.url];
         return (
           <div
             key={annotation.id}
@@ -494,6 +519,14 @@ export const CommentsSidebar = ({
                   >
                     <UndoIcon size={14} className="" />
                     Revert
+                  </div>
+
+                  <div
+                    className="flex"
+                    onClick={() => toggleAnnotationIsMarkedReviewed(annotation)}
+                  >
+                    <CheckIcon size={14} className="" />
+                    {isMarkedAsReviewed ? "Mark unreviewed" : "Mark reviewed"}
                   </div>
                 </div>
               )}
@@ -772,6 +805,20 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   annotation,
   selected,
 }) => {
+  const account = useCurrentAccount();
+
+  // todo: check if the edit hasn't changed since the last time the user marked it reviewed
+
+  const isMarkedAsReviewedByAnyone =
+    "reviews" in annotation &&
+    annotation.reviews &&
+    Object.values(annotation.reviews).length > 0;
+
+  const isMarkedAsReviewedByMe =
+    isMarkedAsReviewedByAnyone &&
+    account &&
+    annotation.reviews[account.contactHandle.url];
+
   const patches = annotation.editRangesWithComments.flatMap(
     (range) => range.patches
   );
@@ -797,11 +844,17 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="flex text-xs text-gray-400 items-center">
-        <Icon size={12} className="inline-block mr-1 text-gray-500" />{" "}
+      <div className="flex text-xs text-gray-400 items-center gap-1">
+        <Icon size={12} className="inline-block text-gray-500" />{" "}
         {patches.length} edits
         {annotation.comments.length > 0 &&
           ` · ${annotation.comments.length} comments`}
+        {isMarkedAsReviewedByAnyone && (
+          <Check
+            className={isMarkedAsReviewedByMe ? "text-green-500" : ""}
+            size={16}
+          />
+        )}
       </div>
 
       {patches.map((patch, index) => (

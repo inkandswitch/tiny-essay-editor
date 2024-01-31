@@ -45,6 +45,9 @@ export type PatchAnnotation = {
   toHeads: A.Heads;
   fromCursor: A.Cursor; // Automerge cursor
   toCursor: A.Cursor; // Automerge cursor
+
+  // map of authorUrl to heads at which they have approved this
+  reviews: Record<AutomergeUrl, A.Heads>;
 };
 
 export type PersistedDraft = {
@@ -65,6 +68,9 @@ export type PersistedDraft = {
     editRange: EditRange;
     comments: Comment[];
   }>;
+
+  // map of authorUrl to heads at which they have approved this
+  reviews: Record<AutomergeUrl, A.Heads>;
 };
 
 export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
