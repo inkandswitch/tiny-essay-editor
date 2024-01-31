@@ -70,15 +70,30 @@ export function getRelativeTimeString(
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
 }
 
-// a very rough approximation; needs to be better but being perfect seems hard
+// a very rough approximation; needs to be better but being perfect seems hard...
 const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
   // Patches and drafts are always pretty short in their collapsed form
   if (annotation.type === "patch") {
-    return 40;
+    if (
+      annotation.patch.action === "splice" &&
+      annotation.patch.value.length > 20
+    ) {
+      return 70;
+    } else {
+      return 40;
+    }
   }
 
+  // This is rough! Redo with more accurate math...
   if (annotation.type === "draft" && !annotation.active) {
     let height = 40;
+    if (
+      annotation.editRangesWithComments[0].editRange.to -
+        annotation.editRangesWithComments[0].editRange.from >
+      20
+    ) {
+      height = height + 40;
+    }
     if (annotation.comments.length > 0) {
       height = height + 64 + 20;
     }

@@ -10,7 +10,7 @@ import {
   TextAnnotation,
 } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ShrinkIcon } from "lucide-react";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
+import { createOrGrowEditGroup } from "@/chronicle/editGroups";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -66,6 +67,28 @@ export const TinyEssayEditor = ({
     diffBase,
     visibleAnnotationTypes,
   });
+
+  // keyboard shortcuts
+  useEffect(() => {
+    const keydownHandler = (event: KeyboardEvent) => {
+      // toggle the sidebar open/closed when the user types cmd-backslash
+      if (event.key === "g" && event.metaKey) {
+        createOrGrowEditGroup(
+          selectedAnnotationIds.map((id) =>
+            annotationsWithPositions.find((a) => a.id === id)
+          ),
+          changeDoc
+        );
+      }
+    };
+
+    window.addEventListener("keydown", keydownHandler);
+
+    // Clean up listener on unmount
+    return () => {
+      window.removeEventListener("keydown", keydownHandler);
+    };
+  }, [selectedAnnotationIds, annotationsWithPositions, changeDoc]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {

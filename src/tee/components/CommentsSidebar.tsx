@@ -51,6 +51,7 @@ import { getAttrOfPatch } from "@/chronicle/groupChanges";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { HistoryFilter } from "./HistoryFilter";
+import { createOrGrowEditGroup } from "@/chronicle/editGroups";
 
 export const CommentsSidebar = ({
   doc,
@@ -107,12 +108,9 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
-  console.log({ selectedAnnotationIds });
-
   // select patch threads if selection changes
   useEffect(() => {
     if (!selection) {
-      console.log("blanking");
       setSelectedAnnotationIds([]);
       return;
     }
@@ -154,7 +152,6 @@ export const CommentsSidebar = ({
       }
     });
 
-    console.log(selectedAnnotationIds);
     setSelectedAnnotationIds(selectedAnnotationIds);
   }, [selection?.from, selection?.to]);
 
@@ -188,72 +185,6 @@ export const CommentsSidebar = ({
     });
 
     setPendingCommentText("");
-  };
-
-  // Start a draft for the selected patches
-  const groupPatches = (selectedAnnotations: TextAnnotation[]) => {
-    const existingDrafts: DraftAnnotation[] = selectedAnnotations.filter(
-      (thread) => thread.type === "draft"
-    ) as DraftAnnotation[];
-
-    const selectedPatches = selectedAnnotations.filter(
-      (annotation) => annotation.type === "patch"
-    ) as PatchAnnotation[];
-
-    if (selectedPatches.length === 0) {
-      alert("no patches selected");
-      return;
-    }
-
-    const editRanges: EditRange[] = selectedPatches.map(
-      (annotation: PatchAnnotation) => ({
-        fromCursor: annotation.fromCursor,
-        toCursor: annotation.toCursor,
-        fromHeads: annotation.fromHeads,
-      })
-    );
-
-    // create new thread if all selected patches are virtual
-    if (existingDrafts.length == 0) {
-      const draft: PersistedDraft = {
-        type: "draft",
-        id: uuid(),
-        comments: [],
-        fromHeads: selectedPatches[0].fromHeads,
-        editRangesWithComments: editRanges.map((editRange) => ({
-          editRange,
-          comments: [],
-        })),
-        reviews: {},
-        // TODO not concurrency safe
-        number: Object.values(doc.drafts ?? {}).length + 1,
-      };
-
-      changeDoc((doc) => {
-        // backwards compat for old docs without a drafts field
-        if (doc.drafts === undefined) {
-          doc.drafts = {};
-        }
-        doc.drafts[draft.id] = draft;
-      });
-
-      // add to existing thread if there is only one
-    } else if (existingDrafts.length === 1) {
-      const existingDraft = existingDrafts[0];
-      changeDoc((doc) => {
-        const draft = doc.drafts[existingDraft.id];
-        for (const livePatch of editRanges) {
-          draft.editRangesWithComments.push({
-            editRange: livePatch,
-            comments: [],
-          });
-        }
-      });
-
-      // give up if multiple drafts are selected
-    } else {
-      alert("can't merge two groups");
-    }
   };
 
   // reply to a comment thread.
@@ -350,7 +281,6 @@ export const CommentsSidebar = ({
   };
 
   const undoEditsFromAnnotation = (annotation: TextAnnotation) => {
-    console.log("undo", annotation);
     if (annotation.type === "patch") {
       undoPatch(annotation.patch);
     } else if (annotation.type === "draft") {
@@ -404,7 +334,7 @@ export const CommentsSidebar = ({
   }
 
   const showGroupingButton =
-    selectedPatchAnnotations.length + selectedDraftAnnotations.length > 1 &&
+    selectedPatchAnnotations.length + selectedDraftAnnotations.length > 0 &&
     selectedDraftAnnotations.length <= 1;
 
   return (
@@ -427,7 +357,7 @@ export const CommentsSidebar = ({
               const selectedThreads = selectedAnnotationIds.map((id) =>
                 annotationsWithPositions.find((thread) => thread.id === id)
               );
-              groupPatches(selectedThreads);
+              createOrGrowEditGroup(selectedThreads, changeDoc);
               setSelectedAnnotationIds([]);
             }}
           >
@@ -441,6 +371,7 @@ export const CommentsSidebar = ({
             }`}
           >
             Group
+            <span className="ml-1 text-gray-400">(⌘-G)</span>
           </div>
         </div>
         <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
