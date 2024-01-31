@@ -12,7 +12,7 @@ import {
   PersistedDraft,
 } from "../schema";
 
-import { groupBy } from "lodash";
+import { groupBy, uniq } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
@@ -380,9 +380,11 @@ export const CommentsSidebar = ({
             : annotation.type === "patch"
             ? [annotation.patch]
             : [];
-        const authors = patchesForAnnotation
-          .map((patch) => patch.attr)
-          .filter((attr) => isValidAutomergeUrl(attr)) as AutomergeUrl[];
+        const authors = uniq(
+          patchesForAnnotation
+            .map((patch) => patch.attr)
+            .filter((attr) => isValidAutomergeUrl(attr))
+        ) as AutomergeUrl[];
         return (
           <div
             key={annotation.id}
@@ -431,6 +433,16 @@ export const CommentsSidebar = ({
                       </div>
                     ))}
                 </div>
+              </div>
+              <div className="flex items-center gap-1 opacity-75 scale-75 -ml-4 -mt-1 ">
+                {authors.map((author) => (
+                  <ContactAvatar
+                    url={author}
+                    showName={false}
+                    size="sm"
+                    key={author}
+                  />
+                ))}
               </div>
               {(annotation.type === "draft" || annotation.type === "patch") && (
                 <div className="text-xs text-gray-500 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out cursor-pointer">
