@@ -377,7 +377,7 @@ const patchDecorations = (diffStyle: DiffStyle) =>
     const decorations = patches.flatMap((patch) => {
       switch (patch.action) {
         case "splice": {
-          const from = patch.path[1];
+          const from = patch.path[1] as number;
           const length = patch.value.length;
           const decoration =
             diffStyle === "private" ? privateDecoration : spliceDecoration;
@@ -388,7 +388,7 @@ const patchDecorations = (diffStyle: DiffStyle) =>
             console.error("this is so weird! why??");
             return [];
           }
-          const from = patch.path[1];
+          const from = patch.path[1] as number;
           return [deleteDecoration.range(from)];
         }
       }

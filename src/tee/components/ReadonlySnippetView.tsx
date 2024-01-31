@@ -80,8 +80,8 @@ export function ReadonlySnippetView({
     editorRoot.current = view;
 
     return () => {
-      view.destroy()
-    }
+      view.destroy();
+    };
   }, [text, patches]);
 
   return (
@@ -141,7 +141,7 @@ const patchDecorations = (patches: A.Patch[], diffStyle: DiffStyle) => {
   const decorations = filteredPatches.flatMap((patch) => {
     switch (patch.action) {
       case "splice": {
-        const from = patch.path[1];
+        const from = patch.path[1] as number;
         const length = patch.value.length;
         const decoration =
           diffStyle === "private" ? privateDecoration : spliceDecoration;
@@ -152,7 +152,7 @@ const patchDecorations = (patches: A.Patch[], diffStyle: DiffStyle) => {
           console.error("this is so weird! why??");
           return [];
         }
-        const from = patch.path[1];
+        const from = patch.path[1] as number;
         return [deleteDecoration.range(from)];
       }
     }

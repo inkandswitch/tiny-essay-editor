@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
+import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import this from @automerge/automerge directly
 
 import {
   Popover,
@@ -45,6 +46,7 @@ import { truncate } from "lodash";
 import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
+import { getAttrOfPatch } from "@/chronicle/groupChanges";
 
 export const CommentsSidebar = ({
   doc,
@@ -76,9 +78,7 @@ export const CommentsSidebar = ({
   >();
 
   // figure out which comments were added in the diff being shown, to highlight in green
-  const addedComments: Array<{ threadId: string; commentIndex: number }> = (
-    diff?.patches ?? []
-  )
+  const addedComments = (diff?.patches ?? [])
     .filter(
       (patch) =>
         patch.path.length === 4 &&
@@ -382,7 +382,7 @@ export const CommentsSidebar = ({
             : [];
         const authors = uniq(
           patchesForAnnotation
-            .map((patch) => patch.attr)
+            .map((patch) => getAttrOfPatch(patch))
             .filter((attr) => isValidAutomergeUrl(attr))
         ) as AutomergeUrl[];
         return (
@@ -508,15 +508,9 @@ export const CommentsSidebar = ({
                     }
                   >
                     <PopoverTrigger asChild>
-                      {annotation.type === "patch" ? (
-                        <Button className="mr-2" variant="outline">
-                          <PencilIcon className="mr-2 " /> Explain
-                        </Button>
-                      ) : (
-                        <Button className="mr-2" variant="outline">
-                          <Reply className="mr-2 " /> Reply
-                        </Button>
-                      )}
+                      <Button className="mr-2" variant="outline">
+                        <Reply className="mr-2 " /> Reply
+                      </Button>
                     </PopoverTrigger>
                     <PopoverContent>
                       <Textarea
@@ -685,8 +679,15 @@ export const PatchesGroupedBySentence = ({
   );
 };
 
-export const PatchesGroupedByAuthor = ({ patches }: { patches: A.Patch[] }) => {
-  const patchesByAuthor = groupBy(patches, (patch: A.Patch) => patch?.attr);
+export const PatchesGroupedByAuthor = ({
+  patches,
+}: {
+  patches: PatchWithAttr<AutomergeUrl>[];
+}) => {
+  const patchesByAuthor = groupBy(
+    patches,
+    (patch: PatchWithAttr<AutomergeUrl>) => getAttrOfPatch(patch)
+  );
 
   return (
     <div className="text-xs">

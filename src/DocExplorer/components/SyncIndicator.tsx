@@ -211,8 +211,8 @@ interface SyncIndicatorState {
 function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
   const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
-  const [syncServerHeads, setSyncServerHeads] = useState();
-  const [ownHeads, setOwnHeads] = useState();
+  const [syncServerHeads, setSyncServerHeads] = useState<A.Heads>();
+  const [ownHeads, setOwnHeads] = useState<A.Heads>();
 
   useEffect(() => {
     repo.subscribeToRemotes([SYNC_SERVER_STORAGE_ID]);

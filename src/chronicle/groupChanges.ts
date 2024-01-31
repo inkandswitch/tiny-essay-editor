@@ -10,10 +10,16 @@ import {
   view,
 } from "@automerge/automerge/next";
 import { diffWithProvenance } from "./utils";
+import { ChangeMetadata } from "@automerge/automerge-repo/dist/DocHandle";
+import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+
+interface DecodedChangeWithMetadata extends DecodedChange {
+  metadata: ChangeMetadata;
+}
 
 type GenericChangeGroup = {
   id: string;
-  changes: DecodedChange[];
+  changes: DecodedChangeWithMetadata[];
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
   // TODO make this a generic type
@@ -34,7 +40,7 @@ export type ChangeGroup = GenericChangeGroup & TEEChangeGroup;
 
 type GroupingAlgorithm = (
   currentGroup: ChangeGroup,
-  newChange: DecodedChange,
+  newChange: DecodedChangeWithMetadata,
   numericParameter: number
 ) => boolean;
 
@@ -52,18 +58,20 @@ export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
     if (!newChange.metadata?.author) {
       return true;
     }
-    return currentGroup.authorUrls.includes(newChange.metadata?.author);
+    return currentGroup.authorUrls.includes(
+      newChange.metadata?.author as AutomergeUrl
+    );
   },
   ByNumberOfChanges: (
     currentGroup: ChangeGroup,
-    newChange: DecodedChange,
+    newChange: DecodedChangeWithMetadata,
     batchSize: number
   ) => {
     return currentGroup.changes.length < batchSize;
   },
   ByCharCount: (
     currentGroup: ChangeGroup,
-    newChange: DecodedChange,
+    newChange: DecodedChangeWithMetadata,
     batchSize: number
   ) => {
     return currentGroup.charsAdded + currentGroup.charsDeleted < batchSize;
@@ -196,8 +204,7 @@ export const getGroupedChanges = (
 
   for (let i = 0; i < changes.length; i++) {
     const change = changes[i];
-    let decodedChange = decodeChange(change);
-
+    let decodedChange = decodeChange(change) as DecodedChangeWithMetadata;
     decodedChange.metadata = {};
 
     try {
@@ -220,9 +227,13 @@ export const getGroupedChanges = (
       }
       if (
         decodedChange.metadata?.author &&
-        !currentGroup.authorUrls.includes(decodedChange.metadata.author)
+        !currentGroup.authorUrls.includes(
+          decodedChange.metadata.author as AutomergeUrl
+        )
       ) {
-        currentGroup.authorUrls.push(decodedChange.metadata.author);
+        currentGroup.authorUrls.push(
+          decodedChange.metadata.author as AutomergeUrl
+        );
       }
 
       // If this change is tagged, then we should end the current group.
@@ -248,6 +259,7 @@ export const getGroupedChanges = (
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
         charsAdded: decodedChange.ops.reduce((total, op) => {
+          // @ts-ignore
           return op.action === "set" && op.insert === true ? total + 1 : total;
         }, 0),
         charsDeleted: decodedChange.ops.reduce((total, op) => {
@@ -261,7 +273,7 @@ export const getGroupedChanges = (
             ? decodedChange.time
             : undefined,
         authorUrls: decodedChange.metadata?.author
-          ? [decodedChange.metadata.author]
+          ? [decodedChange.metadata.author as AutomergeUrl]
           : [],
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
         headings: [],
@@ -304,12 +316,12 @@ export const extractHeadings = (
     let patchStart: number, patchEnd: number;
     switch (patch.action) {
       case "del": {
-        patchStart = patch.path[1];
+        patchStart = patch.path[1] as number;
         patchEnd = patchStart + patch.length;
         break;
       }
       case "splice": {
-        patchStart = patch.path[1];
+        patchStart = patch.path[1] as number;
         patchEnd = patchStart + patch.value.length;
         break;
       }
@@ -369,8 +381,8 @@ const groupPatchesByDelimiter =
     let currentGroup: PatchGroup | null = null;
 
     const createNewGroupFromPatch = (patch: Patch) => {
-      const patchStart = patch.path[1];
-      const patchEnd = patchStart + (patch.value?.length || patch.length);
+      const patchStart = patch.path[1] as number;
+      const patchEnd = patchStart + getSizeOfPatch(patch);
       const groupStartIndex =
         doc.content.lastIndexOf(delimiter, patchStart) + 1;
       const groupEndIndex = doc.content.indexOf(delimiter, patchEnd);
@@ -390,8 +402,8 @@ const groupPatchesByDelimiter =
         continue;
       }
 
-      const patchStart = patch.path[1];
-      const patchEnd = patchStart + (patch.value?.length || patch.length);
+      const patchStart = patch.path[1] as number;
+      const patchEnd = patchStart + getSizeOfPatch(patch);
 
       if (currentGroup) {
         if (patchStart <= currentGroup.groupEndIndex) {
@@ -414,6 +426,23 @@ const groupPatchesByDelimiter =
 
     return patchGroups;
   };
+
+const getSizeOfPatch = (patch: Patch): number => {
+  switch (patch.action) {
+    case "del":
+      return patch.length;
+    case "splice":
+      return patch.value.length;
+    default:
+      throw new Error("unsupported patch type");
+  }
+};
+
+export const getAttrOfPatch = <T>(
+  patch: Patch | PatchWithAttr<T>
+): T | undefined => {
+  return "attr" in patch ? patch.attr : undefined;
+};
 
 export const groupPatchesByLine = groupPatchesByDelimiter("\n");
 export const groupPatchesByParagraph = groupPatchesByDelimiter("\n\n");

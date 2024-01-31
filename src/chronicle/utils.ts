@@ -58,8 +58,6 @@ export const useActorIdToAuthorMap = (
           metadata = JSON.parse(decodedChange.message);
         } catch (e) {}
 
-        
-
         actorIdToAuthorRef.current[decodedChange.actor] = metadata?.author;
       });
 
@@ -104,14 +102,15 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
       nextPatch &&
       currentPatch.path[0] === "content" &&
       nextPatch.path[0] === "content" &&
-      currentPatch.action === 'splice' &&
-      nextPatch.action === 'del' &&
-      currentPatch.path[1] === ((nextPatch.path[1] as number) - currentPatch.value.length)
+      currentPatch.action === "splice" &&
+      nextPatch.action === "del" &&
+      currentPatch.path[1] ===
+        (nextPatch.path[1] as number) - currentPatch.value.length
     ) {
-      const deleted = nextPatch.removed
-      const inserted = currentPatch.value
+      const deleted = nextPatch.removed;
+      const inserted = currentPatch.value;
 
-      const overlapStart = getOverlapStart(inserted, deleted)
+      const overlapStart = getOverlapStart(inserted, deleted);
 
       // combine if there is some overlap
 
@@ -120,46 +119,46 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
           filteredPatches.push({
             ...currentPatch,
             path: ["content", currentPatch.path[1] + overlapStart],
-            value: inserted.slice(overlapStart)
-          })
+            value: inserted.slice(overlapStart),
+          });
         }
 
         if (deleted.length > overlapStart) {
-          const removed = deleted.slice(overlapStart)
+          const removed = deleted.slice(overlapStart);
 
           filteredPatches.push({
             ...nextPatch,
             length: removed.length,
-            removed
-          })
+            removed,
+          });
         }
 
         i++;
-        continue
+        continue;
       }
 
-      const overlapEnd = getOverlapEnd(inserted, deleted)
+      const overlapEnd = getOverlapEnd(inserted, deleted);
       if (overlapEnd > 0) {
         if (overlapEnd > 0) {
           if (inserted.length > overlapEnd) {
             filteredPatches.push({
               ...currentPatch,
-              value: inserted.slice(0, inserted.length - overlapEnd)
-            })
+              value: inserted.slice(0, inserted.length - overlapEnd),
+            });
           }
-  
+
           if (deleted.length > overlapEnd) {
-            const removed = deleted.slice(0, deleted.length - overlapEnd)
-  
+            const removed = deleted.slice(0, deleted.length - overlapEnd);
+
             filteredPatches.push({
               ...nextPatch,
               length: removed.length,
-              removed
-            })
+              removed,
+            });
           }
-  
+
           i++;
-          continue
+          continue;
         }
       }
     }
@@ -181,7 +180,7 @@ const getOverlapStart = (str1: string, str2: string) => {
     }
   }
   return overlapLength;
-}
+};
 
 const getOverlapEnd = (str1: string, str2: string) => {
   let overlapLength = 0;
@@ -194,4 +193,4 @@ const getOverlapEnd = (str1: string, str2: string) => {
     }
   }
   return overlapLength;
-}
+};

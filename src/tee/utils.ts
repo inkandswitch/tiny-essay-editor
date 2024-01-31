@@ -111,11 +111,11 @@ export const getTextAnnotationsForUI = ({
               const to = A.getCursorPosition(doc, ["content"], toCursor);
               if (patch.path[0] !== "content") return false;
               if (patch.action === "splice") {
-                const patchFrom = patch.path[1];
-                const patchTo = patch.path[1] + patch.value.length;
+                const patchFrom = patch.path[1] as number;
+                const patchTo = (patch.path[1] as number) + patch.value.length;
                 return patchFrom < to && patchTo > from;
               } else if (patch.action === "del") {
-                const deleteAt = patch.path[1];
+                const deleteAt = patch.path[1] as number;
                 return from <= deleteAt && to >= deleteAt;
               } else {
                 return false;
@@ -376,15 +376,15 @@ export const useAnnotationsWithPositions = ({
         const { patchStart, patchEnd } =
           patch.action === "splice"
             ? {
-                patchStart: patch.path[1],
+                patchStart: patch.path[1] as number,
                 patchEnd: Math.min(
-                  patch.path[1] + patch.value.length,
+                  (patch.path[1] as number) + patch.value.length,
                   doc.content.length - 1
                 ),
               }
             : {
-                patchStart: patch.path[1],
-                patchEnd: patch.path[1] + 1,
+                patchStart: patch.path[1] as number,
+                patchEnd: (patch.path[1] as number) + 1,
               };
 
         const fromCursor = A.getCursor(doc, ["content"], patchStart);

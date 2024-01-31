@@ -40,12 +40,17 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
     if (!doc || diffBase.length === 0) return undefined;
-    const diff = diffWithProvenance(doc, diffBase, A.getHeads(doc), actorIdToAuthor);
+    const diff = diffWithProvenance(
+      doc,
+      diffBase,
+      A.getHeads(doc),
+      actorIdToAuthor
+    );
 
     return {
       ...diff,
-      patches: combineRedundantPatches(diff.patches)
-    }
+      patches: combineRedundantPatches(diff.patches),
+    };
   }, [doc, diffBase]);
 
   if (!doc) return <div>Loading...</div>;
@@ -81,6 +86,3 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     </div>
   );
 };
-
-
-

@@ -10,10 +10,13 @@ function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
 
   switch (patch.action) {
     case "del": {
-      return patch.path[1] < start && patch.path[1] + patch.length > end;
+      return (
+        (patch.path[1] as number) < start &&
+        (patch.path[1] as number) + patch.length > end
+      );
     }
     case "splice": {
-      const spliceStart = patch.path[1];
+      const spliceStart = patch.path[1] as number;
       const spliceEnd = spliceStart + patch.value.length;
 
       // TODO check this logic, I just winged it; pretty sure it's wrong
@@ -154,12 +157,12 @@ const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
     let patchStart: number, patchEnd: number;
     switch (patch.action) {
       case "del": {
-        patchStart = patch.path[1];
+        patchStart = patch.path[1] as number;
         patchEnd = patchStart + patch.length;
         break;
       }
       case "splice": {
-        patchStart = patch.path[1];
+        patchStart = patch.path[1] as number;
         patchEnd = patchStart + patch.value.length;
         break;
       }
