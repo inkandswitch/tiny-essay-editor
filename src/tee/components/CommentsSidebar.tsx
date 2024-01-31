@@ -654,7 +654,9 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   // That in turn makes sure that we can capture scroll events.
   return (
     <div
-      className=" min-h-12 min-w-40"
+      className={`min-h-12 min-w-40 ${
+        expanded && "bg-gray-100 border border-gray-200"
+      }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -668,16 +670,13 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
           key={JSON.stringify(patch)}
           className={`select-none mr-2 px-2 py-1 w-48 bg-white  border border-gray-200 rounded-sm max-w-lg transition-all duration-100 ease-in-out  ${
             expanded
-              ? "z-50  mb-2 "
+              ? "z-50  mb-1 "
               : "z-0 absolute hover:bg-gray-50  hover:border-gray-400 "
           }`}
           style={
             // if group selected: a neat list
             expanded
-              ? {
-                  top: 20 + index * 30,
-                  left: 0,
-                }
+              ? {}
               : {
                   // If group not selected: a messy stack in the z-axis
                   top: 20 + [0, -5, 3, -2, 6][index % 5],

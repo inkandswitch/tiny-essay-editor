@@ -56,7 +56,7 @@ export const TinyEssayEditor = ({
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc,
     view: editorView,
-    activeThreadIds,
+    selectedAnnotationIds: activeThreadIds,
     editorRef,
     diff: showDiffAsComments ? diff : undefined,
   });

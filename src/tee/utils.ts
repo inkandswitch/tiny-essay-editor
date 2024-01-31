@@ -65,12 +65,12 @@ export function getRelativeTimeString(
 }
 
 // a very rough approximation; needs to be better but being perfect seems hard
-const estimatedHeightOfThread = (thread: TextAnnotationForUI) => {
+const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
   // Patches and drafts are always pretty short in their collapsed form
-  if (thread.type === "draft" || thread.type === "patch") {
-    return 32;
+  if (annotation.type === "draft" || annotation.type === "patch") {
+    return 40;
   }
-  const commentHeights = thread.comments.map(
+  const commentHeights = annotation.comments.map(
     (comment) => 64 + Math.floor(comment.content.length / 60) * 20
   );
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
@@ -210,16 +210,16 @@ export const getVisibleTheadsWithPos = ({
   threads,
   doc,
   view,
-  activeThreadIds,
+  selectedAnnotationIds,
 }: {
   threads: TextAnnotationForUI[];
   doc: MarkdownDoc;
   view: EditorView;
-  activeThreadIds: string[];
+  selectedAnnotationIds: string[];
 }): TextAnnotationWithPosition[] => {
   // Arbitrarily use the first active thread as the "active" thread
   // for the purposes of positioning.
-  const activeThreadId = activeThreadIds[0];
+  const activeThreadId = selectedAnnotationIds[0];
 
   // As an initial draft, put each thread right next to its comment
   const threadsWithPositions = threads.flatMap((thread) => {
@@ -258,12 +258,12 @@ export const getVisibleTheadsWithPos = ({
   for (let i = activeIndex - 1; i >= 0; i--) {
     if (
       threadsWithPositions[i].yCoord +
-        estimatedHeightOfThread(threadsWithPositions[i]) >
+        estimatedHeightOfAnnotation(threadsWithPositions[i]) >
       threadsWithPositions[i + 1].yCoord
     ) {
       threadsWithPositions[i].yCoord =
         threadsWithPositions[i + 1].yCoord -
-        estimatedHeightOfThread(threadsWithPositions[i]);
+        estimatedHeightOfAnnotation(threadsWithPositions[i]);
     }
   }
 
@@ -272,11 +272,11 @@ export const getVisibleTheadsWithPos = ({
     if (
       threadsWithPositions[i].yCoord <
       threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfThread(threadsWithPositions[i - 1])
+        estimatedHeightOfAnnotation(threadsWithPositions[i - 1])
     ) {
       threadsWithPositions[i].yCoord =
         threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfThread(threadsWithPositions[i - 1]);
+        estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
     }
   }
 
@@ -284,16 +284,16 @@ export const getVisibleTheadsWithPos = ({
     if (
       threadsWithPositions[i].yCoord <
       threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfThread(threadsWithPositions[i - 1])
+        estimatedHeightOfAnnotation(threadsWithPositions[i - 1])
     ) {
       if (threadsWithPositions[i].id === activeThreadId) {
         threadsWithPositions[i - 1].yCoord =
           threadsWithPositions[i].yCoord -
-          estimatedHeightOfThread(threadsWithPositions[i - 1]);
+          estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
       } else {
         threadsWithPositions[i].yCoord =
           threadsWithPositions[i - 1].yCoord +
-          estimatedHeightOfThread(threadsWithPositions[i - 1]);
+          estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
       }
     }
   }
@@ -350,13 +350,13 @@ export const jsxToHtmlElement = (jsx: ReactElement): HTMLElement => {
 export const useAnnotationsWithPositions = ({
   doc,
   view,
-  activeThreadIds,
+  selectedAnnotationIds,
   editorRef,
   diff,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
-  activeThreadIds: string[];
+  selectedAnnotationIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff?: DiffWithProvenance;
 }) => {
@@ -434,12 +434,12 @@ export const useAnnotationsWithPositions = ({
 
     return getTextAnnotationsForUI({
       doc,
-      activeThreadIds,
+      activeThreadIds: selectedAnnotationIds,
       threadsForDiffPatches: patchAnnotationsToShow,
       diff,
       showDiff: diff !== undefined,
     });
-  }, [doc, activeThreadIds, diff]);
+  }, [doc, selectedAnnotationIds, diff]);
 
   // Next we get the vertical position for each thread.
 
@@ -458,13 +458,13 @@ export const useAnnotationsWithPositions = ({
             threads,
             doc,
             view,
-            activeThreadIds,
+            selectedAnnotationIds,
           })
         : [],
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;
     // but actually it's critical for making comments appear correctly as scrolling happens
-    [doc, view, threads, activeThreadIds, scrollPosition]
+    [doc, view, threads, selectedAnnotationIds, scrollPosition]
   );
 
   return threadsWithPositions;
