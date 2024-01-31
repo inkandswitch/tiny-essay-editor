@@ -45,7 +45,7 @@
     "@tldraw/tldraw": "2.0.0-alpha.17",
     "@uiw/react-color-circle": "^2.0.6",
     "@xstate/react": "^3.2.2",
-    "automerge-tldraw": "0.1.5",
+    "automerge-tldraw": "0.1.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
