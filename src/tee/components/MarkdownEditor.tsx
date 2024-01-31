@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import {
-  Decoration,
-  dropCursor,
-  EditorView,
-  keymap,
-  WidgetType,
-} from "@codemirror/view";
+import { dropCursor, EditorView, keymap } from "@codemirror/view";
 
 import {
   plugin as amgPlugin,
@@ -33,7 +27,7 @@ import {
 } from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
 import { searchKeymap } from "@codemirror/search";
-import { StateEffect, StateField, SelectionRange } from "@codemirror/state";
+import { SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   setAnnotationsEffect,
@@ -48,6 +42,17 @@ import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfConten
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import { TextAnnotationForUI, MarkdownDoc } from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import {
+  setPatchesEffect,
+  patchesField,
+  patchDecorations,
+} from "../codemirrorPlugins/patchDecorations";
+import {
+  DebugHighlight,
+  setDebugHighlightsEffect,
+  debugHighlightsField,
+  debugHighlightsDecorations,
+} from "../codemirrorPlugins/DebugHighlight";
 
 export type TextSelection = {
   from: number;
@@ -332,125 +337,3 @@ export function MarkdownEditor({
     </div>
   );
 }
-
-// Stuff for patches decoration
-// TODO: move this into a separate file
-
-const setPatchesEffect = StateEffect.define<A.Patch[]>();
-const patchesField = StateField.define<A.Patch[]>({
-  create() {
-    return [];
-  },
-  update(patches, tr) {
-    for (const e of tr.effects) {
-      if (e.is(setPatchesEffect)) {
-        return e.value;
-      }
-    }
-    return patches;
-  },
-});
-
-class DeletionMarker extends WidgetType {
-  constructor() {
-    super();
-  }
-
-  toDOM(): HTMLElement {
-    const box = document.createElement("div");
-    box.style.display = "inline-block";
-    box.style.boxSizing = "border-box";
-    box.style.padding = "0 2px";
-    box.style.color = "rgb(236 35 35)";
-    box.style.margin = "0 4px";
-    box.style.fontSize = "0.8em";
-    box.style.backgroundColor = "rgb(255 0 0 / 10%)";
-    box.style.borderRadius = "3px";
-    box.innerText = "⌫";
-    return box;
-  }
-
-  eq() {
-    // todo: i think this is right for now until we show hover of del text etc
-    return true;
-  }
-
-  ignoreEvent() {
-    return true;
-  }
-}
-
-const privateDecoration = Decoration.mark({ class: "cm-patch-private" });
-const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
-const deleteDecoration = Decoration.widget({
-  widget: new DeletionMarker(),
-  side: 1,
-});
-
-const patchDecorations = (diffStyle: DiffStyle) =>
-  EditorView.decorations.compute([patchesField], (state) => {
-    const patches = state
-      .field(patchesField)
-      .filter((patch) => patch.path[0] === "content");
-
-    const decorations = patches.flatMap((patch) => {
-      switch (patch.action) {
-        case "splice": {
-          const from = patch.path[1] as number;
-          const length = patch.value.length;
-          const decoration =
-            diffStyle === "private" ? privateDecoration : spliceDecoration;
-          return [decoration.range(from, from + length)];
-        }
-        case "del": {
-          if (patch.path.length < 2) {
-            console.error("this is so weird! why??");
-            return [];
-          }
-          const from = patch.path[1] as number;
-          return [deleteDecoration.range(from)];
-        }
-      }
-      return [];
-    });
-
-    return Decoration.set(decorations);
-  });
-
-export interface DebugHighlight {
-  from: number;
-  to: number;
-  class: string;
-}
-
-const setDebugHighlightsEffect = StateEffect.define<DebugHighlight[]>();
-const debugHighlightsField = StateField.define<DebugHighlight[]>({
-  create() {
-    return [];
-  },
-  update(hightlights, tr) {
-    for (const e of tr.effects) {
-      if (e.is(setDebugHighlightsEffect)) {
-        return e.value.sort((a, b) => a.from - b.from);
-      }
-    }
-
-    return hightlights;
-  },
-});
-
-const debugHighlightsDecorations = EditorView.decorations.compute(
-  [debugHighlightsField],
-  (state) => {
-    const highlights = state.field(debugHighlightsField);
-
-    return Decoration.set(
-      highlights.map((highlight) => {
-        return Decoration.mark({ class: highlight.class }).range(
-          highlight.from,
-          highlight.to + (highlight.to === highlight.from ? 1 : 0)
-        );
-      })
-    );
-  }
-);

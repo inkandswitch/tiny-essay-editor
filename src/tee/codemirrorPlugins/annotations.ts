@@ -3,7 +3,6 @@ import { StateEffect, StateField } from "@codemirror/state";
 import { AnnotationPosition } from "../schema";
 import { amRangeToCMRange } from "../utils";
 import { sortBy } from "lodash";
-import { getCursorPosition } from "@automerge/automerge/next";
 
 export const setAnnotationsEffect = StateEffect.define<AnnotationPosition[]>();
 export const annotationsField = StateField.define<AnnotationPosition[]>({
