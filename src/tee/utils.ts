@@ -115,7 +115,7 @@ export const getTextAnnotationsForUI = ({
                 return patchFrom < to && patchTo > from;
               } else if (patch.action === "del") {
                 const deleteAt = patch.path[1];
-                return from < deleteAt && to == deleteAt;
+                return from <= deleteAt && to >= deleteAt;
               } else {
                 return false;
               }

@@ -16,18 +16,11 @@ import { groupBy, sortBy, throttle } from "lodash";
 import { isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
-  Check,
-  FileDiffIcon,
   FolderEditIcon,
-  FolderGit,
-  FolderIcon,
-  Fullscreen,
   GroupIcon,
   MessageCircleIcon,
   MessageSquarePlus,
   MoreHorizontalIcon,
-  PencilIcon,
-  Reply,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -69,6 +62,7 @@ export const CommentsSidebar = ({
   setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
 }) => {
+  console.log(doc);
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
   const [commentBoxOpen, setCommentBoxOpen] = useState(false);
@@ -351,11 +345,10 @@ export const CommentsSidebar = ({
   return (
     <div>
       {showGroupingButton && (
-        <div className="group w-12 hover:w-20 text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex">
-          <div className="hidden group-hover:block mt-2">Group</div>
+        <div className="group  text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center">
           <Button
             variant="outline"
-            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/90 backdrop-blur text-white rounded-full px-0 hover:bg-black/80 hover:text-white"
+            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
             onClick={() => {
               const selectedThreads = selectedAnnotationIds.map((id) =>
                 annotationsWithPositions.find((thread) => thread.id === id)
@@ -366,6 +359,9 @@ export const CommentsSidebar = ({
           >
             <GroupIcon className="inline m-1" />
           </Button>
+          <div className="transition-opacity duration-100 ease-in-out opacity-0 group-hover:opacity-100">
+            Group
+          </div>
         </div>
       )}
 
@@ -427,15 +423,14 @@ export const CommentsSidebar = ({
         <PopoverTrigger asChild>
           {showCommentButton && (
             <Button
-              className="relative shadow-md w-44"
+              className="relative shadow-md ml-2 p-2 rounded-full"
               variant="outline"
               style={{
                 top: (selection?.yCoord ?? 0) + 23,
                 left: -50,
               }}
             >
-              <MessageSquarePlus size={24} className="mr-2" />
-              Add comment
+              <MessageSquarePlus size={24} className="" />
             </Button>
           )}
         </PopoverTrigger>
