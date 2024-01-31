@@ -887,7 +887,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   // That in turn makes sure that we can capture scroll events.
   return (
     <div
-      className={`pl-1 min-h-12 min-w-40 rounded-md ${
+      className={`p-2 min-h-12 min-w-48 rounded-md  border border-gray-200 bg-gray-50 shadow ${
         expanded && "bg-gray-100 border border-gray-300 z-50 relative"
       }`}
       onMouseEnter={handleMouseEnter}
@@ -920,8 +920,8 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
                 ? {}
                 : {
                     // If group not selected: a messy stack in the z-axis
-                    top: 21 + [0, 6, 2, 3, 5][index % 5],
-                    left: [5, 1, 3, 3, 6][index % 5],
+                    top: 28 + [0, 6, 2, 3, 5][index % 5],
+                    left: 5 + [5, 1, 3, 3, 6][index % 5],
                     zIndex: index * -1,
                     transform: `rotate(${index % 2 === 0 ? 1.2 : -1.5}deg)`,
                   }
@@ -934,7 +934,7 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
 
       {/* Preview first comment in collapsed state */}
       {firstComment && !expanded && (
-        <div className="mt-8">
+        <div className="mt-8 max-w-64">
           <CompactCommentView comment={firstComment} />
         </div>
       )}
