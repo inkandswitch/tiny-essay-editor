@@ -396,26 +396,31 @@ export const CommentsSidebar = ({
 
   return (
     <div className="">
-      {showGroupingButton && (
-        <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center z-[1000]">
-          <Button
-            variant="outline"
-            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
-            onClick={() => {
-              const selectedThreads = selectedAnnotationIds.map((id) =>
-                annotationsWithPositions.find((thread) => thread.id === id)
-              );
-              groupPatches(selectedThreads);
-              setSelectedAnnotationIds([]);
-            }}
-          >
-            <GroupIcon className="inline m-1" />
-          </Button>
-          <div className="transition-opacity duration-100 ease-in-out opacity-0 group-hover:opacity-100">
-            Group
-          </div>
+      <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center z-[1000]">
+        <Button
+          variant="outline"
+          disabled={!showGroupingButton}
+          className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
+          onClick={() => {
+            const selectedThreads = selectedAnnotationIds.map((id) =>
+              annotationsWithPositions.find((thread) => thread.id === id)
+            );
+            groupPatches(selectedThreads);
+            setSelectedAnnotationIds([]);
+          }}
+        >
+          <GroupIcon className="inline m-1" />
+        </Button>
+        <div
+          className={`transition-opacity duration-100 ease-in-out opacity-0 ${
+            showGroupingButton
+              ? "group-hover:opacity-100"
+              : "group-hover:opacity-50"
+          }`}
+        >
+          Group
         </div>
-      )}
+      </div>
 
       {annotationsWithPositions.map((annotation) => {
         const patchesForAnnotation =
