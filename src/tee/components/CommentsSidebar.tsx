@@ -56,7 +56,7 @@ export const CommentsSidebar = ({
   selection,
   annotationsWithPositions,
   selectedAnnotationIds,
-  setSelectedThreadIds: setSelectedAnnotationIds,
+  setSelectedAnnotationIds,
   diff,
   focusedDraftThreadId,
   setFocusedDraftThreadId,
@@ -68,7 +68,7 @@ export const CommentsSidebar = ({
   selection: TextSelection;
   annotationsWithPositions: TextAnnotationWithPosition[];
   selectedAnnotationIds: string[];
-  setSelectedThreadIds: (threadIds: string[]) => void;
+  setSelectedAnnotationIds: (threadIds: string[]) => void;
   focusedDraftThreadId: string | null;
   setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
@@ -105,10 +105,12 @@ export const CommentsSidebar = ({
     setSuppressButton(false);
   }, [selection?.from, selection?.to]);
 
+  console.log({ selectedAnnotationIds });
+
   // select patch threads if selection changes
   useEffect(() => {
-    console.log(selection);
     if (!selection) {
+      console.log("blanking");
       setSelectedAnnotationIds([]);
       return;
     }
@@ -150,6 +152,7 @@ export const CommentsSidebar = ({
       }
     });
 
+    console.log(selectedAnnotationIds);
     setSelectedAnnotationIds(selectedAnnotationIds);
   }, [selection?.from, selection?.to]);
 
@@ -324,6 +327,26 @@ export const CommentsSidebar = ({
     }
   };
 
+  const undoPatches = (patches: A.Patch[]) => {
+    const patchesWithCursors = patches.map((patch) => ({
+      ...patch,
+      fromCursor: A.getCursor(doc, ["content"], patch.path[1] as number),
+    }));
+
+    for (const patch of patchesWithCursors) {
+      const adjustedIndex = A.getCursorPosition(
+        doc,
+        ["content"],
+        patch.fromCursor
+      );
+
+      undoPatch({
+        ...patch,
+        path: [patch.path[0], adjustedIndex, ...patch.path.slice(2)],
+      });
+    }
+  };
+
   const undoEditsFromAnnotation = (annotation: TextAnnotation) => {
     console.log("undo", annotation);
     if (annotation.type === "patch") {
@@ -334,25 +357,9 @@ export const CommentsSidebar = ({
       // So we gotta get cursors for the patches and then get numeric indexes
       // after each undo.
 
-      const patchesWithCursors = annotation.editRangesWithComments
-        .flatMap((range) => range.patches)
-        .map((patch) => ({
-          ...patch,
-          fromCursor: A.getCursor(doc, ["content"], patch.path[1] as number),
-        }));
-
-      for (const patch of patchesWithCursors) {
-        const adjustedIndex = A.getCursorPosition(
-          doc,
-          ["content"],
-          patch.fromCursor
-        );
-
-        undoPatch({
-          ...patch,
-          path: [patch.path[0], adjustedIndex, ...patch.path.slice(2)],
-        });
-      }
+      undoPatches(
+        annotation.editRangesWithComments.flatMap((range) => range.patches)
+      );
 
       changeDoc((doc) => {
         delete doc.drafts[annotation.id];
@@ -457,29 +464,68 @@ export const CommentsSidebar = ({
           );
         })}
       </div>
-      <div className="group text-xs font-gray-600 p-2 ml-12 fixed top-[40vh] right-0 flex flex-row-reverse items-center z-[1000]">
-        <Button
-          variant="outline"
-          disabled={!showGroupingButton}
-          className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
-          onClick={() => {
-            const selectedThreads = selectedAnnotationIds.map((id) =>
-              annotationsWithPositions.find((thread) => thread.id === id)
-            );
-            groupPatches(selectedThreads);
-            setSelectedAnnotationIds([]);
-          }}
-        >
-          <GroupIcon className="inline m-1" />
-        </Button>
-        <div
-          className={`transition-opacity duration-100 ease-in-out opacity-0 ${
-            showGroupingButton
-              ? "group-hover:opacity-100"
-              : "group-hover:opacity-50"
-          }`}
-        >
-          Group
+      <div className="fixed top-[40vh] right-0 z-[1000]">
+        <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
+          <Button
+            variant="outline"
+            disabled={!showGroupingButton}
+            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
+            onClick={() => {
+              const selectedThreads = selectedAnnotationIds.map((id) =>
+                annotationsWithPositions.find((thread) => thread.id === id)
+              );
+              groupPatches(selectedThreads);
+              setSelectedAnnotationIds([]);
+            }}
+          >
+            <GroupIcon className="inline m-1" />
+          </Button>
+          <div
+            className={`transition-opacity duration-100 ease-in-out opacity-0 ${
+              showGroupingButton
+                ? "group-hover:opacity-100"
+                : "group-hover:opacity-50"
+            }`}
+          >
+            Group
+          </div>
+        </div>
+        <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
+          <Button
+            variant="outline"
+            disabled={!showGroupingButton}
+            className="group-hover:flex group-hover:items-center group-hover:justify-center h-8 ml-1 bg-black/80 backdrop-blur text-white rounded-full px-0 hover:bg-black/90 hover:text-white"
+            onClick={() => {
+              const selectedAnnotations = selectedAnnotationIds.map((id) =>
+                annotationsWithPositions.find((thread) => thread.id === id)
+              );
+              const patches = selectedAnnotations.flatMap((annotation) => {
+                if (annotation.type === "patch") {
+                  return [annotation.patch];
+                }
+                if (annotation.type === "draft") {
+                  return annotation.editRangesWithComments.flatMap(
+                    (range) => range.patches
+                  );
+                } else {
+                  return [];
+                }
+              });
+
+              undoPatches(patches);
+            }}
+          >
+            <UndoIcon className="inline m-1" />
+          </Button>
+          <div
+            className={`transition-opacity duration-100 ease-in-out opacity-0 ${
+              showGroupingButton
+                ? "group-hover:opacity-100"
+                : "group-hover:opacity-50"
+            }`}
+          >
+            Revert
+          </div>
         </div>
       </div>
 

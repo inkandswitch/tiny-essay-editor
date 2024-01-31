@@ -134,6 +134,7 @@ export function MarkdownEditor({
             }
             case "draft": {
               return annotation.editRangesWithComments.map((range) => ({
+                id: annotation.id,
                 from: range.editRange.from,
                 to: range.editRange.to,
                 active: annotation.active,
@@ -234,20 +235,6 @@ export function MarkdownEditor({
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
-          const newSelection = transaction.newSelection.ranges[0];
-          if (transaction.newSelection !== view.state.selection) {
-            // set the active thread id if our selection is in a thread
-            for (const thread of view.state.field(annotationsField)) {
-              if (
-                thread.from <= newSelection.from &&
-                thread.to >= newSelection.to
-              ) {
-                setActiveThreadIds([thread.id]);
-                break;
-              }
-              setActiveThreadIds([]);
-            }
-          }
           view.update([transaction]);
 
           semaphore.reconcile(handle, view);

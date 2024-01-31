@@ -47,7 +47,9 @@ export const TinyEssayEditor = ({
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
-  const [activeThreadIds, setActiveThreadIds] = useState<string[]>([]);
+  const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>(
+    []
+  );
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
@@ -58,7 +60,7 @@ export const TinyEssayEditor = ({
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc,
     view: editorView,
-    selectedAnnotationIds: activeThreadIds,
+    selectedAnnotationIds: selectedAnnotationIds,
     editorRef,
     diff: showDiffAsComments ? diff : undefined,
     diffBase,
@@ -178,7 +180,7 @@ export const TinyEssayEditor = ({
             setSelection={setSelection}
             setView={setEditorView}
             threadsWithPositions={annotations}
-            setActiveThreadIds={setActiveThreadIds}
+            setActiveThreadIds={setSelectedAnnotationIds}
             readOnly={readOnly ?? false}
             docHeads={docHeads}
             diff={patchesForEditor}
@@ -191,8 +193,8 @@ export const TinyEssayEditor = ({
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
-            selectedAnnotationIds={activeThreadIds}
-            setSelectedThreadIds={setActiveThreadIds}
+            selectedAnnotationIds={selectedAnnotationIds}
+            setSelectedAnnotationIds={setSelectedAnnotationIds}
             annotationsWithPositions={annotations}
             diff={diffForEditor}
             focusedDraftThreadId={focusedDraftThreadId}

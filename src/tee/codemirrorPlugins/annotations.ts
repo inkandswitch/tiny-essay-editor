@@ -4,8 +4,11 @@ import { AnnotationPosition } from "../schema";
 import { amRangeToCMRange } from "../utils";
 import { sortBy } from "lodash";
 
-export const setAnnotationsEffect = StateEffect.define<AnnotationPosition[]>();
-export const annotationsField = StateField.define<AnnotationPosition[]>({
+export const setAnnotationsEffect =
+  StateEffect.define<(AnnotationPosition & { id: string })[]>();
+export const annotationsField = StateField.define<
+  (AnnotationPosition & { id: string })[]
+>({
   create() {
     return [];
   },
