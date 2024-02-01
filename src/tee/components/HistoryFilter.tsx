@@ -1,15 +1,6 @@
-import {
-  Clock4,
-  EditIcon,
-  FolderOpenIcon,
-  ListFilter,
-  MessageCircleIcon,
-  Tag,
-  User,
-} from "lucide-react";
+import { ListFilter } from "lucide-react";
 import { useState } from "react";
 import { TextAnnotation } from "../schema";
-import { Checkbox } from "@radix-ui/react-checkbox";
 
 export const HistoryFilter: React.FC<{
   visibleAnnotationTypes: TextAnnotation["type"][];
@@ -18,7 +9,11 @@ export const HistoryFilter: React.FC<{
   const [showFilterSettings, setShowFilterSettings] = useState(false);
 
   return (
-    <div className="max-w-[400px] rounded border p-4 text-sm bg-gray-100">
+    <div
+      className={`max-w-[400px] rounded  p-4 text-sm bg-gray-50 border-b border-gray-200 ${
+        showFilterSettings && "border "
+      }`}
+    >
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <input
@@ -28,7 +23,7 @@ export const HistoryFilter: React.FC<{
           />
 
           <button
-            className={`flex-0 block grid h-7 w-7 place-items-center rounded-full text-white ${
+            className={`flex-0 grid h-7 w-7 place-items-center rounded-full text-white ${
               showFilterSettings ? "bg-blue-500" : "bg-black"
             }`}
             onClick={() => setShowFilterSettings(!showFilterSettings)}
@@ -127,6 +122,12 @@ const FilterSettings: React.FC<{
               </div>
             );
           })}
+        </div>
+
+        <div>
+          <h2 className="text-[10px] font-bold uppercase text-gray-500">
+            Show edits by
+          </h2>
         </div>
       </div>
     </div>

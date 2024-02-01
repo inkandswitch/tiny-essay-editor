@@ -61,8 +61,6 @@ export const CommentsSidebar = ({
   selectedAnnotationIds,
   setSelectedAnnotationIds,
   diff,
-  focusedDraftThreadId,
-  setFocusedDraftThreadId,
   visibleAnnotationTypes,
   setVisibleAnnotationTypes,
 }: {
@@ -72,8 +70,6 @@ export const CommentsSidebar = ({
   annotationsWithPositions: TextAnnotationWithPosition[];
   selectedAnnotationIds: string[];
   setSelectedAnnotationIds: (threadIds: string[]) => void;
-  focusedDraftThreadId: string | null;
-  setFocusedDraftThreadId: (id: string | null) => void;
   diff?: DiffWithProvenance;
   visibleAnnotationTypes: TextAnnotation["type"][];
   setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
@@ -326,12 +322,6 @@ export const CommentsSidebar = ({
   const selectedDraftAnnotations = selectedAnnotations.filter(
     (thread) => thread && thread.type === "draft"
   );
-
-  // If there's a focused draft, show nothing for now
-  // (TODO: show the comments for the parts of the diff...)
-  if (focusedDraftThreadId) {
-    return <div></div>;
-  }
 
   const showGroupingButton =
     selectedPatchAnnotations.length + selectedDraftAnnotations.length > 0 &&

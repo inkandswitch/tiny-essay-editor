@@ -53,7 +53,6 @@ export const TinyEssayEditor = ({
   );
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
-  const [focusedDraftThreadId, setFocusedDraftThreadId] = useState<string>();
   const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<
     TextAnnotation["type"][]
   >(["thread", "draft", "patch"]);
@@ -71,7 +70,7 @@ export const TinyEssayEditor = ({
   // keyboard shortcuts
   useEffect(() => {
     const keydownHandler = (event: KeyboardEvent) => {
-      // toggle the sidebar open/closed when the user types cmd-backslash
+      // Group edit groups with cmd-g
       if (event.key === "g" && event.metaKey) {
         createOrGrowEditGroup(
           selectedAnnotationIds.map((id) =>
@@ -95,11 +94,7 @@ export const TinyEssayEditor = ({
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
-  const focusedDraft = annotationsWithPositions.find(
-    (thread) => thread.id === focusedDraftThreadId
-  ) as (DraftAnnotation & AnnotationPosition & { yCoord: number }) | undefined;
-
-  const annotations = focusedDraft ? [focusedDraft] : annotationsWithPositions;
+  const annotations = annotationsWithPositions;
 
   // only show a diff in the text editor if we have edits or edit groups on in the sidebar
   const patchesForEditor =
@@ -112,82 +107,6 @@ export const TinyEssayEditor = ({
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto" ref={editorRef}>
-      {focusedDraft && (
-        <div className="w-full p-4">
-          <div className="mb-3 border-b border-gray-300 pb-2 flex items-center text-gray-500">
-            <div className="text-xs font-bold mb-1 uppercase mr-1">Draft</div>
-            <div className="text-xs">{focusedDraft.title}</div>
-            <Button
-              variant="outline"
-              className="ml-2 h-5 max-w-36"
-              onClick={() => setFocusedDraftThreadId(null)}
-            >
-              <ShrinkIcon className="mr-2 h-4" />
-              Unfocus
-            </Button>
-          </div>
-          <div className="mb-3 border-b border-gray-300 pb-2">
-            {focusedDraft.editRangesWithComments
-              .flatMap((editRange) => editRange.patches)
-              .map((patch) => (
-                <div key={`${JSON.stringify(patch)}`} className="select-none">
-                  {patch.action === "splice" && (
-                    <div className="text-xs">
-                      <strong>Insert: </strong>
-                      <span className="font-serif">
-                        {truncate(patch.value, { length: 50 })}
-                      </span>
-                    </div>
-                  )}
-                  {patch.action === "del" && (
-                    <div className="text-xs">
-                      <strong>Delete: </strong>
-                      {patch.length} characters
-                    </div>
-                  )}
-                  {!["splice", "del"].includes(patch.action) && (
-                    <div className="font-mono">
-                      Unknown action: {patch.action}
-                    </div>
-                  )}
-                </div>
-              ))}
-          </div>
-          <div>
-            {/* TODO: DRY This with comments sidebar */}
-            {focusedDraft.comments.map((comment) => {
-              const legacyUserName =
-                doc.users?.find((user) => user.id === comment.userId)?.name ??
-                "Anonymous";
-
-              return (
-                <div
-                  key={comment.id}
-                  className={`mb-3 pb-3  rounded-md border-b border-b-gray-200 last:border-b-0`}
-                >
-                  <div className="text-xs text-gray-600 mb-1 cursor-default flex items-center">
-                    {comment.contactUrl ? (
-                      <ContactAvatar
-                        url={comment.contactUrl}
-                        showName={true}
-                        size="sm"
-                      />
-                    ) : (
-                      legacyUserName
-                    )}
-                    <span className="ml-2 text-gray-400">
-                      {getRelativeTimeString(comment.timestamp)}
-                    </span>
-                  </div>
-                  <div className="cursor-default text-sm whitespace-pre-wrap mt-2">
-                    {comment.content}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
       <div className="@container flex bg-gray-50 justify-center">
         {/* This has some subtle behavior for responsiveness.
             - We use container queries to adjust the width of the editor based on the size of our container.
@@ -218,8 +137,6 @@ export const TinyEssayEditor = ({
             setSelectedAnnotationIds={setSelectedAnnotationIds}
             annotationsWithPositions={annotations}
             diff={diff}
-            focusedDraftThreadId={focusedDraftThreadId}
-            setFocusedDraftThreadId={setFocusedDraftThreadId}
             visibleAnnotationTypes={visibleAnnotationTypes}
             setVisibleAnnotationTypes={setVisibleAnnotationTypes}
           />
