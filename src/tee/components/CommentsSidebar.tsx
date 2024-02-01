@@ -887,8 +887,8 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
   // That in turn makes sure that we can capture scroll events.
   return (
     <div
-      className={`p-2 min-h-12 min-w-48 rounded-md  border border-gray-200 bg-gray-50 shadow ${
-        expanded && "bg-gray-100 border border-gray-300 z-50 relative"
+      className={`p-2 min-h-12 min-w-48 rounded-md  border border-gray-200 bg-white shadow ${
+        expanded && " border border-gray-300 z-50 relative"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
