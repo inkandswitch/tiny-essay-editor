@@ -487,23 +487,28 @@ export const useAnnotationsWithPositions = ({
                 patchEnd: (patch.path[1] as number) + 1,
               };
 
-        const fromCursor = A.getCursor(doc, ["content"], patchStart);
-        const toCursor = A.getCursor(doc, ["content"], patchEnd);
-        const patchId = `${patch.action}-${fromCursor}`;
-        return [
-          {
-            type: "patch",
-            // Experimenting with stable IDs for patches...
-            // ID a patch by its action + its from cursor? this feels not unique enough...
-            id: patchId,
-            fromCursor,
-            toCursor,
-            patch,
-            fromHeads: diff.fromHeads,
-            toHeads: diff.toHeads,
-            reviews: {},
-          },
-        ];
+        try {
+          const fromCursor = A.getCursor(doc, ["content"], patchStart);
+          const toCursor = A.getCursor(doc, ["content"], patchEnd);
+          const patchId = `${patch.action}-${fromCursor}`;
+          return [
+            {
+              type: "patch",
+              // Experimenting with stable IDs for patches...
+              // ID a patch by its action + its from cursor? this feels not unique enough...
+              id: patchId,
+              fromCursor,
+              toCursor,
+              patch,
+              fromHeads: diff.fromHeads,
+              toHeads: diff.toHeads,
+              reviews: {},
+            },
+          ];
+        } catch (e) {
+          console.error("Failed to get cursor for patch", e);
+          return [];
+        }
       }
     );
 
