@@ -506,7 +506,7 @@ export const useAnnotationsWithPositions = ({
             },
           ];
         } catch (e) {
-          console.error("Failed to get cursor for patch", e);
+          console.warn("Failed to get cursor for patch", e);
           return [];
         }
       }

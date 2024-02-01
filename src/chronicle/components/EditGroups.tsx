@@ -14,40 +14,25 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
-  const selectedDiffBase = doc?.diffBase ?? [];
 
-  const tagForDiffBase = doc?.tags?.find((tag) =>
-    isEqual(tag.heads, selectedDiffBase)
-  );
-
-  // Initialize the diff base to the latest tag if it's not set
-  useEffect(() => {
-    if (doc === undefined) return;
-    if (doc.diffBase) return;
-    if (!doc.tags || doc.tags.length === 0) return;
-
-    changeDoc((doc) => {
-      doc.diffBase = JSON.parse(
-        JSON.stringify(doc.tags?.slice(-1)[0]?.heads ?? [])
-      );
-    });
-  }, [doc === undefined]);
+  const lastTag = doc?.tags?.slice(-1)[0];
+  const diffBase = lastTag?.heads ?? [];
 
   const unreviewedEditGroups = doc
     ? Object.values(doc.drafts ?? {}).filter((draft) => {
         return (
           !draft.reviews ||
           (Object.values(draft.reviews).length === 0 &&
-            arraysAreEqual(draft.fromHeads, selectedDiffBase))
+            arraysAreEqual(draft.fromHeads, diffBase))
         );
       })
     : [];
 
   const diff: DiffWithProvenance | undefined = useMemo(() => {
-    if (!doc || selectedDiffBase.length === 0) return undefined;
+    if (!doc || diffBase.length === 0) return undefined;
     const diff = diffWithProvenance(
       doc,
-      selectedDiffBase,
+      diffBase,
       A.getHeads(doc),
       actorIdToAuthor
     );
@@ -56,7 +41,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       ...diff,
       patches: combineRedundantPatches(diff.patches),
     };
-  }, [doc, selectedDiffBase]);
+  }, [doc]);
 
   if (!doc) return <div>Loading...</div>;
 
@@ -64,33 +49,8 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     <div className="h-full overflow-hidden">
       <div className="flex p-1 font-mono text-xs">
         <div className="mr-4 flex items-center">
-          <div className="mr-1">Show edits since:</div>
-          <select
-            value={tagForDiffBase ? tagForDiffBase.heads.join(",") : ""}
-            onChange={(e) => {
-              if (
-                !window.confirm(
-                  "Warning: this will change the diff base for all users. Continue?"
-                )
-              )
-                return;
-              changeDoc((doc) => {
-                const newDiffBase =
-                  doc.tags?.find(
-                    (tag) => tag.heads.join(",") === e.target.value
-                  )?.heads ?? [];
-                doc.diffBase = JSON.parse(JSON.stringify(newDiffBase));
-              });
-            }}
-            className="h-6 text-xs w-[160px] text-black"
-          >
-            <option value="">Select Tag</option>
-            {(doc.tags ?? []).map((tag) => (
-              <option key={tag.heads.join(",")} value={tag.heads.join(",")}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
+          <div className="mr-1">Showing edits since:</div>
+          {lastTag?.name ?? "Initial"}
         </div>
 
         <div className="flex-1"></div>
@@ -107,7 +67,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         </div>
       </div>
       <TinyEssayEditor
-        diffBase={selectedDiffBase}
+        diffBase={diffBase}
         docUrl={docUrl}
         key={docUrl}
         diff={diff}

@@ -8,6 +8,8 @@ import {
   ThreadAnnotation,
   DiffWithProvenance,
   PersistedDraft,
+  EditRange,
+  PatchAnnotation,
 } from "../schema";
 
 import { groupBy, uniq } from "lodash";
@@ -46,7 +48,6 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
-import { createOrGrowEditGroup } from "@/chronicle/editGroups";
 
 export const CommentsSidebar = ({
   doc,
@@ -183,6 +184,74 @@ export const CommentsSidebar = ({
     });
 
     setPendingCommentText("");
+  };
+
+  // Start a draft for the selected patches
+  const groupPatches = (selectedAnnotations: TextAnnotation[]) => {
+    const existingDrafts: DraftAnnotation[] = selectedAnnotations.filter(
+      (thread) => thread.type === "draft"
+    ) as DraftAnnotation[];
+
+    const selectedPatches = selectedAnnotations.filter(
+      (annotation) => annotation.type === "patch"
+    ) as PatchAnnotation[];
+
+    if (selectedPatches.length === 0) {
+      alert("no patches selected");
+      return;
+    }
+
+    const editRanges: EditRange[] = selectedPatches.map(
+      (annotation: PatchAnnotation) => ({
+        fromCursor: annotation.fromCursor,
+        toCursor: annotation.toCursor,
+        fromHeads: annotation.fromHeads,
+      })
+    );
+
+    // create new thread if all selected patches are virtual
+    if (existingDrafts.length == 0) {
+      const draft: PersistedDraft = JSON.parse(
+        JSON.stringify({
+          type: "draft",
+          id: uuid(),
+          comments: [],
+          fromHeads: selectedPatches[0].fromHeads,
+          editRangesWithComments: editRanges.map((editRange) => ({
+            editRange,
+            comments: [],
+          })),
+          reviews: {},
+          // TODO not concurrency safe
+          number: Object.values(doc.drafts ?? {}).length + 1,
+        })
+      );
+
+      changeDoc((doc) => {
+        // backwards compat for old docs without a drafts field
+        if (doc.drafts === undefined) {
+          doc.drafts = {};
+        }
+        doc.drafts[draft.id] = draft;
+      });
+
+      // add to existing thread if there is only one
+    } else if (existingDrafts.length === 1) {
+      const existingDraft = existingDrafts[0];
+      changeDoc((doc) => {
+        const draft = doc.drafts[existingDraft.id];
+        for (const livePatch of editRanges) {
+          draft.editRangesWithComments.push({
+            editRange: livePatch,
+            comments: [],
+          });
+        }
+      });
+
+      // give up if multiple drafts are selected
+    } else {
+      alert("can't merge two groups");
+    }
   };
 
   // reply to a comment thread.
@@ -356,7 +425,7 @@ export const CommentsSidebar = ({
               const selectedThreads = selectedAnnotationIds.map((id) =>
                 annotationsWithPositions.find((thread) => thread.id === id)
               );
-              createOrGrowEditGroup(selectedThreads, changeDoc);
+              groupPatches(selectedThreads);
               setSelectedAnnotationIds([]);
             }}
           >

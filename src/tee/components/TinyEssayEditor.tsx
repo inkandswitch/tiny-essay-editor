@@ -20,8 +20,6 @@ import { getRelativeTimeString, useAnnotationsWithPositions } from "../utils";
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
 import { ActorId, Heads, view } from "@automerge/automerge/next";
-import { createOrGrowEditGroup } from "@/chronicle/editGroups";
-import { useActorIdToAuthorMap } from "@/chronicle/utils";
 import { uniq } from "lodash";
 
 export const TinyEssayEditor = ({
@@ -77,28 +75,6 @@ export const TinyEssayEditor = ({
     visibleAnnotationTypes,
     visibleAuthorsForEdits,
   });
-
-  // keyboard shortcuts
-  useEffect(() => {
-    const keydownHandler = (event: KeyboardEvent) => {
-      // Group edit groups with cmd-g
-      if (event.key === "g" && event.metaKey) {
-        createOrGrowEditGroup(
-          selectedAnnotationIds.map((id) =>
-            annotationsWithPositions.find((a) => a.id === id)
-          ),
-          changeDoc
-        );
-      }
-    };
-
-    window.addEventListener("keydown", keydownHandler);
-
-    // Clean up listener on unmount
-    return () => {
-      window.removeEventListener("keydown", keydownHandler);
-    };
-  }, [selectedAnnotationIds, annotationsWithPositions, changeDoc]);
 
   const annotations = annotationsWithPositions;
 
