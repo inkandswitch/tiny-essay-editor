@@ -120,7 +120,6 @@ type _MarkdownDoc = {
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
-  diffBaseSnapshots: A.Heads[];
 };
 
 export type Copyable = {
@@ -146,7 +145,11 @@ export type Taggable = {
   tags: Tag[];
 };
 
-export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable;
+export type Diffable = {
+  diffBase: A.Heads;
+};
+
+export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable & Diffable;
 
 // A data structure that lets us pass around diffs while remembering
 // where they came from
