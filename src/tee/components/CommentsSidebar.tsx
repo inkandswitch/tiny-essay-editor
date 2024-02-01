@@ -194,54 +194,58 @@ export const CommentsSidebar = ({
       timestamp: Date.now(),
     };
 
-    changeDoc((doc) => {
-      switch (annotation.type) {
-        case "thread": {
-          const thread = doc.commentThreads[annotation.id];
-          if (!thread) {
-            throw new Error("expected thread to exist");
-          }
+    switch (annotation.type) {
+      case "thread": {
+        const thread = doc.commentThreads[annotation.id];
+        if (!thread) {
+          throw new Error("expected thread to exist");
+        }
+        changeDoc((doc) => {
           doc.commentThreads[annotation.id].comments.push(comment);
-          return;
+        });
+        break;
+      }
+      case "draft": {
+        const draft = doc.drafts[annotation.id];
+        if (!draft) {
+          throw new Error("expected draft to exist");
         }
-        case "draft": {
-          const draft = doc.drafts[annotation.id];
-          if (!draft) {
-            throw new Error("expected draft to exist");
-          }
+        changeDoc((doc) => {
           doc.drafts[annotation.id].comments.push(comment);
-          return;
-        }
-        case "patch": {
-          // Make a draft for this patch
-          const draft: PersistedDraft = {
-            type: "draft",
-            // TODO not concurrency safe
-            number: Object.values(doc.drafts ?? {}).length + 1,
-            id: uuid(),
-            comments: [comment],
-            fromHeads: annotation.fromHeads,
-            editRangesWithComments: [
-              {
-                editRange: {
-                  fromCursor: annotation.fromCursor,
-                  toCursor: annotation.toCursor,
-                },
-                comments: [],
+        });
+        break;
+      }
+      case "patch": {
+        // Make a draft for this patch
+        const draft: PersistedDraft = {
+          type: "draft",
+          // TODO not concurrency safe
+          number: Object.values(doc.drafts ?? {}).length + 1,
+          id: uuid(),
+          comments: [comment],
+          fromHeads: annotation.fromHeads,
+          editRangesWithComments: [
+            {
+              editRange: {
+                fromCursor: annotation.fromCursor,
+                toCursor: annotation.toCursor,
               },
-            ],
-            reviews: {},
-          };
+              comments: [],
+            },
+          ],
+          reviews: {},
+        };
 
+        changeDoc((doc) => {
           // backwards compat for old docs without a drafts field
           if (doc.drafts === undefined) {
             doc.drafts = {};
           }
           doc.drafts[draft.id] = draft;
-          return;
-        }
+        });
+        break;
       }
-    });
+    }
 
     setPendingCommentText("");
   };
