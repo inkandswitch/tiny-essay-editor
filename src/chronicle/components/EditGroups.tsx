@@ -16,7 +16,11 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
   const lastTag = doc?.tags?.slice(-1)[0];
-  const diffBase = lastTag?.heads ?? [];
+  const diffBase = useMemo(() => {
+    const heads = lastTag?.heads ?? [];
+
+    return JSON.parse(JSON.stringify(heads)); // strip any automerge metadata from the heads
+  }, [lastTag?.heads]);
 
   const unreviewedEditGroups = doc
     ? Object.values(doc.drafts ?? {}).filter((draft) => {
