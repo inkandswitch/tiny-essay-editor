@@ -12,6 +12,8 @@ export const TLDraw = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const account = useCurrentAccount();
   const userId = account ? account.contactHandle.url : "no-account";
 
+  /* I don't love any of this! I feel like the API is all wrong here
+     for me to be dealing with this kind of stuff */
   const userMetadata = {
     userId: "no-account",
     color: "blue",
