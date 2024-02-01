@@ -1,6 +1,6 @@
 import { DiffWithProvenance, MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import * as A from "@automerge/automerge/next";
@@ -9,23 +9,6 @@ import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import { combineRedundantPatches } from "../utils";
 import clsx from "clsx";
 import { arraysAreEqual } from "@/DocExplorer/utils";
-
-const inferDiffBase = (doc: A.Doc<MarkdownDoc>) => {
-  const changes = A.getAllChanges(doc);
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  let diffBase = [];
-
-  for (let i = changes.length - 1; i >= 0; i--) {
-    const change = A.decodeChange(changes[i]);
-    diffBase = [change.hash];
-    if (change.time < startOfToday.getTime()) {
-      break;
-    }
-  }
-
-  return diffBase;
-};
 
 export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -173,6 +156,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
         key={docUrl}
         diff={showDiffOverlay ? diff : undefined}
         showDiffAsComments
+        actorIdToAuthor={actorIdToAuthor}
       />
     </div>
   );

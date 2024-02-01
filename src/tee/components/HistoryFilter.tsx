@@ -1,17 +1,28 @@
 import { ListFilter } from "lucide-react";
 import { useState } from "react";
 import { TextAnnotation } from "../schema";
+import { AutomergeUrl } from "@automerge/automerge-repo";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
 export const HistoryFilter: React.FC<{
   visibleAnnotationTypes: TextAnnotation["type"][];
   setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
-}> = ({ visibleAnnotationTypes, setVisibleAnnotationTypes }) => {
+  visibleAuthorsForEdits: AutomergeUrl[];
+  setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
+  authors: AutomergeUrl[];
+}> = ({
+  visibleAnnotationTypes,
+  setVisibleAnnotationTypes,
+  visibleAuthorsForEdits,
+  setVisibleAuthorsForEdits,
+  authors,
+}) => {
   const [showFilterSettings, setShowFilterSettings] = useState(false);
 
   return (
     <div
-      className={`max-w-[400px] rounded  p-4 text-sm bg-gray-50 border-b border-gray-200 ${
-        showFilterSettings && "border "
+      className={`max-w-[400px] rounded  p-4 text-sm bg-gray-50 border border-gray-200 border-opacity-0 ${
+        showFilterSettings && "border-opacity-100"
       }`}
     >
       <div className="flex flex-col gap-2">
@@ -36,6 +47,9 @@ export const HistoryFilter: React.FC<{
           <FilterSettings
             visibleAnnotationTypes={visibleAnnotationTypes}
             setVisibleAnnotationTypes={setVisibleAnnotationTypes}
+            authors={authors}
+            visibleAuthorsForEdits={visibleAuthorsForEdits}
+            setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
           />
         )}
       </div>
@@ -68,7 +82,16 @@ function TypeIcon({ annotationType }: { annotationType: string }) {
 const FilterSettings: React.FC<{
   visibleAnnotationTypes: TextAnnotation["type"][];
   setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
-}> = ({ visibleAnnotationTypes, setVisibleAnnotationTypes }) => {
+  authors: AutomergeUrl[];
+  visibleAuthorsForEdits: AutomergeUrl[];
+  setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
+}> = ({
+  visibleAnnotationTypes,
+  setVisibleAnnotationTypes,
+  authors,
+  visibleAuthorsForEdits,
+  setVisibleAuthorsForEdits,
+}) => {
   return (
     <div className="flex flex-col gap-2">
       <div>
@@ -128,6 +151,30 @@ const FilterSettings: React.FC<{
           <h2 className="text-[10px] font-bold uppercase text-gray-500">
             Show edits by
           </h2>
+          {authors.map((author) => (
+            <div key={author} className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={visibleAuthorsForEdits.includes(author)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  if (checked) {
+                    setVisibleAuthorsForEdits([
+                      ...visibleAuthorsForEdits,
+                      author,
+                    ]);
+                  } else {
+                    setVisibleAuthorsForEdits(
+                      visibleAuthorsForEdits.filter(
+                        (visibleAuthor) => visibleAuthor !== author
+                      )
+                    );
+                  }
+                }}
+              />
+              <ContactAvatar url={author} size={"sm"} showName />
+            </div>
+          ))}
         </div>
       </div>
     </div>

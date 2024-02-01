@@ -10,7 +10,7 @@ import {
   TextAnnotation,
 } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
@@ -19,12 +19,10 @@ import { getRelativeTimeString, useAnnotationsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { Heads, getHeads, view } from "@automerge/automerge/next";
-import { Button } from "@/components/ui/button";
-import { ShrinkIcon } from "lucide-react";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { truncate } from "lodash";
+import { ActorId, Heads, view } from "@automerge/automerge/next";
 import { createOrGrowEditGroup } from "@/chronicle/editGroups";
+import { useActorIdToAuthorMap } from "@/chronicle/utils";
+import { uniq } from "lodash";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -35,6 +33,7 @@ export const TinyEssayEditor = ({
   foldRanges,
   showDiffAsComments,
   diffBase,
+  actorIdToAuthor,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
@@ -44,6 +43,7 @@ export const TinyEssayEditor = ({
   foldRanges?: { from: number; to: number }[];
   showDiffAsComments?: boolean;
   diffBase?: Heads;
+  actorIdToAuthor?: Record<ActorId, AutomergeUrl>;
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -56,6 +56,16 @@ export const TinyEssayEditor = ({
   const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<
     TextAnnotation["type"][]
   >(["thread", "draft", "patch"]);
+  const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
+    AutomergeUrl[]
+  >([]);
+
+  const authors = uniq(Object.values(actorIdToAuthor ?? {}));
+
+  // If the authors on the doc change, show changes by all authors
+  useEffect(() => {
+    setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
+  }, [actorIdToAuthor]);
 
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc,
@@ -65,6 +75,7 @@ export const TinyEssayEditor = ({
     diff: showDiffAsComments ? diff : undefined,
     diffBase,
     visibleAnnotationTypes,
+    visibleAuthorsForEdits,
   });
 
   // keyboard shortcuts
@@ -89,20 +100,24 @@ export const TinyEssayEditor = ({
     };
   }, [selectedAnnotationIds, annotationsWithPositions, changeDoc]);
 
+  const annotations = annotationsWithPositions;
+
+  // only show a diff in the text editor if we have edits or edit groups on in the sidebar
+  const patchesForEditor = useMemo(() => {
+    return diff &&
+      (visibleAnnotationTypes.includes("draft") ||
+        visibleAnnotationTypes.includes("patch"))
+      ? // @ts-expect-error - we should know we have patch.attr here?
+        diff.patches.filter(
+          (patch) => visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr
+        )
+      : undefined;
+  }, [diff, visibleAnnotationTypes, visibleAuthorsForEdits]);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
-
-  const annotations = annotationsWithPositions;
-
-  // only show a diff in the text editor if we have edits or edit groups on in the sidebar
-  const patchesForEditor =
-    diff &&
-    (visibleAnnotationTypes.includes("draft") ||
-      visibleAnnotationTypes.includes("patch"))
-      ? diff.patches
-      : undefined;
 
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
@@ -139,6 +154,9 @@ export const TinyEssayEditor = ({
             diff={diff}
             visibleAnnotationTypes={visibleAnnotationTypes}
             setVisibleAnnotationTypes={setVisibleAnnotationTypes}
+            visibleAuthorsForEdits={visibleAuthorsForEdits}
+            setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+            authors={authors}
           />
         </div>
       </div>

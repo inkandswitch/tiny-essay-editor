@@ -130,6 +130,7 @@ export const getTextAnnotationsForUI = ({
   showDiff,
   patchAnnotations,
   visibleAnnotationTypes,
+  visibleAuthorsForEdits,
 }: {
   doc: MarkdownDoc;
   selectedAnnotationIds: string[];
@@ -138,6 +139,7 @@ export const getTextAnnotationsForUI = ({
   showDiff: boolean;
   patchAnnotations?: PatchAnnotation[];
   visibleAnnotationTypes: TextAnnotation["type"][];
+  visibleAuthorsForEdits: AutomergeUrl[];
 }): TextAnnotationForUI[] => {
   let annotations: TextAnnotation[] = [];
 
@@ -152,8 +154,8 @@ export const getTextAnnotationsForUI = ({
     // Here we take the persisted drafts and "claim" patches from the current diff
     // into the individual edit ranges. Any patches from the diff that overlap with
     // the edit range on the draft get claimed for that edit range.
-    const draftAnnotations = Object.values(doc.drafts ?? {}).flatMap(
-      (draft) => {
+    const draftAnnotations = Object.values(doc.drafts ?? {})
+      .flatMap((draft) => {
         // filter out drafts that are not based on the current diffBase
         if (diffBase && !arraysAreEqual(draft.fromHeads, diffBase)) {
           return [];
@@ -202,15 +204,32 @@ export const getTextAnnotationsForUI = ({
             editRangesWithComments: sortedEditRangesWithComments,
           },
         ];
-      }
-    );
+      })
+      .filter((draft) =>
+        draft.editRangesWithComments
+          .flatMap((range) => range.patches)
+          .some(
+            (patch) =>
+              // @ts-expect-error todo look into attributed patch types
+              visibleAuthorsForEdits.includes(patch.attr) || !patch.attr
+          )
+      );
 
     if (visibleAnnotationTypes.includes("draft")) {
       annotations = [...annotations, ...draftAnnotations];
     }
 
     if (visibleAnnotationTypes.includes("patch")) {
-      annotations = [...annotations, ...(patchAnnotations ?? [])];
+      annotations = [
+        ...annotations,
+        ...(patchAnnotations ?? []).filter(
+          (annotation) =>
+            // @ts-expect-error todo look into types for PatchWithAttr
+            visibleAuthorsForEdits.includes(annotation.patch.attr) ||
+            // @ts-expect-error todo look into types for PatchWithAttr
+            !annotation.patch.attr
+        ),
+      ];
     }
   }
 
@@ -428,6 +447,7 @@ export const useAnnotationsWithPositions = ({
   diff,
   diffBase,
   visibleAnnotationTypes,
+  visibleAuthorsForEdits,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
@@ -436,6 +456,7 @@ export const useAnnotationsWithPositions = ({
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
   visibleAnnotationTypes: TextAnnotation["type"][];
+  visibleAuthorsForEdits: AutomergeUrl[];
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
@@ -518,8 +539,16 @@ export const useAnnotationsWithPositions = ({
       diff,
       showDiff: diff !== undefined,
       visibleAnnotationTypes,
+      visibleAuthorsForEdits,
     });
-  }, [doc, selectedAnnotationIds, diff, visibleAnnotationTypes]);
+  }, [
+    doc,
+    selectedAnnotationIds,
+    diff,
+    visibleAnnotationTypes,
+    visibleAuthorsForEdits,
+    diffBase,
+  ]);
 
   // Next we get the vertical position for each thread.
 

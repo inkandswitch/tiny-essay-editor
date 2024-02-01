@@ -4,9 +4,7 @@ import {
   TextAnnotation,
   TextAnnotationWithPosition,
   MarkdownDoc,
-  EditRange,
   DraftAnnotation,
-  PatchAnnotation,
   ThreadAnnotation,
   DiffWithProvenance,
   PersistedDraft,
@@ -26,7 +24,6 @@ import {
   Reply,
   UndoIcon,
   CheckIcon,
-  EditIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -48,8 +45,6 @@ import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { HistoryFilter } from "./HistoryFilter";
 import { createOrGrowEditGroup } from "@/chronicle/editGroups";
 
@@ -63,6 +58,9 @@ export const CommentsSidebar = ({
   diff,
   visibleAnnotationTypes,
   setVisibleAnnotationTypes,
+  visibleAuthorsForEdits,
+  setVisibleAuthorsForEdits,
+  authors,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
@@ -73,6 +71,9 @@ export const CommentsSidebar = ({
   diff?: DiffWithProvenance;
   visibleAnnotationTypes: TextAnnotation["type"][];
   setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
+  visibleAuthorsForEdits: AutomergeUrl[];
+  setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
+  authors: AutomergeUrl[];
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
@@ -82,6 +83,7 @@ export const CommentsSidebar = ({
   >();
 
   // figure out which comments were added in the diff being shown, to highlight in green
+  // TODO: this feature got lost in the shuffle, bring it back!
   const addedComments = (diff?.patches ?? [])
     .filter(
       (patch) =>
@@ -334,6 +336,9 @@ export const CommentsSidebar = ({
           <HistoryFilter
             visibleAnnotationTypes={visibleAnnotationTypes}
             setVisibleAnnotationTypes={setVisibleAnnotationTypes}
+            visibleAuthorsForEdits={visibleAuthorsForEdits}
+            setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+            authors={authors}
           />
         </div>
       )}
