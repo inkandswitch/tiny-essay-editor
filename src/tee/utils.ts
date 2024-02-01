@@ -146,7 +146,6 @@ export const getTextAnnotationsForUI = ({
   diffBase,
   showDiff,
   patchAnnotations,
-  visibleAnnotationTypes,
   visibleAuthorsForEdits,
 }: {
   doc: MarkdownDoc;
@@ -155,17 +154,14 @@ export const getTextAnnotationsForUI = ({
   diffBase?: A.Heads;
   showDiff: boolean;
   patchAnnotations?: PatchAnnotation[];
-  visibleAnnotationTypes: TextAnnotation["type"][];
   visibleAuthorsForEdits: AutomergeUrl[];
 }): TextAnnotationForUI[] => {
   let annotations: TextAnnotation[] = [];
 
-  if (visibleAnnotationTypes.includes("thread")) {
-    annotations = [
-      ...annotations,
-      ...Object.values(doc.commentThreads).filter((thread) => !thread.resolved),
-    ];
-  }
+  annotations = [
+    ...annotations,
+    ...Object.values(doc.commentThreads).filter((thread) => !thread.resolved),
+  ];
 
   if (showDiff) {
     // Here we take the persisted drafts and "claim" patches from the current diff
@@ -223,22 +219,18 @@ export const getTextAnnotationsForUI = ({
           )
       );
 
-    if (visibleAnnotationTypes.includes("draft")) {
-      annotations = [...annotations, ...draftAnnotations];
-    }
+    annotations = [...annotations, ...draftAnnotations];
 
-    if (visibleAnnotationTypes.includes("patch")) {
-      annotations = [
-        ...annotations,
-        ...(patchAnnotations ?? []).filter(
-          (annotation) =>
-            // @ts-expect-error todo look into types for PatchWithAttr
-            visibleAuthorsForEdits.includes(annotation.patch.attr) ||
-            // @ts-expect-error todo look into types for PatchWithAttr
-            !annotation.patch.attr
-        ),
-      ];
-    }
+    annotations = [
+      ...annotations,
+      ...(patchAnnotations ?? []).filter(
+        (annotation) =>
+          // @ts-expect-error todo look into types for PatchWithAttr
+          visibleAuthorsForEdits.includes(annotation.patch.attr) ||
+          // @ts-expect-error todo look into types for PatchWithAttr
+          !annotation.patch.attr
+      ),
+    ];
   }
 
   return annotations
@@ -454,7 +446,6 @@ export const useAnnotationsWithPositions = ({
   editorRef,
   diff,
   diffBase,
-  visibleAnnotationTypes,
   visibleAuthorsForEdits,
 }: {
   doc: MarkdownDoc;
@@ -463,7 +454,6 @@ export const useAnnotationsWithPositions = ({
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
-  visibleAnnotationTypes: TextAnnotation["type"][];
   visibleAuthorsForEdits: AutomergeUrl[];
 }) => {
   // We first get integer positions for each thread and cache that.
@@ -563,17 +553,9 @@ export const useAnnotationsWithPositions = ({
       patchAnnotations: patchAnnotationsToShow,
       diff,
       showDiff: diff !== undefined,
-      visibleAnnotationTypes,
       visibleAuthorsForEdits,
     });
-  }, [
-    doc,
-    selectedAnnotationIds,
-    diff,
-    visibleAnnotationTypes,
-    visibleAuthorsForEdits,
-    diffBase,
-  ]);
+  }, [doc, selectedAnnotationIds, diff, visibleAuthorsForEdits, diffBase]);
 
   // Next we get the vertical position for each thread.
 

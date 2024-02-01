@@ -5,18 +5,10 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
 export const HistoryFilter: React.FC<{
-  visibleAnnotationTypes: TextAnnotation["type"][];
-  setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
   authors: AutomergeUrl[];
-}> = ({
-  visibleAnnotationTypes,
-  setVisibleAnnotationTypes,
-  visibleAuthorsForEdits,
-  setVisibleAuthorsForEdits,
-  authors,
-}) => {
+}> = ({ visibleAuthorsForEdits, setVisibleAuthorsForEdits, authors }) => {
   const [showFilterSettings, setShowFilterSettings] = useState(false);
 
   return (
@@ -39,8 +31,6 @@ export const HistoryFilter: React.FC<{
 
         {showFilterSettings && (
           <FilterSettings
-            visibleAnnotationTypes={visibleAnnotationTypes}
-            setVisibleAnnotationTypes={setVisibleAnnotationTypes}
             authors={authors}
             visibleAuthorsForEdits={visibleAuthorsForEdits}
             setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
@@ -74,73 +64,13 @@ function TypeIcon({ annotationType }: { annotationType: string }) {
 }
 
 const FilterSettings: React.FC<{
-  visibleAnnotationTypes: TextAnnotation["type"][];
-  setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
   authors: AutomergeUrl[];
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
-}> = ({
-  visibleAnnotationTypes,
-  setVisibleAnnotationTypes,
-  authors,
-  visibleAuthorsForEdits,
-  setVisibleAuthorsForEdits,
-}) => {
+}> = ({ authors, visibleAuthorsForEdits, setVisibleAuthorsForEdits }) => {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <h2 className="text-[10px] font-bold uppercase text-gray-500">
-          Filters
-        </h2>
-
-        <div className="mb-2">
-          {["thread", "patch", "draft"].map((annotationType) => {
-            let label;
-
-            switch (annotationType) {
-              case "thread":
-                label = "Comments";
-                break;
-              case "patch":
-                label = "Edits";
-                break;
-              case "draft":
-                label = "Edit Groups";
-                break;
-            }
-
-            return (
-              <div className="flex items-center">
-                <div className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={visibleAnnotationTypes.includes(
-                      annotationType as TextAnnotation["type"]
-                    )}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      if (checked) {
-                        setVisibleAnnotationTypes([
-                          ...visibleAnnotationTypes,
-                          annotationType as TextAnnotation["type"],
-                        ]);
-                      } else {
-                        setVisibleAnnotationTypes(
-                          visibleAnnotationTypes.filter(
-                            (type) => type !== annotationType
-                          )
-                        );
-                      }
-                    }}
-                  />
-                  <TypeIcon annotationType={label} />
-                  <div>{label}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         <div>
           <h2 className="text-[10px] font-bold uppercase text-gray-500">
             Show edits by

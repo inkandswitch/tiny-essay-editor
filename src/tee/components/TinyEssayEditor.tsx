@@ -51,9 +51,7 @@ export const TinyEssayEditor = ({
   );
   const [editorView, setEditorView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
-  const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<
-    TextAnnotation["type"][]
-  >(["thread", "draft", "patch"]);
+
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
   >([]);
@@ -72,7 +70,6 @@ export const TinyEssayEditor = ({
     editorRef,
     diff: showDiffAsComments ? diff : undefined,
     diffBase,
-    visibleAnnotationTypes,
     visibleAuthorsForEdits,
   });
 
@@ -80,15 +77,14 @@ export const TinyEssayEditor = ({
 
   // only show a diff in the text editor if we have edits or edit groups on in the sidebar
   const patchesForEditor = useMemo(() => {
-    return diff &&
-      (visibleAnnotationTypes.includes("draft") ||
-        visibleAnnotationTypes.includes("patch"))
-      ? diff.patches.filter(
-          // @ts-expect-error - we should know we have patch.attr here?
-          (patch) => visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr
-        )
-      : undefined;
-  }, [diff, visibleAnnotationTypes, visibleAuthorsForEdits]);
+    return (
+      diff &&
+      diff.patches.filter(
+        // @ts-expect-error - we should know we have patch.attr here?
+        (patch) => visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr
+      )
+    );
+  }, [diff, visibleAuthorsForEdits]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
@@ -128,8 +124,6 @@ export const TinyEssayEditor = ({
             setSelectedAnnotationIds={setSelectedAnnotationIds}
             annotationsWithPositions={annotations}
             diff={diff}
-            visibleAnnotationTypes={visibleAnnotationTypes}
-            setVisibleAnnotationTypes={setVisibleAnnotationTypes}
             visibleAuthorsForEdits={visibleAuthorsForEdits}
             setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
             authors={authors}

@@ -58,8 +58,6 @@ export const CommentsSidebar = ({
   selectedAnnotationIds,
   setSelectedAnnotationIds,
   diff,
-  visibleAnnotationTypes,
-  setVisibleAnnotationTypes,
   visibleAuthorsForEdits,
   setVisibleAuthorsForEdits,
   authors,
@@ -71,8 +69,6 @@ export const CommentsSidebar = ({
   selectedAnnotationIds: string[];
   setSelectedAnnotationIds: (threadIds: string[]) => void;
   diff?: DiffWithProvenance;
-  visibleAnnotationTypes: TextAnnotation["type"][];
-  setVisibleAnnotationTypes: (types: TextAnnotation["type"][]) => void;
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
   authors: AutomergeUrl[];
@@ -414,8 +410,6 @@ export const CommentsSidebar = ({
       {diff && (
         <div className="mt-4 z-[1000] relative ">
           <HistoryFilter
-            visibleAnnotationTypes={visibleAnnotationTypes}
-            setVisibleAnnotationTypes={setVisibleAnnotationTypes}
             visibleAuthorsForEdits={visibleAuthorsForEdits}
             setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
             authors={authors}
