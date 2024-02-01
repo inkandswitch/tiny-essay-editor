@@ -27,7 +27,9 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     if (!doc.tags || doc.tags.length === 0) return;
 
     changeDoc((doc) => {
-      doc.diffBase = JSON.parse(JSON.stringify(doc.tags?.slice(-1)[0].heads));
+      doc.diffBase = JSON.parse(
+        JSON.stringify(doc.tags?.slice(-1)[0]?.heads ?? [])
+      );
     });
   }, [doc === undefined]);
 
@@ -74,8 +76,9 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                 return;
               changeDoc((doc) => {
                 const newDiffBase =
-                  doc.tags.find((tag) => tag.heads.join(",") === e.target.value)
-                    ?.heads ?? [];
+                  doc.tags?.find(
+                    (tag) => tag.heads.join(",") === e.target.value
+                  )?.heads ?? [];
                 doc.diffBase = JSON.parse(JSON.stringify(newDiffBase));
               });
             }}

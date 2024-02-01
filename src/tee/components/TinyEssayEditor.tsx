@@ -107,8 +107,8 @@ export const TinyEssayEditor = ({
     return diff &&
       (visibleAnnotationTypes.includes("draft") ||
         visibleAnnotationTypes.includes("patch"))
-      ? // @ts-expect-error - we should know we have patch.attr here?
-        diff.patches.filter(
+      ? diff.patches.filter(
+          // @ts-expect-error - we should know we have patch.attr here?
           (patch) => visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr
         )
       : undefined;
