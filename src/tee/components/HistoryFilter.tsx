@@ -27,14 +27,8 @@ export const HistoryFilter: React.FC<{
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <input
-            className="w-full flex-1 rounded-full border border-gray-300 bg-gray-200 px-1.5 py-1"
-            placeholder="Search history..."
-            type="search"
-          />
-
           <button
-            className={`flex-0 grid h-7 w-7 place-items-center rounded-full text-white ${
+            className={`flex-0 grid h-6 w-6 place-items-center rounded-full text-white ${
               showFilterSettings ? "bg-blue-500" : "bg-black"
             }`}
             onClick={() => setShowFilterSettings(!showFilterSettings)}
