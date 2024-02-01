@@ -378,7 +378,8 @@ export const CommentsSidebar = ({
 
   const toggleAnnotationIsMarkedReviewed = (annotation: TextAnnotation) => {
     changeDoc((doc) => {
-      let reviews = doc.drafts[annotation.id].reviews;
+      // todo: how to handle reviewing patches?
+      let reviews = doc.drafts[annotation.id]?.reviews;
       if (!reviews) {
         doc.drafts[annotation.id].reviews = {};
         reviews = doc.drafts[annotation.id].reviews;
