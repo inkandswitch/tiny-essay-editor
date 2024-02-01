@@ -286,24 +286,26 @@ export const CommentsSidebar = ({
       }
       case "patch": {
         // Make a draft for this patch
-        const draft: PersistedDraft = {
-          type: "draft",
-          // TODO not concurrency safe
-          number: Object.values(doc.drafts ?? {}).length + 1,
-          id: uuid(),
-          comments: [comment],
-          fromHeads: annotation.fromHeads,
-          editRangesWithComments: [
-            {
-              editRange: {
-                fromCursor: annotation.fromCursor,
-                toCursor: annotation.toCursor,
+        const draft: PersistedDraft = JSON.parse(
+          JSON.stringify({
+            type: "draft",
+            // TODO not concurrency safe
+            number: Object.values(doc.drafts ?? {}).length + 1,
+            id: uuid(),
+            comments: [comment],
+            fromHeads: annotation.fromHeads,
+            editRangesWithComments: [
+              {
+                editRange: {
+                  fromCursor: annotation.fromCursor,
+                  toCursor: annotation.toCursor,
+                },
+                comments: [],
               },
-              comments: [],
-            },
-          ],
-          reviews: {},
-        };
+            ],
+            reviews: {},
+          })
+        );
 
         changeDoc((doc) => {
           // backwards compat for old docs without a drafts field
