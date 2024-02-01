@@ -5,9 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import * as A from "@automerge/automerge/next";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
-import { combineRedundantPatches } from "../utils";
+import { combinePatches } from "../utils";
 import { arraysAreEqual } from "@/DocExplorer/utils";
-import { isEqual } from "lodash";
 
 export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -43,7 +42,7 @@ export const EditGroupsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     return {
       ...diff,
-      patches: combineRedundantPatches(diff.patches),
+      patches: combinePatches(diff.patches),
     };
   }, [doc]);
 

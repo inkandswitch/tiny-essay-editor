@@ -17,6 +17,7 @@ import { sortBy } from "lodash";
 import { arraysAreEqual } from "@/DocExplorer/utils";
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import { TextPatch } from "@/chronicle/utils";
 
 // taken from https://www.builder.io/blog/relative-time
 /**
@@ -121,6 +122,22 @@ const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
   }
 };
 
+function doesPatchOverlapWith(patch: A.Patch, from: number, to: number) {
+  if (patch.action === "splice") {
+    const patchFrom = patch.path[1] as number;
+    const patchTo = (patch.path[1] as number) + patch.value.length;
+    return patchFrom < to && patchTo > from;
+  } else if (patch.action === "del") {
+    const deleteAt = patch.path[1] as number;
+    // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
+    // but with the old logic deletes where included twice when grouping things
+    // old: return from <= deleteAt && to >= deleteAt;
+    return from === deleteAt && to === deleteAt + 1;
+  } else {
+    return false;
+  }
+}
+
 // Resolve comment thread cursors to integer positions in the document
 export const getTextAnnotationsForUI = ({
   doc,
@@ -163,7 +180,7 @@ export const getTextAnnotationsForUI = ({
 
         const editRangesWithComments: Array<{
           editRange: ResolvedEditRange;
-          patches: (A.Patch | PatchWithAttr<AutomergeUrl>)[];
+          patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[];
           comments: Comment[];
         }> = draft.editRangesWithComments.map((editRange) => {
           const { fromCursor, toCursor } = editRange.editRange;
@@ -172,19 +189,10 @@ export const getTextAnnotationsForUI = ({
           const patchesForEditRange =
             diff?.patches.filter((patch) => {
               if (patch.path[0] !== "content") return false;
-              if (patch.action === "splice") {
-                const patchFrom = patch.path[1] as number;
-                const patchTo = (patch.path[1] as number) + patch.value.length;
-                return patchFrom < to && patchTo > from;
-              } else if (patch.action === "del") {
-                const deleteAt = patch.path[1] as number;
-                // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
-                // but with the old logic deletes where included twice when grouping things
-                // old: return from <= deleteAt && to >= deleteAt;
-                return from === deleteAt && to === deleteAt + 1;
-              } else {
-                return false;
+              if (patch.action === "replace") {
+                return doesPatchOverlapWith(patch.splice, from, to);
               }
+              return doesPatchOverlapWith(patch, from, to);
             }) ?? [];
           return {
             ...editRange,
@@ -469,7 +477,7 @@ export const useAnnotationsWithPositions = ({
       (patch): PatchAnnotation[] => {
         if (
           patch.path[0] !== "content" ||
-          !["splice", "del"].includes(patch.action)
+          !["splice", "del", "replace"].includes(patch.action)
         )
           return [];
 

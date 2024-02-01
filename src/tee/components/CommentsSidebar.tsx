@@ -48,6 +48,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
+import { TextPatch } from "@/chronicle/utils";
 
 export const CommentsSidebar = ({
   doc,
@@ -321,7 +322,7 @@ export const CommentsSidebar = ({
     setPendingCommentText("");
   };
 
-  const undoPatch = (patch: A.Patch) => {
+  const undoPatch = (patch: A.Patch | TextPatch) => {
     if (patch.action === "splice") {
       changeDoc((doc) => {
         A.splice(doc, ["content"], patch.path[1], patch.value.length);
@@ -330,6 +331,9 @@ export const CommentsSidebar = ({
       changeDoc((doc) => {
         A.splice(doc, ["content"], patch.path[1], 0, patch.removed);
       });
+    } else if (patch.action === "replace") {
+      undoPatch(patch.delete);
+      undoPatch(patch.splice);
     }
   };
 
@@ -840,7 +844,7 @@ export const PatchesGroupedByAuthor = ({
   );
 };
 
-export const Patch = ({ patch }: { patch: A.Patch }) => {
+export const Patch = ({ patch }: { patch: A.Patch | TextPatch }) => {
   return (
     <div className="flex">
       {patch.action === "splice" && (
@@ -857,7 +861,18 @@ export const Patch = ({ patch }: { patch: A.Patch }) => {
           </span>
         </div>
       )}
-      {!["splice", "del"].includes(patch.action) && (
+      {patch.action === "replace" && (
+        <div className="text-sm">
+          <span className="font-serif bg-red-50 border-b border-red-400">
+            {truncate(patch.old, { length: 45 })}
+          </span>{" "}
+          →{" "}
+          <span className="font-serif bg-green-50 border-b border-green-400">
+            {truncate(patch.new, { length: 45 })}
+          </span>
+        </div>
+      )}
+      {!["splice", "del", "replace"].includes(patch.action) && (
         <div className="font-mono">Unknown action: {patch.action}</div>
       )}
     </div>

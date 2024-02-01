@@ -89,13 +89,33 @@ export const useActorIdToAuthorMap = (
   return actorIdToAuthorRef.current;
 };
 
-// eliminates redudant patches like a insert followed by and delete of the same characters
-export const combineRedundantPatches = (patches: A.Patch[]) => {
-  let filteredPatches: A.Patch[] = [];
+interface ReplacePatch {
+  action: "replace";
+  path: A.Prop[];
+  old: string;
+  new: string;
+  splice: A.SpliceTextPatch;
+  delete: A.DelPatch;
+}
+
+export type TextPatch = A.SpliceTextPatch | A.DelPatch | ReplacePatch;
+
+// combines patches in two phases
+// 1. eliminates redudant patches like a insert followed by and delete of the same characters
+// 2. turns an insert followed by a delete into a replace (that's probably wrong, but we will refine that later)
+export const combinePatches = (patches: A.Patch[]): TextPatch[] => {
+  let combinedPatches: TextPatch[] = [];
+
+  // 1. combine redundant pathces
 
   for (let i = 0; i < patches.length; i++) {
     let currentPatch = patches[i];
     let nextPatch = patches[i + 1];
+
+    // filter out non text patches
+    if (currentPatch.action !== "splice" && currentPatch.action !== "del") {
+      continue;
+    }
 
     // check insert followed by a delete ....
     if (
@@ -116,7 +136,7 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
 
       if (overlapStart > 0) {
         if (inserted.length > overlapStart) {
-          filteredPatches.push({
+          combinedPatches.push({
             ...currentPatch,
             path: ["content", currentPatch.path[1] + overlapStart],
             value: inserted.slice(overlapStart),
@@ -126,7 +146,7 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
         if (deleted.length > overlapStart) {
           const removed = deleted.slice(overlapStart);
 
-          filteredPatches.push({
+          combinedPatches.push({
             ...nextPatch,
             length: removed.length,
             removed,
@@ -141,7 +161,7 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
       if (overlapEnd > 0) {
         if (overlapEnd > 0) {
           if (inserted.length > overlapEnd) {
-            filteredPatches.push({
+            combinedPatches.push({
               ...currentPatch,
               value: inserted.slice(0, inserted.length - overlapEnd),
             });
@@ -150,8 +170,9 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
           if (deleted.length > overlapEnd) {
             const removed = deleted.slice(0, deleted.length - overlapEnd);
 
-            filteredPatches.push({
+            combinedPatches.push({
               ...nextPatch,
+              path: ["content", (nextPatch.path[1] as number) - overlapEnd],
               length: removed.length,
               removed,
             });
@@ -164,10 +185,43 @@ export const combineRedundantPatches = (patches: A.Patch[]) => {
     }
 
     // If the patches don't cancel each other out, add the current patch to the filtered patches
-    filteredPatches.push(currentPatch);
+    combinedPatches.push(currentPatch);
   }
 
-  return sortBy(filteredPatches, (patch) => patch.path[1]);
+  // make sure they are sorted
+  combinedPatches = sortBy(combinedPatches, (patch) => patch.path[1]);
+
+  // 2. turn subsequent insert deletes into replaces
+  const patchesWithReplaces: TextPatch[] = [];
+
+  for (let i = 0; i < combinedPatches.length; i++) {
+    let currentPatch = combinedPatches[i];
+    let nextPatch = combinedPatches[i + 1];
+
+    if (
+      nextPatch &&
+      currentPatch.path[0] === "content" &&
+      nextPatch.path[0] === "content" &&
+      currentPatch.action === "splice" &&
+      nextPatch.action === "del" &&
+      currentPatch.path[1] ===
+        (nextPatch.path[1] as number) - currentPatch.value.length
+    ) {
+      patchesWithReplaces.push({
+        action: "replace",
+        path: currentPatch.path,
+        old: nextPatch.removed,
+        new: currentPatch.value,
+        splice: currentPatch,
+        delete: nextPatch,
+      });
+      i++; // skip next patch
+    } else {
+      patchesWithReplaces.push(currentPatch);
+    }
+  }
+
+  return patchesWithReplaces;
 };
 
 const getOverlapStart = (str1: string, str2: string) => {

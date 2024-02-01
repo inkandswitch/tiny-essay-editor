@@ -53,6 +53,7 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
+import { TextPatch } from "@/chronicle/utils";
 
 export type TextSelection = {
   from: number;
@@ -71,7 +72,7 @@ export type EditorProps = {
   threadsWithPositions: TextAnnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  diff?: A.Patch[];
+  diff?: (A.Patch | TextPatch)[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
@@ -116,7 +117,13 @@ export function MarkdownEditor({
   // Propagate patches into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setPatchesEffect.of(diff ?? []),
+      // split up replaces
+      effects: setPatchesEffect.of(
+        (diff ?? []).flatMap(
+          (patch) =>
+            patch.action === "replace" ? [patch.splice, patch.delete] : [patch] // unpack replaces
+        )
+      ),
     });
   }, [diff, editorRoot.current]);
 

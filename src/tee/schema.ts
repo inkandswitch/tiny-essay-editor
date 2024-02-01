@@ -1,6 +1,7 @@
 import * as A from "@automerge/automerge/next";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { TextPatch } from "@/chronicle/utils";
 
 export type Comment = {
   id: string;
@@ -44,7 +45,7 @@ export type ThreadAnnotation = {
 
 export type PatchAnnotation = {
   type: "patch";
-  patch: A.Patch | PatchWithAttr<AutomergeUrl>;
+  patch: A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch;
   id: string;
   fromHeads: A.Heads;
   toHeads: A.Heads;
@@ -84,7 +85,7 @@ export type PersistedDraft = {
 export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
   editRangesWithComments: Array<{
     editRange: ResolvedEditRange;
-    patches: (A.Patch | PatchWithAttr<AutomergeUrl>)[];
+    patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[];
     comments: Comment[];
   }>;
 };
@@ -154,7 +155,7 @@ export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable & Diffable;
 // A data structure that lets us pass around diffs while remembering
 // where they came from
 export type DiffWithProvenance = {
-  patches: (A.Patch | PatchWithAttr<AutomergeUrl>)[];
+  patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[]; // just pile on more things, it could be anyone of these three ...
   fromHeads: A.Heads;
   toHeads: A.Heads;
 };
