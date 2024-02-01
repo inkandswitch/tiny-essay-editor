@@ -9,7 +9,7 @@ import {
   getAllChanges,
   view,
 } from "@automerge/automerge/next";
-import { diffWithProvenance } from "./utils";
+import { TextPatch, diffWithProvenance } from "./utils";
 import { ChangeMetadata } from "@automerge/automerge-repo/dist/DocHandle";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 
@@ -294,9 +294,10 @@ export type Heading = {
   patches: Patch[];
 };
 
+// todo: doesn't handle replace
 export const extractHeadings = (
   doc: MarkdownDoc,
-  patches: Patch[]
+  patches: (Patch | TextPatch)[]
 ): Heading[] => {
   const headingData: Heading[] = [];
   const regex = /^##\s(.*)/gm;
@@ -367,20 +368,20 @@ export const charsAddedAndDeletedByPatches = (
 type PatchGroup = {
   groupStartIndex: number;
   groupEndIndex: number;
-  patches: Patch[];
+  patches: (Patch | TextPatch)[];
 };
 
 // This is a quick hacky grouping
 // Probably better to iterate over patches rather than groups..?
 const groupPatchesByDelimiter =
   (delimiter: string) =>
-  (doc: MarkdownDoc, patches: Patch[]): PatchGroup[] => {
+  (doc: MarkdownDoc, patches: (Patch | TextPatch)[]): PatchGroup[] => {
     if (!doc?.content) return [];
     const patchGroups: PatchGroup[] = [];
 
     let currentGroup: PatchGroup | null = null;
 
-    const createNewGroupFromPatch = (patch: Patch) => {
+    const createNewGroupFromPatch = (patch: Patch | TextPatch) => {
       const patchStart = patch.path[1] as number;
       const patchEnd = patchStart + getSizeOfPatch(patch);
       const groupStartIndex =
@@ -427,7 +428,7 @@ const groupPatchesByDelimiter =
     return patchGroups;
   };
 
-const getSizeOfPatch = (patch: Patch): number => {
+const getSizeOfPatch = (patch: Patch | TextPatch): number => {
   switch (patch.action) {
     case "del":
       return patch.length;
@@ -439,8 +440,12 @@ const getSizeOfPatch = (patch: Patch): number => {
 };
 
 export const getAttrOfPatch = <T>(
-  patch: Patch | PatchWithAttr<T>
+  patch: Patch | PatchWithAttr<T> | TextPatch
 ): T | undefined => {
+  if (patch.action === "replace") {
+    return getAttrOfPatch(patch.splice); // todo: this is not correct delete and insert could be from different authors
+  }
+
   return "attr" in patch ? patch.attr : undefined;
 };
 

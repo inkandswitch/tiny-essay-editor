@@ -2,6 +2,7 @@ import { MarkdownDoc } from "@/tee/schema";
 import { Patch } from "@automerge/automerge/next";
 import { truncate } from "lodash";
 import { Heading, extractHeadings } from "../groupChanges";
+import { TextPatch } from "../utils";
 
 function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
   if (patch.path[0] !== "content") {
@@ -40,7 +41,7 @@ type DocLine = {
 
 export const MinimapWithDiff: React.FC<{
   doc: MarkdownDoc;
-  patches: Patch[];
+  patches: (Patch | TextPatch)[];
   size?: "normal" | "compact";
 }> = ({ doc, patches, size }) => {
   // Roughly split up the doc into 80-char lines to approximate the way it's displayed
@@ -130,7 +131,10 @@ type BucketedPatches = Array<{
 const NUM_BUCKETS = 25;
 
 /* Bucket patches based on their spatial location in the document. */
-const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
+const bucketPatches = (
+  doc: MarkdownDoc,
+  patches: (Patch | TextPatch)[]
+): BucketedPatches => {
   const bucketSize = Math.ceil(doc.content.length / NUM_BUCKETS);
   const buckets: BucketedPatches = Array.from({ length: NUM_BUCKETS }, () => ({
     startIndex: 0,
@@ -187,7 +191,7 @@ const bucketPatches = (doc: MarkdownDoc, patches: Patch[]): BucketedPatches => {
 
 export const HorizontalMinimap: React.FC<{
   doc: MarkdownDoc;
-  patches: Patch[];
+  patches: (Patch | TextPatch)[];
 }> = ({ doc, patches }) => {
   const buckets = bucketPatches(doc, patches);
 

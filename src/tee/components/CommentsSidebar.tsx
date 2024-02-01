@@ -337,7 +337,7 @@ export const CommentsSidebar = ({
     }
   };
 
-  const undoPatches = (patches: A.Patch[]) => {
+  const undoPatches = (patches: (A.Patch | TextPatch)[]) => {
     const patchesWithCursors = patches.map((patch) => ({
       ...patch,
       fromCursor: A.getCursor(doc, ["content"], patch.path[1] as number),

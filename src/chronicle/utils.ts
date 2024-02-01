@@ -103,7 +103,9 @@ export type TextPatch = A.SpliceTextPatch | A.DelPatch | ReplacePatch;
 // combines patches in two phases
 // 1. eliminates redudant patches like a insert followed by and delete of the same characters
 // 2. turns an insert followed by a delete into a replace (that's probably wrong, but we will refine that later)
-export const combinePatches = (patches: A.Patch[]): TextPatch[] => {
+export const combinePatches = (
+  patches: (A.Patch | TextPatch)[]
+): TextPatch[] => {
   let combinedPatches: TextPatch[] = [];
 
   // 1. combine redundant pathces
