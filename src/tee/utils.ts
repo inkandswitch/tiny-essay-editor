@@ -481,19 +481,31 @@ export const useAnnotationsWithPositions = ({
         )
           return [];
 
-        const { patchStart, patchEnd } =
-          patch.action === "splice"
-            ? {
-                patchStart: patch.path[1] as number,
-                patchEnd: Math.min(
-                  (patch.path[1] as number) + patch.value.length,
-                  doc.content.length - 1
-                ),
-              }
-            : {
-                patchStart: patch.path[1] as number,
-                patchEnd: (patch.path[1] as number) + 1,
-              };
+        let patchStart, patchEnd;
+
+        switch (patch.action) {
+          case "splice":
+            patchStart = patch.path[1] as number;
+            patchEnd = Math.min(
+              (patch.path[1] as number) + patch.value.length,
+              doc.content.length - 1
+            );
+            break;
+          case "del":
+            patchStart = patch.path[1] as number;
+            patchEnd = (patch.path[1] as number) + 1;
+            break;
+          case "replace":
+            (patchStart = patch.path[1] as number),
+              (patchEnd = Math.min(
+                (patch.path[1] as number) + patch.new.length,
+                doc.content.length - 1
+              ));
+
+            break;
+          default:
+            throw new Error("invalid patch");
+        }
 
         try {
           const fromCursor = A.getCursor(doc, ["content"], patchStart);
