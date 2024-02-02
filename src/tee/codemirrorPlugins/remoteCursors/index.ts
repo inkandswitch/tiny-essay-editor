@@ -15,6 +15,5 @@ export interface UserSelectionData {
   selection: SelectionData
 }
 
-export { remoteCursorTheme } from "./CursorWidget";
 export { remoteStateField, setPeerSelectionData } from "./RemoteCursorsState";
 export { collaborativePlugin } from "./ViewPlugin";

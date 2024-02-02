@@ -5,6 +5,32 @@
   display: none;
 }
 
+.remote-cursor {
+  display: inline;
+  position: relative;
+  color: var(--user-color);
+  border-left: 2px solid var(--user-color);
+  margin-left: -1px;
+  margin-right: -1px;
+  position: relative;
+}
+
+.remote-cursor[data-show-name=true]::after {
+  word-break: normal;
+  overflow-wrap: normal;
+  text-wrap: nowrap;
+
+  content: var(--user-name);
+  position: absolute;
+  right: 0;
+  top: -1.5em;
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  opacity: 1; /* Show the name initially */
+  height: 1.5em;
+}
 
 .cm-content {
   /* Link style -------------------------------- */

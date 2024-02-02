@@ -39,7 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { collaborativePlugin, remoteCursorTheme, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
+import { collaborativePlugin, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
 import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
@@ -171,7 +171,6 @@ export function MarkdownEditor({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
         remoteStateField,
-        remoteCursorTheme,
         cursorPlugin,
         frontmatterPlugin,
         threadsField,
