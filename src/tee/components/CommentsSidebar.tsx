@@ -38,7 +38,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
 import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -49,6 +49,8 @@ import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/chronicle/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
 import { TextPatch } from "@/chronicle/utils";
+
+const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work for deletes so I'm disabling it for now
 
 export const CommentsSidebar = ({
   doc,
@@ -61,6 +63,7 @@ export const CommentsSidebar = ({
   visibleAuthorsForEdits,
   setVisibleAuthorsForEdits,
   authors,
+  diffBase,
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
@@ -72,6 +75,7 @@ export const CommentsSidebar = ({
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
   authors: AutomergeUrl[];
+  diffBase?: A.Heads;
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
@@ -79,6 +83,14 @@ export const CommentsSidebar = ({
   const [activeReplyThreadId, setActiveReplyThreadId] = useState<
     string | null
   >();
+
+  const prevDoc = useMemo(() => {
+    if (!doc || !diffBase) {
+      return;
+    }
+
+    return A.view(doc, diffBase);
+  }, [doc, diffBase]);
 
   // figure out which comments were added in the diff being shown, to highlight in green
   // TODO: this feature got lost in the shuffle, bring it back!
@@ -534,13 +546,19 @@ export const CommentsSidebar = ({
               >
                 {annotation.type === "draft" && (
                   <Draft
+                    currentText={doc.content}
+                    prevText={prevDoc.content}
                     annotation={annotation}
                     selected={selectedAnnotationIds.includes(annotation.id)}
                   />
                 )}
                 {annotation.type === "patch" && (
                   <div className="z-0">
-                    <Patch patch={annotation.patch} />
+                    <Patch
+                      patch={annotation.patch}
+                      currentText={doc.content}
+                      prevText={prevDoc.content}
+                    />
                   </div>
                 )}
                 <div>
@@ -839,31 +857,39 @@ export const PatchesGroupedByAuthor = ({
   );
 };
 
-export const Patch = ({ patch }: { patch: A.Patch | TextPatch }) => {
+export const Patch = ({
+  patch,
+  currentText,
+  prevText,
+}: {
+  patch: A.Patch | TextPatch;
+  currentText?: string;
+  prevText?: string;
+}) => {
   return (
     <div className="flex">
       {patch.action === "splice" && (
         <div className="text-sm">
           <span className="font-serif bg-green-50 border-b border-green-400">
-            {truncate(patch.value, { length: 45 })}
+            {patchToString(patch, currentText)}
           </span>
         </div>
       )}
       {patch.action === "del" && (
         <div className="text-sm">
           <span className="font-serif bg-red-50 border-b border-red-400">
-            {truncate(patch.removed, { length: 45 })}
+            {patchToString(patch, prevText)}
           </span>
         </div>
       )}
       {patch.action === "replace" && (
         <div className="text-sm">
           <span className="font-serif bg-red-50 border-b border-red-400">
-            {truncate(patch.old, { length: 45 })}
+            {patchToString(patch.delete, prevText)}
           </span>{" "}
           →{" "}
           <span className="font-serif bg-green-50 border-b border-green-400">
-            {truncate(patch.new, { length: 45 })}
+            {patchToString(patch.splice, currentText)}
           </span>
         </div>
       )}
@@ -873,6 +899,80 @@ export const Patch = ({ patch }: { patch: A.Patch | TextPatch }) => {
     </div>
   );
 };
+
+function patchToString(patch: A.Patch | TextPatch, text: string) {
+  if (EXTEND_CHANGES_TO_WORD_BOUNDARIES) {
+    switch (patch.action) {
+      case "del": {
+        const from = patch.path[1] as number;
+        const to = from + patch.length;
+
+        // todo: figure out cursors
+        return truncate(patch.removed, { length: 45 });
+      }
+      case "splice": {
+        const from = patch.path[1] as number;
+        const to = from + patch.value.length;
+
+        return truncate(extractWord(text, from, to), { length: 1045000 });
+      }
+
+      default:
+        throw new Error("invalid patch");
+    }
+  }
+
+  switch (patch.action) {
+    case "del": {
+      return truncate(patch.removed, { length: 45 });
+    }
+    case "splice": {
+      return truncate(patch.value, { length: 45 });
+    }
+
+    default:
+      throw new Error("invalid patch");
+  }
+}
+
+function extractWord(text: string, from: number, to: number) {
+  const value = text.slice(from, to);
+
+  console.log({ value });
+
+  // special case single punctuation changes
+  if (isPunctuation(value)) {
+    return value;
+  }
+
+  // Expand the 'to' index to include the whole word
+  let start = from;
+  let end = to;
+
+  // Expand backwards to the start of the word
+  while (
+    start > 0 &&
+    text[start - 1] !== " " &&
+    text[start - 1] !== "\n" &&
+    !isPunctuation(text[start - 1])
+  ) {
+    start--;
+  }
+
+  // Expand forwards to the end of the word
+  while (end < text.length && text[end] !== " " && !isPunctuation(text[end])) {
+    end++;
+  }
+
+  // Return the word
+  return text.substring(start, end);
+}
+
+const PUNCTUATION_REGEX = /[!\"#$%&'()*+,-./:;<=>?@\[\\\]^_`{|}~“”]/;
+
+function isPunctuation(value: string) {
+  return PUNCTUATION_REGEX.test(value);
+}
 
 function CommentView({ comment }: { comment: Comment }) {
   const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
@@ -928,10 +1028,12 @@ function CompactCommentView({ comment }: { comment: Comment }) {
 }
 
 // A component for rendering a Draft (to be renamed Edit Group)
-const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
-  annotation,
-  selected,
-}) => {
+const Draft: React.FC<{
+  annotation: DraftAnnotation;
+  selected: boolean;
+  currentText: string;
+  prevText: string;
+}> = ({ annotation, selected, currentText, prevText }) => {
   const account = useCurrentAccount();
 
   // todo: check if the edit hasn't changed since the last time the user marked it reviewed
@@ -1007,7 +1109,11 @@ const Draft: React.FC<{ annotation: DraftAnnotation; selected: boolean }> = ({
                   }
             }
           >
-            <Patch patch={patch} />
+            <Patch
+              patch={patch}
+              currentText={currentText}
+              prevText={prevText}
+            />
           </div>
         ))}
       </div>

@@ -117,6 +117,7 @@ export const TinyEssayEditor = ({
         </div>
         <div className="w-0">
           <CommentsSidebar
+            diffBase={diffBase}
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
