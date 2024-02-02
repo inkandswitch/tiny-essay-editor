@@ -39,6 +39,9 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { collaborativePlugin, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
+import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
+import { useCurrentAccount } from "@/DocExplorer/account";
 
 export type TextSelection = {
   from: number;
@@ -69,12 +72,36 @@ export function MarkdownEditor({
 
   const handleReady = handle.isReady();
 
+  const account = useCurrentAccount();
+  const userId = account?.contactHandle?.url || "loading";
+  const userMetadata = {
+    peerId: userId,
+    color: "blue",
+    name: "Anonymous",
+  }
+
+  const [, setLocalSelections] = useLocalAwareness({handle, userId, initialState: {}});
+  const [remoteSelections] = useRemoteAwareness({handle, localUserId: userId});
+  
+
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
       effects: setThreadsEffect.of(threadsWithPositions),
     });
   }, [threadsWithPositions]);
+
+  useEffect(() => {
+    const peerSelections = Object.entries(remoteSelections).map(([userId, selection]) => {
+      return {
+        userId,
+        ...selection
+      }
+    })
+    editorRoot.current?.dispatch({
+      effects: setPeerSelectionData.of(peerSelections),
+    });
+  }, [remoteSelections]);
 
   useEffect(() => {
     if (!handleReady) {
@@ -84,6 +111,7 @@ export function MarkdownEditor({
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
+    const cursorPlugin = collaborativePlugin(setLocalSelections, userId, userMetadata);
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -117,6 +145,8 @@ export function MarkdownEditor({
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
+        remoteStateField,
+        cursorPlugin,
         frontmatterPlugin,
         threadsField,
         threadDecorations,
