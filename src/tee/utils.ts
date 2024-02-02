@@ -218,22 +218,25 @@ export const getTextAnnotationsForUI = ({
         ];
       })
       .filter((draft) => {
-        if (
-          !reviewStateFilter.showReviewedBySelf &&
-          draft.reviews[reviewStateFilter.self]
-        ) {
-          return false;
-        }
+        if (draft.reviews) {
+          if (
+            !reviewStateFilter.showReviewedBySelf &&
+            draft.reviews[reviewStateFilter.self]
+          ) {
+            return false;
+          }
 
-        const reviewers = Object.keys(draft.reviews);
-        if (
-          !reviewStateFilter.showReviewedByOthers &&
-          (!reviewStateFilter.showReviewedBySelf ||
-            !draft.reviews[reviewStateFilter.self]) &&
-          (reviewers.length > 1 ||
-            (reviewers.length === 1 && reviewers[0] !== reviewStateFilter.self))
-        ) {
-          return false;
+          const reviewers = Object.keys(draft.reviews);
+          if (
+            !reviewStateFilter.showReviewedByOthers &&
+            (!reviewStateFilter.showReviewedBySelf ||
+              !draft.reviews[reviewStateFilter.self]) &&
+            (reviewers.length > 1 ||
+              (reviewers.length === 1 &&
+                reviewers[0] !== reviewStateFilter.self))
+          ) {
+            return false;
+          }
         }
 
         return draft.editRangesWithComments

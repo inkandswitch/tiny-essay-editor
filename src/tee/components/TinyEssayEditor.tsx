@@ -19,13 +19,22 @@ import {
   getRelativeTimeString,
   useAnnotationsWithPositions,
 } from "../utils";
+import { PatchWithAttr } from "@automerge/automerge-wasm";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
-import { ActorId, Heads, view } from "@automerge/automerge/next";
+import {
+  ActorId,
+  Heads,
+  view,
+  getCursorPosition,
+  Patch,
+} from "@automerge/automerge/next";
 import { uniq } from "lodash";
 import { useCurrentAccount } from "@/DocExplorer/account";
+import { TextPatch } from "@/chronicle/utils";
+import { edit } from "react-arborist/dist/module/state/edit-slice";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -105,12 +114,63 @@ export const TinyEssayEditor = ({
   const patchesForEditor = useMemo(() => {
     return (
       diff &&
-      diff.patches.filter(
+      diff.patches.filter((patch) => {
+        if (
+          ["splice", "del", "replace"].includes(patch.action) &&
+          patch.path[0] === "content"
+        ) {
+          const draft = Object.values(doc?.drafts ?? {}).find((draft) => {
+            return draft.editRangesWithComments.some(({ editRange }) => {
+              const from = getCursorPosition(
+                doc,
+                ["content"],
+                editRange.fromCursor
+              );
+              const to = getCursorPosition(
+                doc,
+                ["content"],
+                editRange.toCursor
+              );
+
+              const patchFrom = patch.path[1] as number;
+              const patchTo = patchFrom + getPatchLength(patch);
+
+              return (
+                // this is bad and wrong, replace groups are not create correctly
+                (patch.action === "replace" && from === patchFrom) ||
+                (from <= patchFrom && to >= patchTo)
+              );
+            });
+          });
+
+          if (draft?.reviews) {
+            if (
+              !reviewStateFilter.showReviewedBySelf &&
+              draft.reviews &&
+              draft.reviews[reviewStateFilter.self]
+            ) {
+              return false;
+            }
+
+            const reviewers = Object.keys(draft.reviews);
+            if (
+              !reviewStateFilter.showReviewedByOthers &&
+              (!reviewStateFilter.showReviewedBySelf ||
+                !draft.reviews[reviewStateFilter.self]) &&
+              (reviewers.length > 1 ||
+                (reviewers.length === 1 &&
+                  reviewers[0] !== reviewStateFilter.self))
+            ) {
+              return false;
+            }
+          }
+        }
+
         // @ts-expect-error - we should know we have patch.attr here?
-        (patch) => visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr
-      )
+        return visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr;
+      })
     );
-  }, [diff, visibleAuthorsForEdits]);
+  }, [diff, visibleAuthorsForEdits, reviewStateFilter]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
@@ -161,4 +221,17 @@ export const TinyEssayEditor = ({
       </div>
     </div>
   );
+};
+
+const getPatchLength = (
+  patch: Patch | PatchWithAttr<AutomergeUrl> | TextPatch
+) => {
+  switch (patch.action) {
+    case "del":
+      return patch.length;
+    case "splice":
+      return patch.value.length;
+    case "replace":
+      return patch.splice.value.length;
+  }
 };
