@@ -204,7 +204,9 @@ export const CommentsSidebar = ({
   };
 
   // Start a draft for the selected patches
-  const groupPatches = (selectedAnnotations: TextAnnotation[]) => {
+  const groupPatches = (
+    selectedAnnotations: TextAnnotation[]
+  ): string | undefined => {
     const existingDrafts: DraftAnnotation[] = selectedAnnotations.filter(
       (thread) => thread.type === "draft"
     ) as DraftAnnotation[];
@@ -228,10 +230,11 @@ export const CommentsSidebar = ({
 
     // create new thread if all selected patches are virtual
     if (existingDrafts.length == 0) {
+      const id = uuid();
       const draft: PersistedDraft = JSON.parse(
         JSON.stringify({
           type: "draft",
-          id: uuid(),
+          id,
           comments: [],
           fromHeads: selectedPatches[0].fromHeads,
           editRangesWithComments: editRanges.map((editRange) => ({
@@ -252,8 +255,10 @@ export const CommentsSidebar = ({
         doc.drafts[draft.id] = draft;
       });
 
-      // add to existing thread if there is only one
-    } else if (existingDrafts.length === 1) {
+      return id;
+    }
+
+    if (existingDrafts.length === 1) {
       const existingDraft = existingDrafts[0];
       changeDoc((doc) => {
         const draft = doc.drafts[existingDraft.id];
@@ -265,9 +270,7 @@ export const CommentsSidebar = ({
         }
       });
 
-      // give up if multiple drafts are selected
-    } else {
-      alert("can't merge two groups");
+      return existingDraft.id;
     }
   };
 
@@ -393,9 +396,16 @@ export const CommentsSidebar = ({
   };
 
   const toggleAnnotationIsMarkedReviewed = (annotation: TextAnnotation) => {
+    let draftId: string;
+
+    if (annotation.type === "patch") {
+      draftId = groupPatches([annotation]);
+    } else {
+      draftId = annotation.id;
+    }
+
     changeDoc((doc) => {
-      // todo: how to handle reviewing patches?
-      let reviews = doc.drafts[annotation.id]?.reviews;
+      let reviews = doc.drafts[draftId]?.reviews;
       if (!reviews) {
         doc.drafts[annotation.id].reviews = {};
         reviews = doc.drafts[annotation.id].reviews;
