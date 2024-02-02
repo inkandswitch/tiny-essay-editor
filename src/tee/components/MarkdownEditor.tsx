@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   EditorView,
@@ -73,12 +73,20 @@ export function MarkdownEditor({
   const handleReady = handle.isReady();
 
   const account = useCurrentAccount();
+
+  // TODO: "loading"
   const userId = account?.contactHandle?.url || "loading";
-  const userMetadata = {
-    peerId: userId,
-    color: "blue",
-    name: "Anonymous",
-  }
+  const userDoc = account?.contactHandle?.docSync();
+
+  const [userMetadata, setUserMetadata] = useState({name: "Unnamed User", color: "blue", userId})
+  useEffect(() => {
+    if (userDoc) {
+      if (userDoc.type === "registered") {
+        const { color, name } = userDoc;
+        setUserMetadata((userMetadata) => ({ ...userMetadata, color, name, userId }))  
+      }
+    }
+  }, [userId, userDoc]);
 
   const [, setLocalSelections] = useLocalAwareness({handle, userId, initialState: {}});
   const [remoteSelections] = useRemoteAwareness({handle, localUserId: userId});
@@ -111,6 +119,15 @@ export function MarkdownEditor({
     });
   }, [remoteSelections, lastSelections]);
 
+  const setLocalSelectionsWithUserData = useCallback((selection: SelectionData) => {
+    const localSelections = {
+      user: userMetadata,
+      selection,
+      userId
+    }
+    setLocalSelections(localSelections);
+  }, [setLocalSelections, userMetadata, userId])
+
   useEffect(() => {
     if (!handleReady) {
       return;
@@ -119,7 +136,7 @@ export function MarkdownEditor({
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
-    const cursorPlugin = collaborativePlugin(remoteStateField, setLocalSelections, userId, userMetadata);
+    const cursorPlugin = collaborativePlugin(remoteStateField, setLocalSelectionsWithUserData);
     const view = new EditorView({
       doc: source,
       extensions: [

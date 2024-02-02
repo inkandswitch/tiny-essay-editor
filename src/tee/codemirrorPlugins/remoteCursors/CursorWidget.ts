@@ -10,10 +10,19 @@ export class CursorWidget extends WidgetType {
     return other.user === this.user && other.color === this.color;
   }
 
-  toDOM() {
+  toDOM(view) {
+    //const cursorCoords = view.coordsAtPos(cursorPos);
+
     const element = document.createElement("span");
     element.className = "remote-cursor";
-    element.style.borderLeft = `2px solid ${this.color}`;
+    element.style.borderLeft = `1px solid ${this.color}`;
+    
+    element.style.borderLeftWidth = '2px';
+    element.style.borderLeftStyle = 'solid';
+    element.style.marginLeft = element.style.marginRight = '-1px';
+    // element.style.height = (cursorCoords.bottom - cursorCoords.top) * 0.9 + 'px';
+    element.style.zIndex = "0";
+
     element.setAttribute("data-user", this.user);
     // Initially hide the user name
     element.setAttribute("data-show-name", "false");

@@ -1,8 +1,8 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 
-import { UserSelectionData } from ".";
+import { SelectionData } from ".";
 
-export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: UserSelectionData) => void, peerId: string, user: UserMetadata) => ViewPlugin.fromClass(class {
+export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
   view: EditorView;
   constructor(view: EditorView) {
     this.view = view
@@ -19,7 +19,7 @@ export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: Us
     const {state} = view;
     const selections = state.selection.ranges.map(r => ({from: r.from, to: r.to}));
     const cursor = state.selection.main.head;
-    setLocalSelections({peerId, user, selection: {selections, cursor}})
+    setLocalSelections({selections, cursor})
   }
 }, {
   decorations: plugin => plugin.view.state.field(remoteStateField)
