@@ -3,12 +3,22 @@ import { useState } from "react";
 import { TextAnnotation } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { ReviewStateFilter } from "../utils";
+import { filter } from "lodash";
 
 export const HistoryFilter: React.FC<{
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
+  reviewStateFilter: ReviewStateFilter;
+  setReviewStateFilter: (filter: ReviewStateFilter) => void;
   authors: AutomergeUrl[];
-}> = ({ visibleAuthorsForEdits, setVisibleAuthorsForEdits, authors }) => {
+}> = ({
+  visibleAuthorsForEdits,
+  setVisibleAuthorsForEdits,
+  authors,
+  reviewStateFilter,
+  setReviewStateFilter,
+}) => {
   const [showFilterSettings, setShowFilterSettings] = useState(false);
 
   return (
@@ -34,6 +44,8 @@ export const HistoryFilter: React.FC<{
             authors={authors}
             visibleAuthorsForEdits={visibleAuthorsForEdits}
             setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+            reviewStateFilter={reviewStateFilter}
+            setReviewStateFilter={setReviewStateFilter}
           />
         )}
       </div>
@@ -67,7 +79,15 @@ const FilterSettings: React.FC<{
   authors: AutomergeUrl[];
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
-}> = ({ authors, visibleAuthorsForEdits, setVisibleAuthorsForEdits }) => {
+  reviewStateFilter: ReviewStateFilter;
+  setReviewStateFilter: (filter: ReviewStateFilter) => void;
+}> = ({
+  authors,
+  visibleAuthorsForEdits,
+  setVisibleAuthorsForEdits,
+  reviewStateFilter,
+  setReviewStateFilter,
+}) => {
   return (
     <div className="flex flex-col gap-2">
       <div>
@@ -99,6 +119,35 @@ const FilterSettings: React.FC<{
               <ContactAvatar url={author} size={"sm"} showName />
             </div>
           ))}
+          <h2 className="text-[10px] font-bold uppercase text-gray-500">
+            Show reviewed edits
+          </h2>
+          <div className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={reviewStateFilter.showReviewedBySelf}
+              onChange={(e) => {
+                setReviewStateFilter({
+                  ...reviewStateFilter,
+                  showReviewedBySelf: e.target.checked,
+                });
+              }}
+            />
+            show reviewed by me
+          </div>
+          <div className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={reviewStateFilter.showReviewedByOthers}
+              onChange={(e) => {
+                setReviewStateFilter({
+                  ...reviewStateFilter,
+                  showReviewedByOthers: e.target.checked,
+                });
+              }}
+            />
+            show reviewed by others
+          </div>
         </div>
       </div>
     </div>

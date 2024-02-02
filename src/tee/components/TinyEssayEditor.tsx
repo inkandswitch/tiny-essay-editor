@@ -14,13 +14,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
-import { getRelativeTimeString, useAnnotationsWithPositions } from "../utils";
+import {
+  ReviewStateFilter,
+  getRelativeTimeString,
+  useAnnotationsWithPositions,
+} from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
 import { ActorId, Heads, view } from "@automerge/automerge/next";
 import { uniq } from "lodash";
+import { useCurrentAccount } from "@/DocExplorer/account";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -43,6 +48,7 @@ export const TinyEssayEditor = ({
   diffBase?: Heads;
   actorIdToAuthor?: Record<ActorId, AutomergeUrl>;
 }) => {
+  const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
@@ -55,6 +61,25 @@ export const TinyEssayEditor = ({
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
   >([]);
+
+  const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilter>(
+    {
+      self: "" as AutomergeUrl, // a bit hacky, account might be undefined initially so we just use a dummy value
+      showReviewedByOthers: true,
+      showReviewedBySelf: false,
+    }
+  );
+
+  useEffect(() => {
+    if (!account) {
+      return;
+    }
+
+    setReviewStateFilter((filter) => ({
+      ...filter,
+      self: account.contactHandle.url,
+    }));
+  }, [account?.contactHandle.url]);
 
   const authors = uniq(Object.values(actorIdToAuthor ?? {}));
 
@@ -71,6 +96,7 @@ export const TinyEssayEditor = ({
     diff: showDiffAsComments ? diff : undefined,
     diffBase,
     visibleAuthorsForEdits,
+    reviewStateFilter,
   });
 
   const annotations = annotationsWithPositions;
@@ -121,6 +147,8 @@ export const TinyEssayEditor = ({
             doc={docAtHeads}
             changeDoc={changeDoc}
             selection={selection}
+            reviewStateFilter={reviewStateFilter}
+            setReviewStateFilter={setReviewStateFilter}
             selectedAnnotationIds={selectedAnnotationIds}
             setSelectedAnnotationIds={setSelectedAnnotationIds}
             annotationsWithPositions={annotations}

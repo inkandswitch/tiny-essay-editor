@@ -138,6 +138,12 @@ function doesPatchOverlapWith(patch: A.Patch, from: number, to: number) {
   }
 }
 
+export interface ReviewStateFilter {
+  self: AutomergeUrl;
+  showReviewedBySelf: boolean;
+  showReviewedByOthers: boolean;
+}
+
 // Resolve comment thread cursors to integer positions in the document
 export const getTextAnnotationsForUI = ({
   doc,
@@ -147,6 +153,7 @@ export const getTextAnnotationsForUI = ({
   showDiff,
   patchAnnotations,
   visibleAuthorsForEdits,
+  reviewStateFilter,
 }: {
   doc: MarkdownDoc;
   selectedAnnotationIds: string[];
@@ -155,6 +162,7 @@ export const getTextAnnotationsForUI = ({
   showDiff: boolean;
   patchAnnotations?: PatchAnnotation[];
   visibleAuthorsForEdits: AutomergeUrl[];
+  reviewStateFilter: ReviewStateFilter;
 }): TextAnnotationForUI[] => {
   let annotations: TextAnnotation[] = [];
 
@@ -209,15 +217,33 @@ export const getTextAnnotationsForUI = ({
           },
         ];
       })
-      .filter((draft) =>
-        draft.editRangesWithComments
+      .filter((draft) => {
+        if (
+          !reviewStateFilter.showReviewedBySelf &&
+          draft.reviews[reviewStateFilter.self]
+        ) {
+          return false;
+        }
+
+        const reviewers = Object.keys(draft.reviews);
+        if (
+          !reviewStateFilter.showReviewedByOthers &&
+          (!reviewStateFilter.showReviewedBySelf ||
+            !draft.reviews[reviewStateFilter.self]) &&
+          (reviewers.length > 1 ||
+            (reviewers.length === 1 && reviewers[0] !== reviewStateFilter.self))
+        ) {
+          return false;
+        }
+
+        return draft.editRangesWithComments
           .flatMap((range) => range.patches)
           .some(
             (patch) =>
               // @ts-expect-error todo look into attributed patch types
               visibleAuthorsForEdits.includes(patch.attr) || !patch.attr
-          )
-      );
+          );
+      });
 
     annotations = [...annotations, ...draftAnnotations];
 
@@ -447,6 +473,7 @@ export const useAnnotationsWithPositions = ({
   diff,
   diffBase,
   visibleAuthorsForEdits,
+  reviewStateFilter,
 }: {
   doc: MarkdownDoc;
   view: EditorView;
@@ -455,6 +482,7 @@ export const useAnnotationsWithPositions = ({
   diff?: DiffWithProvenance;
   diffBase?: A.Heads;
   visibleAuthorsForEdits: AutomergeUrl[];
+  reviewStateFilter: ReviewStateFilter;
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
@@ -554,8 +582,16 @@ export const useAnnotationsWithPositions = ({
       diff,
       showDiff: diff !== undefined,
       visibleAuthorsForEdits,
+      reviewStateFilter,
     });
-  }, [doc, selectedAnnotationIds, diff, visibleAuthorsForEdits, diffBase]);
+  }, [
+    doc,
+    selectedAnnotationIds,
+    diff,
+    visibleAuthorsForEdits,
+    diffBase,
+    reviewStateFilter,
+  ]);
 
   // Next we get the vertical position for each thread.
 

@@ -39,7 +39,11 @@ import {
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
 import { useEffect, useMemo, useState } from "react";
-import { getRelativeTimeString, cmRangeToAMRange } from "../utils";
+import {
+  getRelativeTimeString,
+  cmRangeToAMRange,
+  ReviewStateFilter,
+} from "../utils";
 import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { truncate } from "lodash";
@@ -62,6 +66,8 @@ export const CommentsSidebar = ({
   diff,
   visibleAuthorsForEdits,
   setVisibleAuthorsForEdits,
+  reviewStateFilter,
+  setReviewStateFilter,
   authors,
   diffBase,
 }: {
@@ -74,6 +80,8 @@ export const CommentsSidebar = ({
   diff?: DiffWithProvenance;
   visibleAuthorsForEdits: AutomergeUrl[];
   setVisibleAuthorsForEdits: (authors: AutomergeUrl[]) => void;
+  reviewStateFilter: ReviewStateFilter;
+  setReviewStateFilter: (filter: ReviewStateFilter) => void;
   authors: AutomergeUrl[];
   diffBase?: A.Heads;
 }) => {
@@ -424,6 +432,8 @@ export const CommentsSidebar = ({
           <HistoryFilter
             visibleAuthorsForEdits={visibleAuthorsForEdits}
             setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+            reviewStateFilter={reviewStateFilter}
+            setReviewStateFilter={setReviewStateFilter}
             authors={authors}
           />
         </div>
