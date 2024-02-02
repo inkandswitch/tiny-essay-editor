@@ -26,7 +26,7 @@ export const remoteStateField = StateField.define<DecorationSet>({
 
           // Now mark for highlight any selected ranges.
           const ranges = selection.selections.filter(({from, to}) => (from !== to)).map(({from, to}) => 
-            Decoration.mark({class: "remote-selection", attributes: {style: `background-color: ${user.color}40;`}}).range(from, to)
+            Decoration.mark({class: "remote-selection", attributes: {style: `background-color: color-mix(in srgb, ${user.color} 20%, transparent)`}}).range(from, to)
           ); // the 40 is for 25% opacity
 
           // Add all this to the decorations set. (We could optimize this by avoiding recreating unchanged values later.)
