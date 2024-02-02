@@ -11,30 +11,27 @@ export class CursorWidget extends WidgetType {
   }
 
   toDOM() {
-    // Only create a new element if it doesn't exist yet
-    if (!this.element) {
-      this.element = document.createElement("span");
-      this.element.className = "remote-cursor";
-      this.element.style.borderLeft = `2px solid ${this.color}`;
-      this.element.setAttribute("data-user", this.user);
-      // Initially hide the user name
-      this.element.setAttribute("data-show-name", "false");
-    }
-
+    const element = document.createElement("span");
+    element.className = "remote-cursor";
+    element.style.borderLeft = `2px solid ${this.color}`;
+    element.setAttribute("data-user", this.user);
+    // Initially hide the user name
+    element.setAttribute("data-show-name", "false");
+  
     // Trigger the animation by toggling an attribute
-    this.showAndHideName();
+    this.showAndHideName(element);
 
-    return this.element;
+    return element;
   }
 
-  showAndHideName() {
+  showAndHideName(element) {
     // Reset the animation by removing and re-adding the attribute
-    this.element.setAttribute("data-show-name", "true");
+    element.setAttribute("data-show-name", "true");
     
     // Use a timeout to hide the name after a brief period
     setTimeout(() => {
-      if (this.element) { // Check if the element still exists
-        this.element.setAttribute("data-show-name", "false");
+      if (element) { // Check if the element still exists
+        element.setAttribute("data-show-name", "false");
       }
     }, 1500); // Matches the animation duration
   }

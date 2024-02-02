@@ -1,10 +1,8 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 
-import { remoteStateField } from "./RemoteCursorsState";
-
 import { UserSelectionData } from ".";
 
-export const collaborativePlugin = (setLocalSelections: (s: UserSelectionData) => void, peerId: string, user: UserMetadata) => ViewPlugin.fromClass(class {
+export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: UserSelectionData) => void, peerId: string, user: UserMetadata) => ViewPlugin.fromClass(class {
   view: EditorView;
   constructor(view: EditorView) {
     this.view = view

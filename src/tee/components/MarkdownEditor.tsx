@@ -39,7 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { collaborativePlugin, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
+import { collaborativePlugin, remoteCursorTheme, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
 import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
@@ -82,7 +82,7 @@ export function MarkdownEditor({
 
   const [, setLocalSelections] = useLocalAwareness({handle, userId, initialState: {}});
   const [remoteSelections] = useRemoteAwareness({handle, localUserId: userId});
-  
+  const [lastSelections, setLastSelections] = useState(remoteSelections);
 
   // Propagate activeThreadId into the codemirror
   useEffect(() => {
@@ -92,6 +92,14 @@ export function MarkdownEditor({
   }, [threadsWithPositions]);
 
   useEffect(() => {
+    // compare the new selections to the last selections
+    // if they are different, update the codemirror
+    // we need to do a deep comparison because the object reference will change
+    if (JSON.stringify(remoteSelections) === JSON.stringify(lastSelections)) {
+      return // bail out
+    }
+    setLastSelections(remoteSelections);
+
     const peerSelections = Object.entries(remoteSelections).map(([userId, selection]) => {
       return {
         userId,
@@ -101,7 +109,7 @@ export function MarkdownEditor({
     editorRoot.current?.dispatch({
       effects: setPeerSelectionData.of(peerSelections),
     });
-  }, [remoteSelections]);
+  }, [remoteSelections, lastSelections]);
 
   useEffect(() => {
     if (!handleReady) {
@@ -111,7 +119,7 @@ export function MarkdownEditor({
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
-    const cursorPlugin = collaborativePlugin(setLocalSelections, userId, userMetadata);
+    const cursorPlugin = collaborativePlugin(remoteStateField, setLocalSelections, userId, userMetadata);
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -146,6 +154,7 @@ export function MarkdownEditor({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
         remoteStateField,
+        remoteCursorTheme,
         cursorPlugin,
         frontmatterPlugin,
         threadsField,
@@ -159,7 +168,7 @@ export function MarkdownEditor({
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
-          const newSelection = transaction.newSelection.ranges[0];
+          /*const newSelection = transaction.newSelection.ranges[0];
           if (transaction.newSelection !== view.state.selection) {
             // set the active thread id if our selection is in a thread
             for (const thread of view.state.field(threadsField)) {
@@ -172,17 +181,17 @@ export function MarkdownEditor({
               }
               setActiveThreadId(null);
             }
-          }
+          }*/
           view.update([transaction]);
           semaphore.reconcile(handle, view);
-          const selection = view.state.selection.ranges[0];
+          /*const selection = view.state.selection.ranges[0];
           setSelection({
             from: selection.from,
             to: selection.to,
             yCoord:
               -1 * view.scrollDOM.getBoundingClientRect().top +
               view.coordsAtPos(selection.from).top,
-          });
+          });*/
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.

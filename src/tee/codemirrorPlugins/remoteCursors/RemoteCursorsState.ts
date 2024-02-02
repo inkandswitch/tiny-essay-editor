@@ -13,9 +13,9 @@ export const remoteStateField = StateField.define<DecorationSet>({
     return Decoration.none;
   },
   update(decorations, tr) {
-    decorations = Decoration.none;
     for (const effect of tr.effects) {
       if (effect.is(setPeerSelectionData)) {
+        decorations = Decoration.none;
         effect.value.forEach(({user, selection}) => {
           if (!user || !selection) { console.log("missing", user, selection); return }
           // Make a widget for the cursor position.
