@@ -540,7 +540,6 @@ export const useAnnotationsWithPositions = ({
               patch,
               fromHeads: diff.fromHeads,
               toHeads: diff.toHeads,
-              reviews: {},
             },
           ];
         } catch (e) {
