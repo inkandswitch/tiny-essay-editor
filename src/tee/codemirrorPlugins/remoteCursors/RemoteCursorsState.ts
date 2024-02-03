@@ -1,11 +1,12 @@
-import {EditorView, Decoration, DecorationSet} from "@codemirror/view"
+import {EditorView, Decoration, DecorationSet, ViewPlugin, ViewUpdate} from "@codemirror/view"
 import {StateField, StateEffect} from "@codemirror/state"
 
 // Effects to update remote selections and cursors
-import type { UserSelectionData } from "."
+import type { UserData, SelectionData, UserSelectionData } from "."
 import { CursorWidget } from "./CursorWidget";
 
 export const setPeerSelectionData = StateEffect.define<UserSelectionData[]>();
+export const setUserData = StateEffect.define<UserData>();
 
 // State field to track remote selections and cursors
 export const remoteStateField = StateField.define<DecorationSet>({
@@ -37,4 +38,27 @@ export const remoteStateField = StateField.define<DecorationSet>({
     return decorations;
   },
   provide: f => EditorView.decorations.from(f)
+});
+
+export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
+  view: EditorView;
+  constructor(view: EditorView) {
+    this.view = view
+    this.emitLocalChanges(view);
+  }
+
+  update(update: ViewUpdate) {
+    if (update.selectionSet || update.docChanged) {
+      this.emitLocalChanges(update.view);
+    }
+  }
+
+  emitLocalChanges(view: EditorView) {
+    const {state} = view;
+    const selections = state.selection.ranges.map(r => ({from: r.from, to: r.to}));
+    const cursor = state.selection.main.head;
+    setLocalSelections({selections, cursor})
+  }
+}, {
+  decorations: plugin => plugin.view.state.field(remoteStateField)
 });

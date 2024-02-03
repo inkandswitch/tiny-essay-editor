@@ -12,8 +12,10 @@ export class CursorWidget extends WidgetType {
     return other.user === this.user && other.color === this.color;
   }
 
-  toDOM(view) {
+  toDOM(view: EditorView) {
     //const cursorCoords = view.coordsAtPos(cursorPos);
+    console.log(view)
+
 
     this.element = document.createElement("span");
     this.element.className = "remote-cursor";

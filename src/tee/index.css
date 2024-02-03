@@ -19,12 +19,14 @@
   word-break: normal;
   overflow-wrap: normal;
   text-wrap: nowrap;
+  font-family: "Merriweather Sans", sans-serif;
 
   content: var(--user-name);
   position: absolute;
   right: 0;
   top: -1.5em;
-  background: color-mix(in srgb, currentColor 20%, transparent);
+  color: white;
+  background: color-mix(in srgb, var(--user-color) 50%, white);
   padding: 2px 4px;
   border-radius: 4px;
   font-size: 0.75em;

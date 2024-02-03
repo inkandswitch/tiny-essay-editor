@@ -39,7 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { collaborativePlugin, remoteStateField, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
+import { collaborativePlugin, remoteStateField, SelectionData, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
 import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
@@ -78,15 +78,20 @@ export function MarkdownEditor({
   const userId = account?.contactHandle?.url || "loading";
   const userDoc = account?.contactHandle?.docSync();
 
-  const [userMetadata, setUserMetadata] = useState({name: "Unnamed User", color: "blue", userId})
-  useEffect(() => {
-    if (userDoc) {
-      if (userDoc.type === "registered") {
-        const { color, name } = userDoc;
-        setUserMetadata((userMetadata) => ({ ...userMetadata, color, name, userId }))  
-      }
-    }
-  }, [userId, userDoc]);
+   // Initialize userMetadata as a ref
+   const userMetadataRef = useRef({name: "Anonymous", color: "pink", userId});
+
+   useEffect(() => {
+     if (userDoc) {
+       if (userDoc.type === "registered") {
+         const { color, name } = userDoc;
+         // Update the ref directly
+         userMetadataRef.current = { ...userMetadataRef.current, color, name, userId };
+       } else {
+         userMetadataRef.current = { ...userMetadataRef.current, userId };
+       }
+     }
+   }, [userId, userDoc]);
 
   const [, setLocalSelections] = useLocalAwareness({handle, userId, initialState: {}});
   const [remoteSelections] = useRemoteAwareness({handle, localUserId: userId});
@@ -121,12 +126,12 @@ export function MarkdownEditor({
 
   const setLocalSelectionsWithUserData = useCallback((selection: SelectionData) => {
     const localSelections = {
-      user: userMetadata,
+      user: userMetadataRef.current, // Access the current value of the ref
       selection,
-      userId
-    }
+      userId: userMetadataRef.current.userId // Ensure you're using the ref's current value
+    };
     setLocalSelections(localSelections);
-  }, [setLocalSelections, userMetadata, userId])
+  }, [setLocalSelections, userMetadataRef])
 
   useEffect(() => {
     if (!handleReady) {
