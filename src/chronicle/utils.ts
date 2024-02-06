@@ -275,3 +275,15 @@ export const useHeadsHistory = (url: AutomergeUrl): A.Heads[] => {
     return headsHistory;
   }, [debouncedDoc]);
 };
+
+export function getCursorPositionSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  cursor: A.Cursor
+): number | null {
+  try {
+    return A.getCursorPosition(doc, path, cursor);
+  } catch (err) {
+    return null;
+  }
+}

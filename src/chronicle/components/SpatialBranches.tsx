@@ -13,6 +13,7 @@ import {
 import clsx from "clsx";
 import { PlusIcon, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { getCursorPositionSafely } from "../utils";
 
 interface ResolveBranch extends Branch {
   fromPos: number;
@@ -261,16 +262,4 @@ function getColor(hash: string) {
 
   // Use the modulo operator with the colors array length to select a color
   return colors[index % colors.length];
-}
-
-function getCursorPositionSafely(
-  doc: A.Doc<unknown>,
-  path: A.Prop[],
-  cursor: A.Cursor
-): number | null {
-  try {
-    return A.getCursorPosition(doc, path, cursor);
-  } catch (err) {
-    return null;
-  }
 }
