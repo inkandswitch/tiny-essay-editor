@@ -5,21 +5,32 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
-import { PlusIcon } from "lucide-react";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
+import { PlusIcon, X } from "lucide-react";
 import React, { useState, useMemo } from "react";
 
 export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
   const repo = useRepo();
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>(undefined);
+
+  const onDeleteBranchAt = (index: number) => {
+    handle.change((doc) => {
+      delete doc.branches[index];
+    });
+  };
 
   const onNewBranch = () => {
     const { from, to } = selection;
 
-    if (to === doc.content.length - 1) {
+    if (to === doc.content.length) {
       alert("can't create spatial branch at the end of the doc");
       return;
     }
@@ -38,7 +49,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return;
     }
 
-    changeDoc((doc) => {
+    handle.change((doc) => {
       if (!doc.branches) {
         doc.branches = [];
       }
@@ -59,7 +70,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     }
 
     return (doc.branches ?? []).map((branch, index) => ({
-      class: getColorByIndex(index),
+      class: getColor(branch.from),
       from: A.getCursorPosition(doc, ["content"], branch.from),
       to: A.getCursorPosition(doc, ["content"], branch.to) - 1,
     }));
@@ -90,15 +101,24 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
           <div className="overflow-y-auto flex-grow border-t border-gray-400 flex flex-col gap-2 p-2">
             {(doc?.branches ?? []).map((branch, index) => (
-              <div className="flex gap-2">
+              <div className="flex gap-1 items-center">
                 <div
                   key={branch.heads.join(",")}
-                  className={`flex items-center rounded w-fit p-2 text-black ${getColorByIndex(
-                    index
+                  className={`flex items-center rounded w-fit py-1 px-2 text-black ${getColor(
+                    branch.from
                   )}`}
                 >
                   Branch #{index}{" "}
                 </div>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={() => onDeleteBranchAt(index)}
+                >
+                  <X size={14} />
+                </Button>
               </div>
             ))}
           </div>
@@ -117,7 +137,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   );
 };
 
-function getColorByIndex(index) {
+function getColor(hash: string) {
   // Array of Tailwind CSS color classes rearranged to not follow hue order
   const colors = [
     "bg-teal-500",
@@ -140,6 +160,12 @@ function getColorByIndex(index) {
     "bg-fuchsia-500",
   ];
 
-  // Use the modulo operator to cycle through the array if the index exceeds the array's length
+  // Convert hash to a numerical index
+  let index = 0;
+  for (let i = 0; i < hash.length; i++) {
+    index += hash.charCodeAt(i);
+  }
+
+  // Use the modulo operator with the colors array length to select a color
   return colors[index % colors.length];
 }
