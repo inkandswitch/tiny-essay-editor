@@ -25,6 +25,7 @@ import { DraftsPlayground } from "@/chronicle/components/Drafts";
 import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 import { EditGroupsPlayground } from "@/chronicle/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/chronicle/components/SpatialBranches";
+import { SideBySidePlayground } from "@/chronicle/components/SideBySide";
 
 export type Tool = {
   id: string;
@@ -62,6 +63,11 @@ const TOOLS = [
     id: "spatialBranches",
     name: "Spatial Branches",
     component: SpatialBranchesPlayground,
+  },
+  {
+    id: "sideBySide",
+    name: "Side by Side",
+    component: SideBySidePlayground,
   },
 ];
 
