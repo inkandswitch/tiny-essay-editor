@@ -115,6 +115,8 @@ export type User = {
 
 export type Branch = {
   heads: A.Heads;
+  from: A.Cursor;
+  to: A.Cursor;
 };
 
 type _MarkdownDoc = {
