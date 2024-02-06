@@ -113,11 +113,16 @@ export type User = {
   name: string;
 };
 
+export type Branch = {
+  heads: A.Heads;
+};
+
 type _MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
+  branches: Branch[];
 };
 
 export type Copyable = {
