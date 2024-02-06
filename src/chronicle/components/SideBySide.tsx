@@ -24,144 +24,75 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 }) => {
   const repo = useRepo();
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc] = useDocument(docUrl);
   const [selection, setSelection] = useState<TextSelection>(undefined);
   const [selectedHeadsIndex, setSelectedHeadsIndex] = useState(0);
-  const [hiddenBranches, setHiddenBranches] = useState<Record<string, boolean>>(
-    {}
-  );
 
-  const [combinedDoc, setCombinedDoc] = useState<MarkdownDoc>();
+  const headsHistory = useHeadsHistory(docUrl);
+  const compareHeads =
+    headsHistory[Math.max(headsHistory.length - selectedHeadsIndex, 0)];
 
-  const onDeleteBranchAt = (index: number) => {
-    const fromCursor = doc.branches[index].from;
-
-    changeDoc((doc) => {
-      delete doc.branches[index];
-    });
-
-    setHiddenBranches((hiddenBranches) => ({
-      ...hiddenBranches,
-      [fromCursor]: false,
-    }));
-  };
-
-  const resolvedBranches = useMemo<ResolveBranch[]>(() => {
-    if (!doc?.branches) {
+  const diffCurrent = useMemo(() => {
+    if (!doc || !compareHeads) {
       return [];
     }
 
-    return doc.branches.flatMap((branch) => {
-      const fromPos = getCursorPositionSafely(
-        combinedDoc,
-        ["content"],
-        branch.from
-      );
-      const toPos =
-        getCursorPositionSafely(combinedDoc, ["content"], branch.to) - 1;
+    return A.diff(doc, compareHeads, A.getHeads(doc));
+  }, [doc, compareHeads]);
 
-      return !fromPos || !toPos ? [] : [{ ...branch, fromPos, toPos }];
-    });
-  }, [doc?.branches, combinedDoc]);
+  const highlightsCurrent = useMemo<DebugHighlight[]>(() => {
+    return diffCurrent.flatMap((patch) => {
+      if (
+        patch.path[0] === "content" &&
+        patch.action === "splice" &&
+        typeof patch.path[1] === "number"
+      ) {
+        const from = patch.path[1];
+        const to = from + patch.value.length;
 
-  const onNewBranch = useCallback(() => {
-    const { from, to } = selection;
-
-    if (to === doc.content.length) {
-      alert("can't create spatial branch at the end of the doc");
-      return;
-    }
-
-    const overlapsWithOtherBranches = resolvedBranches.some((branch) => {
-      return Math.max(branch.fromPos, from) <= Math.min(branch.toPos, to);
-    });
-
-    if (overlapsWithOtherBranches) {
-      alert("can't create a spatial branch that overlaps with other branches");
-      return;
-    }
-
-    const text = doc.content.slice(from, to);
-
-    changeDoc((doc) => {
-      // delete range
-      A.splice(doc, ["content"], from, text.length);
-    });
-
-    // create copy of doc
-    const branchDocHandle = repo.create<MarkdownDoc>();
-    branchDocHandle.merge(handle);
-
-    let fromCursor;
-    let toCursor;
-
-    // reinsert change
-    branchDocHandle.change((doc) => {
-      A.splice(doc, ["content"], from, 0, text);
-
-      fromCursor = A.getCursor(doc, ["content"], from);
-      // we need to select the next character otherwise the range slurps up the following character if we delete the last character in the range
-      toCursor = A.getCursor(doc, ["content"], to + 1);
-    });
-
-    // create branch
-    changeDoc((doc) => {
-      if (!doc.branches) {
-        doc.branches = [];
+        return [
+          {
+            class: "font-bold",
+            from,
+            to,
+          },
+        ];
       }
 
-      // create branch that points to that copy
-      doc.branches.push({
-        docUrl: branchDocHandle.url,
-        from: fromCursor,
-        to: toCursor,
-      });
+      return [];
     });
-  }, [selection, resolvedBranches]);
+  }, [diffCurrent]);
 
-  const onToggleIsBranchHidden = (branch: Branch) => {
-    setHiddenBranches((hiddenBranches) => ({
-      ...hiddenBranches,
-      [branch.from]: !hiddenBranches[branch.from],
-    }));
-  };
-
-  const highlights = useMemo<DebugHighlight[]>(() => {
-    return (resolvedBranches ?? [])
-      .map((branch) => ({
-        class: getColor(branch.from),
-        from: branch.fromPos,
-        to: branch.toPos,
-      }))
-      .filter(({ from, to }) => from !== to);
-  }, [resolvedBranches]);
-
-  // create combined doc
-  useEffect(() => {
-    if (!doc) {
-      return;
+  const diffCompare = useMemo(() => {
+    if (!doc || !compareHeads) {
+      return [];
     }
 
-    let combinedDoc = A.init<MarkdownDoc>();
-    combinedDoc = A.merge(combinedDoc, doc);
+    return A.diff(doc, A.getHeads(doc), compareHeads);
+  }, [doc, compareHeads]);
 
-    Promise.all(
-      (doc.branches ?? [])
-        .filter((branch) => !hiddenBranches[branch.from])
-        .map((branch) => repo.find<MarkdownDoc>(branch.docUrl).doc())
-    ).then((branchDocs) => {
-      for (const branchDoc of branchDocs) {
-        combinedDoc = A.merge(combinedDoc, branchDoc);
+  const highlightsCompare = useMemo<DebugHighlight[]>(() => {
+    return diffCompare.flatMap((patch) => {
+      if (
+        patch.path[0] === "content" &&
+        patch.action === "splice" &&
+        typeof patch.path[1] === "number"
+      ) {
+        const from = patch.path[1];
+        const to = from + patch.value.length;
+
+        return [
+          {
+            class: "font-bold",
+            from,
+            to,
+          },
+        ];
       }
 
-      setCombinedDoc(combinedDoc);
+      return [];
     });
-  }, [hiddenBranches, doc?.branches?.length, doc]);
-
-  const headsHistory = useHeadsHistory(docUrl);
-
-  const compareHeads =
-    headsHistory[Math.max(headsHistory.length - selectedHeadsIndex, 0)];
+  }, [diffCompare]);
 
   return (
     <div className="flex flex-col overflow-hidden h-full">
@@ -187,6 +118,7 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           setView={() => {}}
           setActiveThreadIds={() => {}}
           threadsWithPositions={EMPTY_LIST}
+          debugHighlights={highlightsCurrent}
           diffStyle="normal"
         />
         <div className="border-l border-gray-100 h-full"></div>
@@ -197,6 +129,7 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           setView={() => {}}
           setActiveThreadIds={() => {}}
           threadsWithPositions={EMPTY_LIST}
+          debugHighlights={highlightsCompare}
           diffStyle="normal"
           readOnly={true}
           docHeads={compareHeads}
