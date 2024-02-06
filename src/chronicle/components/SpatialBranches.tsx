@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { MarkdownDoc } from "@/tee/schema";
+import { Branch, MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -10,21 +10,31 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
+import clsx from "clsx";
 import { PlusIcon, X } from "lucide-react";
 import React, { useState, useMemo } from "react";
 
 export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
-  const repo = useRepo();
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [doc] = useDocument<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>(undefined);
+  const [hiddenBranches, setHiddenBranches] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const onDeleteBranchAt = (index: number) => {
+    const fromCursor = doc.branches[index].from;
+
     handle.change((doc) => {
       delete doc.branches[index];
     });
+
+    setHiddenBranches((hiddenBranches) => ({
+      ...hiddenBranches,
+      [fromCursor]: false,
+    }));
   };
 
   const onNewBranch = () => {
@@ -49,19 +59,39 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return;
     }
 
+    // todo: this doesn't work
+    const text = doc.content.slice(from, to);
+
+    const headsToForkAt = A.getHeads(doc);
+
+    handle.change((doc) => {
+      A.splice(doc, ["content"], from, text.length);
+    });
+
+    const branchHeads = handle.changeAt(headsToForkAt, (doc) => {
+      A.splice(doc, ["content"], to, 0, text);
+    });
+
     handle.change((doc) => {
       if (!doc.branches) {
         doc.branches = [];
       }
 
       doc.branches.push({
-        heads: A.getHeads(doc),
-        from: A.getCursor(doc, ["content"], from),
+        heads: branchHeads,
+        from: A.getCursor(A.view(doc, branchHeads), ["content"], from),
 
         // we need to select the next character otherwise the range slurps up the following character if we delete the last character in the range
-        to: A.getCursor(doc, ["content"], to + 1),
+        to: A.getCursor(A.view(doc, branchHeads), ["content"], to + 1),
       });
     });
+  };
+
+  const onToggleIsBranchHidden = (branch: Branch) => {
+    setHiddenBranches((hiddenBranches) => ({
+      ...hiddenBranches,
+      [branch.from]: !hiddenBranches[branch.from],
+    }));
   };
 
   const highlights = useMemo<DebugHighlight[]>(() => {
@@ -69,11 +99,13 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return [];
     }
 
-    return (doc.branches ?? []).map((branch, index) => ({
-      class: getColor(branch.from),
-      from: A.getCursorPosition(doc, ["content"], branch.from),
-      to: A.getCursorPosition(doc, ["content"], branch.to) - 1,
-    }));
+    return (doc.branches ?? [])
+      .map((branch, index) => ({
+        class: getColor(branch.from),
+        from: A.getCursorPosition(doc, ["content"], branch.from),
+        to: A.getCursorPosition(doc, ["content"], branch.to) - 1,
+      }))
+      .filter(({ from, to }) => from !== to);
   }, [doc?.branches, doc?.content]);
 
   return (
@@ -101,12 +133,24 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
           <div className="overflow-y-auto flex-grow border-t border-gray-400 flex flex-col gap-2 p-2">
             {(doc?.branches ?? []).map((branch, index) => (
-              <div className="flex gap-1 items-center">
+              <div className="flex gap-1 items-center" key={branch.from}>
+                <input
+                  type="checkbox"
+                  checked={!hiddenBranches[branch.from]}
+                  onChange={() => onToggleIsBranchHidden(branch)}
+                />
+
                 <div
-                  key={branch.heads.join(",")}
-                  className={`flex items-center rounded w-fit py-1 px-2 text-black ${getColor(
-                    branch.from
-                  )}`}
+                  className={clsx(
+                    `shadow flex items-center w-fit py-1 px-2 text-black`,
+                    getColor(branch.from),
+                    {
+                      "opacity-50": hiddenBranches[branch.from],
+                    }
+                  )}
+                  style={{
+                    transform: `rotate(${((index * 137) % 7) - 3}deg)`,
+                  }}
                 >
                   Branch #{index}{" "}
                 </div>
