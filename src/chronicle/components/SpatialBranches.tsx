@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
-import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
+import { MarkdownEditorSpatialBranches } from "@/tee/components/MarkdownEditorSpatialBranches";
 import { Branch, MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
@@ -13,7 +12,7 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import clsx from "clsx";
 import { PlusIcon, X } from "lucide-react";
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ResolveBranch extends Branch {
   fromPos: number;
@@ -221,9 +220,8 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
       <div className="flex-grow overflow-hidden">
         {combinedDoc && (
-          <ReadonlySnippetView
-            text={combinedDoc.content}
-            debugHighlights={highlights}
+          <MarkdownEditorSpatialBranches
+            handle={handle}
             setSelection={setSelection}
           />
         )}
