@@ -11,6 +11,14 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useHeadsHistory } from "../utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Hash } from "./Hash";
 
 interface ResolveBranch extends Branch {
   fromPos: number;
@@ -18,6 +26,8 @@ interface ResolveBranch extends Branch {
 }
 
 const EMPTY_LIST = [];
+
+type focusMode = "none" | "sentence" | "paragraph";
 
 export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
@@ -27,6 +37,9 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [doc] = useDocument(docUrl);
   const [selection, setSelection] = useState<TextSelection>(undefined);
   const [selectedHeadsIndex, setSelectedHeadsIndex] = useState(0);
+  const [focusMode, setFocuseMode] = useState<focusMode>("none");
+
+  console.log(selection);
 
   const headsHistory = useHeadsHistory(docUrl);
   const compareHeads =
@@ -97,10 +110,8 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   return (
     <div className="flex flex-col overflow-hidden h-full">
       <div className="p-2 h-10 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
-        <div className="flex">
-          <div className="text-xs mr-2 whitespace-nowrap">
-            History scrubber:
-          </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs whitespace-nowrap">History scrubber:</div>
           <Slider
             value={[selectedHeadsIndex]}
             min={0}
@@ -108,32 +119,62 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             step={1}
             onValueChange={(value) => setSelectedHeadsIndex(value[0])}
           />
+          <div className="text-xs whitespace-nowrap">Focus mode:</div>
+          <Select
+            value={focusMode}
+            onValueChange={(value) => setFocuseMode(value as any)}
+          >
+            <SelectTrigger className="h-6 text-xs mr-2 max-w-36">
+              <SelectValue placeholder="View Mode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">none</SelectItem>
+              <SelectItem value="sentence">sentence</SelectItem>
+              <SelectItem value="paragraph">paragraph</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <div className="flex-grow overflow-hidden flex">
-        <MarkdownEditor
-          handle={handle}
-          path={["content"]}
-          setSelection={setSelection}
-          setView={() => {}}
-          setActiveThreadIds={() => {}}
-          threadsWithPositions={EMPTY_LIST}
-          debugHighlights={highlightsCurrent}
-          diffStyle="normal"
-        />
+      <div className="flex-grow overflow-auto flex">
+        <div className="relative flex-1">
+          <div className="absolute right-2 top-2">
+            <div className="inline-flex items-center border border-gray-300 rounded-full py-1 px-2">
+              current
+            </div>
+          </div>
+          <MarkdownEditor
+            handle={handle}
+            path={["content"]}
+            setSelection={setSelection}
+            setView={() => {}}
+            setActiveThreadIds={() => {}}
+            threadsWithPositions={EMPTY_LIST}
+            debugHighlights={highlightsCurrent}
+            diffStyle="normal"
+          />
+        </div>
         <div className="border-l border-gray-100 h-full"></div>
-        <MarkdownEditor
-          handle={handle}
-          path={["content"]}
-          setSelection={setSelection}
-          setView={() => {}}
-          setActiveThreadIds={() => {}}
-          threadsWithPositions={EMPTY_LIST}
-          debugHighlights={highlightsCompare}
-          diffStyle="normal"
-          readOnly={true}
-          docHeads={compareHeads}
-        />
+        <div className="relative flex-1">
+          {compareHeads !== undefined && (
+            <>
+              <div className="absolute absolute right-2 top-2">
+                <Hash hash={compareHeads ? compareHeads[0] : ""} />
+              </div>
+              <MarkdownEditor
+                handle={handle}
+                path={["content"]}
+                setSelection={setSelection}
+                setView={() => {}}
+                setActiveThreadIds={() => {}}
+                threadsWithPositions={EMPTY_LIST}
+                debugHighlights={highlightsCompare}
+                diffStyle="normal"
+                readOnly={true}
+                docHeads={compareHeads}
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
