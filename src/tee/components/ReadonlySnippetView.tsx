@@ -1,7 +1,7 @@
 // This is a radically simplified version of our full editor
 // that's intended to show a read-only view of a string with correct formatting and with diff annotations.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -25,6 +25,12 @@ import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
+import {
+  DebugHighlight,
+  setDebugHighlightsEffect,
+  debugHighlightsField,
+  debugHighlightsDecorations,
+} from "../codemirrorPlugins/DebugHighlight";
 
 export type TextSelection = {
   from: number;
@@ -37,12 +43,23 @@ export type DiffStyle = "normal" | "private";
 export function ReadonlySnippetView({
   text,
   patches,
+  debugHighlights,
+  setSelection,
 }: {
   text: string;
-  patches: A.Patch[];
+  patches?: A.Patch[];
+  debugHighlights?: DebugHighlight[];
+  setSelection: (selection: TextSelection) => void;
 }) {
   const containerRef = useRef(null);
-  const editorRoot = useRef<EditorView>(null);
+  const [editorRoot, setEditorRoot] = useState<EditorView>();
+
+  // Propagate debug highlights into codemirror
+  useEffect(() => {
+    editorRoot?.dispatch({
+      effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
+    });
+  }, [debugHighlights, editorRoot]);
 
   useEffect(() => {
     const source = text; // this should use path
@@ -64,20 +81,33 @@ export function ReadonlySnippetView({
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
-        patchDecorations(patches, "normal"),
+        patchDecorations(patches ?? [], "normal"),
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
+        debugHighlightsField,
+        debugHighlightsDecorations,
       ],
       dispatch(transaction, view) {
         view.update([transaction]);
+
+        const selection = view.state.selection.ranges[0];
+        if (selection) {
+          setSelection({
+            from: selection.from,
+            to: selection.to,
+            yCoord:
+              -1 * view.scrollDOM.getBoundingClientRect().top +
+                view.coordsAtPos(selection.from)?.top ?? 0,
+          });
+        }
       },
       parent: containerRef.current,
     });
 
-    editorRoot.current = view;
+    setEditorRoot(view);
 
     return () => {
       view.destroy();

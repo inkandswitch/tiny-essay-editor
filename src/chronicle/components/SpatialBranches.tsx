@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
+import { ReadonlySnippetView } from "@/tee/components/ReadonlySnippetView";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Branch, MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
@@ -12,22 +13,30 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import clsx from "clsx";
 import { PlusIcon, X } from "lucide-react";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+
+interface ResolveBranch extends Branch {
+  fromPos: number;
+  toPos: number;
+}
 
 export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   docUrl,
 }) => {
+  const repo = useRepo();
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [doc] = useDocument<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>(undefined);
   const [hiddenBranches, setHiddenBranches] = useState<Record<string, boolean>>(
     {}
   );
 
+  const [combinedDoc, setCombinedDoc] = useState<MarkdownDoc>();
+
   const onDeleteBranchAt = (index: number) => {
     const fromCursor = doc.branches[index].from;
 
-    handle.change((doc) => {
+    changeDoc((doc) => {
       delete doc.branches[index];
     });
 
@@ -37,7 +46,25 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     }));
   };
 
-  const onNewBranch = () => {
+  const resolvedBranches = useMemo<ResolveBranch[]>(() => {
+    if (!doc?.branches) {
+      return [];
+    }
+
+    return doc.branches.flatMap((branch) => {
+      const fromPos = getCursorPositionSafely(
+        combinedDoc,
+        ["content"],
+        branch.from
+      );
+      const toPos =
+        getCursorPositionSafely(combinedDoc, ["content"], branch.to) - 1;
+
+      return !fromPos || !toPos ? [] : [{ ...branch, fromPos, toPos }];
+    });
+  }, [doc?.branches, combinedDoc]);
+
+  const onNewBranch = useCallback(() => {
     const { from, to } = selection;
 
     if (to === doc.content.length) {
@@ -45,47 +72,52 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return;
     }
 
-    const overlapsWithOtherBranches =
-      doc.branches &&
-      doc.branches.some((branch) => {
-        const branchFrom = A.getCursorPosition(doc, ["content"], branch.from);
-        const branchTo = A.getCursorPosition(doc, ["content"], branch.to) - 1;
-
-        return Math.max(branchFrom, from) <= Math.min(branchTo, to);
-      });
+    const overlapsWithOtherBranches = resolvedBranches.some((branch) => {
+      return Math.max(branch.fromPos, from) <= Math.min(branch.toPos, to);
+    });
 
     if (overlapsWithOtherBranches) {
       alert("can't create a spatial branch that overlaps with other branches");
       return;
     }
 
-    // todo: this doesn't work
     const text = doc.content.slice(from, to);
 
-    const headsToForkAt = A.getHeads(doc);
-
-    handle.change((doc) => {
+    changeDoc((doc) => {
+      // delete range
       A.splice(doc, ["content"], from, text.length);
     });
 
-    const branchHeads = handle.changeAt(headsToForkAt, (doc) => {
-      A.splice(doc, ["content"], to, 0, text);
+    // create copy of doc
+    const branchDocHandle = repo.create<MarkdownDoc>();
+    branchDocHandle.merge(handle);
+
+    let fromCursor;
+    let toCursor;
+
+    // reinsert change
+    branchDocHandle.change((doc) => {
+      A.splice(doc, ["content"], from, 0, text);
+
+      fromCursor = A.getCursor(doc, ["content"], from);
+      // we need to select the next character otherwise the range slurps up the following character if we delete the last character in the range
+      toCursor = A.getCursor(doc, ["content"], to + 1);
     });
 
-    handle.change((doc) => {
+    // create branch
+    changeDoc((doc) => {
       if (!doc.branches) {
         doc.branches = [];
       }
 
+      // create branch that points to that copy
       doc.branches.push({
-        heads: branchHeads,
-        from: A.getCursor(A.view(doc, branchHeads), ["content"], from),
-
-        // we need to select the next character otherwise the range slurps up the following character if we delete the last character in the range
-        to: A.getCursor(A.view(doc, branchHeads), ["content"], to + 1),
+        docUrl: branchDocHandle.url,
+        from: fromCursor,
+        to: toCursor,
       });
     });
-  };
+  }, [selection, resolvedBranches]);
 
   const onToggleIsBranchHidden = (branch: Branch) => {
     setHiddenBranches((hiddenBranches) => ({
@@ -95,18 +127,36 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   };
 
   const highlights = useMemo<DebugHighlight[]>(() => {
-    if (!doc) {
-      return [];
-    }
-
-    return (doc.branches ?? [])
-      .map((branch, index) => ({
+    return (resolvedBranches ?? [])
+      .map((branch) => ({
         class: getColor(branch.from),
-        from: A.getCursorPosition(doc, ["content"], branch.from),
-        to: A.getCursorPosition(doc, ["content"], branch.to) - 1,
+        from: branch.fromPos,
+        to: branch.toPos,
       }))
       .filter(({ from, to }) => from !== to);
-  }, [doc?.branches, doc?.content]);
+  }, [resolvedBranches]);
+
+  // create combined doc
+  useEffect(() => {
+    if (!doc) {
+      return;
+    }
+
+    let combinedDoc = A.init<MarkdownDoc>();
+    combinedDoc = A.merge(combinedDoc, doc);
+
+    Promise.all(
+      (doc.branches ?? [])
+        .filter((branch) => !hiddenBranches[branch.from])
+        .map((branch) => repo.find<MarkdownDoc>(branch.docUrl).doc())
+    ).then((branchDocs) => {
+      for (const branchDoc of branchDocs) {
+        combinedDoc = A.merge(combinedDoc, branchDoc);
+      }
+
+      setCombinedDoc(combinedDoc);
+    });
+  }, [hiddenBranches, doc?.branches?.length, doc]);
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -170,12 +220,13 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       </div>
 
       <div className="flex-grow overflow-hidden">
-        <TinyEssayEditor
-          docUrl={docUrl}
-          key={docUrl}
-          debugHighlights={highlights}
-          onChangeSelection={setSelection}
-        />
+        {combinedDoc && (
+          <ReadonlySnippetView
+            text={combinedDoc.content}
+            debugHighlights={highlights}
+            setSelection={setSelection}
+          />
+        )}
       </div>
     </div>
   );
@@ -212,4 +263,16 @@ function getColor(hash: string) {
 
   // Use the modulo operator with the colors array length to select a color
   return colors[index % colors.length];
+}
+
+function getCursorPositionSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  cursor: A.Cursor
+): number | null {
+  try {
+    return A.getCursorPosition(doc, path, cursor);
+  } catch (err) {
+    return null;
+  }
 }
