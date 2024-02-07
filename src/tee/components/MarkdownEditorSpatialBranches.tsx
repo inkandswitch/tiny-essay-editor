@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
-} from "@automerge/automerge-codemirror";
+} from "../codemirrorPlugins/automerge-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { dropCursor, EditorView } from "@codemirror/view";

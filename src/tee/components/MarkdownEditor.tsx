@@ -7,7 +7,7 @@ import { dropCursor, EditorView, keymap } from "@codemirror/view";
 import {
   plugin as amgPlugin,
   PatchSemaphore,
-} from "@automerge/automerge-codemirror";
+} from "../codemirrorPlugins/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { completionKeymap } from "@codemirror/autocomplete";
