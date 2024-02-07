@@ -190,8 +190,10 @@ export const TinyEssayEditor = ({
          */}
         <div
           className={`${
-            readOnly ? " bg-slate-200" : "bg-white"
-          } border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 `}
+            readOnly
+              ? " border-2 border-dashed border-slate-400"
+              : "border border-gray-200 "
+          } bg-white  box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 `}
         >
           <MarkdownEditor
             handle={handle}
