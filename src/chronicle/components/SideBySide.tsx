@@ -59,8 +59,6 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return;
     }
 
-    console.log("this", paragraph.from, paragraph.to);
-
     setFocusRange({
       from: A.getCursor(doc, ["content"], paragraph.from),
       to: A.getCursor(doc, ["content"], paragraph.to),
@@ -106,6 +104,15 @@ export const SideBySidePlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     compareDoc,
     focusMode === "paragraph" ? focusRange : undefined
   );
+
+  /*if (focusRange && compareDoc) {
+    console.log(
+      "??",
+      getCursorPositionSafely(compareDoc, ["content"], focusRange.from),
+
+      compareDoc.content
+    );
+  }*/
 
   return (
     <div className="flex flex-col overflow-hidden h-full">
@@ -274,7 +281,7 @@ function useHighlights(
 
         return [
           {
-            class: "font-bold",
+            class: "text-[#D59C1E]",
             from,
             to,
           },
@@ -288,7 +295,7 @@ function useHighlights(
       const from = getCursorPositionSafely(doc, ["content"], focusRange.from);
       const to = getCursorPositionSafely(doc, ["content"], focusRange.to);
 
-      console.log("FROM:", from, doc.content);
+      console.log("FROM:", from, to);
 
       if (from !== undefined && to !== undefined) {
         if (from !== 0) {
