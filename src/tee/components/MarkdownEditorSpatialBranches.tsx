@@ -11,7 +11,11 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { dropCursor, EditorView } from "@codemirror/view";
 
-import { DocHandle } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  DocHandleChangePayload,
+} from "@automerge/automerge-repo";
 import {
   indentOnInput,
   indentUnit,
@@ -34,7 +38,9 @@ import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
-import { MarkdownDoc } from "../schema";
+import { Branch, MarkdownDoc } from "../schema";
+import { next as A } from "@automerge/automerge";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
 
 export type TextSelection = {
   from: number;
@@ -54,6 +60,8 @@ export function MarkdownEditorSpatialBranches({
   const containerRef = useRef(null);
   const [editorRoot, setEditorRoot] = useState<EditorView>();
 
+  const combinedDocHandle = useCombinedDocHandle(handle);
+
   // Propagate debug highlights into codemirror
   useEffect(() => {
     editorRoot?.dispatch({
@@ -62,7 +70,11 @@ export function MarkdownEditorSpatialBranches({
   }, [debugHighlights, editorRoot]);
 
   useEffect(() => {
-    const doc = handle.docSync();
+    if (!combinedDocHandle) {
+      return;
+    }
+
+    const doc = combinedDocHandle.docSync();
     const automergePlugin = amgPlugin(doc, ["content"]);
     const semaphore = new PatchSemaphore(automergePlugin);
 
@@ -93,9 +105,11 @@ export function MarkdownEditorSpatialBranches({
         automergePlugin,
       ],
       dispatch(transaction, view) {
+        console.log("edit not implemtented");
+
         view.update([transaction]);
 
-        semaphore.reconcile(handle, view);
+        //        semaphore.reconcile(handle, view);
 
         const selection = view.state.selection.ranges[0];
         if (selection) {
@@ -125,7 +139,7 @@ export function MarkdownEditorSpatialBranches({
       handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [containerRef]);
+  }, [containerRef, combinedDocHandle]);
 
   return (
     <div className="flex flex-col items-stretch">
@@ -135,4 +149,67 @@ export function MarkdownEditorSpatialBranches({
       />
     </div>
   );
+}
+
+function useCombinedDocHandle(
+  handle: DocHandle<MarkdownDoc>
+): DocHandle<MarkdownDoc> | undefined {
+  const repo = useRepo();
+
+  const [combinedHandle, setCombinedHandle] =
+    useState<DocHandle<MarkdownDoc>>();
+
+  useEffect(() => {
+    const combinedHandle = repo.create<MarkdownDoc>(); // todo: this doc only needs to exist ephemeraly
+
+    const branchHandlesByUrl = new Map<AutomergeUrl, DocHandle<MarkdownDoc>>();
+
+    const onChangeDoc = ({
+      doc,
+      handle,
+    }: DocHandleChangePayload<MarkdownDoc>) => {
+      updateBranches(doc.branches ?? []);
+      combinedHandle.merge(handle);
+    };
+
+    const updateBranches = (branches: Branch[]) => {
+      // todo: delete branches
+
+      for (const branch of branches) {
+        if (!branchHandlesByUrl.has(branch.docUrl)) {
+          const handle = repo.find<MarkdownDoc>(branch.docUrl);
+          combinedHandle.merge(handle);
+          branchHandlesByUrl.set(branch.docUrl, handle);
+        }
+      }
+    };
+
+    const onChangeBranch = ({
+      handle,
+    }: DocHandleChangePayload<MarkdownDoc>) => {
+      combinedHandle.merge(handle);
+    };
+
+    combinedHandle.merge(handle);
+
+    handle.doc().then((doc) => {
+      if (doc.branches) {
+        updateBranches(doc.branches);
+      }
+
+      setCombinedHandle(combinedHandle);
+    });
+
+    handle.on("change", onChangeDoc);
+
+    return () => {
+      handle.off("change", onChangeDoc);
+
+      for (const branchHandle of branchHandlesByUrl.values()) {
+        branchHandle.off("change", onChangeBranch);
+      }
+    };
+  }, [handle]);
+
+  return combinedHandle;
 }
