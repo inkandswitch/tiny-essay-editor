@@ -439,7 +439,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     className="h-6"
                   >
                     <GitBranchIcon className="mr-2" size={12} />
-                    Turn into branch
+                    Make branch from snapshot
                   </Button>
                 </div>
               )}
