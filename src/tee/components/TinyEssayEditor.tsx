@@ -2,39 +2,29 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import {
-  AnnotationPosition,
-  DiffWithProvenance,
-  DraftAnnotation,
-  MarkdownDoc,
-  TextAnnotation,
-} from "../schema";
-import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
+import { DiffWithProvenance, MarkdownDoc } from "../schema";
 
-import { EditorView } from "@codemirror/view";
-import { CommentsSidebar } from "./CommentsSidebar";
-import {
-  ReviewStateFilter,
-  getRelativeTimeString,
-  useAnnotationsWithPositions,
-} from "../utils";
 import { PatchWithAttr } from "@automerge/automerge-wasm";
+import { EditorView } from "@codemirror/view";
+import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
+import { CommentsSidebar } from "./CommentsSidebar";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
-import "../../tee/index.css";
+import { useCurrentAccount } from "@/DocExplorer/account";
+import { TextPatch } from "@/chronicle/utils";
 import {
   ActorId,
   Heads,
-  view,
-  getCursorPosition,
   Patch,
+  getCursorPosition,
+  view,
 } from "@automerge/automerge/next";
 import { uniq } from "lodash";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { TextPatch } from "@/chronicle/utils";
-import { edit } from "react-arborist/dist/module/state/edit-slice";
+import "../../tee/index.css";
+import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -46,6 +36,8 @@ export const TinyEssayEditor = ({
   showDiffAsComments,
   diffBase,
   actorIdToAuthor,
+  onChangeSelection,
+  debugHighlights,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: Heads;
@@ -55,12 +47,14 @@ export const TinyEssayEditor = ({
   foldRanges?: { from: number; to: number }[];
   showDiffAsComments?: boolean;
   diffBase?: Heads;
+  onChangeSelection?: (selection: TextSelection) => void;
   actorIdToAuthor?: Record<ActorId, AutomergeUrl>;
+  debugHighlights?: DebugHighlight[];
 }) => {
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, setSelection] = useState<TextSelection>();
+  const [selection, _setSelection] = useState<TextSelection>();
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>(
     []
   );
@@ -70,6 +64,14 @@ export const TinyEssayEditor = ({
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
   >([]);
+
+  const setSelection = (selection: TextSelection) => {
+    _setSelection(selection);
+
+    if (onChangeSelection) {
+      onChangeSelection(selection);
+    }
+  };
 
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilter>(
     {
@@ -199,6 +201,7 @@ export const TinyEssayEditor = ({
             diff={patchesForEditor}
             diffStyle={diffStyle ?? "normal"}
             foldRanges={foldRanges}
+            debugHighlights={debugHighlights}
           />
         </div>
         <div className="w-0">

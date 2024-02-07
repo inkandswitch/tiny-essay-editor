@@ -113,11 +113,21 @@ export type User = {
   name: string;
 };
 
+export type Branch = {
+  from: A.Cursor;
+  to: A.Cursor;
+  docUrl: AutomergeUrl;
+};
+
+// todo: split content of document and metadata
+// currently branches copy also global metadata
+// unclear if comments should be part of the doc or the content
 type _MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
+  branches: Branch[];
 };
 
 export type Copyable = {

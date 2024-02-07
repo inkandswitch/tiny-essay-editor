@@ -1,10 +1,11 @@
 import { DiffWithProvenance } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForceUpdate } from "@/lib/utils";
-import { useHandle } from "@automerge/automerge-repo-react-hooks";
+import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { sortBy } from "lodash";
+import { useDebounce } from "./components/Spatial";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -250,3 +251,39 @@ const getOverlapEnd = (str1: string, str2: string) => {
   }
   return overlapLength;
 };
+
+// debounced heads history
+export const useHeadsHistory = (url: AutomergeUrl): A.Heads[] => {
+  const [doc] = useDocument<unknown>(url);
+  const debouncedDoc = useDebounce(doc);
+
+  return useMemo(() => {
+    if (!doc) {
+      return [];
+    }
+
+    let tempDoc = A.init();
+
+    const headsHistory: A.Heads[] = [];
+
+    A.getAllChanges(doc).forEach((change) => {
+      [tempDoc] = A.applyChanges(tempDoc, [change]);
+
+      headsHistory.push(A.getHeads(tempDoc));
+    });
+
+    return headsHistory;
+  }, [debouncedDoc]);
+};
+
+export function getCursorPositionSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  cursor: A.Cursor
+): number | null {
+  try {
+    return A.getCursorPosition(doc, path, cursor);
+  } catch (err) {
+    return null;
+  }
+}

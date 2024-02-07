@@ -3,34 +3,38 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  plugin as amgPlugin,
+  PatchSemaphore,
+} from "@automerge/automerge-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import {
-  Decoration,
-  dropCursor,
-  EditorView,
-  WidgetType,
-} from "@codemirror/view";
+import { dropCursor, EditorView } from "@codemirror/view";
 
-import * as A from "@automerge/automerge/next";
-import { indentUnit, syntaxHighlighting } from "@codemirror/language";
-import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
+import { DocHandle } from "@automerge/automerge-repo";
+import {
+  indentOnInput,
+  indentUnit,
+  syntaxHighlighting,
+} from "@codemirror/language";
 import {
   annotationDecorations,
   annotationsField,
 } from "../codemirrorPlugins/annotations";
+import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
+import {
+  DebugHighlight,
+  debugHighlightsDecorations,
+  debugHighlightsField,
+  setDebugHighlightsEffect,
+} from "../codemirrorPlugins/DebugHighlight";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
-import {
-  DebugHighlight,
-  setDebugHighlightsEffect,
-  debugHighlightsField,
-  debugHighlightsDecorations,
-} from "../codemirrorPlugins/DebugHighlight";
+import { MarkdownDoc } from "../schema";
 
 export type TextSelection = {
   from: number;
@@ -38,16 +42,12 @@ export type TextSelection = {
   yCoord: number;
 };
 
-export type DiffStyle = "normal" | "private";
-
-export function ReadonlySnippetView({
-  text,
-  patches,
+export function MarkdownEditorSpatialBranches({
+  handle,
   debugHighlights,
   setSelection,
 }: {
-  text: string;
-  patches?: A.Patch[];
+  handle: DocHandle<MarkdownDoc>;
   debugHighlights?: DebugHighlight[];
   setSelection: (selection: TextSelection) => void;
 }) {
@@ -62,12 +62,13 @@ export function ReadonlySnippetView({
   }, [debugHighlights, editorRoot]);
 
   useEffect(() => {
-    const source = text; // this should use path
+    const doc = handle.docSync();
+    const automergePlugin = amgPlugin(doc, ["content"]);
+    const semaphore = new PatchSemaphore(automergePlugin);
 
     const view = new EditorView({
-      doc: source,
+      doc: doc.content,
       extensions: [
-        EditorView.editable.of(false),
         dropCursor(),
         EditorView.lineWrapping,
         essayTheme,
@@ -75,13 +76,13 @@ export function ReadonlySnippetView({
           codeLanguages: languages,
         }),
         indentUnit.of("    "),
+        indentOnInput(),
         syntaxHighlighting(markdownStyles),
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
-        patchDecorations(patches ?? [], "normal"),
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
@@ -89,9 +90,12 @@ export function ReadonlySnippetView({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
+        automergePlugin,
       ],
       dispatch(transaction, view) {
         view.update([transaction]);
+
+        semaphore.reconcile(handle, view);
 
         const selection = view.state.selection.ranges[0];
         if (selection) {
@@ -109,10 +113,19 @@ export function ReadonlySnippetView({
 
     setEditorRoot(view);
 
+    const handleChange = () => {
+      semaphore.reconcile(handle, view);
+    };
+
+    handleChange();
+
+    handle.addListener("change", handleChange);
+
     return () => {
+      handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [text, patches]);
+  }, [containerRef]);
 
   return (
     <div className="flex flex-col items-stretch">
@@ -123,71 +136,3 @@ export function ReadonlySnippetView({
     </div>
   );
 }
-
-// Stuff for patches decoration
-// TODO: move this into a separate file
-
-class DeletionMarker extends WidgetType {
-  constructor() {
-    super();
-  }
-
-  toDOM(): HTMLElement {
-    const box = document.createElement("div");
-    box.style.display = "inline-block";
-    box.style.boxSizing = "border-box";
-    box.style.padding = "0 2px";
-    box.style.color = "rgb(236 35 35)";
-    box.style.margin = "0 4px";
-    box.style.fontSize = "0.8em";
-    box.style.backgroundColor = "rgb(255 0 0 / 10%)";
-    box.style.borderRadius = "3px";
-    box.innerText = "⌫";
-    return box;
-  }
-
-  eq() {
-    // todo: i think this is right for now until we show hover of del text etc
-    return true;
-  }
-
-  ignoreEvent() {
-    return true;
-  }
-}
-
-const privateDecoration = Decoration.mark({ class: "cm-patch-private" });
-const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
-const deleteDecoration = Decoration.widget({
-  widget: new DeletionMarker(),
-  side: 1,
-});
-
-const patchDecorations = (patches: A.Patch[], diffStyle: DiffStyle) => {
-  const filteredPatches = patches.filter(
-    (patch) => patch.path[0] === "content"
-  );
-
-  const decorations = filteredPatches.flatMap((patch) => {
-    switch (patch.action) {
-      case "splice": {
-        const from = patch.path[1] as number;
-        const length = patch.value.length;
-        const decoration =
-          diffStyle === "private" ? privateDecoration : spliceDecoration;
-        return [decoration.range(from, from + length)];
-      }
-      case "del": {
-        if (patch.path.length < 2) {
-          console.error("this is so weird! why??");
-          return [];
-        }
-        const from = patch.path[1] as number;
-        return [deleteDecoration.range(from)];
-      }
-    }
-    return [];
-  });
-
-  return EditorView.decorations.of(Decoration.set(decorations));
-};
