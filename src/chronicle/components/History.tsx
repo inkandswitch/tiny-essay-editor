@@ -8,7 +8,6 @@ import {
   GROUPINGS_THAT_TAKE_GAP_TIME,
   charsAddedAndDeletedByPatches,
   getGroupedChanges,
-  groupPatchesByParagraph,
 } from "../groupChanges";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { GROUPINGS } from "../groupChanges";

@@ -581,6 +581,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               >
                 <ChevronsRight size={16} />
               </div>
+              <div>History log goes here</div>
             </div>
           )}
         </div>
