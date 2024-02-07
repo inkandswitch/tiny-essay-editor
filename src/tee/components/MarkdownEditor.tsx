@@ -329,6 +329,10 @@ export function MarkdownEditor({
           if (evt.key === "g" && (evt.metaKey || evt.ctrlKey)) {
             return;
           }
+          // Let cmd-g thru for grouping annotations
+          if (evt.key === "`" && (evt.metaKey || evt.ctrlKey)) {
+            return;
+          }
           evt.stopPropagation();
         }}
       />

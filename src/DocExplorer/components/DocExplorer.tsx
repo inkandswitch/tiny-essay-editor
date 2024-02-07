@@ -35,24 +35,9 @@ export type Tool = {
 
 const TOOLS = [
   {
-    id: "tee",
-    name: "Editor",
+    id: "demo3",
+    name: "Demo 3",
     component: TinyEssayEditor,
-  },
-  {
-    id: "history",
-    name: "History",
-    component: HistoryPlayground,
-  },
-  {
-    id: "spatial",
-    name: "Spatial",
-    component: SpatialHistoryPlayground,
-  },
-  {
-    id: "drafts",
-    name: "Drafts",
-    component: DraftsPlayground,
   },
   {
     id: "editGroups",
@@ -60,13 +45,33 @@ const TOOLS = [
     component: EditGroupsPlayground,
   },
   {
+    id: "tee",
+    name: "Editor",
+    component: TinyEssayEditor,
+  },
+  {
+    id: "history",
+    name: "🛠️ History",
+    component: HistoryPlayground,
+  },
+  {
+    id: "spatial",
+    name: "🛠️ Spatial",
+    component: SpatialHistoryPlayground,
+  },
+  {
+    id: "drafts",
+    name: "🛠️ Drafts",
+    component: DraftsPlayground,
+  },
+  {
     id: "spatialBranches",
-    name: "Spatial Branches",
+    name: "🛠️ Spatial Branches",
     component: SpatialBranchesPlayground,
   },
   {
     id: "sideBySide",
-    name: "Side by Side",
+    name: "🛠️ Side by Side",
     component: SideBySidePlayground,
   },
 ];
@@ -81,6 +86,7 @@ export const DocExplorer: React.FC = () => {
   const ToolComponent = activeTool.component;
 
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showToolPicker, setShowToolPicker] = useState(true);
 
   const { selectedDoc, selectDoc, selectedDocUrl, openDocFromUrl } =
     useSelectedDoc({ rootFolderDoc, changeRootFolderDoc });
@@ -150,6 +156,11 @@ export const DocExplorer: React.FC = () => {
       // toggle the sidebar open/closed when the user types cmd-backslash
       if (event.key === "\\" && event.metaKey) {
         setShowSidebar((prev) => !prev);
+      }
+
+      // Toggle the tool picker visibility when the user types cmd-backtick
+      if (event.key === "`" && event.ctrlKey) {
+        setShowToolPicker((prev) => !prev);
       }
 
       // if there's no document selected and the user hits enter, make a new document
@@ -245,20 +256,22 @@ export const DocExplorer: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex absolute top-0 py-1 px-2 left-[40%] bg-black bg-opacity-20 rounded-b-md font-mono font-bold border">
-        <img src="/construction.png" className="h-6 mr-2"></img>
-        {TOOLS.map((tool) => (
-          <div
-            key={tool.id}
-            className={`inline-block px-2 py-1 mr-1 text-xs text-gray-700 hover:bg-gray-200 cursor-pointer ${
-              tool.id === activeTool.id ? "bg-yellow-100 bg-opacity-70" : ""
-            } rounded-full`}
-            onClick={() => setActiveTool(tool)}
-          >
-            {tool.name}
-          </div>
-        ))}
-      </div>
+      {showToolPicker && (
+        <div className="flex  absolute top-1 px-2 py-1 left-[30%] bg-black bg-opacity-30  rounded-lg font-mono font-bold border">
+          <img src="/construction.png" className="h-6 mr-2"></img>
+          {TOOLS.map((tool) => (
+            <div
+              key={tool.id}
+              className={`inline-block px-2 py-1 mr-1 text-xs  hover:bg-gray-200 cursor-pointer ${
+                tool.id === activeTool.id ? "bg-yellow-100 bg-opacity-70" : ""
+              } rounded-full`}
+              onClick={() => setActiveTool(tool)}
+            >
+              {tool.name}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
