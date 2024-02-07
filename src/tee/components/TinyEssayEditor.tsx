@@ -188,7 +188,11 @@ export const TinyEssayEditor = ({
             - We get the right line width by hardcoding a max-width and x-padding
             - We take over the full screen on narrow displays (showing comments on mobile is TODO)
          */}
-        <div className="bg-white border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 ">
+        <div
+          className={`${
+            readOnly ? " bg-slate-200" : "bg-white"
+          } border border-gray-200 box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 `}
+        >
           <MarkdownEditor
             handle={handle}
             path={["content"]}

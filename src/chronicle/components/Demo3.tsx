@@ -1,12 +1,17 @@
 import { Branch, MarkdownDoc, Tag } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { isEqual } from "lodash";
+import { head, isEqual } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
+  CrownIcon,
   Edit3Icon,
   GitBranchIcon,
   MergeIcon,
@@ -17,6 +22,7 @@ import {
   SidebarCloseIcon,
   SidebarOpenIcon,
   Trash2Icon,
+  UndoIcon,
 } from "lucide-react";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
@@ -34,6 +40,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCurrentAccount } from "@/DocExplorer/account";
+import { getRelativeTimeString } from "@/DocExplorer/utils";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
 type DocView =
   | { type: "main" }
@@ -49,6 +58,7 @@ type DocView =
 export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const account = useCurrentAccount();
 
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
@@ -56,13 +66,28 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     type: "main",
   });
 
-  const createDraft = useCallback(
+  // init branch metadata when the doc loads if it doesn't have it already
+  useEffect(() => {
+    if (doc && !doc.branchMetadata) {
+      changeDoc(
+        (doc) =>
+          (doc.branchMetadata = {
+            source: null,
+            branches: [],
+          })
+      );
+    }
+  }, [doc, changeDoc]);
+
+  const createBranch = useCallback(
     (name?: string) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       const newHandle = repo.clone<MarkdownDoc>(docHandle);
       const draft = {
-        name: name ?? `Draft #${doc.copyMetadata.copies.length + 1}`,
-        copyTimestamp: Date.now(),
+        name:
+          name ?? `Branch #${(doc?.branchMetadata?.branches?.length ?? 0) + 1}`,
+        createdAt: Date.now(),
+        createdBy: account?.contactHandle?.url,
         url: newHandle.url,
       };
 
@@ -72,32 +97,32 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       // This can all be avoided by storing draft metadata outside of the document itself.
 
       docHandle.change((doc) => {
-        doc.copyMetadata.copies.unshift(draft);
+        doc.branchMetadata.branches.unshift(draft);
       });
 
       newHandle.merge(docHandle);
 
       newHandle.change((doc) => {
-        doc.copyMetadata.source = {
+        doc.branchMetadata.source = {
           url: docUrl,
-          copyHeads: A.getHeads(docHandle.docSync()),
+          branchHeads: A.getHeads(docHandle.docSync()),
         };
       });
       setSelectedDocView({ type: "branch", url: newHandle.url });
       return newHandle.url;
     },
-    [docUrl, repo]
+    [doc, docUrl, repo, account?.contactHandle?.url]
   );
 
   const deleteBranch = useCallback(
     (draftUrl: AutomergeUrl) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       docHandle.change((doc) => {
-        const index = doc.copyMetadata.copies.findIndex(
+        const index = doc.branchMetadata.branches.findIndex(
           (copy) => copy.url === draftUrl
         );
         if (index !== -1) {
-          doc.copyMetadata.copies.splice(index, 1);
+          doc.branchMetadata.branches.splice(index, 1);
         }
       });
     },
@@ -119,19 +144,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
-      doc.copyMetadata.source.copyHeads = A.getHeads(docHandle.docSync());
-    });
-  };
-
-  const createSnapshot = () => {
-    changeDoc((doc) => {
-      if (!doc.tags) {
-        doc.tags = [];
-      }
-      doc.tags.push({
-        name: window.prompt("Snapshot Name:"),
-        heads: A.getHeads(doc),
-      });
+      doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
     });
   };
 
@@ -139,7 +152,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     (draftUrl: AutomergeUrl, newName: string) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       docHandle.change((doc) => {
-        const copy = doc.copyMetadata.copies.find(
+        const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
         );
         if (copy) {
@@ -150,36 +163,65 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     [docUrl, repo]
   );
 
+  const createSnapshot = () => {
+    const heads = JSON.parse(JSON.stringify(A.getHeads(doc)));
+    changeDoc((doc) => {
+      if (!doc.tags) {
+        doc.tags = [];
+      }
+      doc.tags.push({
+        name: "Version #" + (doc.tags.length + 1),
+        heads,
+        createdAt: Date.now(),
+        createdBy: account?.contactHandle?.url,
+      });
+    });
+    setSelectedDocView({ type: "snapshot", heads });
+  };
+
+  const renameSnapshot = (heads: A.Heads, newName: string) => {
+    changeDoc((doc) => {
+      const snapshot = doc.tags?.find((snapshot) =>
+        isEqual(snapshot.heads, heads)
+      );
+      if (snapshot) {
+        snapshot.name = newName;
+      }
+    });
+  };
+
+  const deleteSnapshot = (heads: A.Heads) => {
+    changeDoc((doc) => {
+      const index = doc.tags.findIndex((snapshot) =>
+        isEqual(snapshot.heads, heads)
+      );
+      if (index !== -1) {
+        doc.tags.splice(index, 1);
+      }
+    });
+  };
+
+  const createBranchFromSnapshot = (snapshot: Tag) => {
+    alert("This is a speculative feature, not implemented yet");
+    // GL 2/7: not quite sure how this works... how do you clone at a heads?
+  };
+
+  const revertMainToSnapshot = (snapshot: Tag) => {
+    const textAtSnapshot = A.view(doc, snapshot.heads).content;
+    changeDoc((doc) => {
+      A.updateText(doc, ["content"], textAtSnapshot);
+    });
+    setSelectedDocView({ type: "main" });
+  };
+
   const [selectedDraftDoc] = useDocument<MarkdownDoc>(
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
 
-  if (!doc) return <div>Loading...</div>;
-  if (!doc.copyMetadata)
-    return (
-      <div className="p-8">
-        <div className="mb-2">
-          This doc doesn't yet have the metadata needed for drafts, because it
-          was created in older TEE.
-        </div>
-        <Button
-          onClick={() =>
-            changeDoc(
-              (doc) =>
-                (doc.copyMetadata = {
-                  source: null,
-                  copies: [],
-                })
-            )
-          }
-        >
-          Initialize metadata
-        </Button>
-      </div>
-    );
+  if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
-  const branches = doc.copyMetadata.copies;
+  const branches = doc.branchMetadata.branches ?? [];
   const snapshots = doc.tags ?? [];
 
   const selectedBranch =
@@ -193,7 +235,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   // if the copy head stored on it don't match the latest heads of the main doc.
   const selectedBranchNeedsRebase =
     selectedDraftDoc &&
-    !isEqual(A.getHeads(doc), selectedDraftDoc.copyMetadata.source.copyHeads);
+    !isEqual(
+      A.getHeads(doc),
+      selectedDraftDoc.branchMetadata.source.branchHeads
+    );
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -203,7 +248,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
             value={JSON.stringify(selectedDocView)}
             onValueChange={(value) => {
               if (value === "__newDraft") {
-                createDraft();
+                createBranch();
               } else if (value === "__newSnapshot") {
                 createSnapshot();
               } else {
@@ -213,26 +258,60 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           >
             <SelectTrigger className="h-8 text-sm w-[160px]">
               <SelectValue placeholder="Select Draft">
-                {selectedDocView.type === "main" && "Main"}
-                {selectedDocView.type === "branch" && selectedBranch?.name}
-                {selectedDocView.type === "snapshot" && selectedSnapshot?.name}
+                {selectedDocView.type === "main" && (
+                  <div className="flex items-center gap-2">
+                    <CrownIcon className="inline" size={12} />
+                    Main
+                  </div>
+                )}
+                {selectedDocView.type === "branch" && (
+                  <div className="flex items-center gap-2">
+                    <GitBranchIcon className="inline" size={12} />
+                    {selectedBranch?.name}
+                  </div>
+                )}
+                {selectedDocView.type === "snapshot" && (
+                  <div className="flex items-center gap-2">
+                    <SaveIcon className="inline" size={12} />
+                    {selectedSnapshot?.name}
+                  </div>
+                )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-72">
+              <SelectItem
+                value={JSON.stringify({ type: "main" })}
+                className="-ml-4"
+              >
+                <CrownIcon className="inline mr-1" size={12} />
+                Main
+              </SelectItem>
               <SelectGroup>
                 <SelectLabel className="-ml-5">
                   <GitBranchIcon className="inline mr-1" size={12} />
                   Branches
                 </SelectLabel>
-                <SelectItem value={JSON.stringify({ type: "main" })}>
-                  Main
-                </SelectItem>
+
                 {branches.map((draft) => (
                   <SelectItem
                     key={draft.url}
                     value={JSON.stringify({ type: "branch", url: draft.url })}
                   >
-                    {draft.name}
+                    <div>{draft.name}</div>
+                    <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                      {draft.createdAt && (
+                        <div>{getRelativeTimeString(draft.createdAt)}</div>
+                      )}
+                      <span>by</span>
+                      {draft.createdBy && (
+                        <ContactAvatar
+                          url={draft.createdBy}
+                          size="sm"
+                          showName
+                          showImage={false}
+                        />
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
                 <SelectItem
@@ -259,6 +338,21 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     className="font-regular"
                   >
                     {snapshot.name}
+
+                    <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                      {snapshot.createdAt && (
+                        <div>{getRelativeTimeString(snapshot.createdAt)}</div>
+                      )}
+                      <span>by</span>
+                      {snapshot.createdBy && (
+                        <ContactAvatar
+                          url={snapshot.createdBy}
+                          size="sm"
+                          showName
+                          showImage={false}
+                        />
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
                 <SelectItem
@@ -272,10 +366,71 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               </SelectGroup>
             </SelectContent>
           </Select>
+
           {selectedDocView.type === "snapshot" && (
-            <div className="flex items-center text-xs text-gray-500">
-              <SaveIcon className="inline mr-1" size={12} />
-              Readonly snapshot
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <MoreHorizontal
+                  size={18}
+                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="mr-4">
+                <DropdownMenuItem
+                  onClick={() => {
+                    const newName = prompt(
+                      "Enter the new name for this branch:"
+                    );
+                    if (newName && newName.trim() !== "") {
+                      renameSnapshot(selectedSnapshot.heads, newName.trim());
+                    }
+                  }}
+                >
+                  <Edit3Icon
+                    className="inline-block text-gray-500 mr-2"
+                    size={14}
+                  />{" "}
+                  Rename Snapshot
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to delete this snapshot?"
+                      )
+                    ) {
+                      deleteSnapshot(selectedSnapshot.heads);
+                      setSelectedDocView({ type: "main" });
+                    }
+                  }}
+                >
+                  <Trash2Icon
+                    className="inline-block text-gray-500 mr-2"
+                    size={14}
+                  />{" "}
+                  Delete Snapshot
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {selectedDocView.type === "snapshot" && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Button
+                onClick={() => revertMainToSnapshot(selectedSnapshot)}
+                variant="outline"
+                className="h-6"
+              >
+                <UndoIcon className="mr-2" size={12} />
+                Revert main to snapshot
+              </Button>
+              <Button
+                onClick={() => createBranchFromSnapshot(selectedSnapshot)}
+                variant="outline"
+                className="h-6"
+              >
+                <GitBranchIcon className="mr-2" size={12} />
+                Turn into branch
+              </Button>
             </div>
           )}
           {selectedDocView.type === "branch" && (
@@ -375,7 +530,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
             showDiffOverlay && selectedDraftDoc
               ? diffWithProvenance(
                   selectedDraftDoc,
-                  selectedDraftDoc.copyMetadata.source.copyHeads,
+                  selectedDraftDoc.branchMetadata.source.branchHeads,
                   A.getHeads(selectedDraftDoc)
                 )
               : undefined
@@ -384,7 +539,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
             showDiffOverlay && selectedDraftDoc
               ? JSON.parse(
                   JSON.stringify(
-                    selectedDraftDoc?.copyMetadata?.source.copyHeads
+                    selectedDraftDoc?.branchMetadata?.source.branchHeads
                   )
                 )
               : undefined

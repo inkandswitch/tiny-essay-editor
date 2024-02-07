@@ -8,9 +8,9 @@ import { splice } from "@automerge/automerge/next";
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
-  doc.copyMetadata = {
+  doc.branchMetadata = {
     source: null,
-    copies: [],
+    branches: [],
   };
 };
 

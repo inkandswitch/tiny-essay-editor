@@ -129,9 +129,9 @@ export const Topbar: React.FC<TopbarProps> = ({
                 const newHandle = repo.clone<MarkdownDoc>(selectedDocHandle);
                 newHandle.change((doc) => {
                   markCopy(doc);
-                  doc.copyMetadata.source = {
+                  doc.branchMetadata.source = {
                     url: selectedDocUrl,
-                    copyHeads: getHeads(selectedDocHandle.docSync()),
+                    branchHeads: getHeads(selectedDocHandle.docSync()),
                   };
                 });
 

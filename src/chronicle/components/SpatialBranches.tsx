@@ -34,10 +34,10 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [combinedDoc, setCombinedDoc] = useState<MarkdownDoc>();
 
   const onDeleteBranchAt = (index: number) => {
-    const fromCursor = doc.branches[index].from;
+    const fromCursor = doc.spatialBranches[index].from;
 
     changeDoc((doc) => {
-      delete doc.branches[index];
+      delete doc.spatialBranches[index];
     });
 
     setHiddenBranches((hiddenBranches) => ({
@@ -47,11 +47,11 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   };
 
   const resolvedBranches = useMemo<ResolveBranch[]>(() => {
-    if (!doc?.branches) {
+    if (!doc?.spatialBranches) {
       return [];
     }
 
-    return doc.branches.flatMap((branch) => {
+    return doc.spatialBranches.flatMap((branch) => {
       const fromPos = getCursorPositionSafely(
         combinedDoc,
         ["content"],
@@ -62,7 +62,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
       return !fromPos || !toPos ? [] : [{ ...branch, fromPos, toPos }];
     });
-  }, [doc?.branches, combinedDoc]);
+  }, [doc?.spatialBranches, combinedDoc]);
 
   const onNewBranch = useCallback(() => {
     const { from, to } = selection;
@@ -106,12 +106,12 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     // create branch
     changeDoc((doc) => {
-      if (!doc.branches) {
-        doc.branches = [];
+      if (!doc.spatialBranches) {
+        doc.spatialBranches = [];
       }
 
       // create branch that points to that copy
-      doc.branches.push({
+      doc.spatialBranches.push({
         docUrl: branchDocHandle.url,
         from: fromCursor,
         to: toCursor,
@@ -146,7 +146,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     combinedDoc = A.merge(combinedDoc, doc);
 
     Promise.all(
-      (doc.branches ?? [])
+      (doc.spatialBranches ?? [])
         .filter((branch) => !hiddenBranches[branch.from])
         .map((branch) => repo.find<MarkdownDoc>(branch.docUrl).doc())
     ).then((branchDocs) => {
@@ -156,7 +156,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
       setCombinedDoc(combinedDoc);
     });
-  }, [hiddenBranches, doc?.branches?.length, doc]);
+  }, [hiddenBranches, doc?.spatialBranches?.length, doc]);
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -182,7 +182,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           </div>
 
           <div className="overflow-y-auto flex-grow border-t border-gray-400 flex flex-col gap-2 p-2">
-            {(doc?.branches ?? []).map((branch, index) => (
+            {(doc?.spatialBranches ?? []).map((branch, index) => (
               <div className="flex gap-1 items-center" key={branch.from}>
                 <input
                   type="checkbox"

@@ -127,30 +127,38 @@ type _MarkdownDoc = {
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
-  branches: SpatialBranch[];
 };
 
-// Arguably this should be called "Branch"
+type SpatialBranchable = {
+  spatialBranches: SpatialBranch[];
+};
+
 export type Branch = {
   url: AutomergeUrl;
-  copyTimestamp: number;
+  createdAt: number;
   name: string;
+  createdBy?: AutomergeUrl;
 };
 
-export type Copyable = {
-  copyMetadata: {
+export type Branchable = {
+  branchMetadata: {
     /* A pointer to the source where this was copied from */
     source: {
       url: AutomergeUrl;
-      copyHeads: A.Heads;
+      branchHeads: A.Heads;
     } | null;
 
     /* A pointer to copies of this doc */
-    copies: Array<Branch>;
+    branches: Array<Branch>;
   };
 };
 
-export type Tag = { name: string; heads: A.Heads };
+export type Tag = {
+  name: string;
+  heads: A.Heads;
+  createdAt: number;
+  createdBy?: AutomergeUrl;
+};
 export type Taggable = {
   // TODO: should we model this as a map instead?
   tags: Tag[];
@@ -160,7 +168,11 @@ export type Diffable = {
   diffBase: A.Heads;
 };
 
-export type MarkdownDoc = _MarkdownDoc & Copyable & Taggable & Diffable;
+export type MarkdownDoc = _MarkdownDoc &
+  Branchable &
+  Taggable &
+  Diffable &
+  SpatialBranchable;
 
 // A data structure that lets us pass around diffs while remembering
 // where they came from

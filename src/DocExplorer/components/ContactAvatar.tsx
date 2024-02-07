@@ -15,6 +15,7 @@ import { User as UserIcon } from "lucide-react";
 interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
   url?: AutomergeUrl;
   showName?: boolean;
+  showImage?: boolean;
   name?: string;
   avatar?: File;
   size: "default" | "sm" | "lg";
@@ -32,6 +33,7 @@ export const ContactAvatar = ({
   avatar: avatarOverride,
   url,
   showName = false,
+  showImage = true,
   size,
 }: ContactAvatarProps) => {
   const [maybeAnonymousContact] = useDocument<ContactDoc>(url);
@@ -57,10 +59,14 @@ export const ContactAvatar = ({
 
   return (
     <div className="flex items-center gap-1.5">
-      <Avatar size={size}>
-        <AvatarImage src={avatarUrl} alt={name} />
-        <AvatarFallback>{name ? initials(name) : <UserIcon />}</AvatarFallback>
-      </Avatar>
+      {showImage && (
+        <Avatar size={size}>
+          <AvatarImage src={avatarUrl} alt={name} />
+          <AvatarFallback>
+            {name ? initials(name) : <UserIcon />}
+          </AvatarFallback>
+        </Avatar>
+      )}
 
       {showName && <span>{name ?? "Anonymous"}</span>}
     </div>

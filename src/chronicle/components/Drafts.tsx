@@ -50,9 +50,9 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       // This can all be avoided by storing draft metadata outside of the document itself.
 
       docHandle.change((doc) => {
-        doc.copyMetadata.copies.unshift({
+        doc.branchMetadata.branches.unshift({
           name,
-          copyTimestamp: Date.now(),
+          createdAt: Date.now(),
           url: newHandle.url,
         });
       });
@@ -60,9 +60,9 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       newHandle.merge(docHandle);
 
       newHandle.change((doc) => {
-        doc.copyMetadata.source = {
+        doc.branchMetadata.source = {
           url: docUrl,
-          copyHeads: A.getHeads(docHandle.docSync()),
+          branchHeads: A.getHeads(docHandle.docSync()),
         };
       });
       setSelectedDraftUrl(newHandle.url);
@@ -75,11 +75,11 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     (draftUrl: AutomergeUrl) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       docHandle.change((doc) => {
-        const index = doc.copyMetadata.copies.findIndex(
+        const index = doc.branchMetadata.branches.findIndex(
           (copy) => copy.url === draftUrl
         );
         if (index !== -1) {
-          doc.copyMetadata.copies.splice(index, 1);
+          doc.branchMetadata.branches.splice(index, 1);
         }
       });
     },
@@ -101,7 +101,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     const docHandle = repo.find<MarkdownDoc>(docUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
-      doc.copyMetadata.source.copyHeads = A.getHeads(docHandle.docSync());
+      doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
     });
   };
 
@@ -109,7 +109,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     (draftUrl: AutomergeUrl, newName: string) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       docHandle.change((doc) => {
-        const copy = doc.copyMetadata.copies.find(
+        const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
         );
         if (copy) {
@@ -138,7 +138,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
 
   if (!doc) return <div>Loading...</div>;
-  if (!doc.copyMetadata)
+  if (!doc.branchMetadata)
     return (
       <div className="p-8">
         <div className="mb-2">
@@ -149,9 +149,9 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           onClick={() =>
             changeDoc(
               (doc) =>
-                (doc.copyMetadata = {
+                (doc.branchMetadata = {
                   source: null,
-                  copies: [],
+                  branches: [],
                 })
             )
           }
@@ -161,13 +161,16 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       </div>
     );
 
-  const drafts = doc.copyMetadata.copies;
+  const drafts = doc.branchMetadata.branches;
 
   // The selected draft doesn't have the latest from the main document
   // if the copy head stored on it don't match the latest heads of the main doc.
   const selectedDraftNeedsRebase =
     selectedDraftDoc &&
-    !isEqual(A.getHeads(doc), selectedDraftDoc.copyMetadata.source.copyHeads);
+    !isEqual(
+      A.getHeads(doc),
+      selectedDraftDoc.branchMetadata.source.branchHeads
+    );
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -259,7 +262,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                     {truncate(draft.url, { length: 25 })}
                   </div>
                   <div className="text-xs text-gray-500 mb-2">
-                    created {getRelativeTimeString(draft.copyTimestamp)}
+                    created {getRelativeTimeString(draft.createdAt)}
                   </div>
                   <Button
                     onClick={(e) => {
@@ -371,7 +374,7 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
             showDiffOverlay && selectedDraftDoc
               ? diffWithProvenance(
                   selectedDraftDoc,
-                  selectedDraftDoc.copyMetadata.source.copyHeads,
+                  selectedDraftDoc.branchMetadata.source.branchHeads,
                   A.getHeads(selectedDraftDoc)
                 )
               : undefined
