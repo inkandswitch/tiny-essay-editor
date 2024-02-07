@@ -13,6 +13,7 @@ import {
 import clsx from "clsx";
 import { PlusIcon, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { DocHandle, DocHandleChangePayload } from "@automerge/automerge-repo";
 
 interface ResolveBranch extends Branch {
   fromPos: number;
@@ -30,7 +31,8 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     {}
   );
 
-  const [combinedDoc, setCombinedDoc] = useState<MarkdownDoc>();
+  const combinedDocHandle = useCombinedDocHandle(handle);
+  const [combinedDoc] = useDocument<MarkdownDoc>(combinedDocHandle?.url);
 
   const onDeleteBranchAt = (index: number) => {
     const fromCursor = doc.branches[index].from;
@@ -66,7 +68,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   const onNewBranch = useCallback(() => {
     const { from, to } = selection;
 
-    if (to === doc.content.length) {
+    if (to + 1 === combinedDoc.content.length) {
       alert("can't create spatial branch at the end of the doc");
       return;
     }
@@ -80,11 +82,13 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       return;
     }
 
-    const text = doc.content.slice(from, to);
+    const text = combinedDoc.content.slice(from, to);
+
+    const spliceIndexCursor = A.getCursor(combinedDoc, ["content"], from);
 
     changeDoc((doc) => {
       // delete range
-      A.splice(doc, ["content"], from, text.length);
+      A.splice(doc, ["content"], spliceIndexCursor, text.length);
     });
 
     // create copy of doc
@@ -96,11 +100,16 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
     // reinsert change
     branchDocHandle.change((doc) => {
-      A.splice(doc, ["content"], from, 0, text);
+      const spliceIndex = A.getCursorPosition(
+        doc,
+        ["content"],
+        spliceIndexCursor
+      );
 
-      fromCursor = A.getCursor(doc, ["content"], from);
-      // we need to select the next character otherwise the range slurps up the following character if we delete the last character in the range
-      toCursor = A.getCursor(doc, ["content"], to + 1);
+      A.splice(doc, ["content"], spliceIndexCursor, 0, text);
+
+      fromCursor = A.getCursor(doc, ["content"], spliceIndex - 1);
+      toCursor = A.getCursor(doc, ["content"], spliceIndex + text.length + 1);
     });
 
     // create branch
@@ -126,36 +135,16 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   };
 
   const highlights = useMemo<DebugHighlight[]>(() => {
+    console.log("update highlights");
+
     return (resolvedBranches ?? [])
       .map((branch) => ({
         class: getColor(branch.from),
-        from: branch.fromPos,
+        from: branch.fromPos + 1,
         to: branch.toPos,
       }))
       .filter(({ from, to }) => from !== to);
-  }, [resolvedBranches]);
-
-  // create combined doc
-  useEffect(() => {
-    if (!doc) {
-      return;
-    }
-
-    let combinedDoc = A.init<MarkdownDoc>();
-    combinedDoc = A.merge(combinedDoc, doc);
-
-    Promise.all(
-      (doc.branches ?? [])
-        .filter((branch) => !hiddenBranches[branch.from])
-        .map((branch) => repo.find<MarkdownDoc>(branch.docUrl).doc())
-    ).then((branchDocs) => {
-      for (const branchDoc of branchDocs) {
-        combinedDoc = A.merge(combinedDoc, branchDoc);
-      }
-
-      setCombinedDoc(combinedDoc);
-    });
-  }, [hiddenBranches, doc?.branches?.length, doc]);
+  }, [resolvedBranches, combinedDoc]);
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -221,8 +210,9 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       <div className="flex-grow overflow-hidden">
         {combinedDoc && (
           <MarkdownEditorSpatialBranches
-            handle={handle}
+            handle={combinedDocHandle}
             setSelection={setSelection}
+            debugHighlights={highlights}
           />
         )}
       </div>
@@ -273,4 +263,70 @@ function getCursorPositionSafely(
   } catch (err) {
     return null;
   }
+}
+
+function useCombinedDocHandle(
+  handle: DocHandle<MarkdownDoc>
+): DocHandle<MarkdownDoc> | undefined {
+  const repo = useRepo();
+
+  const [combinedHandle, setCombinedHandle] =
+    useState<DocHandle<MarkdownDoc>>();
+
+  useEffect(() => {
+    console.log("do this");
+
+    const combinedHandle = repo.create<MarkdownDoc>(); // todo: this doc only needs to exist ephemeraly
+
+    const branchHandlesByUrl = new Map<AutomergeUrl, DocHandle<MarkdownDoc>>();
+
+    const onChangeDoc = ({
+      doc,
+      handle,
+    }: DocHandleChangePayload<MarkdownDoc>) => {
+      updateBranches(doc.branches ?? []);
+      combinedHandle.merge(handle);
+    };
+
+    const updateBranches = (branches: Branch[]) => {
+      // todo: delete branches
+
+      for (const branch of branches) {
+        if (!branchHandlesByUrl.has(branch.docUrl)) {
+          console.log("add branch");
+          const handle = repo.find<MarkdownDoc>(branch.docUrl);
+          combinedHandle.merge(handle);
+          branchHandlesByUrl.set(branch.docUrl, handle);
+        }
+      }
+    };
+
+    const onChangeBranch = ({
+      handle,
+    }: DocHandleChangePayload<MarkdownDoc>) => {
+      combinedHandle.merge(handle);
+    };
+
+    combinedHandle.merge(handle);
+
+    handle.doc().then((doc) => {
+      if (doc.branches) {
+        updateBranches(doc.branches);
+      }
+
+      setCombinedHandle(combinedHandle);
+    });
+
+    handle.on("change", onChangeDoc);
+
+    return () => {
+      handle.off("change", onChangeDoc);
+
+      for (const branchHandle of branchHandlesByUrl.values()) {
+        branchHandle.off("change", onChangeBranch);
+      }
+    };
+  }, [handle]);
+
+  return combinedHandle;
 }
