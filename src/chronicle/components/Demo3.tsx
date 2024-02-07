@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { head, isEqual } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
+  ChevronsLeftIcon,
+  ChevronsRight,
   CrownIcon,
   Edit3Icon,
   GitBranchIcon,
@@ -19,8 +21,6 @@ import {
   PlusIcon,
   SaveAllIcon,
   SaveIcon,
-  SidebarCloseIcon,
-  SidebarOpenIcon,
   Trash2Icon,
   UndoIcon,
 } from "lucide-react";
@@ -43,6 +43,7 @@ import {
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type DocView =
   | { type: "main" }
@@ -218,6 +219,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
   const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
+    useState<boolean>(false);
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -243,310 +246,344 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   return (
     <div className="flex overflow-hidden h-full ">
       <div className="flex-grow overflow-hidden">
-        <div className="bg-gray-50 pl-8 pt-6 pb-1 flex gap-2 items-center">
-          <Select
-            value={JSON.stringify(selectedDocView)}
-            onValueChange={(value) => {
-              if (value === "__newDraft") {
-                createBranch();
-              } else if (value === "__newSnapshot") {
-                createSnapshot();
-              } else {
-                setSelectedDocView(JSON.parse(value as string));
-              }
-            }}
-          >
-            <SelectTrigger className="h-8 text-sm w-[160px]">
-              <SelectValue placeholder="Select Draft">
-                {selectedDocView.type === "main" && (
-                  <div className="flex items-center gap-2">
-                    <CrownIcon className="inline" size={12} />
+        <div className="flex">
+          <div className="flex-grow">
+            <div className="bg-gray-50 pl-8 pt-6 pb-1 flex gap-2 items-center">
+              <Select
+                value={JSON.stringify(selectedDocView)}
+                onValueChange={(value) => {
+                  if (value === "__newDraft") {
+                    createBranch();
+                  } else if (value === "__newSnapshot") {
+                    createSnapshot();
+                  } else {
+                    setSelectedDocView(JSON.parse(value as string));
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm w-[160px]">
+                  <SelectValue placeholder="Select Draft">
+                    {selectedDocView.type === "main" && (
+                      <div className="flex items-center gap-2">
+                        <CrownIcon className="inline" size={12} />
+                        Main
+                      </div>
+                    )}
+                    {selectedDocView.type === "branch" && (
+                      <div className="flex items-center gap-2">
+                        <GitBranchIcon className="inline" size={12} />
+                        {selectedBranch?.name}
+                      </div>
+                    )}
+                    {selectedDocView.type === "snapshot" && (
+                      <div className="flex items-center gap-2">
+                        <SaveIcon className="inline" size={12} />
+                        {selectedSnapshot?.name}
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-72">
+                  <SelectItem value={JSON.stringify({ type: "main" })}>
+                    <CrownIcon className="inline mr-1" size={12} />
                     Main
-                  </div>
-                )}
-                {selectedDocView.type === "branch" && (
-                  <div className="flex items-center gap-2">
-                    <GitBranchIcon className="inline" size={12} />
-                    {selectedBranch?.name}
-                  </div>
-                )}
-                {selectedDocView.type === "snapshot" && (
-                  <div className="flex items-center gap-2">
-                    <SaveIcon className="inline" size={12} />
-                    {selectedSnapshot?.name}
-                  </div>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="w-72">
-              <SelectItem
-                value={JSON.stringify({ type: "main" })}
-                className="-ml-4"
-              >
-                <CrownIcon className="inline mr-1" size={12} />
-                Main
-              </SelectItem>
-              <SelectGroup>
-                <SelectLabel className="-ml-5">
-                  <GitBranchIcon className="inline mr-1" size={12} />
-                  Branches
-                </SelectLabel>
-
-                {branches.map((draft) => (
-                  <SelectItem
-                    key={draft.url}
-                    value={JSON.stringify({ type: "branch", url: draft.url })}
-                  >
-                    <div>{draft.name}</div>
-                    <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                      {draft.createdAt && (
-                        <div>{getRelativeTimeString(draft.createdAt)}</div>
-                      )}
-                      <span>by</span>
-                      {draft.createdBy && (
-                        <ContactAvatar
-                          url={draft.createdBy}
-                          size="sm"
-                          showName
-                          showImage={false}
-                        />
-                      )}
-                    </div>
                   </SelectItem>
-                ))}
-                <SelectItem
-                  value={"__newDraft"}
-                  key={"__newDraft"}
-                  className="font-regular"
-                >
-                  <PlusIcon className="inline mr-1" size={12} />
-                  New Branch
-                </SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel className="-ml-5">
-                  <SaveAllIcon className="inline mr-1" size={12} />
-                  Snapshots
-                </SelectLabel>
-                {snapshots.map((snapshot) => (
-                  <SelectItem
-                    value={JSON.stringify({
-                      type: "snapshot",
-                      heads: snapshot.heads,
-                    })}
-                    key={snapshot.name}
-                    className="font-regular"
+                  <SelectGroup>
+                    <SelectLabel className="-ml-5">
+                      <GitBranchIcon className="inline mr-1" size={12} />
+                      Branches
+                    </SelectLabel>
+
+                    {branches.map((draft) => (
+                      <SelectItem
+                        key={draft.url}
+                        value={JSON.stringify({
+                          type: "branch",
+                          url: draft.url,
+                        })}
+                      >
+                        <div>{draft.name}</div>
+                        <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                          {draft.createdAt && (
+                            <div>{getRelativeTimeString(draft.createdAt)}</div>
+                          )}
+                          <span>by</span>
+                          {draft.createdBy && (
+                            <ContactAvatar
+                              url={draft.createdBy}
+                              size="sm"
+                              showName
+                              showImage={false}
+                            />
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value={"__newDraft"}
+                      key={"__newDraft"}
+                      className="font-regular"
+                    >
+                      <PlusIcon className="inline mr-1" size={12} />
+                      New Branch
+                    </SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className="-ml-5">
+                      <SaveAllIcon className="inline mr-1" size={12} />
+                      Snapshots
+                    </SelectLabel>
+                    {snapshots.map((snapshot) => (
+                      <SelectItem
+                        value={JSON.stringify({
+                          type: "snapshot",
+                          heads: snapshot.heads,
+                        })}
+                        key={snapshot.name}
+                        className="font-regular"
+                      >
+                        {snapshot.name}
+
+                        <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                          {snapshot.createdAt && (
+                            <div>
+                              {getRelativeTimeString(snapshot.createdAt)}
+                            </div>
+                          )}
+                          <span>by</span>
+                          {snapshot.createdBy && (
+                            <ContactAvatar
+                              url={snapshot.createdBy}
+                              size="sm"
+                              showName
+                              showImage={false}
+                            />
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value={"__newSnapshot"}
+                      key={"__newSnapshot"}
+                      className="font-regular"
+                    >
+                      <PlusIcon className="inline mr-1" size={12} />
+                      New Snapshot
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              {selectedDocView.type === "snapshot" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <MoreHorizontal
+                      size={18}
+                      className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="mr-4">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const newName = prompt(
+                          "Enter the new name for this branch:"
+                        );
+                        if (newName && newName.trim() !== "") {
+                          renameSnapshot(
+                            selectedSnapshot.heads,
+                            newName.trim()
+                          );
+                        }
+                      }}
+                    >
+                      <Edit3Icon
+                        className="inline-block text-gray-500 mr-2"
+                        size={14}
+                      />{" "}
+                      Rename Snapshot
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this snapshot?"
+                          )
+                        ) {
+                          deleteSnapshot(selectedSnapshot.heads);
+                          setSelectedDocView({ type: "main" });
+                        }
+                      }}
+                    >
+                      <Trash2Icon
+                        className="inline-block text-gray-500 mr-2"
+                        size={14}
+                      />{" "}
+                      Delete Snapshot
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {selectedDocView.type === "snapshot" && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Button
+                    onClick={() => revertMainToSnapshot(selectedSnapshot)}
+                    variant="outline"
+                    className="h-6"
                   >
-                    {snapshot.name}
+                    <UndoIcon className="mr-2" size={12} />
+                    Revert main to snapshot
+                  </Button>
+                  <Button
+                    onClick={() => createBranchFromSnapshot(selectedSnapshot)}
+                    variant="outline"
+                    className="h-6"
+                  >
+                    <GitBranchIcon className="mr-2" size={12} />
+                    Turn into branch
+                  </Button>
+                </div>
+              )}
+              {selectedDocView.type === "branch" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <MoreHorizontal
+                      size={18}
+                      className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="mr-4">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const newName = prompt(
+                          "Enter the new name for this branch:"
+                        );
+                        if (newName && newName.trim() !== "") {
+                          renameBranch(selectedBranch.url, newName.trim());
+                        }
+                      }}
+                    >
+                      <Edit3Icon
+                        className="inline-block text-gray-500 mr-2"
+                        size={14}
+                      />{" "}
+                      Rename Branch
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this branch?"
+                          )
+                        ) {
+                          deleteBranch(selectedBranch.url);
+                          setSelectedDocView({ type: "main" });
+                        }
+                      }}
+                    >
+                      <Trash2Icon
+                        className="inline-block text-gray-500 mr-2"
+                        size={14}
+                      />{" "}
+                      Delete Branch
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-                    <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                      {snapshot.createdAt && (
-                        <div>{getRelativeTimeString(snapshot.createdAt)}</div>
-                      )}
-                      <span>by</span>
-                      {snapshot.createdBy && (
-                        <ContactAvatar
-                          url={snapshot.createdBy}
-                          size="sm"
-                          showName
-                          showImage={false}
-                        />
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-                <SelectItem
-                  value={"__newSnapshot"}
-                  key={"__newSnapshot"}
-                  className="font-regular"
-                >
-                  <PlusIcon className="inline mr-1" size={12} />
-                  New Snapshot
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          {selectedDocView.type === "snapshot" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal
-                  size={18}
-                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="mr-4">
-                <DropdownMenuItem
-                  onClick={() => {
-                    const newName = prompt(
-                      "Enter the new name for this branch:"
-                    );
-                    if (newName && newName.trim() !== "") {
-                      renameSnapshot(selectedSnapshot.heads, newName.trim());
-                    }
-                  }}
-                >
-                  <Edit3Icon
-                    className="inline-block text-gray-500 mr-2"
-                    size={14}
-                  />{" "}
-                  Rename Snapshot
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Are you sure you want to delete this snapshot?"
-                      )
-                    ) {
-                      deleteSnapshot(selectedSnapshot.heads);
+              {selectedDocView.type === "branch" && (
+                <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                  <Button
+                    onClick={(e) => {
+                      mergeBranch(selectedBranch.url);
                       setSelectedDocView({ type: "main" });
-                    }
-                  }}
-                >
-                  <Trash2Icon
-                    className="inline-block text-gray-500 mr-2"
-                    size={14}
-                  />{" "}
-                  Delete Snapshot
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {selectedDocView.type === "snapshot" && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Button
-                onClick={() => revertMainToSnapshot(selectedSnapshot)}
-                variant="outline"
-                className="h-6"
-              >
-                <UndoIcon className="mr-2" size={12} />
-                Revert main to snapshot
-              </Button>
-              <Button
-                onClick={() => createBranchFromSnapshot(selectedSnapshot)}
-                variant="outline"
-                className="h-6"
-              >
-                <GitBranchIcon className="mr-2" size={12} />
-                Turn into branch
-              </Button>
-            </div>
-          )}
-          {selectedDocView.type === "branch" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal
-                  size={18}
-                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="mr-4">
-                <DropdownMenuItem
-                  onClick={() => {
-                    const newName = prompt(
-                      "Enter the new name for this branch:"
-                    );
-                    if (newName && newName.trim() !== "") {
-                      renameBranch(selectedBranch.url, newName.trim());
-                    }
-                  }}
-                >
-                  <Edit3Icon
-                    className="inline-block text-gray-500 mr-2"
-                    size={14}
-                  />{" "}
-                  Rename Branch
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Are you sure you want to delete this branch?"
-                      )
-                    ) {
-                      deleteBranch(selectedBranch.url);
-                      setSelectedDocView({ type: "main" });
-                    }
-                  }}
-                >
-                  <Trash2Icon
-                    className="inline-block text-gray-500 mr-2"
-                    size={14}
-                  />{" "}
-                  Delete Branch
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                      e.stopPropagation();
+                    }}
+                    variant="outline"
+                    className="h-6"
+                  >
+                    <MergeIcon className="mr-2" size={12} />
+                    Merge
+                  </Button>
+                  <Button
+                    onClick={(e) => {
+                      rebaseBranch(selectedBranch.url);
+                    }}
+                    variant="outline"
+                    className="h-6 text-x"
+                    disabled={!selectedBranchNeedsRebase}
+                  >
+                    Update from main
+                  </Button>
 
-          {selectedDocView.type === "branch" && (
-            <div className="flex items-center gap-1">
-              <Button
-                onClick={(e) => {
-                  mergeBranch(selectedBranch.url);
-                  setSelectedDocView({ type: "main" });
-                  e.stopPropagation();
-                }}
-                variant="outline"
-                className="h-6"
-              >
-                <MergeIcon className="mr-2" size={12} />
-                Merge
-              </Button>
-              <Button
-                onClick={(e) => {
-                  rebaseBranch(selectedBranch.url);
-                }}
-                variant="outline"
-                className="h-6 text-x"
-                disabled={!selectedBranchNeedsRebase}
-              >
-                Update from main
-              </Button>
+                  <Checkbox
+                    id="diff-overlay-checkbox"
+                    className="mr-1"
+                    checked={showDiffOverlay}
+                    onClick={(e) => e.stopPropagation()}
+                    onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
+                  />
+                  <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                </div>
+              )}
+              {!isHistorySidebarOpen && (
+                <div
+                  className={` ml-auto ${
+                    isHistorySidebarOpen ? "mr-72" : "mr-4"
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <Button
+                      onClick={() =>
+                        setIsHistorySidebarOpen(!isHistorySidebarOpen)
+                      }
+                      variant="outline"
+                      className="h-8 text-x"
+                    >
+                      <ChevronsLeftIcon size={20} />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          <div className={` ml-auto ${showDiffOverlay ? "mr-72" : "mr-4"}`}>
-            <div className="flex items-center">
-              <Button
-                onClick={() => setShowDiffOverlay(!showDiffOverlay)}
-                variant="outline"
-                className="h-6 text-x"
-              >
-                {/* These icons are confusingly flipped because our sidebar is on the right not the left. */}
-                {!showDiffOverlay && <SidebarCloseIcon size={16} />}
-                {showDiffOverlay && <SidebarOpenIcon size={16} />}
-              </Button>
-            </div>
+            <TinyEssayEditor
+              docUrl={selectedBranch?.url ?? docUrl}
+              docHeads={selectedSnapshot?.heads ?? undefined}
+              readOnly={selectedDocView.type === "snapshot"}
+              key={docUrl}
+              diff={
+                showDiffOverlay && selectedDraftDoc
+                  ? diffWithProvenance(
+                      selectedDraftDoc,
+                      selectedDraftDoc.branchMetadata.source.branchHeads,
+                      A.getHeads(selectedDraftDoc)
+                    )
+                  : undefined
+              }
+              diffBase={
+                showDiffOverlay && selectedDraftDoc
+                  ? JSON.parse(
+                      JSON.stringify(
+                        selectedDraftDoc?.branchMetadata?.source.branchHeads
+                      )
+                    )
+                  : undefined
+              }
+              showDiffAsComments
+              actorIdToAuthor={actorIdToAuthor}
+            />
           </div>
-        </div>
 
-        <TinyEssayEditor
-          docUrl={selectedBranch?.url ?? docUrl}
-          docHeads={selectedSnapshot?.heads ?? undefined}
-          readOnly={selectedDocView.type === "snapshot"}
-          key={docUrl}
-          diff={
-            showDiffOverlay && selectedDraftDoc
-              ? diffWithProvenance(
-                  selectedDraftDoc,
-                  selectedDraftDoc.branchMetadata.source.branchHeads,
-                  A.getHeads(selectedDraftDoc)
-                )
-              : undefined
-          }
-          diffBase={
-            showDiffOverlay && selectedDraftDoc
-              ? JSON.parse(
-                  JSON.stringify(
-                    selectedDraftDoc?.branchMetadata?.source.branchHeads
-                  )
-                )
-              : undefined
-          }
-          showDiffAsComments
-          actorIdToAuthor={actorIdToAuthor}
-        />
+          {isHistorySidebarOpen && (
+            <div className="w-72 bg-white border-l border-gray-200 p-2">
+              <div
+                onClick={() => setIsHistorySidebarOpen(false)}
+                className="mb-4 p-2 cursor-pointer hover:bg-gray-50"
+              >
+                <ChevronsRight size={16} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -160,34 +160,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
   // the document state at the end of the selected change groups
   const selectedDoc = docHeads ? view(doc, docHeads) : doc;
 
-  const diffGroupedByParagraph = useMemo(
-    () => groupPatchesByParagraph(selectedDoc, selectedDiff.patches),
-    [selectedDoc, selectedDiff]
-  );
-
-  const foldRanges = useMemo(() => {
-    if (!selectedDoc) return [];
-    const ranges: { from: number; to: number }[] = [];
-    let lastTo = 0;
-
-    for (const group of diffGroupedByParagraph) {
-      if (group.groupStartIndex <= lastTo) {
-        continue;
-      }
-      ranges.push({ from: lastTo, to: group.groupStartIndex });
-      lastTo = group.groupEndIndex;
-    }
-
-    if (lastTo !== 0 && lastTo < selectedDoc.content.length - 1) {
-      ranges.push({
-        from: lastTo,
-        to: selectedDoc ? selectedDoc.content.length - 1 : 0,
-      });
-    }
-
-    return ranges;
-  }, [diffGroupedByParagraph, selectedDoc]);
-
   const handleClickOnChangeGroup = (
     e: React.MouseEvent,
     changeGroup: ChangeGroup
@@ -768,7 +740,6 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
               readOnly
               docHeads={docHeads}
               diff={showDiffInDoc ? selectedDiff : undefined}
-              foldRanges={foldRanges}
             />
           </>
         )}
