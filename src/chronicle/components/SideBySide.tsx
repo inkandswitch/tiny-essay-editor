@@ -1,6 +1,6 @@
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
-import { Branch, MarkdownDoc } from "@/tee/schema";
+import { SpatialBranch, MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -21,7 +21,7 @@ import {
 import { Hash } from "./Hash";
 import { getCursorPositionSafely } from "../utils";
 
-interface ResolveBranch extends Branch {
+interface ResolveBranch extends SpatialBranch {
   fromPos: number;
   toPos: number;
 }

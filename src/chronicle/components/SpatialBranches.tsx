@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { MarkdownEditorSpatialBranches } from "@/tee/components/MarkdownEditorSpatialBranches";
-import { Branch, MarkdownDoc } from "@/tee/schema";
+import { SpatialBranch, MarkdownDoc } from "@/tee/schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -15,7 +15,7 @@ import { PlusIcon, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getCursorPositionSafely } from "../utils";
 
-interface ResolveBranch extends Branch {
+interface ResolveBranch extends SpatialBranch {
   fromPos: number;
   toPos: number;
 }
@@ -119,7 +119,7 @@ export const SpatialBranchesPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
     });
   }, [selection, resolvedBranches]);
 
-  const onToggleIsBranchHidden = (branch: Branch) => {
+  const onToggleIsBranchHidden = (branch: SpatialBranch) => {
     setHiddenBranches((hiddenBranches) => ({
       ...hiddenBranches,
       [branch.from]: !hiddenBranches[branch.from],

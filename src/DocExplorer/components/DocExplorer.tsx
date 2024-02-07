@@ -26,6 +26,7 @@ import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
 import { EditGroupsPlayground } from "@/chronicle/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/chronicle/components/SpatialBranches";
 import { SideBySidePlayground } from "@/chronicle/components/SideBySide";
+import { Demo3 } from "@/chronicle/components/Demo3";
 
 export type Tool = {
   id: string;
@@ -37,7 +38,7 @@ const TOOLS = [
   {
     id: "demo3",
     name: "Demo 3",
-    component: TinyEssayEditor,
+    component: Demo3,
   },
   {
     id: "editGroups",

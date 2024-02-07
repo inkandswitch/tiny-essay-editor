@@ -113,7 +113,7 @@ export type User = {
   name: string;
 };
 
-export type Branch = {
+export type SpatialBranch = {
   from: A.Cursor;
   to: A.Cursor;
   docUrl: AutomergeUrl;
@@ -127,7 +127,14 @@ type _MarkdownDoc = {
   commentThreads: { [key: string]: ThreadAnnotation };
   drafts: { [key: string]: PersistedDraft };
   users: User[];
-  branches: Branch[];
+  branches: SpatialBranch[];
+};
+
+// Arguably this should be called "Branch"
+export type Branch = {
+  url: AutomergeUrl;
+  copyTimestamp: number;
+  name: string;
 };
 
 export type Copyable = {
@@ -139,11 +146,7 @@ export type Copyable = {
     } | null;
 
     /* A pointer to copies of this doc */
-    copies: Array<{
-      url: AutomergeUrl;
-      copyTimestamp: number;
-      name: string;
-    }>;
+    copies: Array<Branch>;
   };
 };
 
