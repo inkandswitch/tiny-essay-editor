@@ -14,9 +14,11 @@ import {
   PlusIcon,
   SaveAllIcon,
   SaveIcon,
+  SidebarCloseIcon,
+  SidebarOpenIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance } from "../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -47,6 +49,8 @@ type DocView =
 export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+
+  const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
   const [selectedDocView, setSelectedDocView] = useState<DocView>({
     type: "main",
@@ -79,7 +83,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           copyHeads: A.getHeads(docHandle.docSync()),
         };
       });
-      setSelectedDocView({ type: "branch", branch: draft });
+      setSelectedDocView({ type: "branch", url: newHandle.url });
       return newHandle.url;
     },
     [docUrl, repo]
@@ -323,17 +327,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
           {selectedDocView.type === "branch" && (
             <div className="flex items-center gap-1">
-              <div className="flex items-center">
-                <input
-                  id="show-diff-overlay"
-                  type="checkbox"
-                  checked={showDiffOverlay}
-                  onChange={(e) => setShowDiffOverlay(e.target.checked)}
-                />
-                <label className="ml-2" htmlFor="show-diff-overlay">
-                  Show diff
-                </label>
-              </div>
               <Button
                 onClick={(e) => {
                   mergeBranch(selectedBranch.url);
@@ -358,6 +351,19 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               </Button>
             </div>
           )}
+          <div className={` ml-auto ${showDiffOverlay ? "mr-72" : "mr-4"}`}>
+            <div className="flex items-center">
+              <Button
+                onClick={() => setShowDiffOverlay(!showDiffOverlay)}
+                variant="outline"
+                className="h-6 text-x"
+              >
+                {/* These icons are confusingly flipped because our sidebar is on the right not the left. */}
+                {!showDiffOverlay && <SidebarCloseIcon size={16} />}
+                {showDiffOverlay && <SidebarOpenIcon size={16} />}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <TinyEssayEditor
@@ -374,6 +380,17 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 )
               : undefined
           }
+          diffBase={
+            showDiffOverlay && selectedDraftDoc
+              ? JSON.parse(
+                  JSON.stringify(
+                    selectedDraftDoc?.copyMetadata?.source.copyHeads
+                  )
+                )
+              : undefined
+          }
+          showDiffAsComments
+          actorIdToAuthor={actorIdToAuthor}
         />
       </div>
     </div>
