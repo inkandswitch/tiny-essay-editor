@@ -26,7 +26,7 @@ import {
   CalendarIcon,
   EyeIcon,
   FileDiffIcon,
-  TagIcon,
+  SaveIcon,
   TimerResetIcon,
   TrashIcon,
 } from "lucide-react";
@@ -395,17 +395,18 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
                         doc.tags.push({
                           name: window.prompt("Tag name:"),
                           heads: [changeGroup.id],
+                          createdAt: Date.now(),
                         });
                       });
                     }}
                   >
-                    <TagIcon size={12} className="inline-block mr-1" />
-                    Add a tag
+                    <SaveIcon size={12} className="inline-block mr-1" />
+                    Save a snapshot
                   </div>
                 )}
               {changeGroup.tags.map((tag) => (
                 <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
-                  <TagIcon size={12} className="mr-1 mt-[2px]" />
+                  <SaveIcon size={12} className="mr-1 mt-[2px]" />
                   <div>{tag.name}</div>
                   <div className="ml-auto">
                     <Button
