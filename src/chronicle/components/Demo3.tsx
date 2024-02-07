@@ -320,22 +320,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
           {selectedDocView.type === "branch" && (
-            <Button
-              onClick={(e) => {
-                mergeBranch(selectedBranch.url);
-                setSelectedDocView({ type: "main" });
-                e.stopPropagation();
-              }}
-              variant="outline"
-              className="h-6"
-            >
-              <MergeIcon className="mr-2" size={12} />
-              Merge
-            </Button>
-          )}
-          {selectedDocView.type === "branch" && (
-            <div className="flex items-center">
+            <div className="flex items-center gap-1">
               <div className="flex items-center">
                 <input
                   id="show-diff-overlay"
@@ -347,17 +334,28 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   Show diff
                 </label>
               </div>
-              {selectedBranchNeedsRebase && (
-                <div className="ml-6 text-red-500 flex">
-                  New changes on main
-                  <div
-                    className=" ml-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800 border border-gray-400 px-1 rounded-md"
-                    onClick={() => rebaseBranch(selectedBranch.url)}
-                  >
-                    Update draft
-                  </div>
-                </div>
-              )}
+              <Button
+                onClick={(e) => {
+                  mergeBranch(selectedBranch.url);
+                  setSelectedDocView({ type: "main" });
+                  e.stopPropagation();
+                }}
+                variant="outline"
+                className="h-6"
+              >
+                <MergeIcon className="mr-2" size={12} />
+                Merge
+              </Button>
+              <Button
+                onClick={(e) => {
+                  rebaseBranch(selectedBranch.url);
+                }}
+                variant="outline"
+                className="h-6 text-x"
+                disabled={!selectedBranchNeedsRebase}
+              >
+                Update from main
+              </Button>
             </div>
           )}
         </div>
