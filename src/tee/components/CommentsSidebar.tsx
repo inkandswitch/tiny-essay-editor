@@ -836,6 +836,7 @@ export const PatchesGroupedBySentence = ({
           <ReadonlySnippetView
             text={sentence.text}
             patches={sentence.patches}
+            setSelection={() => {}}
           />
         );
       })}
