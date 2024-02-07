@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
-import { HistoryPlayground } from "@/chronicle/components/History";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
   return (
