@@ -8,8 +8,10 @@ import {
 } from "@codemirror/view";
 import { Range } from "@codemirror/state";
 
-// todo: currently hard coded for embark essay, assumes hugo is running on default port
-const BASE_URL = "https://www.inkandswitch.com/essay-embark";
+// We assume any relative links are trying to load assets for the Embark essay.
+// This is just a hack to make the Embark editing experience work.
+// In general, using absolute links for assets is better.
+const EMBARK_ASSET_URL = "https://www.inkandswitch.com/essay-embark";
 
 class Figure extends WidgetType {
   constructor(protected url: string, protected caption: string) {
@@ -33,8 +35,13 @@ class ImageFigure extends Figure {
   toDOM() {
     const wrap = document.createElement("div");
     const image = document.createElement("img");
-    image.crossOrigin = "anonymous";
-    image.src = `${BASE_URL}/${this.url}`;
+
+    if (this.url.startsWith("http://") || this.url.startsWith("https://")) {
+      image.src = this.url;
+    } else {
+      image.crossOrigin = "anonymous";
+      image.src = `${EMBARK_ASSET_URL}/${this.url}`;
+    }
 
     wrap.append(image);
     wrap.className = "border border-gray-200 mb-4";
@@ -53,13 +60,17 @@ class VideoFigure extends Figure {
     const wrap = document.createElement("div");
     const video = document.createElement("video");
     video.className = "w-full";
-    video.crossOrigin = "anonymous";
     video.width = 320;
     video.height = 240;
     video.controls = true;
 
     const source = document.createElement("source");
-    source.src = `${BASE_URL}/${this.url}`;
+    if (this.url.startsWith("http://") || this.url.startsWith("https://")) {
+      source.src = this.url;
+    } else {
+      source.src = `${EMBARK_ASSET_URL}/${this.url}`;
+      video.crossOrigin = "anonymous";
+    }
     source.type = "video/mp4";
 
     const captionDiv = document.createElement("div");
@@ -118,9 +129,8 @@ function getFigures(view: EditorView) {
         doc.body.getElementsByTagName("figcaption")[0]?.innerText?.trim() ?? "";
 
       if (src) {
-        const url = new URL(src).pathname.slice(1);
         const widget = Decoration.widget({
-          widget: new VideoFigure(url, caption),
+          widget: new VideoFigure(src, caption),
           side: 1,
         }).range(position);
         decorations.push(widget);
