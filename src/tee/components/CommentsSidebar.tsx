@@ -811,12 +811,13 @@ export const TextAnnotationView = ({
           )}
           <div>
             {annotation.type === "thread" &&
-              annotation.comments.map((comment) => (
+              annotation.comments.map((comment, index) => (
                 <div key={comment.id}>
                   <CommentView
                     comment={comment}
                     highlightDiff={addedComments.some(
-                      (c) => c.threadId === annotation.id
+                      (c) =>
+                        c.threadId === annotation.id && c.commentIndex === index
                     )}
                   />
                 </div>
