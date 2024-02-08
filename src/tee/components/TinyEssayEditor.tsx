@@ -99,8 +99,10 @@ export const TinyEssayEditor = ({
     setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
   }, [actorIdToAuthor]);
 
+  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
+
   const annotationsWithPositions = useAnnotationsWithPositions({
-    doc,
+    doc: docAtHeads,
     view: editorView,
     selectedAnnotationIds: selectedAnnotationIds,
     editorRef,
@@ -124,12 +126,12 @@ export const TinyEssayEditor = ({
           const draft = Object.values(doc?.drafts ?? {}).find((draft) => {
             return draft.editRangesWithComments.some(({ editRange }) => {
               const from = getCursorPosition(
-                doc,
+                docAtHeads,
                 ["content"],
                 editRange.fromCursor
               );
               const to = getCursorPosition(
-                doc,
+                docAtHeads,
                 ["content"],
                 editRange.toCursor
               );
@@ -172,14 +174,13 @@ export const TinyEssayEditor = ({
         return visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr;
       })
     );
-  }, [diff, visibleAuthorsForEdits, reviewStateFilter]);
+  }, [diff, visibleAuthorsForEdits, reviewStateFilter, docAtHeads]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
-  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
     <div className="h-full overflow-auto min-h-0 w-full" ref={editorRef}>
       <div className="@container flex bg-gray-50 justify-center">

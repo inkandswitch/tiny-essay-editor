@@ -139,8 +139,12 @@ export const HistoryLog: React.FC<{
 
   // TODO: is the heads for a group always the id of the group?
   // for now it works because the id of the group is the last change in the group...
-  const docHeads = changeGroupSelection ? [changeGroupSelection.to] : undefined;
+  const docHeads = useMemo(
+    () => (changeGroupSelection ? [changeGroupSelection.to] : undefined),
+    [changeGroupSelection]
+  );
 
+  // sync the diff and docHeads up to the parent component when the selection changes
   useEffect(() => {
     const diff = {
       fromHeads: selectedChangeGroups[0]?.diff.fromHeads,
@@ -149,7 +153,8 @@ export const HistoryLog: React.FC<{
       patches: selectedChangeGroups.flatMap((cg) => cg.diff.patches),
     };
     setDiff(diff);
-  }, [selectedChangeGroups, setDiff]);
+    setDocHeads(docHeads);
+  }, [selectedChangeGroups, setDiff, setDocHeads, docHeads]);
 
   const handleClickOnChangeGroup = (
     e: React.MouseEvent,
