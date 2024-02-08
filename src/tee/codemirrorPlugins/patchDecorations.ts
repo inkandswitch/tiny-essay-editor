@@ -116,14 +116,5 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
       return [];
     });
 
-    console.log(
-      "about to",
-      decorations.map((d) => [d.from, d.to].join(",")).join(" ; ")
-    );
-
-    const result = Decoration.set(decorations);
-
-    console.log("done");
-
-    return result;
+    return Decoration.set(decorations);
   });
