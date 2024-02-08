@@ -50,9 +50,9 @@ import { truncate } from "lodash";
 import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
-import { getAttrOfPatch } from "@/chronicle/groupChanges";
+import { getAttrOfPatch } from "@/patchwork/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
-import { TextPatch } from "@/chronicle/utils";
+import { TextPatch } from "@/patchwork/utils";
 
 const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work for deletes so I'm disabling it for now
 

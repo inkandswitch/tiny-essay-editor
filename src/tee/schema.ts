@@ -1,7 +1,7 @@
 import * as A from "@automerge/automerge/next";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
-import { TextPatch } from "@/chronicle/utils";
+import { TextPatch } from "@/patchwork/utils";
 
 export type Comment = {
   id: string;

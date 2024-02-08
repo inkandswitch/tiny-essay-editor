@@ -53,7 +53,7 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { TextPatch } from "@/chronicle/utils";
+import { TextPatch } from "@/patchwork/utils";
 
 export type TextSelection = {
   from: number;

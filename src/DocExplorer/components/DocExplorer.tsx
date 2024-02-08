@@ -20,13 +20,13 @@ import {
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { HistoryPlayground } from "@/chronicle/components/History";
-import { DraftsPlayground } from "@/chronicle/components/Drafts";
-import { SpatialHistoryPlayground } from "@/chronicle/components/Spatial";
-import { EditGroupsPlayground } from "@/chronicle/components/EditGroups";
-import { SpatialBranchesPlayground } from "@/chronicle/components/SpatialBranches";
-import { SideBySidePlayground } from "@/chronicle/components/SideBySide";
-import { Demo3 } from "@/chronicle/components/Demo3";
+import { HistoryPlayground } from "@/patchwork/components/History";
+import { DraftsPlayground } from "@/patchwork/components/Drafts";
+import { SpatialHistoryPlayground } from "@/patchwork/components/Spatial";
+import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
+import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
+import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
+import { Demo3 } from "@/patchwork/components/Demo3";
 
 export type Tool = {
   id: string;

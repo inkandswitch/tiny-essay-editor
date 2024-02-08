@@ -17,7 +17,7 @@ import { sortBy } from "lodash";
 import { arraysAreEqual } from "@/DocExplorer/utils";
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { TextPatch } from "@/chronicle/utils";
+import { TextPatch } from "@/patchwork/utils";
 
 // taken from https://www.builder.io/blog/relative-time
 /**

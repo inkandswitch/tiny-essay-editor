@@ -2,6 +2,7 @@ import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import * as A from "@automerge/automerge/next";
 import { StateEffect, StateField } from "@codemirror/state";
 import { DiffStyle } from "../components/MarkdownEditor";
+import { sortBy } from "lodash";
 
 // Stuff for patches decoration
 // TODO: move this into a separate file
@@ -86,9 +87,15 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
   EditorView.decorations.compute([patchesField], (state) => {
     const patches = state
       .field(patchesField)
-      .filter((patch) => patch.path[0] === "content");
+      .filter(
+        (patch) =>
+          patch.path[0] === "content" &&
+          ["splice", "del"].includes(patch.action)
+      );
 
-    const decorations = patches.flatMap((patch) => {
+    const sortedPatches = sortBy(patches, (patch) => patch.path[1]);
+
+    const decorations = sortedPatches.flatMap((patch) => {
       switch (patch.action) {
         case "splice": {
           const from = patch.path[1] as number;
@@ -109,5 +116,14 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
       return [];
     });
 
-    return Decoration.set(decorations);
+    console.log(
+      "about to",
+      decorations.map((d) => [d.from, d.to].join(",")).join(" ; ")
+    );
+
+    const result = Decoration.set(decorations);
+
+    console.log("done");
+
+    return result;
   });

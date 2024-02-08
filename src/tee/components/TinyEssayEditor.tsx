@@ -14,7 +14,7 @@ import { CommentsSidebar } from "./CommentsSidebar";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { TextPatch } from "@/chronicle/utils";
+import { TextPatch } from "@/patchwork/utils";
 import {
   ActorId,
   Heads,

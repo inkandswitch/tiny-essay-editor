@@ -9,7 +9,7 @@ import { SelectionRange } from "@codemirror/state";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getGroupedChanges, ChangeGroup } from "@/chronicle/groupChanges";
+import { getGroupedChanges, ChangeGroup } from "@/patchwork/groupChanges";
 import {
   Select,
   SelectTrigger,
@@ -22,7 +22,7 @@ import {
   GROUPINGS,
   GROUPINGS_THAT_TAKE_BATCH_SIZE,
   GROUPINGS_THAT_TAKE_GAP_TIME,
-} from "@/chronicle/groupChanges";
+} from "@/patchwork/groupChanges";
 import { hashToColor } from "../utils";
 import { group } from "console";
 
