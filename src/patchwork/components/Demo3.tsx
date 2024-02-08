@@ -1,17 +1,17 @@
-import { Branch, MarkdownDoc, Tag } from "@/tee/schema";
+import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { head, isEqual, truncate } from "lodash";
+import { isEqual, truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
-  ChevronsLeftIcon,
   ChevronsRight,
   CrownIcon,
   Edit3Icon,
   GitBranchIcon,
+  HistoryIcon,
   MergeIcon,
   MoreHorizontal,
   PlusIcon,
@@ -42,6 +42,7 @@ import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
+import { BasicHistoryLog } from "./BasicHistoryLog";
 
 type DocView =
   | { type: "main" }
@@ -70,6 +71,20 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(false);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
+
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
+    useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isHistorySidebarOpen) {
+      setDiffFromHistorySidebar(undefined);
+      setDocHeadsFromHistorySidebar(undefined);
+    }
+  }, [isHistorySidebarOpen]);
+  const [diffFromHistorySidebar, setDiffFromHistorySidebar] =
+    useState<DiffWithProvenance>();
+  const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
+    useState<A.Heads>();
 
   const showDiff = showChangesFlag || isHoveringYankToBranchOption;
 
@@ -267,9 +282,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
 
-  const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(false);
-
   const branchDiff = useMemo(() => {
     if (selectedDraftDoc) {
       const diff = diffWithProvenance(
@@ -284,6 +296,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       };
     }
   }, [selectedDraftDoc]);
+
+  const diffForEditor = showDiff
+    ? diffFromHistorySidebar ?? branchDiff ?? currentEditSessionDiff
+    : undefined;
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -305,6 +321,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       A.getHeads(doc),
       selectedDraftDoc.branchMetadata.source.branchHeads
     );
+
+  const docHeads =
+    docHeadsFromHistorySidebar ?? selectedSnapshot?.heads ?? undefined;
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -658,7 +677,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       variant="outline"
                       className="h-8 text-x"
                     >
-                      <ChevronsLeftIcon size={20} />
+                      <HistoryIcon size={20} />
                     </Button>
                   </div>
                 </div>
@@ -680,7 +699,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   {selectedDocView.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
                       docUrl={docUrl}
-                      docHeads={selectedSnapshot?.heads ?? undefined}
                       key={`compare-${docUrl}`}
                       diff={showDiff ? currentEditSessionDiff : undefined}
                       diffBase={
@@ -692,14 +710,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   )}
                   <TinyEssayEditor
                     docUrl={selectedBranch?.url ?? docUrl}
-                    docHeads={selectedSnapshot?.heads ?? undefined}
-                    readOnly={selectedDocView.type === "snapshot"}
+                    docHeads={docHeads}
+                    readOnly={docHeads !== undefined}
                     key={`main-${docUrl}`}
-                    diff={
-                      showDiff
-                        ? branchDiff ?? currentEditSessionDiff
-                        : undefined
-                    }
+                    diff={diffForEditor}
                     diffBase={
                       showDiff
                         ? branchDiff
@@ -716,14 +730,19 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           </div>
 
           {isHistorySidebarOpen && (
-            <div className="w-72 bg-white border-l border-gray-200 p-2">
+            <div className=" bg-white border-l border-gray-200 p-2">
               <div
                 onClick={() => setIsHistorySidebarOpen(false)}
-                className="mb-4 p-2 cursor-pointer hover:bg-gray-50"
+                className=" p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
               >
                 <ChevronsRight size={16} />
               </div>
-              <div>History log goes here</div>
+
+              <BasicHistoryLog
+                docUrl={selectedBranch?.url ?? docUrl}
+                setDocHeads={setDocHeadsFromHistorySidebar}
+                setDiff={setDiffFromHistorySidebar}
+              />
             </div>
           )}
         </div>

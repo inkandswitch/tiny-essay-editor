@@ -16,7 +16,7 @@ import {
 import { FileDiffIcon } from "lucide-react";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { Heads, view } from "@automerge/automerge/next";
-import { ConfigurableHistoryLog } from "./RawHistoryLog";
+import { ConfigurableHistoryLog } from "./ConfigurableHistoryLog";
 
 type MainPaneView = "wholeDoc" | "snippets";
 
