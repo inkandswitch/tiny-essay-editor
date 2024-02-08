@@ -68,7 +68,7 @@ type ChangeGroupFields = (typeof changeGroupFields)[number];
 
 type VisibleFieldsOnChangeGroup = { [key in ChangeGroupFields]: boolean };
 
-export const HistoryLog: React.FC<{
+export const ConfigurableHistoryLog: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;

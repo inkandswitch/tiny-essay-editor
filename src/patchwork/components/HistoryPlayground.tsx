@@ -16,7 +16,7 @@ import {
 import { FileDiffIcon } from "lucide-react";
 import { MinimapWithDiff } from "./MinimapWithDiff";
 import { Heads, view } from "@automerge/automerge/next";
-import { HistoryLog } from "./HistoryLog";
+import { ConfigurableHistoryLog } from "./RawHistoryLog";
 
 type MainPaneView = "wholeDoc" | "snippets";
 
@@ -39,7 +39,11 @@ export const HistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
 
   return (
     <div className="flex overflow-y-hidden h-full ">
-      <HistoryLog docUrl={docUrl} setDiff={setDiff} setDocHeads={setDocHeads} />
+      <ConfigurableHistoryLog
+        docUrl={docUrl}
+        setDiff={setDiff}
+        setDocHeads={setDocHeads}
+      />
       <div className="flex-grow overflow-hidden">
         <div className="h-8 text-xs font-bold text-gray-600 bg-gray-200 border-b border-gray-400 font-mono">
           {docHeads && (
