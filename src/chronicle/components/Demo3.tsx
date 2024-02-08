@@ -1,11 +1,7 @@
 import { Branch, MarkdownDoc, Tag } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import {
-  useDocument,
-  useHandle,
-  useRepo,
-} from "@automerge/automerge-repo-react-hooks";
-import React, { useCallback, useEffect, useState } from "react";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { head, isEqual } from "lodash";
@@ -21,6 +17,7 @@ import {
   PlusIcon,
   SaveAllIcon,
   SaveIcon,
+  SplitIcon,
   Trash2Icon,
   UndoIcon,
 } from "lucide-react";
@@ -56,10 +53,39 @@ type DocView =
       heads: A.Heads;
     };
 
+interface CreateBranchOptions {
+  name?: string;
+  heads?: A.Heads;
+}
+
 export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const account = useCurrentAccount();
+
+  const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
+  const [showMyChanges, setShowMyChanges] = useState(false);
+
+  useEffect(() => {
+    if (!doc || sessionStartHeads) {
+      return;
+    }
+
+    setSessionStartHeads(A.getHeads(doc));
+  }, [doc]);
+
+  const currentEditSessionDiff = useMemo(() => {
+    if (!doc || !sessionStartHeads) {
+      return undefined;
+    }
+
+    const diff = diffWithProvenance(doc, A.getHeads(doc), sessionStartHeads);
+
+    return {
+      ...diff,
+      patches: diff.patches.filter((patch) => patch.path[0] === "content"),
+    };
+  }, [doc, sessionStartHeads]);
 
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
@@ -81,7 +107,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   }, [doc, changeDoc]);
 
   const createBranch = useCallback(
-    (name?: string) => {
+    ({ name, heads }: CreateBranchOptions = {}) => {
       const docHandle = repo.find<MarkdownDoc>(docUrl);
       const newHandle = repo.clone<MarkdownDoc>(docHandle);
       const draft = {
@@ -106,7 +132,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       newHandle.change((doc) => {
         doc.branchMetadata.source = {
           url: docUrl,
-          branchHeads: A.getHeads(docHandle.docSync()),
+          branchHeads: heads ?? A.getHeads(docHandle.docSync()),
         };
       });
       setSelectedDocView({ type: "branch", url: newHandle.url });
@@ -114,6 +140,19 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     },
     [doc, docUrl, repo, account?.contactHandle?.url]
   );
+
+  const moveCurrentChangesToBranch = () => {
+    // todo: only pull in changes the author made themselves?
+    createBranch({ heads: sessionStartHeads });
+
+    // revert content of main to before edit session started
+    const textAtSnapshot = A.view(doc, sessionStartHeads).content;
+    changeDoc((doc) => {
+      A.updateText(doc, ["content"], textAtSnapshot);
+      setSessionStartHeads(A.getHeads(doc));
+    });
+    setShowMyChanges(false);
+  };
 
   const deleteBranch = useCallback(
     (draftUrl: AutomergeUrl) => {
@@ -256,6 +295,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     createBranch();
                   } else if (value === "__newSnapshot") {
                     createSnapshot();
+                  } else if (value === "__moveChangesToDraft") {
+                    moveCurrentChangesToBranch();
                   } else {
                     setSelectedDocView(JSON.parse(value as string));
                   }
@@ -327,6 +368,22 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       <PlusIcon className="inline mr-1" size={12} />
                       New Branch
                     </SelectItem>
+                    {selectedDocView.type === "main" &&
+                      currentEditSessionDiff &&
+                      currentEditSessionDiff.patches.length > 0 && (
+                        <SelectItem
+                          value={"__moveChangesToDraft"}
+                          key={"__moveChangesToDraft"}
+                          className="font-regular"
+                          onMouseEnter={() => setShowMyChanges(true)}
+                          onMouseLeave={() => setShowMyChanges(false)}
+                        >
+                          <SplitIcon className="inline mr-1" size={12} />
+                          Move my changes (
+                          {currentEditSessionDiff?.patches.length}) to new
+                          Branch
+                        </SelectItem>
+                      )}
                   </SelectGroup>
                   <SelectGroup>
                     <SelectLabel className="-ml-5">
@@ -531,7 +588,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     isHistorySidebarOpen ? "mr-72" : "mr-4"
                   }`}
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2">
                     <Button
                       onClick={() =>
                         setIsHistorySidebarOpen(!isHistorySidebarOpen)
@@ -557,6 +614,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       selectedDraftDoc.branchMetadata.source.branchHeads,
                       A.getHeads(selectedDraftDoc)
                     )
+                  : showMyChanges && currentEditSessionDiff
+                  ? currentEditSessionDiff
                   : undefined
               }
               diffBase={
@@ -566,6 +625,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         selectedDraftDoc?.branchMetadata?.source.branchHeads
                       )
                     )
+                  : showMyChanges && currentEditSessionDiff
+                  ? currentEditSessionDiff.fromHeads
                   : undefined
               }
               showDiffAsComments
