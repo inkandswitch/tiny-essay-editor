@@ -102,7 +102,9 @@ export const CommentsSidebar = ({
 
   // figure out which comments were added in the diff being shown, to highlight in green
   // TODO: this feature got lost in the shuffle, bring it back!
-  const addedComments = (diff?.patches ?? [])
+  const addedComments: { threadId: string; commentIndex: number }[] = (
+    diff?.patches ?? []
+  )
     .filter(
       (patch) =>
         patch.path.length === 4 &&
@@ -110,8 +112,8 @@ export const CommentsSidebar = ({
         patch.action === "insert"
     )
     .map((patch) => ({
-      threadId: patch.path[1],
-      commentIndex: patch.path[3],
+      threadId: patch.path[1] as string,
+      commentIndex: patch.path[3] as number,
     }));
 
   // suppress showing the button immediately after adding a thread
@@ -538,6 +540,7 @@ export const CommentsSidebar = ({
               toggleAnnotationIsMarkedReviewed(annotation)
             }
             resolveThread={() => resolveThread(annotation)}
+            addedComments={addedComments}
           />
         );
       })}
@@ -699,7 +702,7 @@ export const PatchesGroupedByAuthor = ({
   );
 };
 
-interface AnnotationViewProp {
+interface AnnotationViewProps {
   doc: MarkdownDoc;
   prevDoc: MarkdownDoc;
   annotation: TextAnnotationWithPosition;
@@ -714,6 +717,7 @@ interface AnnotationViewProp {
   undoEditsFromAnnotation: () => void;
   toggleAnnotationIsMarkedReviewed: () => void;
   resolveThread: () => void;
+  addedComments: { threadId: string; commentIndex: number }[];
 }
 
 export const TextAnnotationView = ({
@@ -731,7 +735,8 @@ export const TextAnnotationView = ({
   undoEditsFromAnnotation,
   toggleAnnotationIsMarkedReviewed,
   resolveThread,
-}: AnnotationViewProp) => {
+  addedComments,
+}: AnnotationViewProps) => {
   const patchesForAnnotation =
     annotation.type === "draft"
       ? annotation.editRangesWithComments.flatMap((range) => range.patches)
@@ -807,9 +812,15 @@ export const TextAnnotationView = ({
           )}
           <div>
             {annotation.type === "thread" &&
-              annotation.comments.map((comment) => (
+              annotation.comments.map((comment, index) => (
                 <div key={comment.id}>
-                  <CommentView comment={comment} />
+                  <CommentView
+                    comment={comment}
+                    highlightDiff={addedComments.some(
+                      (c) =>
+                        c.threadId === annotation.id && c.commentIndex === index
+                    )}
+                  />
                 </div>
               ))}
           </div>
@@ -1054,12 +1065,18 @@ function isPunctuation(value: string) {
   return PUNCTUATION_REGEX.test(value);
 }
 
-function CommentView({ comment }: { comment: Comment }) {
+function CommentView({
+  comment,
+  highlightDiff,
+}: {
+  comment: Comment;
+  highlightDiff?: boolean;
+}) {
   const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
   if (!contactDoc) return <div></div>;
   const name = contactDoc.type === "anonymous" ? "Anonymous" : contactDoc.name;
   return (
-    <div>
+    <div className={highlightDiff ? "bg-green-100" : ""}>
       <div className="flex items-center gap-1.5 p-1.5 text-sm">
         <div className="flex-0">
           <ContactAvatar url={comment.contactUrl} showName={false} size="sm" />

@@ -143,20 +143,6 @@ export const BasicHistoryLog: React.FC<{
   };
   return (
     <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
-      <div className="h-6 mb-1">
-        {docHeads && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-6"
-            onClick={() => setChangeGroupSelection(null)}
-          >
-            <TimerResetIcon size={12} className="mr-1 inline" />
-            Reset view to latest
-          </Button>
-        )}
-      </div>
-
       <div className="overflow-y-auto flex-grow  pt-3">
         {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}

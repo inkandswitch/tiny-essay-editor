@@ -297,9 +297,17 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     }
   }, [selectedDraftDoc]);
 
-  const diffForEditor = showDiff
-    ? diffFromHistorySidebar ?? branchDiff ?? currentEditSessionDiff
-    : undefined;
+  const diffForEditor =
+    diffFromHistorySidebar ??
+    (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
+
+  const diffBase =
+    diffFromHistorySidebar?.fromHeads ??
+    (showDiff
+      ? branchDiff
+        ? branchDiff?.fromHeads
+        : currentEditSessionDiff?.fromHeads
+      : undefined);
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -635,16 +643,20 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     </Button>
                   </>
                 )}
-                <div className="flex items-center">
-                  <Checkbox
-                    id="diff-overlay-checkbox"
-                    className="mr-1"
-                    checked={showChangesFlag}
-                    onClick={(e) => e.stopPropagation()}
-                    onCheckedChange={() => setShowChangesFlag(!showChangesFlag)}
-                  />
-                  <label htmlFor="diff-overlay-checkbox">Show changes</label>
-                </div>
+                {selectedDocView.type === "branch" && (
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="diff-overlay-checkbox"
+                      className="mr-1"
+                      checked={showChangesFlag}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setShowChangesFlag(!showChangesFlag)
+                      }
+                    />
+                    <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                  </div>
+                )}
 
                 {selectedDocView.type === "branch" && (
                   <div className="flex items-center">
@@ -711,16 +723,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   <TinyEssayEditor
                     docUrl={selectedBranch?.url ?? docUrl}
                     docHeads={docHeads}
-                    readOnly={docHeads !== undefined}
+                    readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
                     key={`main-${docUrl}`}
                     diff={diffForEditor}
-                    diffBase={
-                      showDiff
-                        ? branchDiff
-                          ? branchDiff?.fromHeads
-                          : currentEditSessionDiff?.fromHeads
-                        : undefined
-                    }
+                    diffBase={diffBase}
                     showDiffAsComments
                     actorIdToAuthor={actorIdToAuthor}
                   />
