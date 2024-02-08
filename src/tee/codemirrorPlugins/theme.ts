@@ -41,7 +41,8 @@ const ESSAY_STYLES = {
   ".cm-comment-thread.active .cm-comment-thread": {
     backgroundColor: "rgb(255 227 135)",
   },
-  ".frontmatter": {
+  ".frontmatter, .frontmatter *": {
+    fontSize: "14px",
     fontFamily: "monospace",
     color: "#666",
     textDecoration: "none",
