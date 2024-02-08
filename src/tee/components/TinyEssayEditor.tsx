@@ -181,7 +181,7 @@ export const TinyEssayEditor = ({
 
   const docAtHeads = docHeads ? view(doc, docHeads) : doc;
   return (
-    <div className="h-full overflow-auto" ref={editorRef}>
+    <div className="h-full overflow-auto min-h-0" ref={editorRef}>
       <div className="@container flex bg-gray-50 justify-center">
         {/* This has some subtle behavior for responsiveness.
             - We use container queries to adjust the width of the editor based on the size of our container.

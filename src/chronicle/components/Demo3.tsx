@@ -285,7 +285,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   return (
     <div className="flex overflow-hidden h-full ">
       <div className="flex-grow overflow-hidden">
-        <div className="flex">
+        <div className="flex h-full">
           <div className="flex-grow">
             <div className="bg-gray-50 pl-8 pt-6 pb-1 flex gap-2 items-center">
               <Select
