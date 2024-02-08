@@ -748,6 +748,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 docUrl={selectedBranch?.url ?? docUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
+                selectSnapshot={(heads) => {
+                  setSelectedDocView({ type: "snapshot", heads });
+                  setIsHistorySidebarOpen(false);
+                }}
               />
             </div>
           )}

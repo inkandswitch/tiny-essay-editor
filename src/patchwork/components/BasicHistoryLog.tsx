@@ -4,12 +4,7 @@ import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChangeGroup, getGroupedChanges } from "../groupChanges";
 
-import {
-  CalendarIcon,
-  SaveIcon,
-  TimerResetIcon,
-  TrashIcon,
-} from "lucide-react";
+import { CalendarIcon, MilestoneIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Heads } from "@automerge/automerge/next";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
@@ -27,7 +22,8 @@ export const BasicHistoryLog: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-}> = ({ docUrl, setDocHeads, setDiff }) => {
+  selectSnapshot: (snapshotHeads: Heads) => void;
+}> = ({ docUrl, setDocHeads, setDiff, selectSnapshot }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
 
   // The grouping function returns change groups starting from the latest change.
@@ -179,28 +175,38 @@ export const BasicHistoryLog: React.FC<{
                     });
                   }}
                 >
-                  <SaveIcon size={12} className="inline-block mr-1" />
+                  <MilestoneIcon size={12} className="inline-block mr-1" />
                   Save a snapshot here
                 </div>
               )}
             {changeGroup.tags.map((tag) => (
-              <div className="bg-yellow-50 p-1 px-2 flex border border-yellow-500 rounded-md my-1 items-center text-gray-800 text-sm">
-                <SaveIcon size={16} className="mr-1 mt-[2px]" />
-                <div>{tag.name}</div>
-                <div className="ml-auto">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    onClick={() => {
-                      changeDoc((doc) => {
-                        const tagIndex = doc.tags.indexOf(tag);
-                        doc.tags.splice(tagIndex, 1);
-                      });
-                    }}
+              <div>
+                <div className="text-xs text-gray-500 bg-gray-50 p-1 px-2 border border-yellow-500 rounded-md select-none">
+                  <div className="flex items-center text-gray-800 text-sm">
+                    <MilestoneIcon size={16} className="mr-1 mt-[2px]" />
+                    <div>{tag.name}</div>
+                    <div className="ml-auto">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          changeDoc((doc) => {
+                            const tagIndex = doc.tags.indexOf(tag);
+                            doc.tags.splice(tagIndex, 1);
+                          });
+                        }}
+                      >
+                        <TrashIcon size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                  <div
+                    className="cursor-pointer hover:text-gray-700"
+                    onClick={() => selectSnapshot(tag.heads)}
                   >
-                    <TrashIcon size={14} />
-                  </Button>
+                    Open snapshot
+                  </div>
                 </div>
               </div>
             ))}
