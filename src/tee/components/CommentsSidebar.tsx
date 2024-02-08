@@ -101,7 +101,6 @@ export const CommentsSidebar = ({
   }, [doc, diffBase]);
 
   // figure out which comments were added in the diff being shown, to highlight in green
-  // TODO: this feature got lost in the shuffle, bring it back!
   const addedComments: { threadId: string; commentIndex: number }[] = (
     diff?.patches ?? []
   )
@@ -812,13 +811,12 @@ export const TextAnnotationView = ({
           )}
           <div>
             {annotation.type === "thread" &&
-              annotation.comments.map((comment, index) => (
+              annotation.comments.map((comment) => (
                 <div key={comment.id}>
                   <CommentView
                     comment={comment}
                     highlightDiff={addedComments.some(
-                      (c) =>
-                        c.threadId === annotation.id && c.commentIndex === index
+                      (c) => c.threadId === annotation.id
                     )}
                   />
                 </div>
