@@ -64,7 +64,11 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const account = useCurrentAccount();
 
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
-  const [showMyChanges, setShowMyChanges] = useState(false);
+  const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
+    useState(false);
+  const [showChangesFlag, setShowChangesFlag] = useState<boolean>(false);
+
+  const showDiff = showChangesFlag || isHoveringYankToBranchOption;
 
   useEffect(() => {
     if (!doc || sessionStartHeads) {
@@ -151,7 +155,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       A.updateText(doc, ["content"], textAtSnapshot);
       setSessionStartHeads(A.getHeads(doc));
     });
-    setShowMyChanges(false);
+    setIsHoveringYankToBranchOption(false);
   };
 
   const deleteBranch = useCallback(
@@ -257,9 +261,23 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [selectedDraftDoc] = useDocument<MarkdownDoc>(
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
-  const [showDiffOverlay, setShowDiffOverlay] = useState<boolean>(false);
+
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
     useState<boolean>(false);
+
+  const diff = useMemo(() => {
+    if (selectedDraftDoc) {
+      return diffWithProvenance(
+        selectedDraftDoc,
+        selectedDraftDoc.branchMetadata.source.branchHeads,
+        A.getHeads(selectedDraftDoc)
+      );
+    }
+
+    if (selectedDocView.type === "main" && sessionStartHeads) {
+      return diffWithProvenance(doc, sessionStartHeads, A.getHeads(doc));
+    }
+  }, [doc, selectedDraftDoc, selectedDocView.type, sessionStartHeads]);
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -375,8 +393,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                           value={"__moveChangesToDraft"}
                           key={"__moveChangesToDraft"}
                           className="font-regular"
-                          onMouseEnter={() => setShowMyChanges(true)}
-                          onMouseLeave={() => setShowMyChanges(false)}
+                          onMouseEnter={() =>
+                            setIsHoveringYankToBranchOption(true)
+                          }
+                          onMouseLeave={() =>
+                            setIsHoveringYankToBranchOption(false)
+                          }
                         >
                           <SplitIcon className="inline mr-1" size={12} />
                           Move my changes (
@@ -547,41 +569,42 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </DropdownMenu>
               )}
 
-              {selectedDocView.type === "branch" && (
-                <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
-                  <Button
-                    onClick={(e) => {
-                      mergeBranch(selectedBranch.url);
-                      setSelectedDocView({ type: "main" });
-                      e.stopPropagation();
-                    }}
-                    variant="outline"
-                    className="h-6"
-                  >
-                    <MergeIcon className="mr-2" size={12} />
-                    Merge
-                  </Button>
-                  <Button
-                    onClick={(e) => {
-                      rebaseBranch(selectedBranch.url);
-                    }}
-                    variant="outline"
-                    className="h-6 text-x"
-                    disabled={!selectedBranchNeedsRebase}
-                  >
-                    Update from main
-                  </Button>
-
-                  <Checkbox
-                    id="diff-overlay-checkbox"
-                    className="mr-1"
-                    checked={showDiffOverlay}
-                    onClick={(e) => e.stopPropagation()}
-                    onCheckedChange={() => setShowDiffOverlay(!showDiffOverlay)}
-                  />
-                  <label htmlFor="diff-overlay-checkbox">Show changes</label>
-                </div>
-              )}
+              <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                {selectedDocView.type === "branch" && (
+                  <>
+                    <Button
+                      onClick={(e) => {
+                        mergeBranch(selectedBranch.url);
+                        setSelectedDocView({ type: "main" });
+                        e.stopPropagation();
+                      }}
+                      variant="outline"
+                      className="h-6"
+                    >
+                      <MergeIcon className="mr-2" size={12} />
+                      Merge
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        rebaseBranch(selectedBranch.url);
+                      }}
+                      variant="outline"
+                      className="h-6 text-x"
+                      disabled={!selectedBranchNeedsRebase}
+                    >
+                      Update from main
+                    </Button>
+                  </>
+                )}
+                <Checkbox
+                  id="diff-overlay-checkbox"
+                  className="mr-1"
+                  checked={showChangesFlag}
+                  onClick={(e) => e.stopPropagation()}
+                  onCheckedChange={() => setShowChangesFlag(!showChangesFlag)}
+                />
+                <label htmlFor="diff-overlay-checkbox">Show changes</label>
+              </div>
               {!isHistorySidebarOpen && (
                 <div
                   className={` ml-auto ${
@@ -607,28 +630,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               docHeads={selectedSnapshot?.heads ?? undefined}
               readOnly={selectedDocView.type === "snapshot"}
               key={docUrl}
-              diff={
-                showDiffOverlay && selectedDraftDoc
-                  ? diffWithProvenance(
-                      selectedDraftDoc,
-                      selectedDraftDoc.branchMetadata.source.branchHeads,
-                      A.getHeads(selectedDraftDoc)
-                    )
-                  : showMyChanges && currentEditSessionDiff
-                  ? currentEditSessionDiff
-                  : undefined
-              }
-              diffBase={
-                showDiffOverlay && selectedDraftDoc
-                  ? JSON.parse(
-                      JSON.stringify(
-                        selectedDraftDoc?.branchMetadata?.source.branchHeads
-                      )
-                    )
-                  : showMyChanges && currentEditSessionDiff
-                  ? currentEditSessionDiff.fromHeads
-                  : undefined
-              }
+              diff={showDiff ? diff : undefined}
+              diffBase={showDiff ? diff?.fromHeads : undefined}
               showDiffAsComments
               actorIdToAuthor={actorIdToAuthor}
             />
