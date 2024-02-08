@@ -13,10 +13,9 @@ import {
   GitBranchIcon,
   HistoryIcon,
   MergeIcon,
+  MilestoneIcon,
   MoreHorizontal,
   PlusIcon,
-  SaveAllIcon,
-  SaveIcon,
   SplitIcon,
   Trash2Icon,
   UndoIcon,
@@ -369,7 +368,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     )}
                     {selectedDocView.type === "snapshot" && (
                       <div className="flex items-center gap-2">
-                        <SaveIcon className="inline" size={12} />
+                        <MilestoneIcon className="inline" size={12} />
                         {selectedSnapshot?.name}
                       </div>
                     )}
@@ -452,7 +451,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   </SelectGroup>
                   <SelectGroup>
                     <SelectLabel className="-ml-5">
-                      <SaveAllIcon className="inline mr-1" size={12} />
+                      <MilestoneIcon className="inline mr-1" size={12} />
                       Snapshots
                     </SelectLabel>
                     {snapshots.map((snapshot) => (
