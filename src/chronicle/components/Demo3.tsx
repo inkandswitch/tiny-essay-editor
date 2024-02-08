@@ -67,6 +67,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(false);
+  const [compareWithMainFlag, setCompareWithMainFlag] =
+    useState<boolean>(false);
 
   const showDiff = showChangesFlag || isHoveringYankToBranchOption;
 
@@ -83,7 +85,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       return undefined;
     }
 
-    const diff = diffWithProvenance(doc, A.getHeads(doc), sessionStartHeads);
+    const diff = diffWithProvenance(doc, sessionStartHeads, A.getHeads(doc));
 
     return {
       ...diff,
@@ -265,7 +267,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
     useState<boolean>(false);
 
-  const diff = useMemo(() => {
+  const branchDiff = useMemo(() => {
     if (selectedDraftDoc) {
       return diffWithProvenance(
         selectedDraftDoc,
@@ -273,11 +275,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         A.getHeads(selectedDraftDoc)
       );
     }
-
-    if (selectedDocView.type === "main" && sessionStartHeads) {
-      return diffWithProvenance(doc, sessionStartHeads, A.getHeads(doc));
-    }
-  }, [doc, selectedDraftDoc, selectedDocView.type, sessionStartHeads]);
+  }, [selectedDraftDoc]);
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -305,7 +303,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       <div className="flex-grow overflow-hidden">
         <div className="flex h-full">
           <div className="flex-grow">
-            <div className="bg-gray-50 pl-8 pt-6 pb-1 flex gap-2 items-center">
+            <div className="bg-gray-50 pl-4 pt-6 pb-1 flex gap-2 items-center">
               <Select
                 value={JSON.stringify(selectedDocView)}
                 onValueChange={(value) => {
@@ -569,7 +567,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </DropdownMenu>
               )}
 
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-1 text-sm font-medium text-gray-700 gap-2">
                 {selectedDocView.type === "branch" && (
                   <>
                     <Button
@@ -596,14 +594,33 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     </Button>
                   </>
                 )}
-                <Checkbox
-                  id="diff-overlay-checkbox"
-                  className="mr-1"
-                  checked={showChangesFlag}
-                  onClick={(e) => e.stopPropagation()}
-                  onCheckedChange={() => setShowChangesFlag(!showChangesFlag)}
-                />
-                <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                <div className="flex items-center">
+                  <Checkbox
+                    id="diff-overlay-checkbox"
+                    className="mr-1"
+                    checked={showChangesFlag}
+                    onClick={(e) => e.stopPropagation()}
+                    onCheckedChange={() => setShowChangesFlag(!showChangesFlag)}
+                  />
+                  <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                </div>
+
+                {selectedDocView.type === "branch" && (
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="diff-overlay-checkbox"
+                      className="mr-1"
+                      checked={compareWithMainFlag}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setCompareWithMainFlag(!compareWithMainFlag)
+                      }
+                    />
+                    <label htmlFor="diff-overlay-checkbox">
+                      Compare with main
+                    </label>
+                  </div>
+                )}
               </div>
               {!isHistorySidebarOpen && (
                 <div
@@ -625,16 +642,56 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </div>
               )}
             </div>
-            <TinyEssayEditor
-              docUrl={selectedBranch?.url ?? docUrl}
-              docHeads={selectedSnapshot?.heads ?? undefined}
-              readOnly={selectedDocView.type === "snapshot"}
-              key={docUrl}
-              diff={showDiff ? diff : undefined}
-              diffBase={showDiff ? diff?.fromHeads : undefined}
-              showDiffAsComments
-              actorIdToAuthor={actorIdToAuthor}
-            />
+            <div className="h-full items-stretch justify-stretch relative flex flex-col">
+              {compareWithMainFlag && (
+                <div className="w-full flex top-0 bg-gray-50 pt-4">
+                  <div className="flex-1 pl-4">
+                    <div className="inline-flex items-center gap-1">
+                      <CrownIcon className="inline" size={12} /> main
+                    </div>
+                  </div>
+                  <div className="flex-1 pl-4">{selectedBranch.name}</div>
+                </div>
+              )}
+              <div className="flex-1 min-h-0 overflow-auto">
+                <div className="flex">
+                  {compareWithMainFlag && (
+                    <TinyEssayEditor
+                      docUrl={docUrl}
+                      docHeads={selectedSnapshot?.heads ?? undefined}
+                      readOnly={selectedDocView.type === "snapshot"}
+                      key={`compare-${docUrl}`}
+                      diff={showDiff ? currentEditSessionDiff : undefined}
+                      diffBase={
+                        showDiff ? currentEditSessionDiff?.fromHeads : undefined
+                      }
+                      showDiffAsComments
+                      actorIdToAuthor={actorIdToAuthor}
+                    />
+                  )}
+                  <TinyEssayEditor
+                    docUrl={selectedBranch?.url ?? docUrl}
+                    docHeads={selectedSnapshot?.heads ?? undefined}
+                    readOnly={selectedDocView.type === "snapshot"}
+                    key={`main-${docUrl}`}
+                    diff={
+                      showDiff
+                        ? branchDiff ?? currentEditSessionDiff
+                        : undefined
+                    }
+                    diffBase={
+                      showDiff
+                        ? branchDiff
+                          ? branchDiff?.fromHeads
+                          : currentEditSessionDiff?.fromHeads
+                        : undefined
+                    }
+                    showDiffAsComments
+                    actorIdToAuthor={actorIdToAuthor}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {isHistorySidebarOpen && (
