@@ -23,8 +23,9 @@ export const HistoryFilter: React.FC<{
 
   return (
     <div
-      className={`max-w-[400px] rounded  p-4 text-sm bg-gray-50 border border-gray-200 border-opacity-0 ${
-        showFilterSettings && "border-opacity-100"
+      className={`max-w-[400px] rounded  p-4 text-sm border-opacity-0 ${
+        showFilterSettings &&
+        "border-opacity-100  bg-gray-50 border border-gray-200"
       }`}
     >
       <div className="flex flex-col gap-2">
