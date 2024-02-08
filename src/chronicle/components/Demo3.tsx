@@ -41,6 +41,7 @@ import { useCurrentAccount } from "@/DocExplorer/account";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { combinePatches } from "../utils";
 
 type DocView =
   | { type: "main" }
@@ -89,7 +90,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
     return {
       ...diff,
-      patches: diff.patches.filter((patch) => patch.path[0] === "content"),
+      patches: combinePatches(
+        diff.patches.filter((patch) => patch.path[0] === "content")
+      ),
     };
   }, [doc, sessionStartHeads]);
 
@@ -269,11 +272,16 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const branchDiff = useMemo(() => {
     if (selectedDraftDoc) {
-      return diffWithProvenance(
+      const diff = diffWithProvenance(
         selectedDraftDoc,
         selectedDraftDoc.branchMetadata.source.branchHeads,
         A.getHeads(selectedDraftDoc)
       );
+
+      return {
+        ...diff,
+        patches: combinePatches(diff.patches),
+      };
     }
   }, [selectedDraftDoc]);
 
