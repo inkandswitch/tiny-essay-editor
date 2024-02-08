@@ -4,7 +4,7 @@ import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { head, isEqual } from "lodash";
+import { head, isEqual, truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsLeftIcon,
@@ -326,7 +326,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   }
                 }}
               >
-                <SelectTrigger className="h-8 text-sm w-[160px]">
+                <SelectTrigger className="h-8 text-sm w-[18rem] font-medium">
                   <SelectValue placeholder="Select Draft">
                     {selectedDocView.type === "main" && (
                       <div className="flex items-center gap-2">
@@ -337,7 +337,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     {selectedDocView.type === "branch" && (
                       <div className="flex items-center gap-2">
                         <GitBranchIcon className="inline" size={12} />
-                        {selectedBranch?.name}
+                        {truncate(selectedBranch?.name, { length: 30 })}
                       </div>
                     )}
                     {selectedDocView.type === "snapshot" && (
@@ -349,7 +349,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="w-72">
-                  <SelectItem value={JSON.stringify({ type: "main" })}>
+                  <SelectItem
+                    value={JSON.stringify({ type: "main" })}
+                    className={
+                      selectedDocView.type === "main" ? "font-medium" : ""
+                    }
+                  >
                     <CrownIcon className="inline mr-1" size={12} />
                     Main
                   </SelectItem>
@@ -359,23 +364,28 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       Branches
                     </SelectLabel>
 
-                    {branches.map((draft) => (
+                    {branches.map((branch) => (
                       <SelectItem
-                        key={draft.url}
+                        key={branch.url}
+                        className={`${
+                          selectedBranch?.url === branch.url
+                            ? "font-medium"
+                            : ""
+                        }`}
                         value={JSON.stringify({
                           type: "branch",
-                          url: draft.url,
+                          url: branch.url,
                         })}
                       >
-                        <div>{draft.name}</div>
+                        <div>{branch.name}</div>
                         <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                          {draft.createdAt && (
-                            <div>{getRelativeTimeString(draft.createdAt)}</div>
+                          {branch.createdAt && (
+                            <div>{getRelativeTimeString(branch.createdAt)}</div>
                           )}
                           <span>by</span>
-                          {draft.createdBy && (
+                          {branch.createdBy && (
                             <ContactAvatar
-                              url={draft.createdBy}
+                              url={branch.createdBy}
                               size="sm"
                               showName
                               showImage={false}
@@ -425,7 +435,11 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                           heads: snapshot.heads,
                         })}
                         key={snapshot.name}
-                        className="font-regular"
+                        className={`${
+                          selectedSnapshot?.heads === snapshot.heads
+                            ? "font-medium"
+                            : "font-regular"
+                        }`}
                       >
                         {snapshot.name}
 
@@ -663,11 +677,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               )}
               <div className="flex-1 min-h-0 overflow-auto">
                 <div className="flex">
-                  {compareWithMainFlag && (
+                  {selectedDocView.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
                       docUrl={docUrl}
                       docHeads={selectedSnapshot?.heads ?? undefined}
-                      readOnly={selectedDocView.type === "snapshot"}
                       key={`compare-${docUrl}`}
                       diff={showDiff ? currentEditSessionDiff : undefined}
                       diffBase={
