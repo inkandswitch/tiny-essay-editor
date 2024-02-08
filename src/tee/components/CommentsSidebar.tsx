@@ -38,7 +38,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getRelativeTimeString,
   cmRangeToAMRange,
@@ -419,6 +419,10 @@ export const CommentsSidebar = ({
     });
   };
 
+  const resolveThread = (annotation: TextAnnotationWithPosition) => {
+    changeDoc((d) => (d.commentThreads[annotation.id].resolved = true));
+  };
+
   const selectedAnnotations = selectedAnnotationIds.map((id) =>
     annotationsWithPositions.find((annotation) => annotation.id === id)
   );
@@ -515,209 +519,26 @@ export const CommentsSidebar = ({
       </div>
 
       {annotationsWithPositions.map((annotation) => {
-        const patchesForAnnotation =
-          annotation.type === "draft"
-            ? annotation.editRangesWithComments.flatMap(
-                (range) => range.patches
-              )
-            : annotation.type === "patch"
-            ? [annotation.patch]
-            : [];
-        const authors = uniq(
-          patchesForAnnotation
-            .map((patch) => getAttrOfPatch(patch))
-            .filter((attr) => isValidAutomergeUrl(attr))
-        ) as AutomergeUrl[];
-
-        // todo: check if the edit hasn't changed since the last time the user marked it reviewed
-        const isMarkedAsReviewed =
-          "reviews" in annotation &&
-          annotation.reviews &&
-          annotation.reviews[account.contactHandle.url];
         return (
-          <div
+          <TextAnnotationView
             key={annotation.id}
-            className="absolute group transition-all duration-100 ease-in-out select-none"
-            style={{
-              top: annotation.yCoord,
-            }}
-          >
-            <div className="flex items-start relative">
-              <div
-                className={` mr-2 mb-1 rounded-sm max-w-lg  ${
-                  selectedAnnotationIds.includes(annotation.id) &&
-                  "z-50 shadow-sm ring-2 ring-blue-600"
-                } ${
-                  (annotation.type === "patch" ||
-                    annotation.type === "thread") &&
-                  "px-2 py-1 bg-white border border-gray-200"
-                }`}
-                onClick={(e) => {
-                  if (e.shiftKey) {
-                    setSelectedAnnotationIds([
-                      ...selectedAnnotationIds,
-                      annotation.id,
-                    ]);
-                  } else {
-                    setSelectedAnnotationIds([annotation.id]);
-                  }
-                  e.stopPropagation();
-                }}
-              >
-                {annotation.type === "draft" && (
-                  <Draft
-                    currentText={doc.content}
-                    prevText={prevDoc.content}
-                    annotation={annotation}
-                    selected={selectedAnnotationIds.includes(annotation.id)}
-                  />
-                )}
-                {annotation.type === "patch" && (
-                  <div className="z-0">
-                    <Patch
-                      patch={annotation.patch}
-                      currentText={doc.content}
-                      prevText={prevDoc.content}
-                    />
-                  </div>
-                )}
-                <div>
-                  {annotation.type === "thread" &&
-                    annotation.comments.map((comment) => (
-                      <div key={comment.id}>
-                        <CommentView comment={comment} />
-                      </div>
-                    ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 opacity-75 scale-75 -ml-4 ">
-                {authors.map((author) => (
-                  <ContactAvatar
-                    url={author}
-                    showName={false}
-                    size="sm"
-                    key={author}
-                  />
-                ))}
-              </div>
-              {(annotation.type === "draft" || annotation.type === "patch") && (
-                <div className="ml-2 text-sm text-gray-500 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out cursor-pointer">
-                  <Popover
-                    open={activeReplyThreadId === annotation.id}
-                    onOpenChange={(open) =>
-                      open
-                        ? setActiveReplyThreadId(annotation.id)
-                        : setActiveReplyThreadId(null)
-                    }
-                  >
-                    <PopoverTrigger asChild>
-                      <div className="flex mr-2 hover:text-gray-800">
-                        <MessageCircleIcon size={14} className="" />
-                        Comment
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <Textarea
-                        className="mb-4"
-                        value={pendingCommentText}
-                        onChange={(event) =>
-                          setPendingCommentText(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" && event.metaKey) {
-                            replyToAnnotation(annotation);
-                            setActiveReplyThreadId(null);
-                            event.preventDefault();
-                          }
-                        }}
-                      />
-
-                      <PopoverClose>
-                        <Button
-                          variant="outline"
-                          onClick={() => replyToAnnotation(annotation)}
-                        >
-                          Comment
-                          <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
-                        </Button>
-                      </PopoverClose>
-                    </PopoverContent>
-                  </Popover>
-
-                  <div
-                    className="flex hover:text-gray-800"
-                    onClick={() => undoEditsFromAnnotation(annotation)}
-                  >
-                    <UndoIcon size={14} className="" />
-                    Revert
-                  </div>
-
-                  <div
-                    className="flex hover:text-gray-800"
-                    onClick={() => toggleAnnotationIsMarkedReviewed(annotation)}
-                  >
-                    <CheckIcon size={14} className="" />
-                    {isMarkedAsReviewed ? "Mark unreviewed" : "Mark reviewed"}
-                  </div>
-                </div>
-              )}
-            </div>
-            {annotation.type === "thread" && (
-              <div className="mt-1">
-                <Popover
-                  open={activeReplyThreadId === annotation.id}
-                  onOpenChange={(open) =>
-                    open
-                      ? setActiveReplyThreadId(annotation.id)
-                      : setActiveReplyThreadId(null)
-                  }
-                >
-                  <PopoverTrigger asChild>
-                    <Button className="mr-2 px-2 h-8" variant="outline">
-                      <Reply className="mr-2 " /> Reply
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent>
-                    <Textarea
-                      className="mb-4"
-                      value={pendingCommentText}
-                      onChange={(event) =>
-                        setPendingCommentText(event.target.value)
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && event.metaKey) {
-                          replyToAnnotation(annotation);
-                          setActiveReplyThreadId(null);
-                          event.preventDefault();
-                        }
-                      }}
-                    />
-
-                    <PopoverClose>
-                      <Button
-                        variant="outline"
-                        onClick={() => replyToAnnotation(annotation)}
-                      >
-                        Comment
-                        <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
-                      </Button>
-                    </PopoverClose>
-                  </PopoverContent>
-                </Popover>
-                <Button
-                  variant="outline"
-                  className="select-none h-8 px-2"
-                  onClick={() =>
-                    changeDoc(
-                      (d) => (d.commentThreads[annotation.id].resolved = true)
-                    )
-                  }
-                >
-                  <Check className="mr-2" /> Resolve
-                </Button>
-              </div>
-            )}
-          </div>
+            doc={doc}
+            prevDoc={prevDoc}
+            annotation={annotation}
+            contactUrl={account.contactHandle.url}
+            selectedAnnotationIds={selectedAnnotationIds}
+            setSelectedAnnotationIds={setSelectedAnnotationIds}
+            activeReplyThreadId={activeReplyThreadId}
+            setActiveReplyThreadId={setActiveReplyThreadId}
+            pendingCommentText={pendingCommentText}
+            setPendingCommentText={setPendingCommentText}
+            replyToAnnotation={() => replyToAnnotation(annotation)}
+            undoEditsFromAnnotation={() => undoEditsFromAnnotation(annotation)}
+            toggleAnnotationIsMarkedReviewed={() =>
+              toggleAnnotationIsMarkedReviewed(annotation)
+            }
+            resolveThread={() => resolveThread(annotation)}
+          />
         );
       })}
 
@@ -874,6 +695,244 @@ export const PatchesGroupedByAuthor = ({
           ))}
         </div>
       ))}
+    </div>
+  );
+};
+
+interface AnnotationViewProp {
+  doc: MarkdownDoc;
+  prevDoc: MarkdownDoc;
+  annotation: TextAnnotationWithPosition;
+  contactUrl: AutomergeUrl;
+  selectedAnnotationIds: string[];
+  setSelectedAnnotationIds: (threadIds: string[]) => void;
+  activeReplyThreadId: string;
+  setActiveReplyThreadId: (threadId: string) => void;
+  pendingCommentText: string;
+  setPendingCommentText: (text: string) => void;
+  replyToAnnotation: () => void;
+  undoEditsFromAnnotation: () => void;
+  toggleAnnotationIsMarkedReviewed: () => void;
+  resolveThread: () => void;
+}
+
+export const TextAnnotationView = ({
+  doc,
+  prevDoc,
+  annotation,
+  contactUrl,
+  selectedAnnotationIds,
+  setSelectedAnnotationIds,
+  activeReplyThreadId,
+  setActiveReplyThreadId,
+  pendingCommentText,
+  setPendingCommentText,
+  replyToAnnotation,
+  undoEditsFromAnnotation,
+  toggleAnnotationIsMarkedReviewed,
+  resolveThread,
+}: AnnotationViewProp) => {
+  const patchesForAnnotation =
+    annotation.type === "draft"
+      ? annotation.editRangesWithComments.flatMap((range) => range.patches)
+      : annotation.type === "patch"
+      ? [annotation.patch]
+      : [];
+  const authors = uniq(
+    patchesForAnnotation
+      .map((patch) => getAttrOfPatch(patch))
+      .filter((attr) => isValidAutomergeUrl(attr))
+  ) as AutomergeUrl[];
+
+  // todo: check if the edit hasn't changed since the last time the user marked it reviewed
+  const isMarkedAsReviewed =
+    "reviews" in annotation &&
+    annotation.reviews &&
+    annotation.reviews[contactUrl];
+
+  // State to track if the component is hovered
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="absolute group transition-all duration-100 ease-in-out select-none"
+      style={{
+        top: annotation.yCoord,
+      }}
+      onMouseEnter={() => {
+        setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+      }}
+    >
+      <div className="flex flex-col items-start relative">
+        <div
+          className={` mr-2 rounded-sm max-w-lg  ${
+            selectedAnnotationIds.includes(annotation.id) &&
+            "z-50 shadow-sm ring-2 ring-blue-600"
+          } ${
+            (annotation.type === "patch" || annotation.type === "thread") &&
+            "px-2 py-1 bg-white border border-gray-200"
+          }`}
+          onClick={(e) => {
+            if (e.shiftKey) {
+              setSelectedAnnotationIds([
+                ...selectedAnnotationIds,
+                annotation.id,
+              ]);
+            } else {
+              setSelectedAnnotationIds([annotation.id]);
+            }
+            e.stopPropagation();
+          }}
+        >
+          {annotation.type === "draft" && (
+            <Draft
+              isHovered={isHovered}
+              currentText={doc.content}
+              prevText={prevDoc.content}
+              annotation={annotation}
+              selected={selectedAnnotationIds.includes(annotation.id)}
+            />
+          )}
+          {annotation.type === "patch" && (
+            <div className="z-0">
+              <Patch
+                patch={annotation.patch}
+                currentText={doc.content}
+                prevText={prevDoc.content}
+              />
+            </div>
+          )}
+          <div>
+            {annotation.type === "thread" &&
+              annotation.comments.map((comment) => (
+                <div key={comment.id}>
+                  <CommentView comment={comment} />
+                </div>
+              ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-75 scale-75 -ml-4 ">
+          {authors.map((author) => (
+            <ContactAvatar
+              url={author}
+              showName={false}
+              size="sm"
+              key={author}
+            />
+          ))}
+        </div>
+        {(annotation.type === "draft" || annotation.type === "patch") && (
+          <div
+            className={`ml-2 text-sm pt-1 text-gray-500 flex flex-col gap-1 transition-opacity duration-300 ease-in-out cursor-pointer ${
+              isHovered ? "opacity-100 z-50" : "opacity-0"
+            }`}
+          >
+            <Popover
+              open={activeReplyThreadId === annotation.id}
+              onOpenChange={(open) =>
+                open
+                  ? setActiveReplyThreadId(annotation.id)
+                  : setActiveReplyThreadId(null)
+              }
+            >
+              <PopoverTrigger asChild>
+                <div className="flex hover:text-gray-800 items-center gap-2">
+                  <MessageCircleIcon size={14} className="" />
+                  Comment
+                </div>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Textarea
+                  className="mb-4"
+                  value={pendingCommentText}
+                  onChange={(event) =>
+                    setPendingCommentText(event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && event.metaKey) {
+                      replyToAnnotation();
+                      setActiveReplyThreadId(null);
+                      event.preventDefault();
+                    }
+                  }}
+                />
+
+                <PopoverClose>
+                  <Button variant="outline" onClick={() => replyToAnnotation()}>
+                    Comment
+                    <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+                  </Button>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
+
+            <div
+              className="flex hover:text-gray-800 gap-2 items-center"
+              onClick={() => undoEditsFromAnnotation()}
+            >
+              <UndoIcon size={14} className="" />
+              Revert
+            </div>
+
+            <div
+              className="flex hover:text-gray-800 gap-2 items-center"
+              onClick={() => toggleAnnotationIsMarkedReviewed()}
+            >
+              <CheckIcon size={14} className="" />
+              {isMarkedAsReviewed ? "Mark unreviewed" : "Mark reviewed"}
+            </div>
+          </div>
+        )}
+      </div>
+      {annotation.type === "thread" && (
+        <div className="mt-1">
+          <Popover
+            open={activeReplyThreadId === annotation.id}
+            onOpenChange={(open) =>
+              open
+                ? setActiveReplyThreadId(annotation.id)
+                : setActiveReplyThreadId(null)
+            }
+          >
+            <PopoverTrigger asChild>
+              <Button className="mr-2 px-2 h-8" variant="outline">
+                <Reply className="mr-2 " /> Reply
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Textarea
+                className="mb-4"
+                value={pendingCommentText}
+                onChange={(event) => setPendingCommentText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.metaKey) {
+                    replyToAnnotation();
+                    setActiveReplyThreadId(null);
+                    event.preventDefault();
+                  }
+                }}
+              />
+
+              <PopoverClose>
+                <Button variant="outline" onClick={() => replyToAnnotation()}>
+                  Comment
+                  <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+                </Button>
+              </PopoverClose>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="outline"
+            className="select-none h-8 px-2"
+            onClick={() => resolveThread()}
+          >
+            <Check className="mr-2" /> Resolve
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -1054,7 +1113,8 @@ const Draft: React.FC<{
   selected: boolean;
   currentText: string;
   prevText: string;
-}> = ({ annotation, selected, currentText, prevText }) => {
+  isHovered: boolean;
+}> = ({ annotation, selected, currentText, prevText, isHovered }) => {
   const account = useCurrentAccount();
 
   // todo: check if the edit hasn't changed since the last time the user marked it reviewed
@@ -1073,13 +1133,7 @@ const Draft: React.FC<{
     (range) => range.patches
   );
 
-  // State to track if the component is hovered
-  const [isHovered, setIsHovered] = useState(false);
-
   const expanded = selected || isHovered;
-  // Handlers for mouse enter and leave to manage hover state
-  const handleMouseEnter = () => setIsHovered(true);
-  const handleMouseLeave = () => setIsHovered(false);
 
   const Icon = expanded ? FolderOpenIcon : FolderIcon;
 
@@ -1093,8 +1147,6 @@ const Draft: React.FC<{
       className={`p-2 min-h-12 min-w-48 rounded-md  border border-gray-200 bg-white shadow ${
         expanded && " border border-gray-300 z-50 relative"
       }`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <div className={`flex text-xs items-center gap-1 text-gray-400`}>
         <Icon size={12} className="inline-block " /> {patches.length} edits
