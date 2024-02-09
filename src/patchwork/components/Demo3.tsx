@@ -22,7 +22,6 @@ import {
   PlusIcon,
   SplitIcon,
   Trash2Icon,
-  UndoIcon,
 } from "lucide-react";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
@@ -46,6 +45,7 @@ import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
 import { BasicHistoryLog } from "./BasicHistoryLog";
+import { Hash } from "./Hash";
 
 type DocView =
   | { type: "main" }
@@ -170,9 +170,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     createBranch({ heads: sessionStartHeads });
 
     // revert content of main to before edit session started
-    const textAtSnapshot = A.view(doc, sessionStartHeads).content;
+    const textAtMilestone = A.view(doc, sessionStartHeads).content;
     changeDoc((doc) => {
-      A.updateText(doc, ["content"], textAtSnapshot);
+      A.updateText(doc, ["content"], textAtMilestone);
       setSessionStartHeads(A.getHeads(doc));
     });
     setIsHoveringYankToBranchOption(false);
@@ -227,7 +227,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     [docUrl, repo]
   );
 
-  const createSnapshot = () => {
+  const createMilestone = () => {
     const heads = JSON.parse(JSON.stringify(A.getHeads(doc)));
     changeDoc((doc) => {
       if (!doc.tags) {
@@ -242,21 +242,21 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     });
   };
 
-  const renameSnapshot = (heads: A.Heads, newName: string) => {
+  const renameMilestone = (heads: A.Heads, newName: string) => {
     changeDoc((doc) => {
-      const snapshot = doc.tags?.find((snapshot) =>
-        isEqual(snapshot.heads, heads)
+      const milestone = doc.tags?.find((milestone) =>
+        isEqual(milestone.heads, heads)
       );
-      if (snapshot) {
-        snapshot.name = newName;
+      if (milestone) {
+        milestone.name = newName;
       }
     });
   };
 
-  const deleteSnapshot = (heads: A.Heads) => {
+  const deleteMilestone = (heads: A.Heads) => {
     changeDoc((doc) => {
-      const index = doc.tags.findIndex((snapshot) =>
-        isEqual(snapshot.heads, heads)
+      const index = doc.tags.findIndex((milestone) =>
+        isEqual(milestone.heads, heads)
       );
       if (index !== -1) {
         doc.tags.splice(index, 1);
@@ -264,15 +264,15 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     });
   };
 
-  const createBranchFromSnapshot = (snapshot: Tag) => {
+  const createBranchFromMilestone = (milestone: Tag) => {
     alert("This is a speculative feature, not implemented yet");
     // GL 2/7: not quite sure how this works... how do you clone at a heads?
   };
 
-  const revertMainToSnapshot = (snapshot: Tag) => {
-    const textAtSnapshot = A.view(doc, snapshot.heads).content;
+  const revertMainToMilestone = (milestone: Tag) => {
+    const textAtMilestone = A.view(doc, milestone.heads).content;
     changeDoc((doc) => {
-      A.updateText(doc, ["content"], textAtSnapshot);
+      A.updateText(doc, ["content"], textAtMilestone);
     });
     setSelectedDocView({ type: "main" });
   };
@@ -332,7 +332,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
-  const activeSnapshot = doc?.tags?.find((t) => isEqual(t.heads, docHeads));
+  const activeMilestone = doc?.tags?.find((t) => isEqual(t.heads, docHeads));
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -493,17 +493,26 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </DropdownMenu>
               )}
 
-              {docHeads && (
+              {docHeads && diffForEditor.patches.length === 0 && (
                 <div className="text-gray-500 flex gap-1">
                   as of{" "}
-                  {activeSnapshot ? (
+                  {activeMilestone ? (
                     <div className="inline">
                       <MilestoneIcon className="inline mr-1" size={12} />
-                      {activeSnapshot.name}
+                      {activeMilestone.name}
                     </div>
                   ) : (
                     docHeads[0]?.slice(0, 6)
                   )}
+                </div>
+              )}
+
+              {docHeads && diffForEditor.patches.length > 0 && (
+                <div className="text-gray-500 flex gap-1">
+                  <div>comparing from</div>
+                  <Hash hash={diffForEditor.fromHeads[0]} />
+                  <div>to</div>
+                  <Hash hash={diffForEditor.toHeads[0]} />
                 </div>
               )}
 

@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Heads } from "@automerge/automerge/next";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
-type SnapshotSelection = {
-  type: "snapshot";
+type MilestoneSelection = {
+  type: "milestone";
   heads: Heads;
 };
 
@@ -24,7 +24,7 @@ type ChangeGroupSelection = {
   to: ChangeGroup["id"];
 };
 
-type Selection = SnapshotSelection | ChangeGroupSelection;
+type Selection = MilestoneSelection | ChangeGroupSelection;
 
 export const BasicHistoryLog: React.FC<{
   docUrl: AutomergeUrl;
@@ -71,7 +71,7 @@ export const BasicHistoryLog: React.FC<{
   const docHeads = useMemo(() => {
     if (!selection) return [];
     switch (selection.type) {
-      case "snapshot":
+      case "milestone":
         return selection.heads;
       case "changeGroups":
         return [selection.to];
@@ -89,7 +89,7 @@ export const BasicHistoryLog: React.FC<{
       };
       setDiff(diff);
       setDocHeads(docHeads);
-    } else if (selection?.type === "snapshot") {
+    } else if (selection?.type === "milestone") {
       setDocHeads(selection.heads);
       setDiff({
         patches: [],
@@ -118,7 +118,7 @@ export const BasicHistoryLog: React.FC<{
 
     // If the shift key is pressed, we create a multi-change selection.
     // If there's no existing change group selected, just use the latest as the starting point for the selection.
-    if (!selection || selection.type === "snapshot") {
+    if (!selection || selection.type === "milestone") {
       setSelection({
         type: "changeGroups",
         from: changeGroup.id,
@@ -223,21 +223,21 @@ export const BasicHistoryLog: React.FC<{
                   }}
                 >
                   <MilestoneIcon size={12} className="inline-block mr-1" />
-                  Save a snapshot here
+                  Save a milestone here
                 </div>
               )}
             {changeGroup.tags.map((tag) => (
               <div>
                 <div
                   className={`text-xs text-gray-500  p-1 px-2 border border-green-800 rounded-md select-none ${
-                    selection?.type === "snapshot" &&
+                    selection?.type === "milestone" &&
                     selection?.heads === tag.heads
                       ? "bg-blue-50"
                       : "bg-gray-50 hover:bg-gray-100"
                   }`}
                   onClick={() => {
                     setSelection({
-                      type: "snapshot",
+                      type: "milestone",
                       heads: tag.heads,
                     });
                   }}
