@@ -1,6 +1,10 @@
 import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
+import {
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
@@ -62,6 +66,7 @@ interface CreateBranchOptions {
 export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const handle = useHandle<MarkdownDoc>(docUrl);
   const account = useCurrentAccount();
 
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
@@ -721,7 +726,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   )}
                   <TinyEssayEditor
                     docUrl={selectedBranch?.url ?? docUrl}
-                    changeMainDoc={compareWithMainFlag ? changeDoc : undefined}
+                    mainDocHandle={compareWithMainFlag ? handle : undefined}
                     docHeads={docHeads}
                     readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
                     key={`main-${docUrl}`}

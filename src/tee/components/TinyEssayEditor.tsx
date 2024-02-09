@@ -1,4 +1,4 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
@@ -21,7 +21,6 @@ import {
   Patch,
   getCursorPosition,
   view,
-  ChangeFn,
 } from "@automerge/automerge/next";
 import { uniq } from "lodash";
 import "../../tee/index.css";
@@ -29,7 +28,7 @@ import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
 
 export const TinyEssayEditor = ({
   docUrl,
-  changeMainDoc,
+  mainDocHandle,
   docHeads,
   diff,
   readOnly,
@@ -42,7 +41,7 @@ export const TinyEssayEditor = ({
   debugHighlights,
 }: {
   docUrl: AutomergeUrl;
-  changeMainDoc?: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  mainDocHandle?: DocHandle<MarkdownDoc>;
   docHeads?: Heads;
   diff?: DiffWithProvenance;
   readOnly?: boolean;
@@ -199,6 +198,14 @@ export const TinyEssayEditor = ({
               : "border border-gray-200 "
           } bg-white  box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 `}
         >
+          <div>{JSON.stringify(docUrl)}</div>
+          <div>
+            {JSON.stringify(
+              doc?.branchMetadata?.source?.branchHeads?.map((h) =>
+                h.slice(0, 5)
+              )
+            )}
+          </div>
           <MarkdownEditor
             handle={handle}
             path={["content"]}
@@ -219,7 +226,7 @@ export const TinyEssayEditor = ({
             diffBase={diffBase}
             doc={docAtHeads}
             changeDoc={changeDoc}
-            changeMainDoc={changeMainDoc}
+            mainDocHandle={mainDocHandle}
             selection={selection}
             reviewStateFilter={reviewStateFilter}
             setReviewStateFilter={setReviewStateFilter}

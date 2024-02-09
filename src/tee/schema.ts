@@ -145,7 +145,7 @@ export type Branchable = {
     /* A pointer to the source where this was copied from */
     source: {
       url: AutomergeUrl;
-      branchHeads: A.Heads;
+      branchHeads: A.Heads; // the heads at which this branch was forked off
     } | null;
 
     /* A pointer to copies of this doc */

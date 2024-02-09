@@ -13,7 +13,7 @@ import {
 } from "../schema";
 
 import { groupBy, uniq } from "lodash";
-import { isValidAutomergeUrl } from "@automerge/automerge-repo";
+import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 
 import {
   Check,
@@ -53,14 +53,15 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/patchwork/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
-import { TextPatch } from "@/patchwork/utils";
+import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
+import path from "path";
 
 const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work for deletes so I'm disabling it for now
 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
-  changeMainDoc,
+  mainDocHandle,
   selection,
   annotationsWithPositions,
   selectedAnnotationIds,
@@ -75,7 +76,7 @@ export const CommentsSidebar = ({
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
-  changeMainDoc?: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  mainDocHandle?: DocHandle<MarkdownDoc>;
   selection: TextSelection;
   annotationsWithPositions: TextAnnotationWithPosition[];
   selectedAnnotationIds: string[];
@@ -404,11 +405,46 @@ export const CommentsSidebar = ({
       const spliceCursor = A.getCursor(
         doc,
         ["content"],
-        patch.path[1] as number
+        (patch.path[1] as number) - 1
       );
 
-      changeMainDoc((doc) => {
-        A.splice(doc, ["content"], spliceCursor, 0, patch.value);
+      const index = patch.path[1] as number;
+
+      const mainDoc = mainDocHandle.docSync();
+
+      // insert change on main at the heads when this branch was forked of
+      const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
+        const spliceIndexInMain = getCursorPositionSafely(
+          mainDoc,
+          ["content"],
+          spliceCursor
+        );
+
+        if (spliceIndexInMain !== null) {
+          A.splice(mainDoc, ["content"], spliceIndexInMain + 1, 0, patch.value);
+        }
+      });
+
+      // update diff base of branch to include merged change in main
+      changeDoc((doc) => {
+        doc.branchMetadata.source.branchHeads = JSON.parse(
+          JSON.stringify(newDiffBase)
+        );
+      });
+
+      // merge new diff base into branch and delete the original text
+      try {
+        changeDoc((doc) => {
+          // todo: this throws an error but it kindof works
+          A.merge(doc, A.view(mainDoc, newDiffBase));
+        });
+      } catch (err) {
+        console.error(err);
+      }
+
+      // todo: should do this in the changeDoc call above
+      changeDoc((doc) => {
+        A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
       });
     } else if (patch.action === "del") {
       const spliceCursor = A.getCursor(
@@ -417,9 +453,9 @@ export const CommentsSidebar = ({
         patch.path[1] as number
       );
 
-      changeMainDoc((doc) => {
+      /*      changeMainDoc((doc) => {
         A.splice(doc, ["content"], spliceCursor, patch.length);
-      });
+      }); */
     } else if (patch.action === "replace") {
       mergePatch(patch.delete);
       mergePatch(patch.splice);
@@ -587,7 +623,7 @@ export const CommentsSidebar = ({
             replyToAnnotation={() => replyToAnnotation(annotation)}
             undoEditsFromAnnotation={() => undoEditsFromAnnotation(annotation)}
             mergeEditsFromAnnotation={
-              changeMainDoc
+              mainDocHandle
                 ? () => mergeEditsFromAnnotation(annotation)
                 : undefined
             }
