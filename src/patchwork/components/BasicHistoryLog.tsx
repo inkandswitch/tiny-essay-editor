@@ -48,8 +48,6 @@ export const BasicHistoryLog: React.FC<{
     };
   }, [doc]);
 
-  const changesForDisplay = groupedChanges.slice().reverse();
-
   const [selection, setSelection] = useState<Selection | null>();
 
   const selectedChangeGroups: ChangeGroup[] = useMemo(() => {
@@ -171,7 +169,7 @@ export const BasicHistoryLog: React.FC<{
   // When the user selects a heads in the history,
   // some change groups get "hiddden", meaning the contents of the group
   // aren't visible in the displayed doc.
-  const changeGroupIsVisible = (changeGroup: ChangeGroup) => {
+  const headIsVisible = (head: string) => {
     if (!selection) return true;
     const lastVisibleChangeGroupId =
       selection.type === "changeGroups"
@@ -179,7 +177,7 @@ export const BasicHistoryLog: React.FC<{
         : groupedChanges.find((cg) => cg.id === selection.heads[0]).id;
     return (
       groupedChanges.map((c) => c.id).indexOf(lastVisibleChangeGroupId) >=
-      groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+      groupedChanges.map((c) => c.id).indexOf(head)
     );
   };
 
@@ -188,11 +186,11 @@ export const BasicHistoryLog: React.FC<{
       <div className="overflow-y-auto flex-grow  pt-3">
         {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
-        {changesForDisplay.map((changeGroup, index) => (
+        {groupedChanges.map((changeGroup, index) => (
           <div className="relative" key={changeGroup.id}>
             {new Date(changeGroup.time).toDateString() !==
-              new Date(changesForDisplay[index - 1]?.time).toDateString() && (
-              <div className="text-sm text-gray-500 font-semibold mb-2 flex items-center bg-gray-100 border-b border-gray-300 p-1">
+              new Date(groupedChanges[index - 1]?.time).toDateString() && (
+              <div className="text-xs text-gray-700 font-semibold mb-2 flex items-center border-b border-gray-400 p-1">
                 <CalendarIcon size={14} className="mr-1" />
                 {changeGroup.time &&
                   new Date(changeGroup.time).toLocaleString("en-US", {
@@ -203,72 +201,12 @@ export const BasicHistoryLog: React.FC<{
                 {!changeGroup.time && "Unknown time"}
               </div>
             )}
-            {selection?.type === "changeGroups" &&
-              selection.to === changeGroup.id &&
-              changeGroup.tags.length === 0 &&
-              index !== 0 && (
-                <div
-                  className="absolute top-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
-                  onClick={() => {
-                    changeDoc((doc) => {
-                      if (!doc.tags) {
-                        doc.tags = [];
-                      }
-                      doc.tags.push({
-                        name: window.prompt("Tag name:"),
-                        heads: [changeGroup.id],
-                        createdAt: Date.now(),
-                      });
-                    });
-                  }}
-                >
-                  <MilestoneIcon size={12} className="inline-block mr-1" />
-                  Save milestone
-                </div>
-              )}
-            {changeGroup.tags.map((tag) => (
-              <div>
-                <div
-                  className={`text-xs text-gray-500  p-1 px-2 border border-green-800 rounded-md select-none ${
-                    selection?.type === "milestone" &&
-                    selection?.heads === tag.heads
-                      ? "bg-blue-50"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  }`}
-                  onClick={() => {
-                    setSelection({
-                      type: "milestone",
-                      heads: tag.heads,
-                    });
-                  }}
-                >
-                  <div className="flex items-center text-gray-800 text-sm">
-                    <MilestoneIcon size={16} className="mr-1 mt-[2px]" />
-                    <div>{tag.name}</div>
-                    <div className="ml-auto">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={() => {
-                          changeDoc((doc) => {
-                            const tagIndex = doc.tags.indexOf(tag);
-                            doc.tags.splice(tagIndex, 1);
-                          });
-                        }}
-                      >
-                        <TrashIcon size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+
             <div
-              className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
+              className={`group px-1 py-2 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
                 selectedChangeGroups.includes(changeGroup)
                   ? "bg-blue-100"
-                  : changeGroupIsVisible(changeGroup)
+                  : headIsVisible(changeGroup.id)
                   ? ""
                   : "opacity-50"
               }`}
@@ -328,6 +266,67 @@ export const BasicHistoryLog: React.FC<{
                 </div>
               </div>
             </div>
+            {selection?.type === "changeGroups" &&
+              selection.to === changeGroup.id &&
+              changeGroup.tags.length === 0 &&
+              index !== 0 && (
+                <div
+                  className="absolute bottom-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                  onClick={() => {
+                    changeDoc((doc) => {
+                      if (!doc.tags) {
+                        doc.tags = [];
+                      }
+                      doc.tags.push({
+                        name: window.prompt("Tag name:"),
+                        heads: [changeGroup.id],
+                        createdAt: Date.now(),
+                      });
+                    });
+                  }}
+                >
+                  <MilestoneIcon size={12} className="inline-block mr-1" />
+                  Save milestone
+                </div>
+              )}
+            {changeGroup.tags.map((tag) => (
+              <div>
+                <div
+                  className={`text-xs text-gray-500  p-1 px-2 border border-green-800 rounded-md select-none ${
+                    selection?.type === "milestone" &&
+                    selection?.heads === tag.heads
+                      ? "bg-blue-50"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  } ${headIsVisible(tag.heads[0]) ? "" : "opacity-50"}`}
+                  onClick={() => {
+                    setSelection({
+                      type: "milestone",
+                      heads: tag.heads,
+                    });
+                  }}
+                >
+                  <div className="flex items-center text-gray-800 text-sm">
+                    <MilestoneIcon size={16} className="mr-1 mt-[2px]" />
+                    <div>{tag.name}</div>
+                    <div className="ml-auto">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          changeDoc((doc) => {
+                            const tagIndex = doc.tags.indexOf(tag);
+                            doc.tags.splice(tagIndex, 1);
+                          });
+                        }}
+                      >
+                        <TrashIcon size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>

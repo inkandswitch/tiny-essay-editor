@@ -510,9 +510,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               {docHeads && diffForEditor.patches.length > 0 && (
                 <div className="text-gray-500 flex gap-1">
                   <div>comparing from</div>
-                  <Hash hash={diffForEditor.fromHeads[0]} />
+                  <Hash hash={diffForEditor.fromHeads[0] ?? ""} />
                   <div>to</div>
-                  <Hash hash={diffForEditor.toHeads[0]} />
+                  <Hash hash={diffForEditor.toHeads[0] ?? ""} />
                 </div>
               )}
 
