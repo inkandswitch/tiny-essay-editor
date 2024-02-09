@@ -443,7 +443,7 @@ export const getAttrOfPatch = <T>(
   patch: Patch | PatchWithAttr<T> | TextPatch
 ): T | undefined => {
   if (patch.action === "replace") {
-    return getAttrOfPatch(patch.splice); // todo: this is not correct delete and insert could be from different authors
+    return getAttrOfPatch(patch.raw.splice); // todo: this is not correct delete and insert could be from different authors
   }
 
   return "attr" in patch ? patch.attr : undefined;

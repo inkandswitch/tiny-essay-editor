@@ -90,16 +90,37 @@ export const useActorIdToAuthorMap = (
   return actorIdToAuthorRef.current;
 };
 
-interface ReplacePatch {
+interface TextReplacePatch {
   action: "replace";
   path: A.Prop[];
   old: string;
   new: string;
-  splice: A.SpliceTextPatch;
-  delete: A.DelPatch;
+  raw: {
+    splice: A.SpliceTextPatch;
+    delete: A.DelPatch;
+  };
 }
 
-export type TextPatch = A.SpliceTextPatch | A.DelPatch | ReplacePatch;
+interface CombinedDelPatch extends A.DelPatch {
+  raw: {
+    splice?: A.SpliceTextPatch;
+    delete: A.DelPatch;
+  };
+}
+
+interface CombinedSpliceTextPatch extends A.SpliceTextPatch {
+  raw: {
+    splice: A.SpliceTextPatch;
+    delete?: A.DelPatch;
+  };
+}
+
+export type TextPatch =
+  | TextReplacePatch
+  | CombinedDelPatch
+  | CombinedSpliceTextPatch
+  | A.SpliceTextPatch
+  | A.DelPatch;
 
 // combines patches in two phases
 // 1. eliminates redudant patches like a insert followed by and delete of the same characters
@@ -136,23 +157,33 @@ export const combinePatches = (
       const overlapStart = getOverlapStart(inserted, deleted);
 
       // combine if there is some overlap
-
       if (overlapStart > 0) {
-        if (inserted.length > overlapStart) {
+        const insertHasAnEffect = inserted.length > overlapStart;
+        const deleteHasAnEffect = deleted.length > overlapStart;
+
+        if (insertHasAnEffect) {
           combinedPatches.push({
             ...currentPatch,
             path: ["content", currentPatch.path[1] + overlapStart],
             value: inserted.slice(overlapStart),
+            raw: {
+              splice: currentPatch,
+              delete: !deleteHasAnEffect ? nextPatch : undefined,
+            },
           });
         }
 
-        if (deleted.length > overlapStart) {
+        if (deleteHasAnEffect) {
           const removed = deleted.slice(overlapStart);
 
           combinedPatches.push({
             ...nextPatch,
             length: removed.length,
             removed,
+            raw: {
+              splice: !insertHasAnEffect ? currentPatch : undefined,
+              delete: nextPatch,
+            },
           });
         }
 
@@ -161,29 +192,39 @@ export const combinePatches = (
       }
 
       const overlapEnd = getOverlapEnd(inserted, deleted);
+
       if (overlapEnd > 0) {
-        if (overlapEnd > 0) {
-          if (inserted.length > overlapEnd) {
-            combinedPatches.push({
-              ...currentPatch,
-              value: inserted.slice(0, inserted.length - overlapEnd),
-            });
-          }
+        const insertHasAnEffect = inserted.length > overlapEnd;
+        const deleteHasAnEffect = deleted.length > overlapEnd;
 
-          if (deleted.length > overlapEnd) {
-            const removed = deleted.slice(0, deleted.length - overlapEnd);
-
-            combinedPatches.push({
-              ...nextPatch,
-              path: ["content", (nextPatch.path[1] as number) - overlapEnd],
-              length: removed.length,
-              removed,
-            });
-          }
-
-          i++;
-          continue;
+        if (insertHasAnEffect) {
+          combinedPatches.push({
+            ...currentPatch,
+            value: inserted.slice(0, inserted.length - overlapEnd),
+            raw: {
+              splice: currentPatch,
+              delete: !deleteHasAnEffect ? nextPatch : undefined,
+            },
+          });
         }
+
+        if (deleteHasAnEffect) {
+          const removed = deleted.slice(0, deleted.length - overlapEnd);
+
+          combinedPatches.push({
+            ...nextPatch,
+            path: ["content", (nextPatch.path[1] as number) - overlapEnd],
+            length: removed.length,
+            removed,
+            raw: {
+              splice: !insertHasAnEffect ? currentPatch : undefined,
+              delete: nextPatch,
+            },
+          });
+        }
+
+        i++;
+        continue;
       }
     }
 
@@ -215,8 +256,10 @@ export const combinePatches = (
         path: currentPatch.path,
         old: nextPatch.removed,
         new: currentPatch.value,
-        splice: currentPatch,
-        delete: nextPatch,
+        raw: {
+          splice: currentPatch,
+          delete: nextPatch,
+        },
       });
       i++; // skip next patch
     } else {

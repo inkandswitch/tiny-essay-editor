@@ -356,8 +356,8 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1], 0, patch.removed);
       });
     } else if (patch.action === "replace") {
-      undoPatch(patch.delete);
-      undoPatch(patch.splice);
+      undoPatch(patch.raw.delete);
+      undoPatch(patch.raw.splice);
     }
   };
 
@@ -402,13 +402,13 @@ export const CommentsSidebar = ({
 
   const mergePatch = (patch: A.Patch | TextPatch) => {
     if (patch.action === "splice") {
+      const index = patch.path[1] as number;
+
       const spliceCursor = A.getCursor(
         doc,
         ["content"],
         (patch.path[1] as number) - 1
       );
-
-      const index = patch.path[1] as number;
 
       const mainDoc = mainDocHandle.docSync();
 
@@ -447,18 +447,9 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
       });
     } else if (patch.action === "del") {
-      const spliceCursor = A.getCursor(
-        doc,
-        ["content"],
-        patch.path[1] as number
-      );
-
-      /*      changeMainDoc((doc) => {
-        A.splice(doc, ["content"], spliceCursor, patch.length);
-      }); */
     } else if (patch.action === "replace") {
-      mergePatch(patch.delete);
-      mergePatch(patch.splice);
+      //mergePatch(patch.raw.delete);
+      //mergePatch(patch.raw.splice);
     }
   };
 
@@ -1079,11 +1070,11 @@ export const Patch = ({
       {patch.action === "replace" && (
         <div className="text-sm">
           <span className="font-serif bg-red-50 border-b border-red-400">
-            {patchToString(patch.delete, prevText)}
+            {patchToString(patch.raw.delete, prevText)}
           </span>{" "}
           →{" "}
           <span className="font-serif bg-green-50 border-b border-green-400">
-            {patchToString(patch.splice, currentText)}
+            {patchToString(patch.raw.splice, currentText)}
           </span>
         </div>
       )}

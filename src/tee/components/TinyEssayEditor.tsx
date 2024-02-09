@@ -253,6 +253,6 @@ const getPatchLength = (
     case "splice":
       return patch.value.length;
     case "replace":
-      return patch.splice.value.length;
+      return patch.raw.splice.value.length;
   }
 };

@@ -121,7 +121,9 @@ export function MarkdownEditor({
       effects: setPatchesEffect.of(
         (diff ?? []).flatMap(
           (patch) =>
-            patch.action === "replace" ? [patch.splice, patch.delete] : [patch] // unpack replaces
+            patch.action === "replace"
+              ? [patch.raw.splice, patch.raw.delete]
+              : [patch] // unpack replaces
         )
       ),
     });

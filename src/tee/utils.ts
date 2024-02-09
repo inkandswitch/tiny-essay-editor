@@ -194,7 +194,7 @@ export const getTextAnnotationsForUI = ({
             diff?.patches.filter((patch) => {
               if (patch.path[0] !== "content") return false;
               if (patch.action === "replace") {
-                return doesPatchOverlapWith(patch.splice, from, to);
+                return doesPatchOverlapWith(patch.raw.splice, from, to);
               }
               return doesPatchOverlapWith(patch, from, to);
             }) ?? [];
