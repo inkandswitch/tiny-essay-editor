@@ -168,7 +168,9 @@ export const getTextAnnotationsForUI = ({
 
   annotations = [
     ...annotations,
-    ...Object.values(doc.commentThreads).filter((thread) => !thread.resolved),
+    ...Object.values(doc.commentThreads ?? {}).filter(
+      (thread) => !thread.resolved
+    ),
   ];
 
   if (showDiff) {

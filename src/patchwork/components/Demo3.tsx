@@ -52,10 +52,6 @@ type DocView =
   | {
       type: "branch";
       url: AutomergeUrl;
-    }
-  | {
-      type: "snapshot";
-      heads: A.Heads;
     };
 
 interface CreateBranchOptions {
@@ -244,7 +240,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         createdBy: account?.contactHandle?.url,
       });
     });
-    setSelectedDocView({ type: "snapshot", heads });
   };
 
   const renameSnapshot = (heads: A.Heads, newName: string) => {
@@ -321,14 +316,10 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
   const branches = doc.branchMetadata.branches ?? [];
-  const snapshots = doc.tags ?? [];
 
   const selectedBranch =
     selectedDocView.type === "branch" &&
     branches.find((b) => selectedDocView.url === b.url);
-  const selectedSnapshot =
-    selectedDocView.type === "snapshot" &&
-    snapshots.find((s) => isEqual(selectedDocView.heads, s.heads));
 
   // The selected draft doesn't have the latest from the main document
   // if the copy head stored on it don't match the latest heads of the main doc.
@@ -339,8 +330,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       selectedDraftDoc.branchMetadata.source.branchHeads
     );
 
-  const docHeads =
-    docHeadsFromHistorySidebar ?? selectedSnapshot?.heads ?? undefined;
+  const docHeads = docHeadsFromHistorySidebar ?? undefined;
+
+  const activeSnapshot = doc?.tags?.find((t) => isEqual(t.heads, docHeads));
 
   return (
     <div className="flex overflow-hidden h-full ">
@@ -353,8 +345,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 onValueChange={(value) => {
                   if (value === "__newDraft") {
                     createBranch();
-                  } else if (value === "__newSnapshot") {
-                    createSnapshot();
                   } else if (value === "__moveChangesToDraft") {
                     moveCurrentChangesToBranch();
                   } else {
@@ -374,12 +364,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       <div className="flex items-center gap-2">
                         <GitBranchIcon className="inline" size={12} />
                         {truncate(selectedBranch?.name, { length: 30 })}
-                      </div>
-                    )}
-                    {selectedDocView.type === "snapshot" && (
-                      <div className="flex items-center gap-2">
-                        <MilestoneIcon className="inline" size={12} />
-                        {selectedSnapshot?.name}
                       </div>
                     )}
                   </SelectValue>
@@ -459,125 +443,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         </SelectItem>
                       )}
                   </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel className="-ml-5">
-                      <MilestoneIcon className="inline mr-1" size={12} />
-                      Snapshots
-                    </SelectLabel>
-                    {snapshots.map((snapshot) => (
-                      <SelectItem
-                        value={JSON.stringify({
-                          type: "snapshot",
-                          heads: snapshot.heads,
-                        })}
-                        key={snapshot.name}
-                        className={`${
-                          selectedSnapshot?.heads === snapshot.heads
-                            ? "font-medium"
-                            : "font-regular"
-                        }`}
-                      >
-                        {snapshot.name}
-
-                        <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                          {snapshot.createdAt && (
-                            <div>
-                              {getRelativeTimeString(snapshot.createdAt)}
-                            </div>
-                          )}
-                          <span>by</span>
-                          {snapshot.createdBy && (
-                            <ContactAvatar
-                              url={snapshot.createdBy}
-                              size="sm"
-                              showName
-                              showImage={false}
-                            />
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                    <SelectItem
-                      value={"__newSnapshot"}
-                      key={"__newSnapshot"}
-                      className="font-regular"
-                    >
-                      <PlusIcon className="inline mr-1" size={12} />
-                      New Snapshot
-                    </SelectItem>
-                  </SelectGroup>
                 </SelectContent>
               </Select>
 
-              {selectedDocView.type === "snapshot" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <MoreHorizontal
-                      size={18}
-                      className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="mr-4">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const newName = prompt(
-                          "Enter the new name for this branch:"
-                        );
-                        if (newName && newName.trim() !== "") {
-                          renameSnapshot(
-                            selectedSnapshot.heads,
-                            newName.trim()
-                          );
-                        }
-                      }}
-                    >
-                      <Edit3Icon
-                        className="inline-block text-gray-500 mr-2"
-                        size={14}
-                      />{" "}
-                      Rename Snapshot
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Are you sure you want to delete this snapshot?"
-                          )
-                        ) {
-                          deleteSnapshot(selectedSnapshot.heads);
-                          setSelectedDocView({ type: "main" });
-                        }
-                      }}
-                    >
-                      <Trash2Icon
-                        className="inline-block text-gray-500 mr-2"
-                        size={14}
-                      />{" "}
-                      Delete Snapshot
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              {selectedDocView.type === "snapshot" && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Button
-                    onClick={() => revertMainToSnapshot(selectedSnapshot)}
-                    variant="outline"
-                    className="h-6"
-                  >
-                    <UndoIcon className="mr-2" size={12} />
-                    Revert main to snapshot
-                  </Button>
-                  <Button
-                    onClick={() => createBranchFromSnapshot(selectedSnapshot)}
-                    variant="outline"
-                    className="h-6"
-                  >
-                    <GitBranchIcon className="mr-2" size={12} />
-                    Make branch from snapshot
-                  </Button>
-                </div>
-              )}
               {selectedDocView.type === "branch" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger>
@@ -625,7 +493,21 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </DropdownMenu>
               )}
 
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-700 gap-2">
+              {docHeads && (
+                <div className="text-gray-500 flex gap-1">
+                  as of{" "}
+                  {activeSnapshot ? (
+                    <div className="inline">
+                      <MilestoneIcon className="inline mr-1" size={12} />
+                      {activeSnapshot.name}
+                    </div>
+                  ) : (
+                    docHeads[0]?.slice(0, 6)
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1 text-sm font-medium text-gray-700 ">
                 {selectedDocView.type === "branch" && (
                   <>
                     <Button
@@ -758,10 +640,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 docUrl={selectedBranch?.url ?? docUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
-                selectSnapshot={(heads) => {
-                  setSelectedDocView({ type: "snapshot", heads });
-                  setIsHistorySidebarOpen(false);
-                }}
               />
             </div>
           )}

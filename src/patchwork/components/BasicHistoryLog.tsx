@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Heads } from "@automerge/automerge/next";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 
+type SnapshotSelection = {
+  type: "snapshot";
+  heads: Heads;
+};
+
 // the data structure that represents the range of change groups we've selected for showing diffs.
 type ChangeGroupSelection = {
+  type: "changeGroups";
   /** The older (causally) change group in the selection */
   from: ChangeGroup["id"];
 
@@ -18,12 +24,13 @@ type ChangeGroupSelection = {
   to: ChangeGroup["id"];
 };
 
+type Selection = SnapshotSelection | ChangeGroupSelection;
+
 export const BasicHistoryLog: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-  selectSnapshot: (snapshotHeads: Heads) => void;
-}> = ({ docUrl, setDocHeads, setDiff, selectSnapshot }) => {
+}> = ({ docUrl, setDocHeads, setDiff }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
 
   // The grouping function returns change groups starting from the latest change.
@@ -43,40 +50,56 @@ export const BasicHistoryLog: React.FC<{
 
   const changesForDisplay = groupedChanges.slice().reverse();
 
-  const [changeGroupSelection, setChangeGroupSelection] =
-    useState<ChangeGroupSelection | null>();
+  const [selection, setSelection] = useState<Selection | null>();
 
   const selectedChangeGroups: ChangeGroup[] = useMemo(() => {
-    if (changeGroupSelection) {
+    if (selection && selection.type === "changeGroups") {
       const fromIndex = groupedChanges.findIndex(
-        (changeGroup) => changeGroup.id === changeGroupSelection.from
+        (changeGroup) => changeGroup.id === selection.from
       );
       const toIndex = groupedChanges.findIndex(
-        (changeGroup) => changeGroup.id === changeGroupSelection.to
+        (changeGroup) => changeGroup.id === selection.to
       );
       return groupedChanges.slice(fromIndex, toIndex + 1);
     } else {
       return [];
     }
-  }, [changeGroupSelection, groupedChanges]);
+  }, [selection, groupedChanges]);
 
   // TODO: is the heads for a group always the id of the group?
   // for now it works because the id of the group is the last change in the group...
-  const docHeads = useMemo(
-    () => (changeGroupSelection ? [changeGroupSelection.to] : undefined),
-    [changeGroupSelection]
-  );
+  const docHeads = useMemo(() => {
+    if (!selection) return [];
+    switch (selection.type) {
+      case "snapshot":
+        return selection.heads;
+      case "changeGroups":
+        return [selection.to];
+    }
+  }, [selection]);
 
   // sync the diff and docHeads up to the parent component when the selection changes
   useEffect(() => {
-    const diff = {
-      fromHeads: selectedChangeGroups[0]?.diff.fromHeads,
-      toHeads:
-        selectedChangeGroups[selectedChangeGroups.length - 1]?.diff.toHeads,
-      patches: selectedChangeGroups.flatMap((cg) => cg.diff.patches),
-    };
-    setDiff(diff);
-    setDocHeads(docHeads);
+    if (selection?.type === "changeGroups") {
+      const diff = {
+        fromHeads: selectedChangeGroups[0]?.diff.fromHeads,
+        toHeads:
+          selectedChangeGroups[selectedChangeGroups.length - 1]?.diff.toHeads,
+        patches: selectedChangeGroups.flatMap((cg) => cg.diff.patches),
+      };
+      setDiff(diff);
+      setDocHeads(docHeads);
+    } else if (selection?.type === "snapshot") {
+      setDocHeads(selection.heads);
+      setDiff({
+        patches: [],
+        fromHeads: selection.heads,
+        toHeads: selection.heads,
+      });
+    } else {
+      setDocHeads(undefined);
+      setDiff(undefined);
+    }
   }, [selectedChangeGroups, setDiff, setDocHeads, docHeads]);
 
   const handleClickOnChangeGroup = (
@@ -85,7 +108,8 @@ export const BasicHistoryLog: React.FC<{
   ) => {
     // For normal clicks without the shift key, we just select one change.
     if (!e.shiftKey) {
-      setChangeGroupSelection({
+      setSelection({
+        type: "changeGroups",
         from: changeGroup.id,
         to: changeGroup.id,
       });
@@ -94,8 +118,9 @@ export const BasicHistoryLog: React.FC<{
 
     // If the shift key is pressed, we create a multi-change selection.
     // If there's no existing change group selected, just use the latest as the starting point for the selection.
-    if (!changeGroupSelection) {
-      setChangeGroupSelection({
+    if (!selection || selection.type === "snapshot") {
+      setSelection({
+        type: "changeGroups",
         from: changeGroup.id,
         to: groupedChanges[groupedChanges.length - 1].id,
       });
@@ -104,39 +129,60 @@ export const BasicHistoryLog: React.FC<{
 
     // Extend the existing range selection appropriately
 
-    const indexOfSelectionFrom = groupedChanges.findIndex(
-      (c) => c.id === changeGroupSelection.from
-    );
+    const indexOfSelectionFrom =
+      selection.type === "changeGroups"
+        ? groupedChanges.findIndex((c) => c.id === selection.from)
+        : -1;
 
-    const indexOfSelectionTo = groupedChanges.findIndex(
-      (c) => c.id === changeGroupSelection.to
-    );
+    const indexOfSelectionTo =
+      selection.type === "changeGroups"
+        ? groupedChanges.findIndex((c) => c.id === selection.to)
+        : -1;
 
     const indexOfClickedChangeGroup = groupedChanges.findIndex(
       (c) => c.id === changeGroup.id
     );
 
     if (indexOfClickedChangeGroup < indexOfSelectionFrom) {
-      setChangeGroupSelection({
+      setSelection({
+        type: "changeGroups",
         from: changeGroup.id,
-        to: changeGroupSelection.to,
+        to: selection.to,
       });
       return;
     }
 
     if (indexOfClickedChangeGroup > indexOfSelectionTo) {
-      setChangeGroupSelection({
-        from: changeGroupSelection.from,
+      setSelection({
+        type: "changeGroups",
+        from: selection.from,
         to: changeGroup.id,
       });
       return;
     }
 
-    setChangeGroupSelection({
-      from: changeGroupSelection.from,
+    setSelection({
+      type: "changeGroups",
+      from: selection.from,
       to: changeGroup.id,
     });
   };
+
+  // When the user selects a heads in the history,
+  // some change groups get "hiddden", meaning the contents of the group
+  // aren't visible in the displayed doc.
+  const changeGroupIsVisible = (changeGroup: ChangeGroup) => {
+    if (!selection) return true;
+    const lastVisibleChangeGroupId =
+      selection.type === "changeGroups"
+        ? selection.to
+        : groupedChanges.find((cg) => cg.id === selection.heads[0]).id;
+    return (
+      groupedChanges.map((c) => c.id).indexOf(lastVisibleChangeGroupId) >=
+      groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
+    );
+  };
+
   return (
     <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
       <div className="overflow-y-auto flex-grow  pt-3">
@@ -157,7 +203,8 @@ export const BasicHistoryLog: React.FC<{
                 {!changeGroup.time && "Unknown time"}
               </div>
             )}
-            {changeGroupSelection?.to === changeGroup.id &&
+            {selection?.type === "changeGroups" &&
+              selection.to === changeGroup.id &&
               changeGroup.tags.length === 0 &&
               index !== 0 && (
                 <div
@@ -181,7 +228,20 @@ export const BasicHistoryLog: React.FC<{
               )}
             {changeGroup.tags.map((tag) => (
               <div>
-                <div className="text-xs text-gray-500 bg-gray-50 p-1 px-2 border border-yellow-500 rounded-md select-none">
+                <div
+                  className={`text-xs text-gray-500  p-1 px-2 border border-green-800 rounded-md select-none ${
+                    selection?.type === "snapshot" &&
+                    selection?.heads === tag.heads
+                      ? "bg-blue-50"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  }`}
+                  onClick={() => {
+                    setSelection({
+                      type: "snapshot",
+                      heads: tag.heads,
+                    });
+                  }}
+                >
                   <div className="flex items-center text-gray-800 text-sm">
                     <MilestoneIcon size={16} className="mr-1 mt-[2px]" />
                     <div>{tag.name}</div>
@@ -201,12 +261,6 @@ export const BasicHistoryLog: React.FC<{
                       </Button>
                     </div>
                   </div>
-                  <div
-                    className="cursor-pointer hover:text-gray-700"
-                    onClick={() => selectSnapshot(tag.heads)}
-                  >
-                    Open snapshot
-                  </div>
                 </div>
               </div>
             ))}
@@ -214,13 +268,9 @@ export const BasicHistoryLog: React.FC<{
               className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
                 selectedChangeGroups.includes(changeGroup)
                   ? "bg-blue-100"
-                  : changeGroupSelection &&
-                    groupedChanges
-                      .map((c) => c.id)
-                      .indexOf(changeGroupSelection.to) <
-                      groupedChanges.map((c) => c.id).indexOf(changeGroup.id)
-                  ? "opacity-50"
-                  : ""
+                  : changeGroupIsVisible(changeGroup)
+                  ? ""
+                  : "opacity-50"
               }`}
               data-id={changeGroup.id}
               key={changeGroup.id}
