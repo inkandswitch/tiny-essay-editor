@@ -638,11 +638,15 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
           {isHistorySidebarOpen && (
             <div className=" bg-white border-l border-gray-200 p-2">
-              <div
-                onClick={() => setIsHistorySidebarOpen(false)}
-                className=" p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
-              >
-                <ChevronsRight size={16} />
+              <div className="flex gap-2 items-center text-sm font-semibold text-gray-600 pb-2 border-b border-gray-500">
+                <div
+                  onClick={() => setIsHistorySidebarOpen(false)}
+                  className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
+                >
+                  <ChevronsRight size={16} />
+                </div>
+                <HistoryIcon size={16} />
+                History
               </div>
 
               <BasicHistoryLog

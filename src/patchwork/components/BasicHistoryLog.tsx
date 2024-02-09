@@ -1,7 +1,7 @@
 import { DiffWithProvenance, MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChangeGroup, getGroupedChanges } from "../groupChanges";
 
 import { CalendarIcon, MilestoneIcon, TrashIcon } from "lucide-react";
@@ -181,9 +181,20 @@ export const BasicHistoryLog: React.FC<{
     );
   };
 
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [scrollRef.current]);
+
   return (
-    <div className="w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
-      <div className="overflow-y-auto flex-grow  pt-3">
+    <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto flex-grow pt-3 flex flex-col"
+      >
         {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
         {groupedChanges.map((changeGroup, index) => (
