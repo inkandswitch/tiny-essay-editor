@@ -286,20 +286,25 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
 
-  const branchDiff = useMemo(() => {
+  const rawBranchDiff = useMemo(() => {
     if (selectedDraftDoc) {
-      const diff = diffWithProvenance(
+      return diffWithProvenance(
         selectedDraftDoc,
         selectedDraftDoc.branchMetadata.source.branchHeads,
         A.getHeads(selectedDraftDoc)
       );
-
-      return {
-        ...diff,
-        patches: combinePatches(diff.patches),
-      };
     }
   }, [selectedDraftDoc]);
+
+  const branchDiff = useMemo(() => {
+    //return rawBranchDiff;
+    if (rawBranchDiff) {
+      return {
+        ...rawBranchDiff,
+        patches: combinePatches(rawBranchDiff.patches),
+      };
+    }
+  }, [rawBranchDiff]);
 
   const diffForEditor =
     diffFromHistorySidebar ??

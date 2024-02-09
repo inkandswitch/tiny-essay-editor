@@ -413,7 +413,7 @@ export const CommentsSidebar = ({
       }
 
       if (patch.raw.splice) {
-        patches.push(patch.raw.splice);
+        patches.push(patch.raw.delete);
       }
 
       doPatchesEffect(patches, mergePatch);
@@ -456,8 +456,44 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
       });
     } else if (patch.action === "del") {
-      const index = patch.path[1] as number;
-      const spliceCursor = A.getCursor(doc, ["content"], index - 1);
+      let index = patch.path[1] as number;
+      let spliceCursor: A.Cursor;
+      const mainDoc = mainDocHandle.docSync();
+
+      console.log("initial index", index);
+
+      // this is bad, incrementally move the cursor backwards until we are at a character that exists in the main doc
+      do {
+        index -= 1;
+        spliceCursor = A.getCursor(doc, ["content"], index);
+      } while (
+        index > 0 &&
+        getCursorPositionSafely(mainDoc, ["content"], spliceCursor) === null
+      );
+
+      /*
+      const spliceIndexInMain = getCursorPositionSafely(
+        mainDocHandle.docSync(),
+        ["content"],
+        spliceCursor
+      );
+
+      const spliceIndexInBranch = getCursorPositionSafely(
+        doc,
+        ["content"],
+        spliceCursor
+      );
+
+      console.log(
+        index,
+        spliceIndexInMain,
+        spliceIndexInBranch,
+        spliceCursor,
+        doc.content.charAt(index)
+      );
+
+      return;
+      */
 
       // apply delete on main at the heads when this branch was forked of
       const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
