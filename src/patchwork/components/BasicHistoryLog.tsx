@@ -223,7 +223,7 @@ export const BasicHistoryLog: React.FC<{
                   }}
                 >
                   <MilestoneIcon size={12} className="inline-block mr-1" />
-                  Save a milestone here
+                  Save milestone
                 </div>
               )}
             {changeGroup.tags.map((tag) => (
