@@ -471,30 +471,6 @@ export const CommentsSidebar = ({
         getCursorPositionSafely(mainDoc, ["content"], spliceCursor) === null
       );
 
-      /*
-      const spliceIndexInMain = getCursorPositionSafely(
-        mainDocHandle.docSync(),
-        ["content"],
-        spliceCursor
-      );
-
-      const spliceIndexInBranch = getCursorPositionSafely(
-        doc,
-        ["content"],
-        spliceCursor
-      );
-
-      console.log(
-        index,
-        spliceIndexInMain,
-        spliceIndexInBranch,
-        spliceCursor,
-        doc.content.charAt(index)
-      );
-
-      return;
-      */
-
       // apply delete on main at the heads when this branch was forked of
       const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
         const spliceIndexInMain = getCursorPositionSafely(
@@ -648,7 +624,7 @@ export const CommentsSidebar = ({
                 }
               });
 
-              doPatchesEffect(patches);
+              doPatchesEffect(patches, undoPatch);
             }}
           >
             <UndoIcon className="inline m-1" />
