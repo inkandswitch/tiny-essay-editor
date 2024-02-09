@@ -361,7 +361,10 @@ export const CommentsSidebar = ({
     }
   };
 
-  const undoPatches = (patches: (A.Patch | TextPatch)[]) => {
+  const doPatchesEffect = (
+    patches: (A.Patch | TextPatch)[],
+    effect: (patch: A.Patch | TextPatch) => void
+  ) => {
     const patchesWithCursors = patches.map((patch) => ({
       ...patch,
       fromCursor: A.getCursor(doc, ["content"], patch.path[1] as number),
@@ -374,7 +377,7 @@ export const CommentsSidebar = ({
         patch.fromCursor
       );
 
-      undoPatch({
+      effect({
         ...patch,
         path: [patch.path[0], adjustedIndex, ...patch.path.slice(2)],
       });
@@ -390,8 +393,9 @@ export const CommentsSidebar = ({
       // So we gotta get cursors for the patches and then get numeric indexes
       // after each undo.
 
-      undoPatches(
-        annotation.editRangesWithComments.flatMap((range) => range.patches)
+      doPatchesEffect(
+        annotation.editRangesWithComments.flatMap((range) => range.patches),
+        undoPatch
       );
 
       changeDoc((doc) => {
@@ -401,16 +405,21 @@ export const CommentsSidebar = ({
   };
 
   const mergePatch = (patch: A.Patch | TextPatch) => {
-    if (patch.action === "splice") {
+    if ("raw" in patch) {
+      const patches = [];
+
+      if (patch.raw.delete) {
+        patches.push(patch.raw.delete);
+      }
+
+      if (patch.raw.splice) {
+        patches.push(patch.raw.splice);
+      }
+
+      doPatchesEffect(patches, mergePatch);
+    } else if (patch.action === "splice") {
       const index = patch.path[1] as number;
-
-      const spliceCursor = A.getCursor(
-        doc,
-        ["content"],
-        (patch.path[1] as number) - 1
-      );
-
-      const mainDoc = mainDocHandle.docSync();
+      const spliceCursor = A.getCursor(doc, ["content"], index - 1);
 
       // insert change on main at the heads when this branch was forked of
       const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
@@ -436,7 +445,7 @@ export const CommentsSidebar = ({
       try {
         changeDoc((doc) => {
           // todo: this throws an error but it kindof works
-          A.merge(doc, A.view(mainDoc, newDiffBase));
+          A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
         });
       } catch (err) {
         console.error(err);
@@ -447,9 +456,32 @@ export const CommentsSidebar = ({
         A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
       });
     } else if (patch.action === "del") {
-    } else if (patch.action === "replace") {
-      //mergePatch(patch.raw.delete);
-      //mergePatch(patch.raw.splice);
+      const index = patch.path[1] as number;
+      const spliceCursor = A.getCursor(doc, ["content"], index - 1);
+
+      // apply delete on main at the heads when this branch was forked of
+      const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
+        const spliceIndexInMain = getCursorPositionSafely(
+          mainDoc,
+          ["content"],
+          spliceCursor
+        );
+
+        if (spliceIndexInMain !== null) {
+          A.splice(mainDoc, ["content"], spliceIndexInMain + 1, patch.length);
+        }
+      });
+
+      // update diff base of branch to include merged change in main
+      changeDoc((doc) => {
+        doc.branchMetadata.source.branchHeads = JSON.parse(
+          JSON.stringify(newDiffBase)
+        );
+      });
+
+      changeDoc((doc) => {
+        A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
+      });
     }
   };
 
@@ -580,7 +612,7 @@ export const CommentsSidebar = ({
                 }
               });
 
-              undoPatches(patches);
+              doPatchesEffect(patches);
             }}
           >
             <UndoIcon className="inline m-1" />
