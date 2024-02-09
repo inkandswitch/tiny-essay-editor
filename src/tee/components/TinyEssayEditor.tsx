@@ -21,6 +21,7 @@ import {
   Patch,
   getCursorPosition,
   view,
+  ChangeFn,
 } from "@automerge/automerge/next";
 import { uniq } from "lodash";
 import "../../tee/index.css";
@@ -28,6 +29,7 @@ import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
 
 export const TinyEssayEditor = ({
   docUrl,
+  changeMainDoc,
   docHeads,
   diff,
   readOnly,
@@ -40,6 +42,7 @@ export const TinyEssayEditor = ({
   debugHighlights,
 }: {
   docUrl: AutomergeUrl;
+  changeMainDoc?: (changeFn: ChangeFn<MarkdownDoc>) => void;
   docHeads?: Heads;
   diff?: DiffWithProvenance;
   readOnly?: boolean;
@@ -216,6 +219,7 @@ export const TinyEssayEditor = ({
             diffBase={diffBase}
             doc={docAtHeads}
             changeDoc={changeDoc}
+            changeMainDoc={changeMainDoc}
             selection={selection}
             reviewStateFilter={reviewStateFilter}
             setReviewStateFilter={setReviewStateFilter}

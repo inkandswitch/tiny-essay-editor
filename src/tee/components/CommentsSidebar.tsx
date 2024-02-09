@@ -26,6 +26,7 @@ import {
   Reply,
   UndoIcon,
   CheckIcon,
+  MergeIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, uuid } from "@automerge/automerge";
@@ -59,6 +60,7 @@ const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
+  changeMainDoc,
   selection,
   annotationsWithPositions,
   selectedAnnotationIds,
@@ -73,6 +75,7 @@ export const CommentsSidebar = ({
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  changeMainDoc?: (changeFn: ChangeFn<MarkdownDoc>) => void;
   selection: TextSelection;
   annotationsWithPositions: TextAnnotationWithPosition[];
   selectedAnnotationIds: string[];
@@ -396,6 +399,54 @@ export const CommentsSidebar = ({
     }
   };
 
+  const mergePatch = (patch: A.Patch | TextPatch) => {
+    if (patch.action === "splice") {
+      const spliceCursor = A.getCursor(
+        doc,
+        ["content"],
+        patch.path[1] as number
+      );
+
+      changeMainDoc((doc) => {
+        A.splice(doc, ["content"], spliceCursor, 0, patch.value);
+      });
+    } else if (patch.action === "del") {
+      const spliceCursor = A.getCursor(
+        doc,
+        ["content"],
+        patch.path[1] as number
+      );
+
+      changeMainDoc((doc) => {
+        A.splice(doc, ["content"], spliceCursor, patch.length);
+      });
+    } else if (patch.action === "replace") {
+      mergePatch(patch.delete);
+      mergePatch(patch.splice);
+    }
+  };
+
+  const mergeEditsFromAnnotation = (annotation: TextAnnotation) => {
+    if (annotation.type === "patch") {
+      mergePatch(annotation.patch);
+    } else if (annotation.type === "draft") {
+      // Undoing multiple patches at once is a bit subtle!
+      // If we use the numeric indexes on the patches, things get messed up.
+      // So we gotta get cursors for the patches and then get numeric indexes
+      // after each undo.
+
+      for (const patch of annotation.editRangesWithComments.flatMap(
+        (range) => range.patches
+      )) {
+        mergePatch(patch);
+      }
+
+      changeDoc((doc) => {
+        delete doc.drafts[annotation.id];
+      });
+    }
+  };
+
   const toggleAnnotationIsMarkedReviewed = (annotation: TextAnnotation) => {
     let draftId: string;
 
@@ -535,6 +586,11 @@ export const CommentsSidebar = ({
             setPendingCommentText={setPendingCommentText}
             replyToAnnotation={() => replyToAnnotation(annotation)}
             undoEditsFromAnnotation={() => undoEditsFromAnnotation(annotation)}
+            mergeEditsFromAnnotation={
+              changeMainDoc
+                ? () => mergeEditsFromAnnotation(annotation)
+                : undefined
+            }
             toggleAnnotationIsMarkedReviewed={() =>
               toggleAnnotationIsMarkedReviewed(annotation)
             }
@@ -715,6 +771,7 @@ interface AnnotationViewProps {
   replyToAnnotation: () => void;
   undoEditsFromAnnotation: () => void;
   toggleAnnotationIsMarkedReviewed: () => void;
+  mergeEditsFromAnnotation?: () => void;
   resolveThread: () => void;
   addedComments: { threadId: string; commentIndex: number }[];
 }
@@ -733,6 +790,7 @@ export const TextAnnotationView = ({
   replyToAnnotation,
   undoEditsFromAnnotation,
   toggleAnnotationIsMarkedReviewed,
+  mergeEditsFromAnnotation,
   resolveThread,
   addedComments,
 }: AnnotationViewProps) => {
@@ -894,6 +952,16 @@ export const TextAnnotationView = ({
               <CheckIcon size={14} className="" />
               {isMarkedAsReviewed ? "Mark unreviewed" : "Mark reviewed"}
             </div>
+
+            {mergeEditsFromAnnotation && (
+              <div
+                className="flex hover:text-gray-800 gap-2 items-center"
+                onClick={() => mergeEditsFromAnnotation()}
+              >
+                <MergeIcon size={14} className="" />
+                Merge
+              </div>
+            )}
           </div>
         )}
       </div>

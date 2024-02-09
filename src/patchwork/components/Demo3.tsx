@@ -721,6 +721,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   )}
                   <TinyEssayEditor
                     docUrl={selectedBranch?.url ?? docUrl}
+                    changeMainDoc={compareWithMainFlag ? changeDoc : undefined}
                     docHeads={docHeads}
                     readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
                     key={`main-${docUrl}`}
