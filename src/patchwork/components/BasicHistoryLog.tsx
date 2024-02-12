@@ -8,6 +8,7 @@ import { CalendarIcon, MilestoneIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Heads } from "@automerge/automerge/next";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { InlineContactAvatar } from "@/DocExplorer/components/ContactAvatar copy";
 
 type MilestoneSelection = {
   type: "milestone";
@@ -191,14 +192,17 @@ export const BasicHistoryLog: React.FC<{
 
   return (
     <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
-      <div ref={scrollRef} className="overflow-y-auto pt-3 flex flex-col">
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto pt-3 flex-grow flex flex-col"
+      >
         {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
         {groupedChanges.map((changeGroup, index) => (
           <div className="relative" key={changeGroup.id}>
             {new Date(changeGroup.time).toDateString() !==
               new Date(groupedChanges[index - 1]?.time).toDateString() && (
-              <div className="text-xs text-gray-700 font-semibold mb-2 flex items-center border-b border-gray-400 p-1">
+              <div className="text-xs text-gray-700 font-semibold mt-2 mb-2 flex items-center border-b border-gray-400 p-1">
                 <CalendarIcon size={14} className="mr-1" />
                 {changeGroup.time &&
                   new Date(changeGroup.time).toLocaleString("en-US", {
@@ -211,7 +215,7 @@ export const BasicHistoryLog: React.FC<{
             )}
 
             <div
-              className={`group px-1 py-2 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
+              className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
                 selectedChangeGroups.includes(changeGroup)
                   ? "bg-blue-100"
                   : headIsVisible(changeGroup.id)
@@ -224,21 +228,52 @@ export const BasicHistoryLog: React.FC<{
                 handleClickOnChangeGroup(e, changeGroup);
               }}
             >
-              <div className="flex text-xs">
+              <div className="text-sm">
                 {changeGroup.authorUrls.length > 0 && (
-                  <div className="text-sm text-gray-600 ">
+                  <div className=" text-gray-600 inline">
                     {changeGroup.authorUrls.map((contactUrl) => (
-                      <ContactAvatar
+                      <InlineContactAvatar
                         key={contactUrl}
                         url={contactUrl}
-                        showName={true}
                         size="sm"
                       />
                     ))}
                   </div>
-                )}
+                )}{" "}
+                <div className="inline font-normal">
+                  made {changeGroup.diff.patches.length} edits
+                  {changeGroup.commentsAdded > 0
+                    ? ` and added ${changeGroup.commentsAdded} comment${
+                        changeGroup.commentsAdded > 1 ? "s" : ""
+                      }`
+                    : ""}
+                </div>
+              </div>
+
+              <div className="mt-1 font-bold flex">
+                <span
+                  className={`text-green-600  mr-2 ${
+                    changeGroup.charsAdded === 0 && "opacity-50"
+                  }`}
+                >
+                  +{changeGroup.charsAdded}
+                </span>
+                <span
+                  className={`text-red-600 mr-2 ${
+                    !changeGroup.charsDeleted && "opacity-50"
+                  }`}
+                >
+                  -{changeGroup.charsDeleted || 0}
+                </span>
+                <span
+                  className={`text-gray-500 ${
+                    changeGroup.commentsAdded === 0 && "opacity-50"
+                  }`}
+                >
+                  💬{changeGroup.commentsAdded}
+                </span>
                 {changeGroup.time && (
-                  <div className=" font-normal text-gray-500 mb-2 text-sm ml-auto mr-3">
+                  <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
                     {new Date(changeGroup.time).toLocaleString("en-US", {
                       hour: "numeric",
                       minute: "numeric",
@@ -246,32 +281,6 @@ export const BasicHistoryLog: React.FC<{
                     })}
                   </div>
                 )}
-              </div>
-
-              <div className="mb-2 font-bold">
-                <div className="inline">
-                  <span
-                    className={`text-green-600  mr-2 ${
-                      changeGroup.charsAdded === 0 && "opacity-50"
-                    }`}
-                  >
-                    +{changeGroup.charsAdded}
-                  </span>
-                  <span
-                    className={`text-red-600 mr-2 ${
-                      !changeGroup.charsDeleted && "opacity-50"
-                    }`}
-                  >
-                    -{changeGroup.charsDeleted || 0}
-                  </span>
-                  <span
-                    className={`text-gray-500 ${
-                      changeGroup.commentsAdded === 0 && "opacity-50"
-                    }`}
-                  >
-                    💬{changeGroup.commentsAdded}
-                  </span>
-                </div>
               </div>
             </div>
             {selection?.type === "changeGroups" &&

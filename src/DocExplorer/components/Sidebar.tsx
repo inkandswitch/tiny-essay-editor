@@ -1,6 +1,12 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useState } from "react";
-import { ChevronsLeft, FolderInput, Plus, Text } from "lucide-react";
+import {
+  ChevronsLeft,
+  FileQuestionIcon,
+  FolderInput,
+  Plus,
+  Text,
+} from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
@@ -17,10 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
-  if (!docTypes[node.data.type]) {
-    return <div>Unknown doc type {node.data.type}</div>;
-  }
-  const Icon = docTypes[node.data.type]?.icon;
+  const Icon = docTypes[node.data.type]?.icon ?? FileQuestionIcon;
 
   return (
     <div
@@ -38,7 +41,9 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
           node.isSelected ? "text-gray-800" : "text-gray-500"
         } inline-block align-top mt-[3px] ml-2 mx-2`}
       />
-      {node.data.name}
+      {docTypes[node.data.type]
+        ? node.data.name
+        : `Unknown type: ${node.data.type}`}
     </div>
   );
 }
