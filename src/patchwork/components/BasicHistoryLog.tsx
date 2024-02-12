@@ -303,10 +303,10 @@ export const BasicHistoryLog: React.FC<{
             {changeGroup.tags.map((tag) => (
               <div>
                 <div
-                  className={`text-xs text-gray-500  p-1 px-2 border border-green-800 rounded-md select-none ${
+                  className={`text-xs text-gray-500  py-1 px-2 border-t border-b border-gray-300 select-none ${
                     selection?.type === "milestone" &&
                     selection?.heads === tag.heads
-                      ? "bg-blue-50"
+                      ? "bg-blue-100"
                       : "bg-gray-50 hover:bg-gray-100"
                   } ${headIsVisible(tag.heads[0]) ? "" : "opacity-50"}`}
                   onClick={() => {
