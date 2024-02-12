@@ -12,15 +12,17 @@ import {
 } from "@automerge/automerge/next";
 import { TextPatch, diffWithProvenance } from "./utils";
 import { ChangeMetadata } from "@automerge/automerge-repo/dist/DocHandle";
-import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Heads, PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
-export type HeadsMarker =
+/** The caller can pass in different kinds  */
+export type HeadsMarker = { heads: Heads } & (
   | { type: "tag"; tag: Tag }
-  | { type: "mergedBranch"; branch: Branch };
+  | { type: "mergedBranch"; branch: Branch }
+);
 
 type GenericChangeGroup = {
   id: string;
@@ -30,7 +32,7 @@ type GenericChangeGroup = {
   // TODO make this a generic type
   docAtEndOfChangeGroup: Doc<MarkdownDoc>;
   diff: DiffWithProvenance;
-  tags: Tag[];
+  markers: HeadsMarker[];
   time?: number;
 };
 
@@ -121,16 +123,16 @@ export const getGroupedChanges = (
   {
     algorithm,
     numericParameter,
-    tags,
+    markers,
   }: {
     algorithm: keyof typeof GROUPINGS;
     numericParameter: number;
-    tags: Tag[];
+    markers: HeadsMarker[];
   } = {
     algorithm: "ByActorAndNumChanges",
     /** Some algorithms have a numeric parameter like batch size that the user can control */
     numericParameter: 100,
-    tags: [],
+    markers: [],
   }
 ) => {
   const changes = getAllChanges(doc);
@@ -244,10 +246,12 @@ export const getGroupedChanges = (
       // If this change is tagged, then we should end the current group.
       // This ensures we have a group boundary corresponding to the tag in the changelog.
       // TODO: The comparison here seems a little iffy; we're comparing heads to a single change hash...
-      if (tags.find((tag) => tag.heads[0] === decodedChange.hash)) {
-        currentGroup.tags = tags.filter(
-          (tag) => tag.heads[0] === decodedChange.hash
-        );
+      // how should this actually work?
+      const matchingMarkers = markers.filter(
+        (marker) => marker.heads[0] === decodedChange.hash
+      );
+      if (matchingMarkers.length > 0) {
+        currentGroup.markers = matchingMarkers;
         pushCurrentGroup();
         currentGroup = null;
       }
@@ -272,7 +276,7 @@ export const getGroupedChanges = (
         }, 0),
         commentsAdded: 0,
         diff: { patches: [], fromHeads: [], toHeads: [] },
-        tags: [],
+        markers: [],
         time:
           decodedChange.time && decodedChange.time > 0
             ? decodedChange.time

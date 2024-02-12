@@ -9,7 +9,6 @@ import {
   avatarVariants,
 } from "@/components/ui/avatar";
 import { useBlobUrl } from "@/DocExplorer/utils";
-import { useMemo } from "react";
 import { User as UserIcon } from "lucide-react";
 
 interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
@@ -28,7 +27,10 @@ const initials = (name: string) => {
     .join("");
 };
 
-export const InlineContactAvatar = ({ url }: ContactAvatarProps) => {
+export const InlineContactAvatar = ({
+  url,
+  showImage = true,
+}: ContactAvatarProps) => {
   const [maybeAnonymousContact] = useDocument<ContactDoc>(url);
   const [registeredContact] = useDocument<RegisteredContactDoc>(undefined);
 
@@ -39,17 +41,20 @@ export const InlineContactAvatar = ({ url }: ContactAvatarProps) => {
 
   const avatarBlobUrl = useBlobUrl(contact?.avatarUrl);
 
-  const avatarUrl = url && contact?.avatarUrl ? avatarBlobUrl : undefined;
+  const avatarUrl =
+    url && contact?.avatarUrl && showImage ? avatarBlobUrl : undefined;
   const name = contact?.name;
 
   return (
     <div className="inline">
       <Avatar size={"sm"} className="inline border-transparent">
-        <AvatarImage
-          src={avatarUrl}
-          alt={name}
-          className="inline h-4 w-4 align-top mt-[1px] mr-1 rounded-full"
-        />
+        {showImage && (
+          <AvatarImage
+            src={avatarUrl}
+            alt={name}
+            className="inline h-4 w-4 align-top mt-[1px] mr-1 rounded-full"
+          />
+        )}
         <AvatarFallback>{name ? initials(name) : <UserIcon />}</AvatarFallback>
       </Avatar>
 

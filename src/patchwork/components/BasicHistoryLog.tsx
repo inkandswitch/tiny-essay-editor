@@ -1,14 +1,19 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { DiffWithProvenance } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChangeGroup, getGroupedChanges } from "../groupChanges";
+import { ChangeGroup, HeadsMarker, getGroupedChanges } from "../groupChanges";
 
-import { CalendarIcon, MilestoneIcon, TrashIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  CalendarIcon,
+  MergeIcon,
+  MilestoneIcon,
+  TrashIcon,
+} from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
+import { DiffWithProvenance } from "../schema";
+import { useCurrentAccount } from "@/DocExplorer/account";
 
 type MilestoneSelection = {
   type: "milestone";
@@ -33,22 +38,30 @@ export const BasicHistoryLog: React.FC<{
   setDiff: (diff: DiffWithProvenance) => void;
 }> = ({ docUrl, setDocHeads, setDiff }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const account = useCurrentAccount();
 
   // The grouping function returns change groups starting from the latest change.
   const { groupedChanges } = useMemo(() => {
     if (!doc) return { groupedChanges: [], changeCount: 0 };
-    const branchTags = doc.branchMetadata.branches
-      .filter((b) => b.mergeMetadata)
-      .map((branch) => ({
-        name: `merged ${branch.name}`,
-        heads: branch.mergeMetadata.mergeHeads,
-        createdAt: branch.mergeMetadata.mergedAt,
-        createdBy: branch.mergeMetadata.mergedBy,
-      }));
+
+    let markers: HeadsMarker[] = [];
+
+    markers = markers.concat(
+      (doc.tags ?? []).map((tag) => ({ heads: tag.heads, type: "tag", tag }))
+    );
+    markers = markers.concat(
+      doc.branchMetadata.branches
+        .filter((branch) => branch.mergeMetadata !== undefined)
+        .map((branch) => ({
+          heads: branch.mergeMetadata!.mergeHeads,
+          type: "mergedBranch",
+          branch,
+        }))
+    );
     const { changeCount, changeGroups } = getGroupedChanges(doc, {
       algorithm: "ByAuthor",
       numericParameter: 100,
-      tags: [...(doc.tags ?? []), ...branchTags],
+      markers,
     });
 
     return {
@@ -223,7 +236,7 @@ export const BasicHistoryLog: React.FC<{
             )}
 
             <div
-              className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
+              className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none border-b border-gray-200 ${
                 selectedChangeGroups.includes(changeGroup)
                   ? "bg-blue-100"
                   : headIsVisible(changeGroup.id)
@@ -293,10 +306,10 @@ export const BasicHistoryLog: React.FC<{
             </div>
             {selection?.type === "changeGroups" &&
               selection.to === changeGroup.id &&
-              changeGroup.tags.length === 0 &&
+              changeGroup.markers.length === 0 &&
               index !== 0 && (
                 <div
-                  className="absolute bottom-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                  className="absolute bottom-[-10px] left-4 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
                   onClick={() => {
                     changeDoc((doc) => {
                       if (!doc.tags) {
@@ -306,6 +319,7 @@ export const BasicHistoryLog: React.FC<{
                         name: window.prompt("Tag name:"),
                         heads: [changeGroup.id],
                         createdAt: Date.now(),
+                        createdBy: account?.contactHandle?.url,
                       });
                     });
                   }}
@@ -314,42 +328,63 @@ export const BasicHistoryLog: React.FC<{
                   Save milestone
                 </div>
               )}
-            {changeGroup.tags.map((tag) => (
-              <div>
-                <div
-                  className={`text-xs text-gray-500  py-1 px-2 border-t border-b border-gray-300 select-none ${
-                    selection?.type === "milestone" &&
-                    selection?.heads === tag.heads
-                      ? "bg-blue-100"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  } ${headIsVisible(tag.heads[0]) ? "" : "opacity-50"}`}
-                  onClick={() => {
-                    setSelection({
-                      type: "milestone",
-                      heads: tag.heads,
-                    });
-                  }}
-                >
-                  <div className="flex items-center text-gray-800 text-sm">
-                    <MilestoneIcon size={16} className="mr-1 mt-[2px]" />
-                    <div>{tag.name}</div>
-                    <div className="ml-auto">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={() => {
-                          changeDoc((doc) => {
-                            const tagIndex = doc.tags.indexOf(tag);
-                            doc.tags.splice(tagIndex, 1);
-                          });
-                        }}
-                      >
-                        <TrashIcon size={14} />
-                      </Button>
+            {changeGroup.markers.map((marker) => (
+              <div
+                className={`text-xs text-gray-500 p-2 border-b border-gray-200 select-none ${
+                  selection?.type === "milestone" &&
+                  selection?.heads === marker.heads
+                    ? "bg-blue-100"
+                    : "bg-white hover:bg-gray-50"
+                } ${headIsVisible(marker.heads[0]) ? "" : "opacity-50"}`}
+                onClick={() => {
+                  setSelection({
+                    type: "milestone",
+                    heads: marker.heads,
+                  });
+                }}
+              >
+                {marker.type === "tag" && (
+                  <div>
+                    <div>
+                      <div className="text-sm">
+                        {marker.tag.createdBy && (
+                          <div className=" text-gray-600 inline">
+                            <InlineContactAvatar
+                              key={marker.tag.createdBy}
+                              url={marker.tag.createdBy}
+                              size="sm"
+                            />
+                          </div>
+                        )}{" "}
+                        <div className="inline font-normal">
+                          marked milestone
+                        </div>{" "}
+                        <div className="inline font-semibold">
+                          {marker.tag.name}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+                {marker.type === "mergedBranch" && (
+                  <div>
+                    <div className="text-sm">
+                      {marker.branch.mergeMetadata!.mergedBy && (
+                        <div className=" text-gray-600 inline">
+                          <InlineContactAvatar
+                            key={marker.branch.mergeMetadata!.mergedBy}
+                            url={marker.branch.mergeMetadata!.mergedBy}
+                            size="sm"
+                          />
+                        </div>
+                      )}{" "}
+                      <div className="inline font-normal">merged branch</div>{" "}
+                      <div className="inline font-semibold">
+                        {marker.branch.name}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
