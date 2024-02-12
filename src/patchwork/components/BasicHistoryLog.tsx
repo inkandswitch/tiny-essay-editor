@@ -191,10 +191,7 @@ export const BasicHistoryLog: React.FC<{
 
   return (
     <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
-      <div
-        ref={scrollRef}
-        className="overflow-y-auto flex-grow pt-3 flex flex-col"
-      >
+      <div ref={scrollRef} className="overflow-y-auto pt-3 flex flex-col">
         {/* It's easiest to think of the change group in causal order, and we just reverse it on display
           in order to get most recent stuff at the top. */}
         {groupedChanges.map((changeGroup, index) => (
