@@ -101,7 +101,10 @@ export const TinyEssayEditor = ({
     setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
   }, [actorIdToAuthor]);
 
-  const docAtHeads = docHeads ? view(doc, docHeads) : doc;
+  const docAtHeads = useMemo(
+    () => (docHeads ? view(doc, docHeads) : doc),
+    [doc, docHeads]
+  );
 
   const annotationsWithPositions = useAnnotationsWithPositions({
     doc: docAtHeads,
