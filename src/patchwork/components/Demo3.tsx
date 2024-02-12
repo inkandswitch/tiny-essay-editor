@@ -47,7 +47,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
 import { BasicHistoryLog } from "./BasicHistoryLog";
 import { Hash } from "./Hash";
-import { createBranch } from "../branches";
+import { createBranch, deleteBranch, mergeBranch } from "../branches";
 
 type DocView =
   | { type: "main" }
@@ -132,7 +132,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     }
   }, [doc, changeDoc]);
 
-  const makeBranch = useCallback(
+  const handleCreateBranch = useCallback(
     ({ name, heads }: MakeBranchOptions = {}) => {
       const branchHandle = createBranch({
         repo,
@@ -149,7 +149,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const moveCurrentChangesToBranch = () => {
     // todo: only pull in changes the author made themselves?
-    makeBranch({ heads: sessionStartHeads });
+    handleCreateBranch({ heads: sessionStartHeads });
 
     // revert content of main to before edit session started
     const textAtMilestone = A.view(doc, sessionStartHeads).content;
@@ -160,40 +160,21 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     setIsHoveringYankToBranchOption(false);
   };
 
-  const deleteBranch = useCallback(
-    (draftUrl: AutomergeUrl) => {
-      const docHandle = repo.find<MarkdownDoc>(docUrl);
-      docHandle.change((doc) => {
-        const index = doc.branchMetadata.branches.findIndex(
-          (copy) => copy.url === draftUrl
-        );
-        if (index !== -1) {
-          doc.branchMetadata.branches.splice(index, 1);
-        }
-      });
+  const handleDeleteBranch = useCallback(
+    (branchUrl: AutomergeUrl) => {
+      deleteBranch({ docHandle: handle, branchUrl });
     },
-    [docUrl, repo]
+    [handle]
   );
 
-  const mergeBranch = useCallback(
+  const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
       const branchHandle = repo.find<MarkdownDoc>(branchUrl);
       const docHandle = repo.find<MarkdownDoc>(docUrl);
-      docHandle.merge(branchHandle);
-      docHandle.change((doc) => {
-        const branch = doc.branchMetadata.branches.find(
-          (branch) => branch.url === branchUrl
-        );
-
-        if (!branch) {
-          console.warn("Branch not found in doc metadata", branchUrl);
-        }
-
-        branch.mergeMetadata = {
-          mergedAt: Date.now(),
-          mergeHeads: A.getHeads(branchHandle.docSync()),
-          mergedBy: account?.contactHandle?.url,
-        };
+      mergeBranch({
+        docHandle,
+        branchHandle,
+        mergedBy: account?.contactHandle?.url,
       });
     },
     [docUrl, repo, account?.contactHandle?.url]
@@ -340,7 +321,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 value={JSON.stringify(selectedDocView)}
                 onValueChange={(value) => {
                   if (value === "__newDraft") {
-                    makeBranch();
+                    handleCreateBranch();
                   } else if (value === "__moveChangesToDraft") {
                     moveCurrentChangesToBranch();
                   } else {
@@ -479,7 +460,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                             "Are you sure you want to delete this branch?"
                           )
                         ) {
-                          deleteBranch(selectedBranch.url);
+                          handleDeleteBranch(selectedBranch.url);
                           setSelectedDocView({ type: "main" });
                         }
                       }}
@@ -526,7 +507,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   <>
                     <Button
                       onClick={(e) => {
-                        mergeBranch(selectedBranch.url);
+                        handleMergeBranch(selectedBranch.url);
                         setSelectedDocView({ type: "main" });
                         e.stopPropagation();
                       }}

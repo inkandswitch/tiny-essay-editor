@@ -47,3 +47,47 @@ export const createBranch = <DocType extends Branchable>({
 
   return branchHandle;
 };
+
+export const mergeBranch = <DocType extends Branchable>({
+  docHandle,
+  branchHandle,
+  mergedBy,
+}: {
+  docHandle: DocHandle<DocType>;
+  branchHandle: DocHandle<DocType>;
+  mergedBy: AutomergeUrl;
+}) => {
+  docHandle.merge(branchHandle);
+  docHandle.change((doc) => {
+    const branch = doc.branchMetadata.branches.find(
+      (branch) => branch.url === branchHandle.url
+    );
+
+    if (!branch) {
+      console.warn("Branch not found in doc metadata", branchHandle.url);
+    }
+
+    branch.mergeMetadata = {
+      mergedAt: Date.now(),
+      mergeHeads: getHeads(branchHandle.docSync()),
+      mergedBy,
+    };
+  });
+};
+
+export const deleteBranch = <DocType extends Branchable>({
+  docHandle,
+  branchUrl,
+}: {
+  docHandle: DocHandle<DocType>;
+  branchUrl: AutomergeUrl;
+}) => {
+  docHandle.change((doc) => {
+    const index = doc.branchMetadata.branches.findIndex(
+      (copy) => copy.url === branchUrl
+    );
+    if (index !== -1) {
+      doc.branchMetadata.branches.splice(index, 1);
+    }
+  });
+};
