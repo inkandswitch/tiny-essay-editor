@@ -39,7 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { collaborativePlugin, remoteStateField, SelectionData, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
+import { type SelectionData, collaborativePlugin, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
 import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
@@ -75,7 +75,7 @@ export function MarkdownEditor({
   const account = useCurrentAccount();
 
   // TODO: "loading"
-  const userId = account?.contactHandle?.url || "loading";
+  const userId = account?.contactHandle?.url;
   const userDoc = account?.contactHandle?.docSync();
 
    // Initialize userMetadata as a ref
@@ -141,7 +141,7 @@ export function MarkdownEditor({
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
-    const cursorPlugin = collaborativePlugin(remoteStateField, setLocalSelectionsWithUserData);
+    const cursorPlugin = collaborativePlugin(setLocalSelectionsWithUserData);
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -175,7 +175,6 @@ export function MarkdownEditor({
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
-        remoteStateField,
         cursorPlugin,
         frontmatterPlugin,
         threadsField,

@@ -1,5 +1,4 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
-
 import { SelectionData } from ".";
 
 export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
@@ -24,4 +23,3 @@ export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: Se
 }, {
   decorations: plugin => plugin.view.state.field(remoteStateField)
 });
-

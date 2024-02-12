@@ -23,7 +23,7 @@ import { CursorWidget } from "./CursorWidget";
 export const setPeerSelectionData = StateEffect.define<UserSelectionData[]>();
 
 // State field to track remote selections and cursors
-export const remoteStateField = StateField.define<DecorationSet>({
+const remoteStateField = StateField.define<DecorationSet>({
   create() {
     return Decoration.none;
   },
@@ -42,7 +42,7 @@ export const remoteStateField = StateField.define<DecorationSet>({
           // Now mark for highlight any selected ranges.
           const ranges = selection.selections.filter(({from, to}) => (from !== to)).map(({from, to}) => 
             Decoration.mark({class: "remote-selection", attributes: {style: `background-color: color-mix(in srgb, ${user.color} 20%, transparent)`}}).range(from, to)
-          ); // the 40 is for 25% opacity
+          );
 
           // Add all this to the decorations set. (We could optimize this by avoiding recreating unchanged values later.)
           decorations = decorations.update({add: [widget, ...ranges], sort: true});
@@ -54,7 +54,7 @@ export const remoteStateField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f)
 });
 
-export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
+const emitterPlugin = (setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
   view: EditorView;
   constructor(view: EditorView) {
     this.view = view
@@ -76,3 +76,7 @@ export const collaborativePlugin = (remoteStateField, setLocalSelections: (s: Se
 }, {
   decorations: plugin => plugin.view.state.field(remoteStateField)
 });
+
+export const collaborativePlugin = (setLocalSelections: (s: SelectionData) => void) => [
+  emitterPlugin(setLocalSelections), remoteStateField
+] 
