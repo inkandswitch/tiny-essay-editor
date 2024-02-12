@@ -7,8 +7,7 @@ import { ChangeGroup, getGroupedChanges } from "../groupChanges";
 import { CalendarIcon, MilestoneIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Heads } from "@automerge/automerge/next";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { InlineContactAvatar } from "@/DocExplorer/components/ContactAvatar copy";
+import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 
 type MilestoneSelection = {
   type: "milestone";
@@ -37,10 +36,18 @@ export const BasicHistoryLog: React.FC<{
   // The grouping function returns change groups starting from the latest change.
   const { groupedChanges } = useMemo(() => {
     if (!doc) return { groupedChanges: [], changeCount: 0 };
+    const branchTags = doc.branchMetadata.branches
+      .filter((b) => b.mergeMetadata)
+      .map((branch) => ({
+        name: `merged ${branch.name}`,
+        heads: branch.mergeMetadata.mergeHeads,
+        createdAt: branch.mergeMetadata.mergedAt,
+        createdBy: branch.mergeMetadata.mergedBy,
+      }));
     const { changeCount, changeGroups } = getGroupedChanges(doc, {
       algorithm: "ByAuthor",
       numericParameter: 100,
-      tags: doc.tags ?? [],
+      tags: [...(doc.tags ?? []), ...branchTags],
     });
 
     return {
@@ -191,7 +198,7 @@ export const BasicHistoryLog: React.FC<{
   }, [scrollRef.current]);
 
   return (
-    <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 px-2">
+    <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600">
       <div
         ref={scrollRef}
         className="overflow-y-auto pt-3 flex-grow flex flex-col"

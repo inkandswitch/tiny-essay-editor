@@ -194,13 +194,27 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   );
 
   const mergeBranch = useCallback(
-    (draftUrl: AutomergeUrl) => {
-      const draftHandle = repo.find<MarkdownDoc>(draftUrl);
+    (branchUrl: AutomergeUrl) => {
+      const branchHandle = repo.find<MarkdownDoc>(branchUrl);
       const docHandle = repo.find<MarkdownDoc>(docUrl);
-      docHandle.merge(draftHandle);
-      deleteBranch(draftUrl);
+      docHandle.merge(branchHandle);
+      docHandle.change((doc) => {
+        const branch = doc.branchMetadata.branches.find(
+          (branch) => branch.url === branchUrl
+        );
+
+        if (!branch) {
+          console.warn("Branch not found in doc metadata", branchUrl);
+        }
+
+        branch.mergeMetadata = {
+          mergedAt: Date.now(),
+          mergeHeads: A.getHeads(branchHandle.docSync()),
+          mergedBy: account?.contactHandle?.url,
+        };
+      });
     },
-    [deleteBranch, docUrl, repo]
+    [docUrl, repo, account?.contactHandle?.url]
   );
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
@@ -384,43 +398,48 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       Branches
                     </SelectLabel>
 
-                    {branches.map((branch) => (
-                      <SelectItem
-                        key={branch.url}
-                        className={`${
-                          selectedBranch?.url === branch.url
-                            ? "font-medium"
-                            : ""
-                        }`}
-                        value={JSON.stringify({
-                          type: "branch",
-                          url: branch.url,
-                        })}
-                      >
-                        <div>{branch.name}</div>
-                        <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                          {branch.createdAt && (
-                            <div>{getRelativeTimeString(branch.createdAt)}</div>
-                          )}
-                          <span>by</span>
-                          {branch.createdBy && (
-                            <ContactAvatar
-                              url={branch.createdBy}
-                              size="sm"
-                              showName
-                              showImage={false}
-                            />
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {/* for now only show open branches here; maybe in future show a list of merged branches */}
+                    {branches
+                      .filter((branch) => branch.mergeMetadata === undefined)
+                      .map((branch) => (
+                        <SelectItem
+                          key={branch.url}
+                          className={`${
+                            selectedBranch?.url === branch.url
+                              ? "font-medium"
+                              : ""
+                          }`}
+                          value={JSON.stringify({
+                            type: "branch",
+                            url: branch.url,
+                          })}
+                        >
+                          <div>{branch.name}</div>
+                          <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                            {branch.createdAt && (
+                              <div>
+                                {getRelativeTimeString(branch.createdAt)}
+                              </div>
+                            )}
+                            <span>by</span>
+                            {branch.createdBy && (
+                              <ContactAvatar
+                                url={branch.createdBy}
+                                size="sm"
+                                showName
+                                showImage={false}
+                              />
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
                     <SelectItem
                       value={"__newDraft"}
                       key={"__newDraft"}
                       className="font-regular"
                     >
                       <PlusIcon className="inline mr-1" size={12} />
-                      New Branch
+                      Create new branch
                     </SelectItem>
                     {selectedDocView.type === "main" &&
                       currentEditSessionDiff &&
@@ -641,7 +660,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           </div>
 
           {isHistorySidebarOpen && (
-            <div className=" bg-white border-l border-gray-200 p-2">
+            <div className=" bg-white border-l border-gray-200 py-2">
               <div className="flex gap-2 items-center text-sm font-semibold text-gray-600 pb-2 border-b border-gray-500">
                 <div
                   onClick={() => setIsHistorySidebarOpen(false)}

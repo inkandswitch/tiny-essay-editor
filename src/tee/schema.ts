@@ -134,10 +134,21 @@ type SpatialBranchable = {
 };
 
 export type Branch = {
-  url: AutomergeUrl;
-  createdAt: number;
   name: string;
+  /** URL pointing to the clone doc */
+  url: AutomergeUrl;
+  /** timestamp when the branch was created */
+  createdAt: number;
+  /** author contact doc URL for branch creator */
   createdBy?: AutomergeUrl;
+  mergeMetadata?: {
+    /** timestamp when the branch was merged */
+    mergedAt: number;
+    /** Heads of the branch at the point it was merged */
+    mergeHeads: A.Heads;
+    /** author contact doc URL for branch merger */
+    mergedBy: AutomergeUrl;
+  };
 };
 
 export type Branchable = {
