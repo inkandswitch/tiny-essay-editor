@@ -1,4 +1,5 @@
-import { DiffWithProvenance, MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
+import { DiffWithProvenance } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import React, { useState } from "react";

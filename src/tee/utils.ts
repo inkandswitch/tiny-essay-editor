@@ -4,10 +4,10 @@ import {
   TextAnnotationWithPosition,
   MarkdownDoc,
   PatchAnnotation,
-  DiffWithProvenance,
   ResolvedEditRange,
   Comment,
 } from "./schema";
+import { DiffWithProvenance } from "@/patchwork/schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
 import { ReactElement, useEffect, useMemo, useState } from "react";

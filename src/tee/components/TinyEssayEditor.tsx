@@ -4,7 +4,8 @@ import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { DiffWithProvenance, MarkdownDoc } from "../schema";
+import { MarkdownDoc } from "../schema";
+import { DiffWithProvenance } from "@/patchwork/schema";
 
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";

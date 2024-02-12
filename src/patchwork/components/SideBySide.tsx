@@ -1,6 +1,7 @@
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { MarkdownEditor, TextSelection } from "@/tee/components/MarkdownEditor";
-import { SpatialBranch, MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
+import { SpatialBranch } from "../schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {

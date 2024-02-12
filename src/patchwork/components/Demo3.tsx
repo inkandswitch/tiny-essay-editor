@@ -1,4 +1,5 @@
-import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
+import { DiffWithProvenance, Tag } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -46,6 +47,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
 import { BasicHistoryLog } from "./BasicHistoryLog";
 import { Hash } from "./Hash";
+import { createBranch } from "../branches";
 
 type DocView =
   | { type: "main" }
@@ -54,7 +56,7 @@ type DocView =
       url: AutomergeUrl;
     };
 
-interface CreateBranchOptions {
+interface MakeBranchOptions {
   name?: string;
   heads?: A.Heads;
 }
@@ -130,44 +132,24 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     }
   }, [doc, changeDoc]);
 
-  const createBranch = useCallback(
-    ({ name, heads }: CreateBranchOptions = {}) => {
-      const docHandle = repo.find<MarkdownDoc>(docUrl);
-      const newHandle = repo.clone<MarkdownDoc>(docHandle);
-      const draft = {
-        name:
-          name ?? `Branch #${(doc?.branchMetadata?.branches?.length ?? 0) + 1}`,
-        createdAt: Date.now(),
+  const makeBranch = useCallback(
+    ({ name, heads }: MakeBranchOptions = {}) => {
+      const branchHandle = createBranch({
+        repo,
+        handle,
+        name,
+        heads,
         createdBy: account?.contactHandle?.url,
-        url: newHandle.url,
-      };
-
-      // This is a terribly intricate dance because we store the draft metadata in the doc itself.
-      // We need to make sure that the copyheads for the draft doc is set after the original doc has the new draft metadata.
-      // We also need to merge the original handle into the draft after we update the draft metadata.
-      // This can all be avoided by storing draft metadata outside of the document itself.
-
-      docHandle.change((doc) => {
-        doc.branchMetadata.branches.unshift(draft);
       });
-
-      newHandle.merge(docHandle);
-
-      newHandle.change((doc) => {
-        doc.branchMetadata.source = {
-          url: docUrl,
-          branchHeads: heads ?? A.getHeads(docHandle.docSync()),
-        };
-      });
-      setSelectedDocView({ type: "branch", url: newHandle.url });
-      return newHandle.url;
+      setSelectedDocView({ type: "branch", url: branchHandle.url });
+      return branchHandle.url;
     },
-    [doc, docUrl, repo, account?.contactHandle?.url]
+    [repo, handle, account?.contactHandle?.url]
   );
 
   const moveCurrentChangesToBranch = () => {
     // todo: only pull in changes the author made themselves?
-    createBranch({ heads: sessionStartHeads });
+    makeBranch({ heads: sessionStartHeads });
 
     // revert content of main to before edit session started
     const textAtMilestone = A.view(doc, sessionStartHeads).content;
@@ -358,7 +340,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 value={JSON.stringify(selectedDocView)}
                 onValueChange={(value) => {
                   if (value === "__newDraft") {
-                    createBranch();
+                    makeBranch();
                   } else if (value === "__moveChangesToDraft") {
                     moveCurrentChangesToBranch();
                   } else {

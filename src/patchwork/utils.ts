@@ -1,4 +1,4 @@
-import { DiffWithProvenance } from "@/tee/schema";
+import { DiffWithProvenance } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { useEffect, useMemo, useRef } from "react";

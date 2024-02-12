@@ -1,4 +1,5 @@
-import { DiffWithProvenance, MarkdownDoc, Tag } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
+import { Branch, DiffWithProvenance, Tag } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   Doc,
@@ -16,6 +17,10 @@ import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be ab
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
+
+export type HeadsMarker =
+  | { type: "tag"; tag: Tag }
+  | { type: "mergedBranch"; branch: Branch };
 
 type GenericChangeGroup = {
   id: string;

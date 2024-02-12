@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { MarkdownEditorSpatialBranches } from "@/tee/components/MarkdownEditorSpatialBranches";
-import { SpatialBranch, MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc } from "@/tee/schema";
+import { SpatialBranch } from "../schema";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {

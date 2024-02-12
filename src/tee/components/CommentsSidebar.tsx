@@ -6,11 +6,11 @@ import {
   MarkdownDoc,
   DraftAnnotation,
   ThreadAnnotation,
-  DiffWithProvenance,
   PersistedDraft,
   EditRange,
   PatchAnnotation,
 } from "../schema";
+import { DiffWithProvenance } from "@/patchwork/schema";
 
 import { groupBy, uniq } from "lodash";
 import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
