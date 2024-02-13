@@ -68,7 +68,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const account = useCurrentAccount();
 
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
-  const [showYankPreviewDiff, setShowYankPreviewDiff] = useState(false);
+  const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
+    useState(false);
+  const [showChangesFlag, setShowChangesFlag] = useState<boolean>(false);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
 
@@ -85,6 +87,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     useState<DiffWithProvenance>();
   const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
     useState<A.Heads>();
+
+  const showDiff = showChangesFlag || isHoveringYankToBranchOption;
 
   useEffect(() => {
     if (!doc || sessionStartHeads) {
@@ -153,7 +157,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
       A.updateText(doc, ["content"], textAtMilestone);
       setSessionStartHeads(A.getHeads(doc));
     });
-    setShowYankPreviewDiff(false);
+    setIsHoveringYankToBranchOption(false);
   };
 
   const handleDeleteBranch = useCallback(
@@ -254,13 +258,37 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
 
+  const rawBranchDiff = useMemo(() => {
+    if (selectedDraftDoc) {
+      return diffWithProvenance(
+        selectedDraftDoc,
+        selectedDraftDoc.branchMetadata.source.branchHeads,
+        A.getHeads(selectedDraftDoc)
+      );
+    }
+  }, [selectedDraftDoc]);
+
+  const branchDiff = useMemo(() => {
+    //return rawBranchDiff;
+    if (rawBranchDiff) {
+      return {
+        ...rawBranchDiff,
+        patches: combinePatches(rawBranchDiff.patches),
+      };
+    }
+  }, [rawBranchDiff]);
+
   const diffForEditor =
     diffFromHistorySidebar ??
-    (showYankPreviewDiff ? currentEditSessionDiff : undefined);
+    (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
 
   const diffBase =
     diffFromHistorySidebar?.fromHeads ??
-    (showYankPreviewDiff ? currentEditSessionDiff?.fromHeads : undefined);
+    (showDiff
+      ? branchDiff
+        ? branchDiff?.fromHeads
+        : currentEditSessionDiff?.fromHeads
+      : undefined);
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
 
@@ -383,8 +411,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                           value={"__moveChangesToDraft"}
                           key={"__moveChangesToDraft"}
                           className="font-regular"
-                          onMouseEnter={() => setShowYankPreviewDiff(true)}
-                          onMouseLeave={() => setShowYankPreviewDiff(false)}
+                          onMouseEnter={() =>
+                            setIsHoveringYankToBranchOption(true)
+                          }
+                          onMouseLeave={() =>
+                            setIsHoveringYankToBranchOption(false)
+                          }
                         >
                           <SplitIcon className="inline mr-1" size={12} />
                           Move my changes (
@@ -497,6 +529,20 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     </Button>
                   </>
                 )}
+                {selectedDocView.type === "branch" && (
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="diff-overlay-checkbox"
+                      className="mr-1"
+                      checked={showChangesFlag}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setShowChangesFlag(!showChangesFlag)
+                      }
+                    />
+                    <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                  </div>
+                )}
 
                 {selectedDocView.type === "branch" && (
                   <div className="flex items-center">
@@ -509,7 +555,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         setCompareWithMainFlag(!compareWithMainFlag)
                       }
                     />
-                    <label htmlFor="diff-overlay-checkbox">Side by side</label>
+                    <label htmlFor="diff-overlay-checkbox">
+                      Compare with main
+                    </label>
                   </div>
                 )}
               </div>
@@ -550,13 +598,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     <TinyEssayEditor
                       docUrl={docUrl}
                       key={`compare-${docUrl}`}
-                      diff={
-                        showYankPreviewDiff ? currentEditSessionDiff : undefined
-                      }
+                      diff={showDiff ? currentEditSessionDiff : undefined}
                       diffBase={
-                        showYankPreviewDiff
-                          ? currentEditSessionDiff?.fromHeads
-                          : undefined
+                        showDiff ? currentEditSessionDiff?.fromHeads : undefined
                       }
                       showDiffAsComments
                       actorIdToAuthor={actorIdToAuthor}
