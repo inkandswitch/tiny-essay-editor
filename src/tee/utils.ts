@@ -608,15 +608,17 @@ export const useAnnotationsWithPositions = ({
   const scrollPosition = useScrollPosition(editorRef);
 
   const threadsWithPositions = useMemo(
-    () =>
-      view
+    () => {
+      if (!doc) return [];
+      return view
         ? getVisibleTheadsWithPos({
             threads,
             doc,
             view,
             selectedAnnotationIds,
           })
-        : [],
+        : [];
+    },
 
     // the scrollPosition dependency is implicit so the linter thinks it's not needed;
     // but actually it's critical for making comments appear correctly as scrolling happens
