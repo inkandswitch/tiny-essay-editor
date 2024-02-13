@@ -144,6 +144,7 @@ export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
   repo: Repo
 ): HeadsMarker[] => {
   const doc = handle.docSync();
+  if (!doc) return [];
   /** Mark tags aka milestones */
   let markers: HeadsMarker[] = (doc.tags ?? []).map((tag: Tag) => ({
     heads: tag.heads,

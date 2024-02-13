@@ -89,7 +89,11 @@ export const BasicHistoryLog: React.FC<{
   // When the grouping changes, we diff back to the "history start point" if present.
   // This means that on a branch, when you open the history you'll see the diff from the branch point to the latest change.
   useEffect(() => {
-    if (selection || !groupedChanges.length || lastHiddenChangeGroupIndex === 0)
+    if (
+      selection ||
+      !groupedChanges.length ||
+      lastHiddenChangeGroupIndex === -1
+    )
       return;
     setSelection({
       type: "changeGroups",
@@ -276,8 +280,8 @@ export const BasicHistoryLog: React.FC<{
             return null;
           }
           return (
-            <div>
-              <div className="relative" key={changeGroup.id}>
+            <div key={changeGroup.id}>
+              <div className="relative">
                 {new Date(changeGroup.time).toDateString() !==
                   new Date(groupedChanges[index - 1]?.time).toDateString() && (
                   <div className="text-xs text-gray-700 font-semibold mt-2 mb-2 flex items-center border-b border-gray-400 p-1">
