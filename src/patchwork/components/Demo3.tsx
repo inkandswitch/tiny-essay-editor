@@ -643,6 +643,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
               <div className="flex-grow overflow-hidden">
                 <BasicHistoryLog
+                  // set key to trigger re-mount on branch change
+                  key={selectedBranch?.url ?? docUrl}
                   docUrl={selectedBranch?.url ?? docUrl}
                   setDocHeads={setDocHeadsFromHistorySidebar}
                   setDiff={setDiffFromHistorySidebar}

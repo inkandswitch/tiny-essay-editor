@@ -13,11 +13,10 @@ import {
 } from "../groupChanges";
 
 import { CalendarIcon, MilestoneIcon } from "lucide-react";
-import { Heads, getHeads } from "@automerge/automerge/next";
+import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { DiffWithProvenance } from "../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { isEqual } from "lodash";
 
 type MilestoneSelection = {
   type: "milestone";
