@@ -127,7 +127,11 @@ export const SpatialHistoryPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
       const { changeGroups } = getGroupedChanges(doc, {
         algorithm: activeGroupingAlgorithm,
         numericParameter: groupingNumericParameter,
-        tags: doc.tags ?? [],
+        markers: (doc.tags ?? []).map((tag) => ({
+          heads: tag.heads,
+          type: "tag",
+          tag,
+        })),
       });
 
       let versions: SnippetVersion[] = [];

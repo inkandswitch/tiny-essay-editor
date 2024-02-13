@@ -54,6 +54,9 @@ export const DraftsPlayground: React.FC<{ docUrl: AutomergeUrl }> = ({
           name,
           createdAt: Date.now(),
           url: newHandle.url,
+          branchHeads: JSON.parse(
+            JSON.stringify(A.getHeads(docHandle.docSync()))
+          ),
         });
       });
 

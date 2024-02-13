@@ -104,7 +104,11 @@ export const ConfigurableHistoryLog: React.FC<{
     const { changeCount, changeGroups } = getGroupedChanges(doc, {
       algorithm: activeGroupingAlgorithm,
       numericParameter: groupingNumericParameter,
-      tags: doc.tags ?? [],
+      markers: (doc.tags ?? []).map((tag) => ({
+        heads: tag.heads,
+        type: "tag",
+        tag,
+      })),
     });
 
     return {
@@ -377,7 +381,7 @@ export const ConfigurableHistoryLog: React.FC<{
               </div>
             )}
             {changeGroupSelection?.to === changeGroup.id &&
-              changeGroup.tags.length === 0 && (
+              changeGroup.markers.length === 0 && (
                 <div
                   className="absolute top-[-10px] left-4 bg-white rounded-sm border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
                   onClick={() => {
@@ -397,27 +401,29 @@ export const ConfigurableHistoryLog: React.FC<{
                   Save a snapshot
                 </div>
               )}
-            {changeGroup.tags.map((tag) => (
-              <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
-                <SaveIcon size={12} className="mr-1 mt-[2px]" />
-                <div>{tag.name}</div>
-                <div className="ml-auto">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    onClick={() => {
-                      changeDoc((doc) => {
-                        const tagIndex = doc.tags.indexOf(tag);
-                        doc.tags.splice(tagIndex, 1);
-                      });
-                    }}
-                  >
-                    <TrashIcon size={14} />
-                  </Button>
+            {changeGroup.markers.map((marker) =>
+              marker.type === "tag" ? (
+                <div className="bg-gray-200 px-1 flex border border-gray-200 my-1 items-center text-gray-800">
+                  <SaveIcon size={12} className="mr-1 mt-[2px]" />
+                  <div>{marker.tag.name}</div>
+                  <div className="ml-auto">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        changeDoc((doc) => {
+                          const tagIndex = doc.tags.indexOf(marker.tag);
+                          doc.tags.splice(tagIndex, 1);
+                        });
+                      }}
+                    >
+                      <TrashIcon size={14} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ) : null
+            )}
             <div
               className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent  border-b border-gray-400 select-none ${
                 selectedChangeGroups.includes(changeGroup)
