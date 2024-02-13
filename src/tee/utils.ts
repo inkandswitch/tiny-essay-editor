@@ -491,7 +491,7 @@ export const useAnnotationsWithPositions = ({
 }) => {
   // We first get integer positions for each thread and cache that.
   const threads = useMemo(() => {
-    if (!doc) return [];
+    if (!doc || !doc.content) return [];
 
     /** Create some virtual inferred threads based on the diff,
      *  for patches which haven't been manually stored yet
