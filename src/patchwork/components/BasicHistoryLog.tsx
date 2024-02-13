@@ -13,10 +13,11 @@ import {
 } from "../groupChanges";
 
 import { CalendarIcon, MilestoneIcon } from "lucide-react";
-import { Heads } from "@automerge/automerge/next";
+import { Heads, getHeads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { DiffWithProvenance } from "../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
+import { isEqual } from "lodash";
 
 type MilestoneSelection = {
   type: "milestone";
@@ -232,7 +233,6 @@ export const BasicHistoryLog: React.FC<{
             </span>
           </div>
         )}
-
         {groupedChanges.map((changeGroup, index) => {
           // GL note 2/13
           // The logic here is a bit weird because of how we associate markers and change groups.
@@ -483,6 +483,24 @@ export const BasicHistoryLog: React.FC<{
             </div>
           );
         })}
+        <div
+          className={`flex cursor-pointer justify-center items-center text-red-800 ${
+            docHeads.length > 0 ? "opacity-50" : ""
+          }`}
+          onClick={() => setSelection(null)}
+        >
+          <hr
+            className={`border-dashed flex-grow mr-2 border-red-800 ${
+              docHeads.length > 0 ? "opacity-50" : ""
+            }`}
+          />
+          now
+          <hr
+            className={`border-dashed flex-grow ml-2 border-red-800 ${
+              docHeads.length > 0 ? "opacity-50" : ""
+            }`}
+          />
+        </div>
       </div>
     </div>
   );
