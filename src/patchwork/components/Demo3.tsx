@@ -623,7 +623,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           </div>
 
           {isHistorySidebarOpen && (
-            <div className=" bg-white border-l border-gray-200 py-2">
+            <div className=" bg-white border-l border-gray-200 py-2 h-full overflow-hidden flex flex-col">
               <div className="flex gap-2 items-center text-sm font-semibold text-gray-600 pb-2 border-b border-gray-500">
                 <div
                   onClick={() => setIsHistorySidebarOpen(false)}
@@ -635,11 +635,13 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 History
               </div>
 
-              <BasicHistoryLog
-                docUrl={selectedBranch?.url ?? docUrl}
-                setDocHeads={setDocHeadsFromHistorySidebar}
-                setDiff={setDiffFromHistorySidebar}
-              />
+              <div className="flex-grow overflow-hidden">
+                <BasicHistoryLog
+                  docUrl={selectedBranch?.url ?? docUrl}
+                  setDocHeads={setDocHeadsFromHistorySidebar}
+                  setDiff={setDiffFromHistorySidebar}
+                />
+              </div>
             </div>
           )}
         </div>
