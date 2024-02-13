@@ -37,6 +37,9 @@ type GenericChangeGroup = {
 };
 
 type TEEChangeGroup = {
+  /* number of distinct edit ranges */
+  editCount: number;
+
   charsAdded: number;
   charsDeleted: number;
   headings: Heading[];
@@ -206,6 +209,9 @@ export const getGroupedChanges = (
       currentGroup.docAtEndOfChangeGroup,
       currentGroup.diff.patches
     );
+    currentGroup.editCount = currentGroup.diff.patches.filter(
+      (p) => p.path[0] === "content"
+    ).length;
     changeGroups.push(currentGroup);
   };
 
@@ -286,6 +292,7 @@ export const getGroupedChanges = (
           : [],
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
         headings: [],
+        editCount: 0,
       };
     }
   }

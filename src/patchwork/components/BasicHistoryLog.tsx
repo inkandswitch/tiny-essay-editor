@@ -261,10 +261,20 @@ export const BasicHistoryLog: React.FC<{
                     ))}
                   </div>
                 )}{" "}
+                {changeGroup.editCount > 0 && (
+                  <div className="inline font-normal">
+                    made{" "}
+                    {changeGroup.editCount === 1 ? "an" : changeGroup.editCount}{" "}
+                    edit
+                    {changeGroup.editCount > 1 ? "s" : ""}
+                  </div>
+                )}
+                {changeGroup.editCount > 0 && changeGroup.commentsAdded > 0 && (
+                  <div className="inline font-normal"> and </div>
+                )}
                 <div className="inline font-normal">
-                  made {changeGroup.diff.patches.length} edits
                   {changeGroup.commentsAdded > 0
-                    ? ` and added ${changeGroup.commentsAdded} comment${
+                    ? `added ${changeGroup.commentsAdded} comment${
                         changeGroup.commentsAdded > 1 ? "s" : ""
                       }`
                     : ""}
