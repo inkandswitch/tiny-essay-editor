@@ -540,7 +540,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         setShowChangesFlag(!showChangesFlag)
                       }
                     />
-                    <label htmlFor="diff-overlay-checkbox">Show changes</label>
+                    <label htmlFor="diff-overlay-checkbox">
+                      Highlight changes
+                    </label>
                   </div>
                 )}
 
@@ -555,7 +557,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         setCompareWithMainFlag(!compareWithMainFlag)
                       }
                     />
-                    <label htmlFor="side-by-side">Side-by-side</label>
+                    <label htmlFor="side-by-side">Show branch and main</label>
                   </div>
                 )}
               </div>
@@ -614,6 +616,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     diffBase={diffBase}
                     showDiffAsComments
                     actorIdToAuthor={actorIdToAuthor}
+                    showBranchLayers={
+                      selectedDocView.type === "branch" && !compareWithMainFlag
+                    }
+                    selectMainBranch={() =>
+                      setSelectedDocView({ type: "main" })
+                    }
                   />
                 </div>
               </div>

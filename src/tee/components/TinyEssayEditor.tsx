@@ -40,6 +40,8 @@ export const TinyEssayEditor = ({
   actorIdToAuthor,
   onChangeSelection,
   debugHighlights,
+  showBranchLayers,
+  selectMainBranch,
 }: {
   docUrl: AutomergeUrl;
   mainDocHandle?: DocHandle<MarkdownDoc>;
@@ -53,6 +55,8 @@ export const TinyEssayEditor = ({
   onChangeSelection?: (selection: TextSelection) => void;
   actorIdToAuthor?: Record<ActorId, AutomergeUrl>;
   debugHighlights?: DebugHighlight[];
+  showBranchLayers?: boolean;
+  selectMainBranch?: () => void;
 }) => {
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -195,45 +199,59 @@ export const TinyEssayEditor = ({
             - We get the right line width by hardcoding a max-width and x-padding
             - We take over the full screen on narrow displays (showing comments on mobile is TODO)
          */}
-        <div
-          className={`${
-            readOnly
-              ? " border-2 border-dashed border-slate-400"
-              : "border border-gray-200 "
-          } bg-white  box-border rounded-md w-full @xl:w-4/5 @xl:mt-4 @xl:mr-2 @xl:mb-8 max-w-[722px]  @xl:ml-[-100px] @4xl:ml-[-200px] px-8 py-4 `}
-        >
-          <MarkdownEditor
-            handle={handle}
-            path={["content"]}
-            setSelection={setSelection}
-            setView={setEditorView}
-            threadsWithPositions={annotations}
-            setActiveThreadIds={setSelectedAnnotationIds}
-            readOnly={readOnly ?? false}
-            docHeads={docHeads}
-            diff={patchesForEditor}
-            diffStyle={diffStyle ?? "normal"}
-            foldRanges={foldRanges}
-            debugHighlights={debugHighlights}
-          />
-        </div>
-        <div className="w-0">
-          <CommentsSidebar
-            diffBase={diffBase}
-            doc={docAtHeads}
-            changeDoc={changeDoc}
-            mainDocHandle={mainDocHandle}
-            selection={selection}
-            reviewStateFilter={reviewStateFilter}
-            setReviewStateFilter={setReviewStateFilter}
-            selectedAnnotationIds={selectedAnnotationIds}
-            setSelectedAnnotationIds={setSelectedAnnotationIds}
-            annotationsWithPositions={annotations}
-            diff={diff}
-            visibleAuthorsForEdits={visibleAuthorsForEdits}
-            setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
-            authors={authors}
-          />
+        <div className="@xl:mt-4 @xl:mr-2 @xl:mb-8 @xl:ml-[-100px] @4xl:ml-[-200px] w-full @xl:w-4/5  max-w-[722px]">
+          <div
+            className={`group absolute -z-10 bg-white box-border rounded-md px-8 py-4 w-10 h-full transition-all ${
+              readOnly
+                ? " border-2 border-dashed border-slate-400"
+                : "border border-gray-200 hover:border-gray-400 "
+            } ${showBranchLayers ? "mt-4 -ml-4" : ""} `}
+            onClick={() => selectMainBranch && selectMainBranch()}
+          >
+            <div className="absolute -left-10 top-0 text-gray-500 font-semibold text-xs transition-opacity duration-300 ease-in-out group-hover:opacity-100 opacity-0">
+              main
+            </div>
+          </div>
+          <div
+            className={`bg-white box-border rounded-md px-8 py-4 ${
+              readOnly
+                ? " border-2 border-dashed border-slate-400"
+                : "border border-gray-200 "
+            } `}
+          >
+            <MarkdownEditor
+              handle={handle}
+              path={["content"]}
+              setSelection={setSelection}
+              setView={setEditorView}
+              threadsWithPositions={annotations}
+              setActiveThreadIds={setSelectedAnnotationIds}
+              readOnly={readOnly ?? false}
+              docHeads={docHeads}
+              diff={patchesForEditor}
+              diffStyle={diffStyle ?? "normal"}
+              foldRanges={foldRanges}
+              debugHighlights={debugHighlights}
+            />
+          </div>
+          <div className="w-0">
+            <CommentsSidebar
+              diffBase={diffBase}
+              doc={docAtHeads}
+              changeDoc={changeDoc}
+              mainDocHandle={mainDocHandle}
+              selection={selection}
+              reviewStateFilter={reviewStateFilter}
+              setReviewStateFilter={setReviewStateFilter}
+              selectedAnnotationIds={selectedAnnotationIds}
+              setSelectedAnnotationIds={setSelectedAnnotationIds}
+              annotationsWithPositions={annotations}
+              diff={diff}
+              visibleAuthorsForEdits={visibleAuthorsForEdits}
+              setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+              authors={authors}
+            />
+          </div>
         </div>
       </div>
     </div>
