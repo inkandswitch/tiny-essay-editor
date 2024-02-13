@@ -5,7 +5,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChangeGroup,
   getGroupedChanges,
@@ -86,22 +86,6 @@ export const BasicHistoryLog: React.FC<{
   const [showHiddenChangeGroups, setShowHiddenChangeGroups] = useState(false);
 
   const [selection, setSelection] = useState<Selection | null>();
-
-  // When the grouping changes, we diff back to the "history start point" if present.
-  // This means that on a branch, when you open the history you'll see the diff from the branch point to the latest change.
-  useEffect(() => {
-    if (
-      selection ||
-      !groupedChanges.length ||
-      lastHiddenChangeGroupIndex === -1
-    )
-      return;
-    setSelection({
-      type: "changeGroups",
-      from: groupedChanges[lastHiddenChangeGroupIndex + 1].id,
-      to: groupedChanges[groupedChanges.length - 1].id,
-    });
-  }, [groupedChanges, lastHiddenChangeGroupIndex, selection]);
 
   const selectedChangeGroups: ChangeGroup[] = useMemo(() => {
     if (selection && selection.type === "changeGroups") {
@@ -234,20 +218,9 @@ export const BasicHistoryLog: React.FC<{
     );
   };
 
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [scrollRef.current]);
-
   return (
     <div className="h-full w-72 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600">
-      <div
-        ref={scrollRef}
-        className="overflow-y-auto pt-3 flex-grow flex flex-col"
-      >
+      <div className="overflow-y-auto pt-3 flex-grow flex flex-col-reverse justify-end">
         {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
           <div className="text-xs text-gray-500 pl-2 mb-2">
             {lastHiddenChangeGroupIndex + 1} changes hidden
@@ -284,7 +257,7 @@ export const BasicHistoryLog: React.FC<{
             <div key={changeGroup.id}>
               <div className="relative">
                 {new Date(changeGroup.time).toDateString() !==
-                  new Date(groupedChanges[index - 1]?.time).toDateString() && (
+                  new Date(groupedChanges[index + 1]?.time).toDateString() && (
                   <div className="text-xs text-gray-700 font-semibold mt-2 mb-2 flex items-center border-b border-gray-400 p-1">
                     <CalendarIcon size={14} className="mr-1" />
                     {changeGroup.time &&
@@ -297,125 +270,6 @@ export const BasicHistoryLog: React.FC<{
                   </div>
                 )}
 
-                {!hideGroupButShowMarkers && (
-                  <div
-                    className={`group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none border-b border-gray-200 ${
-                      selectedChangeGroups.includes(changeGroup)
-                        ? "bg-blue-100"
-                        : headIsVisible(changeGroup.id)
-                        ? ""
-                        : "opacity-50"
-                    }`}
-                    data-id={changeGroup.id}
-                    key={changeGroup.id}
-                    onClick={(e) => {
-                      handleClickOnChangeGroup(e, changeGroup);
-                    }}
-                  >
-                    <div className="text-sm">
-                      {changeGroup.authorUrls.length > 0 && (
-                        <div className=" text-gray-600 inline">
-                          {changeGroup.authorUrls.map((contactUrl) => (
-                            <InlineContactAvatar
-                              key={contactUrl}
-                              url={contactUrl}
-                              size="sm"
-                            />
-                          ))}
-                        </div>
-                      )}{" "}
-                      {changeGroup.editCount > 0 && (
-                        <div className="inline font-normal">
-                          made{" "}
-                          {changeGroup.editCount === 1
-                            ? "an"
-                            : changeGroup.editCount}{" "}
-                          edit
-                          {changeGroup.editCount > 1 ? "s" : ""}
-                        </div>
-                      )}
-                      {changeGroup.editCount > 0 &&
-                        changeGroup.commentsAdded > 0 && (
-                          <div className="inline font-normal"> and </div>
-                        )}
-                      <div className="inline font-normal">
-                        {changeGroup.commentsAdded > 0
-                          ? `added ${changeGroup.commentsAdded} comment${
-                              changeGroup.commentsAdded > 1 ? "s" : ""
-                            }`
-                          : ""}
-                      </div>
-                    </div>
-
-                    <div className="mt-1 font-bold flex">
-                      <span
-                        className={`text-green-600  mr-2 ${
-                          changeGroup.charsAdded === 0 && "opacity-50"
-                        }`}
-                      >
-                        +{changeGroup.charsAdded}
-                      </span>
-                      <span
-                        className={`text-red-600 mr-2 ${
-                          !changeGroup.charsDeleted && "opacity-50"
-                        }`}
-                      >
-                        -{changeGroup.charsDeleted || 0}
-                      </span>
-                      <span
-                        className={`text-gray-500 ${
-                          changeGroup.commentsAdded === 0 && "opacity-50"
-                        }`}
-                      >
-                        💬{changeGroup.commentsAdded}
-                      </span>
-                      {changeGroup.time && (
-                        <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
-                          {new Date(changeGroup.time).toLocaleString("en-US", {
-                            hour: "numeric",
-                            minute: "numeric",
-                            hour12: true,
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {selection?.type === "changeGroups" &&
-                  selection.to === changeGroup.id &&
-                  changeGroup.markers.length === 0 &&
-                  index !== 0 && (
-                    <div
-                      className="absolute bottom-[-10px] left-4 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
-                      onClick={() => {
-                        changeDoc((doc) => {
-                          if (!doc.tags) {
-                            doc.tags = [];
-                          }
-                          doc.tags.push({
-                            name: window.prompt("Tag name:"),
-                            heads: [changeGroup.id],
-                            createdAt: Date.now(),
-                            createdBy: account?.contactHandle?.url,
-                          });
-                        });
-                      }}
-                    >
-                      <MilestoneIcon size={12} className="inline-block mr-1" />
-                      Save milestone
-                    </div>
-                  )}
-                {lastHiddenChangeGroupIndex === index &&
-                  showHiddenChangeGroups && (
-                    <div className="text-xs text-gray-500 pl-2 my-2">
-                      <span
-                        className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
-                        onClick={() => setShowHiddenChangeGroups(false)}
-                      >
-                        Hide changes before this
-                      </span>
-                    </div>
-                  )}
                 {changeGroup.markers.map((marker) => (
                   <div
                     key={marker.heads[0]}
@@ -503,6 +357,128 @@ export const BasicHistoryLog: React.FC<{
                     )}
                   </div>
                 ))}
+                {lastHiddenChangeGroupIndex === index &&
+                  showHiddenChangeGroups && (
+                    <div className="text-xs text-gray-500 pl-2 my-2">
+                      <span
+                        className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
+                        onClick={() => setShowHiddenChangeGroups(false)}
+                      >
+                        Hide changes before this
+                      </span>
+                    </div>
+                  )}
+                {!hideGroupButShowMarkers && (
+                  <div
+                    className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none border-b border-gray-200 ${
+                      selectedChangeGroups.includes(changeGroup)
+                        ? "bg-blue-100"
+                        : headIsVisible(changeGroup.id)
+                        ? ""
+                        : "opacity-50"
+                    } `}
+                    data-id={changeGroup.id}
+                    key={changeGroup.id}
+                    onClick={(e) => {
+                      handleClickOnChangeGroup(e, changeGroup);
+                    }}
+                  >
+                    {selection?.type === "changeGroups" &&
+                      selection.to === changeGroup.id &&
+                      changeGroup.markers.filter((m) => m.type === "tag")
+                        .length === 0 &&
+                      index !== 0 && (
+                        <div
+                          className="absolute top-1 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                          onClick={() => {
+                            changeDoc((doc) => {
+                              if (!doc.tags) {
+                                doc.tags = [];
+                              }
+                              doc.tags.push({
+                                name: window.prompt("Tag name:"),
+                                heads: [changeGroup.id],
+                                createdAt: Date.now(),
+                                createdBy: account?.contactHandle?.url,
+                              });
+                            });
+                          }}
+                        >
+                          <MilestoneIcon
+                            size={12}
+                            className="inline-block mr-1"
+                          />
+                          Save milestone
+                        </div>
+                      )}
+                    <div className="text-sm">
+                      {changeGroup.authorUrls.length > 0 && (
+                        <div className=" text-gray-600 inline">
+                          {changeGroup.authorUrls.map((contactUrl) => (
+                            <InlineContactAvatar
+                              key={contactUrl}
+                              url={contactUrl}
+                              size="sm"
+                            />
+                          ))}
+                        </div>
+                      )}{" "}
+                      {changeGroup.editCount > 0 && (
+                        <div className="inline font-normal">
+                          made{" "}
+                          {changeGroup.editCount === 1
+                            ? "an"
+                            : changeGroup.editCount}{" "}
+                          edit
+                          {changeGroup.editCount > 1 ? "s" : ""}
+                        </div>
+                      )}
+                      {changeGroup.editCount > 0 &&
+                        changeGroup.commentsAdded > 0 && (
+                          <div className="inline font-normal"> and </div>
+                        )}
+                      <div className="inline font-normal">
+                        {changeGroup.commentsAdded > 0
+                          ? `added ${changeGroup.commentsAdded} comment${
+                              changeGroup.commentsAdded > 1 ? "s" : ""
+                            }`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className="mt-1 font-bold flex">
+                      <span
+                        className={`text-green-600  mr-2 ${
+                          changeGroup.charsAdded === 0 && "opacity-50"
+                        }`}
+                      >
+                        +{changeGroup.charsAdded}
+                      </span>
+                      <span
+                        className={`text-red-600 mr-2 ${
+                          !changeGroup.charsDeleted && "opacity-50"
+                        }`}
+                      >
+                        -{changeGroup.charsDeleted || 0}
+                      </span>
+                      <span
+                        className={`text-gray-500 ${
+                          changeGroup.commentsAdded === 0 && "opacity-50"
+                        }`}
+                      >
+                        💬{changeGroup.commentsAdded}
+                      </span>
+                      {changeGroup.time && (
+                        <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
+                          {new Date(changeGroup.time).toLocaleString("en-US", {
+                            hour: "numeric",
+                            minute: "numeric",
+                            hour12: true,
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
