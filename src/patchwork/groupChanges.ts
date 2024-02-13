@@ -1,6 +1,12 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { Branch, DiffWithProvenance, Tag } from "./schema";
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import {
+  Branch,
+  Branchable,
+  DiffWithProvenance,
+  Tag,
+  Taggable,
+} from "./schema";
+import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import {
   Doc,
   decodeChange,
@@ -11,19 +17,29 @@ import {
   view,
 } from "@automerge/automerge/next";
 import { TextPatch, diffWithProvenance } from "./utils";
-import { ChangeMetadata } from "@automerge/automerge-repo/dist/DocHandle";
+import {
+  ChangeMetadata,
+  DocHandle,
+} from "@automerge/automerge-repo/dist/DocHandle";
 import { Heads, PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
-/** The caller can pass in different kinds  */
-export type HeadsMarker = { heads: Heads } & (
+/** A marker of a significant moment in the doc history */
+export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
   | { type: "tag"; tag: Tag }
-  | { type: "mergedBranch"; branch: Branch }
+  | { type: "otherBranchMergedIntoThisDoc"; branch: Branch }
+  | { type: "branchCreatedFromThisDoc"; branch: Branch }
+  | {
+      type: "originOfThisBranch";
+      source: Branchable["branchMetadata"]["source"];
+      branch: Branch;
+    }
 );
 
+/** Change group attributes that could work for any document */
 type GenericChangeGroup = {
   id: string;
   changes: DecodedChangeWithMetadata[];
@@ -36,6 +52,9 @@ type GenericChangeGroup = {
   time?: number;
 };
 
+/** These attributes are specific to TEE.
+ *  Eventually they should somehow be specified by the Essay datatype.
+ */
 type TEEChangeGroup = {
   /* number of distinct edit ranges */
   editCount: number;
@@ -120,6 +139,49 @@ export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
   "ByEditTime",
 ];
 
+export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
+  handle: DocHandle<DocType>,
+  repo: Repo
+): HeadsMarker[] => {
+  const doc = handle.docSync();
+  /** Mark tags aka milestones */
+  let markers: HeadsMarker[] = (doc.tags ?? []).map((tag: Tag) => ({
+    heads: tag.heads,
+    type: "tag" as const,
+    tag,
+  }));
+
+  /** Mark branch merge points */
+  markers = markers.concat(
+    doc.branchMetadata.branches
+      .filter((branch) => branch.mergeMetadata !== undefined)
+      .map((branch) => ({
+        heads: branch.mergeMetadata!.mergeHeads,
+        type: "otherBranchMergedIntoThisDoc",
+        branch,
+      }))
+  );
+
+  /** Mark branch start points */
+  if (doc.branchMetadata.source) {
+    const branchMetadataAtSource = repo
+      .find<Branchable>(doc.branchMetadata.source.url)
+      .docSync()
+      .branchMetadata.branches.find((b) => b.url === handle.url);
+    if (branchMetadataAtSource) {
+      markers.push({
+        heads: doc.branchMetadata.source.branchHeads,
+        type: "originOfThisBranch",
+        source: doc.branchMetadata.source,
+        branch: branchMetadataAtSource,
+        hideHistoryBeforeThis: true,
+      });
+    }
+  }
+
+  return markers;
+};
+
 /* returns all the changes from this doc, grouped in a simple way for now. */
 export const getGroupedChanges = (
   doc: Doc<MarkdownDoc>,
@@ -128,8 +190,15 @@ export const getGroupedChanges = (
     numericParameter,
     markers,
   }: {
+    /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
     algorithm: keyof typeof GROUPINGS;
+
+    /** A numeric parameter used by some grouping algorithms for things like batch size.
+     *  TODO: this should probably be more specifically named per grouping algo?
+     */
     numericParameter: number;
+
+    /** Markers to display at certain heads in the history */
     markers: HeadsMarker[];
   } = {
     algorithm: "ByActorAndNumChanges",

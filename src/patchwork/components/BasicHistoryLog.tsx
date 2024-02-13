@@ -1,15 +1,18 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChangeGroup, HeadsMarker, getGroupedChanges } from "../groupChanges";
-
 import {
-  CalendarIcon,
-  MergeIcon,
-  MilestoneIcon,
-  TrashIcon,
-} from "lucide-react";
+  useDocument,
+  useHandle,
+  useRepo,
+} from "@automerge/automerge-repo-react-hooks";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChangeGroup,
+  getGroupedChanges,
+  getMarkersForDoc,
+} from "../groupChanges";
+
+import { CalendarIcon, MilestoneIcon } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { DiffWithProvenance } from "../schema";
@@ -38,37 +41,25 @@ export const BasicHistoryLog: React.FC<{
   setDiff: (diff: DiffWithProvenance) => void;
 }> = ({ docUrl, setDocHeads, setDiff }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const handle = useHandle<MarkdownDoc>(docUrl);
+  const repo = useRepo();
   const account = useCurrentAccount();
 
   // The grouping function returns change groups starting from the latest change.
   const { groupedChanges } = useMemo(() => {
     if (!doc) return { groupedChanges: [], changeCount: 0 };
 
-    let markers: HeadsMarker[] = [];
-
-    markers = markers.concat(
-      (doc.tags ?? []).map((tag) => ({ heads: tag.heads, type: "tag", tag }))
-    );
-    markers = markers.concat(
-      doc.branchMetadata.branches
-        .filter((branch) => branch.mergeMetadata !== undefined)
-        .map((branch) => ({
-          heads: branch.mergeMetadata!.mergeHeads,
-          type: "mergedBranch",
-          branch,
-        }))
-    );
     const { changeCount, changeGroups } = getGroupedChanges(doc, {
       algorithm: "ByAuthor",
       numericParameter: 100,
-      markers,
+      markers: getMarkersForDoc(handle, repo),
     });
 
     return {
       changeCount,
       groupedChanges: changeGroups,
     };
-  }, [doc]);
+  }, [handle, repo, doc]);
 
   const [selection, setSelection] = useState<Selection | null>();
 
@@ -340,12 +331,17 @@ export const BasicHistoryLog: React.FC<{
               )}
             {changeGroup.markers.map((marker) => (
               <div
-                className={`text-xs text-gray-500 p-2 border-b border-gray-200 select-none ${
+                key={marker.heads[0]}
+                className={`text-xs text-gray-500 p-2 mx-6 my-2 border border-yellow-300 shadow-md select-none ${
                   selection?.type === "milestone" &&
                   selection?.heads === marker.heads
-                    ? "bg-blue-100"
-                    : "bg-white hover:bg-gray-50"
-                } ${headIsVisible(marker.heads[0]) ? "" : "opacity-50"}`}
+                    ? "bg-yellow-200"
+                    : "bg-yellow-50 hover:bg-yellow-200"
+                } ${headIsVisible(marker.heads[0]) ? "" : "opacity-50"} ${
+                  parseInt(marker.heads[0], 58) % 2 === 0
+                    ? "rotate-2"
+                    : "-rotate-2"
+                }`}
                 onClick={() => {
                   setSelection({
                     type: "milestone",
@@ -367,7 +363,7 @@ export const BasicHistoryLog: React.FC<{
                           </div>
                         )}{" "}
                         <div className="inline font-normal">
-                          marked milestone
+                          marked a milestone:
                         </div>{" "}
                         <div className="inline font-semibold">
                           {marker.tag.name}
@@ -376,7 +372,7 @@ export const BasicHistoryLog: React.FC<{
                     </div>
                   </div>
                 )}
-                {marker.type === "mergedBranch" && (
+                {marker.type === "otherBranchMergedIntoThisDoc" && (
                   <div>
                     <div className="text-sm">
                       {marker.branch.mergeMetadata!.mergedBy && (
@@ -388,7 +384,28 @@ export const BasicHistoryLog: React.FC<{
                           />
                         </div>
                       )}{" "}
-                      <div className="inline font-normal">merged branch</div>{" "}
+                      <div className="inline font-normal">merged a branch:</div>{" "}
+                      <div className="inline font-semibold">
+                        {marker.branch.name}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {marker.type === "originOfThisBranch" && (
+                  <div>
+                    <div className="text-sm">
+                      {marker.branch.createdBy && (
+                        <div className=" text-gray-600 inline">
+                          <InlineContactAvatar
+                            key={marker.branch.createdBy}
+                            url={marker.branch.createdBy}
+                            size="sm"
+                          />
+                        </div>
+                      )}{" "}
+                      <div className="inline font-normal">
+                        started this branch:
+                      </div>{" "}
                       <div className="inline font-semibold">
                         {marker.branch.name}
                       </div>
