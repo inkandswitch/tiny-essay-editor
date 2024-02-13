@@ -45,6 +45,7 @@ export const BasicHistoryLog: React.FC<{
   const repo = useRepo();
   const account = useCurrentAccount();
 
+  // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
     () => getMarkersForDoc(handle, repo),
     [doc, handle, repo]
@@ -249,7 +250,7 @@ export const BasicHistoryLog: React.FC<{
       >
         {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
           <div className="text-xs text-gray-500 pl-2 mb-2">
-            {lastHiddenChangeGroupIndex} changes hidden
+            {lastHiddenChangeGroupIndex + 1} changes hidden
             <span
               className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
               onClick={() => setShowHiddenChangeGroups(true)}

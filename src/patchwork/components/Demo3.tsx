@@ -530,7 +530,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   </>
                 )}
                 {selectedDocView.type === "branch" && (
-                  <div className="flex items-center">
+                  <div className="flex items-center mr-1">
                     <Checkbox
                       id="diff-overlay-checkbox"
                       className="mr-1"
@@ -547,7 +547,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 {selectedDocView.type === "branch" && (
                   <div className="flex items-center">
                     <Checkbox
-                      id="diff-overlay-checkbox"
+                      id="side-by-side"
                       className="mr-1"
                       checked={compareWithMainFlag}
                       onClick={(e) => e.stopPropagation()}
@@ -555,9 +555,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         setCompareWithMainFlag(!compareWithMainFlag)
                       }
                     />
-                    <label htmlFor="diff-overlay-checkbox">
-                      Compare with main
-                    </label>
+                    <label htmlFor="side-by-side">Side-by-side</label>
                   </div>
                 )}
               </div>
