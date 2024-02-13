@@ -69,7 +69,7 @@ export const BasicHistoryLog: React.FC<{
   /** If there's a marker that specifies "hide history before this", we
    *  collapse change groups before that point by default.
    */
-  const firstNonHiddenChangeGroupIndex = markers.some(
+  const lastHiddenChangeGroupIndex = markers.some(
     (m) => m.hideHistoryBeforeThis
   )
     ? /** TODO: in the case of multiple markers with the flag set;
@@ -80,11 +80,23 @@ export const BasicHistoryLog: React.FC<{
       groupedChanges.findIndex((g) =>
         g.markers.some((m) => m.hideHistoryBeforeThis)
       )
-    : 0;
+    : -1;
 
   const [showHiddenChangeGroups, setShowHiddenChangeGroups] = useState(false);
 
   const [selection, setSelection] = useState<Selection | null>();
+
+  // When the grouping changes, we diff back to the "history start point" if present.
+  // This means that on a branch, when you open the history you'll see the diff from the branch point to the latest change.
+  useEffect(() => {
+    if (selection || !groupedChanges.length || lastHiddenChangeGroupIndex === 0)
+      return;
+    setSelection({
+      type: "changeGroups",
+      from: groupedChanges[lastHiddenChangeGroupIndex + 1].id,
+      to: groupedChanges[groupedChanges.length - 1].id,
+    });
+  }, [groupedChanges, lastHiddenChangeGroupIndex, selection]);
 
   const selectedChangeGroups: ChangeGroup[] = useMemo(() => {
     if (selection && selection.type === "changeGroups") {
@@ -231,9 +243,9 @@ export const BasicHistoryLog: React.FC<{
         ref={scrollRef}
         className="overflow-y-auto pt-3 flex-grow flex flex-col"
       >
-        {firstNonHiddenChangeGroupIndex > 0 && !showHiddenChangeGroups && (
+        {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
           <div className="text-xs text-gray-500 pl-2 mb-2">
-            {firstNonHiddenChangeGroupIndex} changes hidden
+            {lastHiddenChangeGroupIndex} changes hidden
             <span
               className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
               onClick={() => setShowHiddenChangeGroups(true)}
@@ -255,10 +267,10 @@ export const BasicHistoryLog: React.FC<{
           // But neither of those are obviously better than associating a marker with a group before, so we're sticking with this for now.
 
           const hideGroupEntirely =
-            index < firstNonHiddenChangeGroupIndex && !showHiddenChangeGroups;
+            index < lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
 
           const hideGroupButShowMarkers =
-            index === firstNonHiddenChangeGroupIndex && !showHiddenChangeGroups;
+            index === lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
 
           if (hideGroupEntirely) {
             return null;
@@ -388,7 +400,7 @@ export const BasicHistoryLog: React.FC<{
                       Save milestone
                     </div>
                   )}
-                {firstNonHiddenChangeGroupIndex === index &&
+                {lastHiddenChangeGroupIndex === index &&
                   showHiddenChangeGroups && (
                     <div className="text-xs text-gray-500 pl-2 my-2">
                       <span
