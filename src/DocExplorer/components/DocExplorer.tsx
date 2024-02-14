@@ -294,6 +294,7 @@ export const DocExplorer: React.FC = () => {
                 <ToolComponent
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
+                  // @ts-expect-error not all tools understand branching yet... but they probably will eventually..?
                   selectedBranch={selectedBranch}
                   setSelectedBranch={setSelectedBranch}
                 />
