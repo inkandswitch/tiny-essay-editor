@@ -4,6 +4,8 @@ import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { EssayEditingBotDoc } from "./datatype";
 import { getCursor, splice } from "@automerge/automerge/next";
 import { uuid } from "@automerge/automerge";
+import { createBranch } from "@/patchwork/branches";
+import { RegisteredContactDoc } from "@/DocExplorer/account";
 
 const functionsSpec = [
   {
@@ -36,8 +38,11 @@ export const runBot = async ({
   botDocUrl: AutomergeUrl;
   targetDocHandle: DocHandle<MarkdownDoc>;
   repo: Repo;
-}): Promise<void> => {
+}): Promise<AutomergeUrl> => {
   const botDoc = await repo.find<EssayEditingBotDoc>(botDocUrl).doc();
+  const contactDoc = await repo
+    .find<RegisteredContactDoc>(botDoc.contactUrl)
+    .doc();
   const promptDoc = await repo.find<MarkdownDoc>(botDoc.promptUrl).doc();
   const prompt = promptDoc.content;
 
@@ -86,8 +91,15 @@ ${JSON.stringify(functionsSpec)}
     const parsed: any = JSON.parse(output.function_call.arguments);
     console.log("parsed", parsed);
 
+    const branchHandle = createBranch({
+      name: `Edits by ${contactDoc.name}`,
+      createdBy: botDoc.contactUrl,
+      repo,
+      handle: targetDocHandle,
+    });
+
     for (const edit of parsed.edits) {
-      targetDocHandle.change(
+      branchHandle.change(
         (doc) => {
           const from = doc.content.indexOf(edit.before);
 
@@ -95,37 +107,18 @@ ${JSON.stringify(functionsSpec)}
           splice(doc, ["content"], from, edit.before.length, edit.after);
 
           // leave a comment
-          const fromCursor = getCursor(doc, ["content"], from);
-          const toCursor = getCursor(
-            doc,
-            ["content"],
-            from + edit.after.length
-          );
-
-          const comment: Comment = {
-            id: uuid(),
-            content: edit.reasoning,
-            contactUrl: botDoc.contactUrl,
-            timestamp: Date.now(),
-            userId: null,
-          };
-
-          const thread: ThreadAnnotation = {
-            type: "thread",
-            id: uuid(),
-            comments: [comment],
-            resolved: false,
-            fromCursor,
-            toCursor,
-          };
-
-          console.log(thread);
-
-          doc.commentThreads[thread.id] = thread;
+          // const fromCursor = getCursor(doc, ["content"], from);
+          // const toCursor = getCursor(
+          //   doc,
+          //   ["content"],
+          //   from + edit.after.length
+          // );
         },
         { metadata: { author: botDoc.contactUrl } }
       );
     }
+
+    return branchHandle.url;
   } catch {
     throw new Error(`Failed to parse output: ${output}`);
   }

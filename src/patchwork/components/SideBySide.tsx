@@ -296,8 +296,6 @@ function useHighlights(
       const from = getCursorPositionSafely(doc, ["content"], focusRange.from);
       const to = getCursorPositionSafely(doc, ["content"], focusRange.to);
 
-      console.log("FROM:", from, to);
-
       if (from !== undefined && to !== undefined) {
         if (from !== 0) {
           hightlights.push({

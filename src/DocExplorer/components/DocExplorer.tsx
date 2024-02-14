@@ -31,6 +31,7 @@ import { Toaster } from "@/components/ui/sonner";
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
 import { BotEditor } from "@/bots/BotEditor";
+import { toast } from "sonner";
 
 export type Tool = {
   id: string;
@@ -121,6 +122,10 @@ export const DocExplorer: React.FC = () => {
   }, [availableTools]);
 
   const ToolComponent = activeTool?.component;
+
+  const [selectedBranch, setSelectedBranch] = useState<SelectedBranch>({
+    type: "main",
+  });
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
@@ -263,7 +268,7 @@ export const DocExplorer: React.FC = () => {
               selectedDocUrl={selectedDocUrl}
               selectDoc={selectDoc}
               deleteFromAccountDocList={deleteFromRootFolder}
-              addNewDocument={addNewDocument}
+              setSelectedBranch={setSelectedBranch}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
@@ -286,7 +291,12 @@ export const DocExplorer: React.FC = () => {
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+                <ToolComponent
+                  docUrl={selectedDocUrl}
+                  key={selectedDocUrl}
+                  selectedBranch={selectedBranch}
+                  setSelectedBranch={setSelectedBranch}
+                />
               )}
             </div>
           </div>
@@ -431,3 +441,9 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     openDocFromUrl,
   };
 };
+export type SelectedBranch =
+  | { type: "main" }
+  | {
+      type: "branch";
+      url: AutomergeUrl;
+    };

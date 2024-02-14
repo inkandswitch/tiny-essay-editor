@@ -59,20 +59,18 @@ import {
   suggestBranchName,
 } from "../branches";
 import { Slider } from "@/components/ui/slider";
-
-type DocView =
-  | { type: "main" }
-  | {
-      type: "branch";
-      url: AutomergeUrl;
-    };
+import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 
 interface MakeBranchOptions {
   name?: string;
   heads?: A.Heads;
 }
 
-export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
+export const Demo3: React.FC<{
+  docUrl: AutomergeUrl;
+  selectedBranch: SelectedBranch;
+  setSelectedBranch: (branch: SelectedBranch) => void;
+}> = ({ docUrl, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -99,8 +97,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
     useState<A.Heads>();
 
-  const showDiff = showChangesFlag || isHoveringYankToBranchOption;
-
   useEffect(() => {
     if (!doc || sessionStartHeads) {
       return;
@@ -126,9 +122,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
-  const [selectedDocView, setSelectedDocView] = useState<DocView>({
-    type: "main",
-  });
+  const showDiff =
+    (showChangesFlag && selectedBranch.type === "branch") ||
+    isHoveringYankToBranchOption;
 
   // init branch metadata when the doc loads if it doesn't have it already
   useEffect(() => {
@@ -152,7 +148,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         heads,
         createdBy: account?.contactHandle?.url,
       });
-      setSelectedDocView({ type: "branch", url: branchHandle.url });
+      setSelectedBranch({ type: "branch", url: branchHandle.url });
       return branchHandle;
     },
     [repo, handle, account?.contactHandle?.url]
@@ -181,7 +177,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const handleDeleteBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
-      setSelectedDocView({ type: "main" });
+      setSelectedBranch({ type: "main" });
       deleteBranch({ docHandle: handle, branchUrl });
     },
     [handle]
@@ -225,7 +221,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   );
 
   const [branchDoc] = useDocument<MarkdownDoc>(
-    selectedDocView.type === "branch" ? selectedDocView.url : undefined
+    selectedBranch.type === "branch" ? selectedBranch.url : undefined
   );
 
   const rawBranchDiff = useMemo(() => {
@@ -270,9 +266,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const branches = doc.branchMetadata.branches ?? [];
 
-  const selectedBranch =
-    selectedDocView.type === "branch" &&
-    branches.find((b) => selectedDocView.url === b.url);
+  const selectedBranchLink =
+    selectedBranch.type === "branch" &&
+    branches.find((b) => selectedBranch.url === b.url);
 
   // The selected draft doesn't have the latest from the main document
   // if the copy head stored on it don't match the latest heads of the main doc.
@@ -291,29 +287,29 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
           <div className="flex-grow">
             <div className="bg-gray-50 pl-4 pt-6 pb-1 flex gap-2 items-center">
               <Select
-                value={JSON.stringify(selectedDocView)}
+                value={JSON.stringify(selectedBranch)}
                 onValueChange={(value) => {
                   if (value === "__newDraft") {
                     handleCreateBranch();
                   } else if (value === "__moveChangesToBranch") {
                     moveCurrentChangesToBranch();
                   } else {
-                    setSelectedDocView(JSON.parse(value as string));
+                    setSelectedBranch(JSON.parse(value as string));
                   }
                 }}
               >
                 <SelectTrigger className="h-8 text-sm w-[18rem] font-medium">
                   <SelectValue placeholder="Select Draft">
-                    {selectedDocView.type === "main" && (
+                    {selectedBranch.type === "main" && (
                       <div className="flex items-center gap-2">
                         <CrownIcon className="inline" size={12} />
                         Main
                       </div>
                     )}
-                    {selectedDocView.type === "branch" && (
+                    {selectedBranch.type === "branch" && (
                       <div className="flex items-center gap-2">
                         <GitBranchIcon className="inline" size={12} />
-                        {truncate(selectedBranch?.name, { length: 30 })}
+                        {truncate(selectedBranchLink?.name, { length: 30 })}
                       </div>
                     )}
                   </SelectValue>
@@ -322,7 +318,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   <SelectItem
                     value={JSON.stringify({ type: "main" })}
                     className={
-                      selectedDocView.type === "main" ? "font-medium" : ""
+                      selectedBranch.type === "main" ? "font-medium" : ""
                     }
                   >
                     <CrownIcon className="inline mr-1" size={12} />
@@ -341,7 +337,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                         <SelectItem
                           key={branch.url}
                           className={`${
-                            selectedBranch?.url === branch.url
+                            selectedBranchLink?.url === branch.url
                               ? "font-medium"
                               : ""
                           }`}
@@ -377,7 +373,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       <PlusIcon className="inline mr-1" size={12} />
                       Create new branch
                     </SelectItem>
-                    {selectedDocView.type === "main" &&
+                    {selectedBranch.type === "main" &&
                       currentEditSessionDiff &&
                       currentEditSessionDiff.patches.length > 0 && (
                         <SelectItem
@@ -401,11 +397,11 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 </SelectContent>
               </Select>
 
-              {selectedDocView.type === "branch" && (
+              {selectedBranch.type === "branch" && (
                 <BranchActions
                   doc={doc}
                   branchDoc={branchDoc}
-                  branchUrl={selectedBranch.url}
+                  branchUrl={selectedBranchLink.url}
                   handleDeleteBranch={handleDeleteBranch}
                   handleRenameBranch={renameBranch}
                 />
@@ -439,12 +435,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               )}
 
               <div className="flex items-center gap-1 text-sm font-medium text-gray-700 ">
-                {selectedDocView.type === "branch" && (
+                {selectedBranch.type === "branch" && (
                   <>
                     <Button
                       onClick={(e) => {
-                        handleMergeBranch(selectedBranch.url);
-                        setSelectedDocView({ type: "main" });
+                        handleMergeBranch(selectedBranchLink.url);
+                        setSelectedBranch({ type: "main" });
                         e.stopPropagation();
                       }}
                       variant="outline"
@@ -455,7 +451,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     </Button>
                     <Button
                       onClick={(e) => {
-                        rebaseBranch(selectedBranch.url);
+                        rebaseBranch(selectedBranchLink.url);
                       }}
                       variant="outline"
                       className="h-6 text-x"
@@ -465,7 +461,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     </Button>
                   </>
                 )}
-                {selectedDocView.type === "branch" && (
+                {selectedBranch.type === "branch" && (
                   <div className="flex items-center mr-1">
                     <Checkbox
                       id="diff-overlay-checkbox"
@@ -482,7 +478,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   </div>
                 )}
 
-                {selectedDocView.type === "branch" && (
+                {selectedBranch.type === "branch" && (
                   <div className="flex items-center">
                     <Checkbox
                       id="side-by-side"
@@ -525,12 +521,12 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       <CrownIcon className="inline" size={12} /> main
                     </div>
                   </div>
-                  <div className="flex-1 pl-4">{selectedBranch.name}</div>
+                  <div className="flex-1 pl-4">{selectedBranchLink.name}</div>
                 </div>
               )}
               <div className="flex-1 min-h-0 overflow-auto">
                 <div className="flex">
-                  {selectedDocView.type === "branch" && compareWithMainFlag && (
+                  {selectedBranch.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
                       docUrl={docUrl}
                       key={`compare-${docUrl}`}
@@ -543,7 +539,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     />
                   )}
                   <TinyEssayEditor
-                    docUrl={selectedBranch?.url ?? docUrl}
+                    docUrl={selectedBranchLink?.url ?? docUrl}
                     mainDocHandle={compareWithMainFlag ? handle : undefined}
                     docHeads={docHeads}
                     readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
@@ -553,11 +549,9 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                     showDiffAsComments
                     actorIdToAuthor={actorIdToAuthor}
                     showBranchLayers={
-                      selectedDocView.type === "branch" && !compareWithMainFlag
+                      selectedBranch.type === "branch" && !compareWithMainFlag
                     }
-                    selectMainBranch={() =>
-                      setSelectedDocView({ type: "main" })
-                    }
+                    selectMainBranch={() => setSelectedBranch({ type: "main" })}
                   />
                 </div>
               </div>
@@ -596,8 +590,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               <div className="flex-grow overflow-hidden">
                 <BasicHistoryLog
                   // set key to trigger re-mount on branch change
-                  key={selectedBranch?.url ?? docUrl}
-                  docUrl={selectedBranch?.url ?? docUrl}
+                  key={selectedBranchLink?.url ?? docUrl}
+                  docUrl={selectedBranchLink?.url ?? docUrl}
                   setDocHeads={setDocHeadsFromHistorySidebar}
                   setDiff={setDiffFromHistorySidebar}
                   zoomLevel={historyZoomLevel}

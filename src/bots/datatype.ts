@@ -4,7 +4,7 @@ import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Bot } from "lucide-react";
 
-const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy";
+const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 
 export type EssayEditingBotDoc = {
   contactUrl: AutomergeUrl;
@@ -37,7 +37,7 @@ export const EssayEditingBotDatatype = {
     const contactDoc = await repo.find<ContactDoc>(doc.contactUrl).doc();
     return contactDoc.type === "registered" ? contactDoc.name : "Untitled Bot";
   },
-  markCopy: (doc: EssayEditingBotDoc) => {
+  markCopy: () => {
     // TODO: maybe should reach into the contact doc and change its name here.
     // ugh that requires passing the repo in...
   },

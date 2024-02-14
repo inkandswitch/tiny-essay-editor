@@ -35,19 +35,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { Tool } from "./DocExplorer";
+import { SelectedBranch } from "./DocExplorer";
 
-import { DocType, docTypes } from "../doctypes";
+import { docTypes } from "../doctypes";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 import { runBot } from "@/bots/essayEditorBot";
+import { Button } from "@/components/ui/button";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocUrl: AutomergeUrl | null;
   selectDoc: (docUrl: AutomergeUrl | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
-  addNewDocument: (doc: { type: DocType }) => void;
+  setSelectedBranch: (branch: SelectedBranch) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -56,7 +57,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
-  addNewDocument,
+  setSelectedBranch,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
@@ -151,7 +152,26 @@ export const Topbar: React.FC<TopbarProps> = ({
                     });
                     toast.promise(resultPromise, {
                       loading: `Running ${botDocLink.name}...`,
-                      success: `${botDocLink.name} ran successfully`,
+                      success: (result) => (
+                        <div className="flex gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="max-w-48">
+                              {botDocLink.name} ran successfully.
+                            </div>
+                            <Button
+                              onClick={() =>
+                                setSelectedBranch({
+                                  type: "branch",
+                                  url: result,
+                                })
+                              }
+                              className="px-4 h-6"
+                            >
+                              View branch
+                            </Button>
+                          </div>
+                        </div>
+                      ),
                       error: `${botDocLink.name} failed, see console`,
                     });
                   }}
