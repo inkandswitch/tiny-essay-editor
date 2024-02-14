@@ -1,6 +1,6 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { DiffWithProvenance, Tag } from "../schema";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { DiffWithProvenance } from "../schema";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
   useHandle,
@@ -153,21 +153,30 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         createdBy: account?.contactHandle?.url,
       });
       setSelectedDocView({ type: "branch", url: branchHandle.url });
-      return branchHandle.url;
+      return branchHandle;
     },
     [repo, handle, account?.contactHandle?.url]
   );
 
   const moveCurrentChangesToBranch = () => {
     // todo: only pull in changes the author made themselves?
-    handleCreateBranch({ heads: sessionStartHeads });
+    const latestText = doc.content;
+    const textBeforeEditSession = A.view(doc, sessionStartHeads).content;
 
     // revert content of main to before edit session started
-    const textAtMilestone = A.view(doc, sessionStartHeads).content;
-    changeDoc((doc) => {
-      A.updateText(doc, ["content"], textAtMilestone);
-      setSessionStartHeads(A.getHeads(doc));
+    handle.change((doc) => {
+      A.updateText(doc, ["content"], textBeforeEditSession);
+      console.log("updated", doc.content, textBeforeEditSession);
     });
+
+    // Branch off after the revert is done -- this means that our
+    // change to add back the edits won't be clobbered when we merge
+    const branchHandle = handleCreateBranch();
+    branchHandle.change((doc) => {
+      A.updateText(doc, ["content"], latestText);
+    });
+
+    setSessionStartHeads(A.getHeads(doc));
     setIsHoveringYankToBranchOption(false);
   };
 

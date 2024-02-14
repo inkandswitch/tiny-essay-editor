@@ -1,4 +1,4 @@
-import { Heads, getHeads, view } from "@automerge/automerge/next";
+import * as A from "@automerge/automerge/next";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Branchable } from "./schema";
 import { getStringCompletion } from "@/llm";
@@ -14,12 +14,29 @@ export const createBranch = <DocType extends Branchable>({
   repo: Repo;
   handle: DocHandle<DocType>;
   name: string;
-  heads: Heads;
+
+  /** The heads which the branch should start at.
+   *  If undefined the branch will start from the current doc heads
+   */
+  heads?: A.Heads;
   createdBy: AutomergeUrl;
 }) => {
-  const branchHandle = repo.clone<DocType>(handle);
+  //
+  // This code should work but doesn't, not sure why yet? ----- GL 2/14
+  // We should be taking the specified heads into account when creating a branch
+  //
+  /* automerge-repo doesn't have a built-in way of cloning at a given heads.
+     So we make a fresh handle and reach in and update its contents. */
+  // const docAtHeads = view(handle.docSync(), heads);
+  // const branchHandle = repo.create();
+  // branchHandle.update(() => {
+  //   return clone(docAtHeads);
+  // });
+  //----------------------------------------------------------------
+
+  const branchHandle = repo.clone(handle);
   const doc = handle.docSync();
-  const branchHeads = heads ?? getHeads(doc);
+  const branchHeads = heads ?? A.getHeads(doc);
   const branchPointer = {
     name: name ?? `Branch #${(doc?.branchMetadata?.branches?.length ?? 0) + 1}`,
     createdAt: Date.now(),
@@ -71,7 +88,7 @@ export const mergeBranch = <DocType extends Branchable>({
 
     branch.mergeMetadata = {
       mergedAt: Date.now(),
-      mergeHeads: getHeads(branchHandle.docSync()),
+      mergeHeads: A.getHeads(branchHandle.docSync()),
       mergedBy,
     };
   });
@@ -107,7 +124,7 @@ export const suggestBranchName = async ({
     (branch) => branch.url === branchUrl
   );
 
-  const beforeDoc = view(doc, branch.branchHeads).content;
+  const beforeDoc = A.view(doc, branch.branchHeads).content;
   const afterDoc = branchDoc.content;
 
   const prompt = `
