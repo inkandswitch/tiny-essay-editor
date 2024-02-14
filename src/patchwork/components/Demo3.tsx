@@ -19,18 +19,12 @@ import {
   HistoryIcon,
   MergeIcon,
   MilestoneIcon,
-  MinusCircleIcon,
-  MinusIcon,
   MinusSquareIcon,
   MoreHorizontal,
-  PlusCircleIcon,
   PlusIcon,
   PlusSquareIcon,
   SplitIcon,
   Trash2Icon,
-  WandIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
 } from "lucide-react";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
