@@ -1,6 +1,6 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { DiffWithProvenance, Tag } from "../schema";
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import {
   useDocument,
   useHandle,
@@ -23,6 +23,7 @@ import {
   PlusIcon,
   SplitIcon,
   Trash2Icon,
+  WandIcon,
 } from "lucide-react";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
@@ -37,7 +38,10 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentAccount } from "@/DocExplorer/account";
@@ -47,7 +51,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
 import { BasicHistoryLog } from "./BasicHistoryLog";
 import { Hash } from "./Hash";
-import { createBranch, deleteBranch, mergeBranch } from "../branches";
+import {
+  createBranch,
+  deleteBranch,
+  mergeBranch,
+  suggestBranchName,
+} from "../branches";
 
 type DocView =
   | { type: "main" }
@@ -254,19 +263,19 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     setSelectedDocView({ type: "main" });
   };
 
-  const [selectedDraftDoc] = useDocument<MarkdownDoc>(
+  const [branchDoc] = useDocument<MarkdownDoc>(
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
 
   const rawBranchDiff = useMemo(() => {
-    if (selectedDraftDoc) {
+    if (branchDoc) {
       return diffWithProvenance(
-        selectedDraftDoc,
-        selectedDraftDoc.branchMetadata.source.branchHeads,
-        A.getHeads(selectedDraftDoc)
+        branchDoc,
+        branchDoc.branchMetadata.source.branchHeads,
+        A.getHeads(branchDoc)
       );
     }
-  }, [selectedDraftDoc]);
+  }, [branchDoc]);
 
   const branchDiff = useMemo(() => {
     //return rawBranchDiff;
@@ -301,11 +310,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
   // The selected draft doesn't have the latest from the main document
   // if the copy head stored on it don't match the latest heads of the main doc.
   const selectedBranchNeedsRebase =
-    selectedDraftDoc &&
-    !isEqual(
-      A.getHeads(doc),
-      selectedDraftDoc.branchMetadata.source.branchHeads
-    );
+    branchDoc &&
+    !isEqual(A.getHeads(doc), branchDoc.branchMetadata.source.branchHeads);
 
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
@@ -429,50 +435,13 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
               </Select>
 
               {selectedDocView.type === "branch" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <MoreHorizontal
-                      size={18}
-                      className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="mr-4">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const newName = prompt(
-                          "Enter the new name for this branch:"
-                        );
-                        if (newName && newName.trim() !== "") {
-                          renameBranch(selectedBranch.url, newName.trim());
-                        }
-                      }}
-                    >
-                      <Edit3Icon
-                        className="inline-block text-gray-500 mr-2"
-                        size={14}
-                      />{" "}
-                      Rename Branch
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Are you sure you want to delete this branch?"
-                          )
-                        ) {
-                          handleDeleteBranch(selectedBranch.url);
-                          setSelectedDocView({ type: "main" });
-                        }
-                      }}
-                    >
-                      <Trash2Icon
-                        className="inline-block text-gray-500 mr-2"
-                        size={14}
-                      />{" "}
-                      Delete Branch
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <BranchActions
+                  doc={doc}
+                  branchDoc={branchDoc}
+                  branchUrl={selectedBranch.url}
+                  handleDeleteBranch={handleDeleteBranch}
+                  handleRenameBranch={renameBranch}
+                />
               )}
 
               {docHeads && diffForEditor.patches.length === 0 && (
@@ -655,5 +624,92 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+const BranchActions: React.FC<{
+  doc: MarkdownDoc;
+  branchDoc: MarkdownDoc;
+  branchUrl: AutomergeUrl;
+  handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
+  handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;
+}> = ({
+  doc,
+  branchDoc,
+  branchUrl,
+  handleDeleteBranch,
+  handleRenameBranch,
+}) => {
+  const branchHeads = useMemo(
+    () => (branchDoc ? JSON.stringify(A.getHeads(branchDoc)) : undefined),
+    [branchDoc]
+  );
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+
+  // compute new name suggestions anytime the branch heads change
+  useEffect(() => {
+    if (!dropdownOpen || !doc || !branchDoc) return;
+    setNameSuggestions([]);
+    (async () => {
+      const suggestions = (
+        await suggestBranchName({ doc, branchUrl, branchDoc })
+      ).split("\n");
+      setNameSuggestions(suggestions);
+    })();
+  }, [doc, branchDoc, branchUrl, branchHeads, dropdownOpen]);
+
+  return (
+    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+      <DropdownMenuTrigger>
+        <MoreHorizontal
+          size={18}
+          className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="mr-4 w-72">
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={() => {
+              const newName = prompt("Enter the new name for this branch:");
+              if (newName && newName.trim() !== "") {
+                handleRenameBranch(branchUrl, newName.trim());
+              }
+            }}
+          >
+            <Edit3Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
+            Rename branch
+          </DropdownMenuItem>
+          <DropdownMenuLabel>Suggested renames:</DropdownMenuLabel>
+          {nameSuggestions.length === 0 && (
+            <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+          )}
+          {nameSuggestions.map((suggestion) => (
+            <DropdownMenuItem
+              key={suggestion}
+              onClick={() => {
+                handleRenameBranch(branchUrl, suggestion);
+              }}
+            >
+              {suggestion}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator></DropdownMenuSeparator>
+
+        <DropdownMenuItem
+          onClick={() => {
+            if (
+              window.confirm("Are you sure you want to delete this branch?")
+            ) {
+              handleDeleteBranch(branchUrl);
+            }
+          }}
+        >
+          <Trash2Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
+          Delete branch
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

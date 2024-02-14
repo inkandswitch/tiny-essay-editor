@@ -1,6 +1,8 @@
-import { Heads, getHeads } from "@automerge/automerge/next";
+import { Heads, getHeads, view } from "@automerge/automerge/next";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Branchable } from "./schema";
+import { getStringCompletion } from "@/llm";
+import { MarkdownDoc } from "@/tee/schema";
 
 export const createBranch = <DocType extends Branchable>({
   repo,
@@ -90,4 +92,40 @@ export const deleteBranch = <DocType extends Branchable>({
       doc.branchMetadata.branches.splice(index, 1);
     }
   });
+};
+
+export const suggestBranchName = async ({
+  doc,
+  branchDoc,
+  branchUrl,
+}: {
+  doc: MarkdownDoc;
+  branchDoc: MarkdownDoc;
+  branchUrl: AutomergeUrl;
+}): Promise<string> => {
+  const branch = doc.branchMetadata.branches.find(
+    (branch) => branch.url === branchUrl
+  );
+
+  const beforeDoc = view(doc, branch.branchHeads).content;
+  const afterDoc = branchDoc.content;
+
+  const prompt = `
+Below are two versions of a JSON document, before and after some changes were made.
+Provide three possible short descriptions (about 2 to 10 words) that describe the changes made.
+Return just the three descriptions, separated by newlines, no other text.
+Vary the lengths from very brief (3 words, quick overview) to slightly longer (8-10 words, more detailed).
+
+BEFORE:
+
+${JSON.stringify(beforeDoc)}
+
+AFTER:
+
+${JSON.stringify(afterDoc)}
+`;
+
+  const result = await getStringCompletion(prompt);
+
+  return result;
 };
