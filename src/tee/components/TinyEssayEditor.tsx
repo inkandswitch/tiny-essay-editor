@@ -211,7 +211,7 @@ export const TinyEssayEditor = ({
             </div>
           </div>
           <div
-            className={`bg-white box-border rounded-md px-8 py-4 ${
+            className={`w-full bg-white box-border rounded-md px-8 py-4 ${
               readOnly
                 ? " border-2 border-dashed border-slate-400"
                 : "border border-gray-200 "
