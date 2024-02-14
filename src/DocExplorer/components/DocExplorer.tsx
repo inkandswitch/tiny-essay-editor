@@ -26,9 +26,11 @@ import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
 import { Demo3 } from "@/patchwork/components/Demo3";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
+import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
+import { BotEditor } from "@/bots/BotEditor";
 
 export type Tool = {
   id: string;
@@ -86,6 +88,7 @@ const TOOLS = {
       component: TLDraw,
     },
   ],
+  bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
 };
 
 export const DocExplorer: React.FC = () => {
@@ -126,7 +129,7 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create();
-      newDocHandle.change((doc) => docTypes[type].init(doc));
+      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
 
       if (!rootFolderDoc) {
         return;
@@ -152,7 +155,10 @@ export const DocExplorer: React.FC = () => {
       if (selectedDoc === undefined || selectedDocLink === undefined) {
         return;
       }
-      const title = await docTypes[selectedDocLink.type].getTitle(selectedDoc);
+      const title = await docTypes[selectedDocLink.type].getTitle(
+        selectedDoc,
+        repo
+      );
 
       changeRootFolderDoc((doc) => {
         const existingDocLink = doc.docs.find(
@@ -302,6 +308,7 @@ export const DocExplorer: React.FC = () => {
           ))}
         </div>
       )}
+      <Toaster />
     </div>
   );
 };

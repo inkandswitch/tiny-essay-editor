@@ -1,11 +1,13 @@
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { EssayDatatype } from "@/tee/datatype";
+import { EssayEditingBotDatatype } from "@/bots/datatype";
+import { Repo } from "@automerge/automerge-repo";
 
 export interface DataType {
   id: string;
   name: string;
   icon: any;
-  init: (doc: any) => void;
+  init: (doc: any, repo: Repo) => void;
   getTitle: (doc: any) => string;
   markCopy: (doc: any) => void;
 }
@@ -13,6 +15,7 @@ export interface DataType {
 export const docTypes = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
+  bot: EssayEditingBotDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;

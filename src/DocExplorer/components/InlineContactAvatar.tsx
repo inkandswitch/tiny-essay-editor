@@ -55,7 +55,9 @@ export const InlineContactAvatar = ({
             className="inline h-4 w-4 align-top mt-[1px] mr-1 rounded-full"
           />
         )}
-        <AvatarFallback>{name ? initials(name) : <UserIcon />}</AvatarFallback>
+        <AvatarFallback className="inline h-4 w-4 align-top mt-[1px] mr-1 rounded-full">
+          <UserIcon className="inline h-4 w-4 align-top rounded-full" />
+        </AvatarFallback>
       </Avatar>
 
       <span>{name ?? "Anonymous"}</span>

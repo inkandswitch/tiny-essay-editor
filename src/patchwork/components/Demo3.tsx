@@ -166,7 +166,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     // revert content of main to before edit session started
     handle.change((doc) => {
       A.updateText(doc, ["content"], textBeforeEditSession);
-      console.log("updated", doc.content, textBeforeEditSession);
     });
 
     // Branch off after the revert is done -- this means that our

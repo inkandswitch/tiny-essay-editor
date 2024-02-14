@@ -1,7 +1,13 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  isValidAutomergeUrl,
+} from "@automerge/automerge-repo";
 import React, { useCallback } from "react";
 import {
+  Bot,
   Download,
+  EditIcon,
   GitForkIcon,
   Menu,
   MoreHorizontal,
@@ -9,6 +15,7 @@ import {
   ShareIcon,
   Trash2Icon,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   useDocument,
   useHandle,
@@ -33,6 +40,7 @@ import { Tool } from "./DocExplorer";
 import { DocType, docTypes } from "../doctypes";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
+import { runBot } from "@/bots/essayEditorBot";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
@@ -89,6 +97,8 @@ export const Topbar: React.FC<TopbarProps> = ({
     ]);
   }, [selectedDocUrl, selectedDoc]);
 
+  const botDocLinks = rootFolderDoc?.docs.filter((doc) => doc.type === "bot");
+
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
       {!showSidebar && (
@@ -108,7 +118,60 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      <div className="ml-auto mr-4">
+      {/* todo: the logic for running bots and when to show the menu should
+       probably live inside the bots directory --
+       how do datatypes contribute things to the global topbar? */}
+      {selectedDocLink?.type === "essay" && (
+        <div className="ml-auto mr-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Bot
+                size={18}
+                className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="mr-4">
+              {botDocLinks.length === 0 && (
+                <div>
+                  <div className="text-gray-500 max-w-48 p-2">
+                    No bots in sidebar. <br />
+                    Click "New Bot" or get a share link from someone.
+                  </div>
+                </div>
+              )}
+              {botDocLinks.map((botDocLink) => (
+                <DropdownMenuItem
+                  key={botDocLink.url}
+                  onClick={async () => {
+                    const resultPromise = runBot({
+                      botDocUrl: botDocLink.url,
+                      targetDocHandle:
+                        selectedDocHandle as DocHandle<MarkdownDoc>,
+                      repo,
+                    });
+                    toast.promise(resultPromise, {
+                      loading: `Running ${botDocLink.name}...`,
+                      success: `${botDocLink.name} ran successfully`,
+                      error: `${botDocLink.name} failed, see console`,
+                    });
+                  }}
+                >
+                  Run {botDocLink.name}
+                  <EditIcon
+                    size={14}
+                    className="inline-block ml-2 cursor-pointer"
+                    onClick={(e) => {
+                      selectDoc(botDocLink.url);
+                      e.stopPropagation();
+                    }}
+                  />
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+      <div className={`mr-4 ${selectedDocLink?.type !== "essay" && "ml-auto"}`}>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <MoreHorizontal
@@ -141,7 +204,10 @@ export const Topbar: React.FC<TopbarProps> = ({
 
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: docTypes[selectedDocType].getTitle(newHandle.docSync()),
+                  name: docTypes[selectedDocType].getTitle(
+                    newHandle.docSync(),
+                    repo
+                  ),
                   type: selectedDocLink.type,
                 };
 

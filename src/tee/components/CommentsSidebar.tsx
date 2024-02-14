@@ -460,8 +460,6 @@ export const CommentsSidebar = ({
       let spliceCursor: A.Cursor;
       const mainDoc = mainDocHandle.docSync();
 
-      console.log("initial index", index);
-
       // this is bad, incrementally move the cursor backwards until we are at a character that exists in the main doc
       do {
         index -= 1;
@@ -1166,8 +1164,6 @@ function patchToString(patch: A.Patch | TextPatch, text: string) {
 
 function extractWord(text: string, from: number, to: number) {
   const value = text.slice(from, to);
-
-  console.log({ value });
 
   // special case single punctuation changes
   if (isPunctuation(value)) {
