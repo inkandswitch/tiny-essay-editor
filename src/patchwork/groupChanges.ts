@@ -139,19 +139,6 @@ export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
     return authorMatch && timeMatch;
   },
 
-  ByDate: (currentGroup: ChangeGroup, newChange: DecodedChangeWithMetadata) => {
-    if (!newChange.time || !currentGroup.time) {
-      return false;
-    }
-
-    const newChangeDate = new Date(newChange.time).toUTCString().split(" ")[1];
-    const currentGroupDate = new Date(currentGroup.time)
-      .toUTCString()
-      .split(" ")[1];
-
-    return newChangeDate === currentGroupDate;
-  },
-
   // Other groupings to try:
   // - time based sessions
   // - use a manual grouping persisted somewhere?

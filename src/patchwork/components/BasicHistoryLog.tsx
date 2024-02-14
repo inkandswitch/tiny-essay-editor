@@ -64,7 +64,8 @@ export const BasicHistoryLog: React.FC<{
 
     switch (zoomLevel) {
       case 1:
-        algorithm = "ByDate";
+        algorithm = "ByEditTime";
+        numericParameter = 180;
         break;
       case 2:
         algorithm = "ByAuthorOrTime";
