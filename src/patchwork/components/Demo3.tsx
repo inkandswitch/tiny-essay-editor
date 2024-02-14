@@ -179,6 +179,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
   const handleDeleteBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
+      setSelectedDocView({ type: "main" });
       deleteBranch({ docHandle: handle, branchUrl });
     },
     [handle]
