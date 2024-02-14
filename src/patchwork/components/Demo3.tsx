@@ -19,11 +19,18 @@ import {
   HistoryIcon,
   MergeIcon,
   MilestoneIcon,
+  MinusCircleIcon,
+  MinusIcon,
+  MinusSquareIcon,
   MoreHorizontal,
+  PlusCircleIcon,
   PlusIcon,
+  PlusSquareIcon,
   SplitIcon,
   Trash2Icon,
   WandIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
 } from "lucide-react";
 import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
@@ -49,7 +56,7 @@ import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../utils";
-import { BasicHistoryLog } from "./BasicHistoryLog";
+import { BasicHistoryLog, HistoryZoomLevel } from "./BasicHistoryLog";
 import { Hash } from "./Hash";
 import {
   createBranch,
@@ -57,6 +64,7 @@ import {
   mergeBranch,
   suggestBranchName,
 } from "../branches";
+import { Slider } from "@/components/ui/slider";
 
 type DocView =
   | { type: "main" }
@@ -213,56 +221,6 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
     [docUrl, repo]
   );
 
-  const createMilestone = () => {
-    const heads = JSON.parse(JSON.stringify(A.getHeads(doc)));
-    changeDoc((doc) => {
-      if (!doc.tags) {
-        doc.tags = [];
-      }
-      doc.tags.push({
-        name: "Version #" + (doc.tags.length + 1),
-        heads,
-        createdAt: Date.now(),
-        createdBy: account?.contactHandle?.url,
-      });
-    });
-  };
-
-  const renameMilestone = (heads: A.Heads, newName: string) => {
-    changeDoc((doc) => {
-      const milestone = doc.tags?.find((milestone) =>
-        isEqual(milestone.heads, heads)
-      );
-      if (milestone) {
-        milestone.name = newName;
-      }
-    });
-  };
-
-  const deleteMilestone = (heads: A.Heads) => {
-    changeDoc((doc) => {
-      const index = doc.tags.findIndex((milestone) =>
-        isEqual(milestone.heads, heads)
-      );
-      if (index !== -1) {
-        doc.tags.splice(index, 1);
-      }
-    });
-  };
-
-  const createBranchFromMilestone = (milestone: Tag) => {
-    alert("This is a speculative feature, not implemented yet");
-    // GL 2/7: not quite sure how this works... how do you clone at a heads?
-  };
-
-  const revertMainToMilestone = (milestone: Tag) => {
-    const textAtMilestone = A.view(doc, milestone.heads).content;
-    changeDoc((doc) => {
-      A.updateText(doc, ["content"], textAtMilestone);
-    });
-    setSelectedDocView({ type: "main" });
-  };
-
   const [branchDoc] = useDocument<MarkdownDoc>(
     selectedDocView.type === "branch" ? selectedDocView.url : undefined
   );
@@ -299,7 +257,13 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
+  const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
+
+  // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
+
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
+
+  // ---- ANYTHING RELYING ON doc SHOULD GO BELOW HERE ----
 
   const branches = doc.branchMetadata.branches ?? [];
 
@@ -328,7 +292,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                 onValueChange={(value) => {
                   if (value === "__newDraft") {
                     handleCreateBranch();
-                  } else if (value === "__moveChangesToDraft") {
+                  } else if (value === "__moveChangesToBranch") {
                     moveCurrentChangesToBranch();
                   } else {
                     setSelectedDocView(JSON.parse(value as string));
@@ -414,8 +378,8 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                       currentEditSessionDiff &&
                       currentEditSessionDiff.patches.length > 0 && (
                         <SelectItem
-                          value={"__moveChangesToDraft"}
-                          key={"__moveChangesToDraft"}
+                          value={"__moveChangesToBranch"}
+                          key={"__moveChangesToBranch"}
                           className="font-regular"
                           onMouseEnter={() =>
                             setIsHoveringYankToBranchOption(true)
@@ -599,15 +563,31 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
 
           {isHistorySidebarOpen && (
             <div className=" bg-white border-l border-gray-200 py-2 h-full overflow-hidden flex flex-col">
-              <div className="flex gap-2 items-center text-sm font-semibold text-gray-600 pb-2 border-b border-gray-500">
+              <div className="px-2 pb-2 flex gap-2 items-center text-sm font-semibold text-gray-600 ">
                 <div
                   onClick={() => setIsHistorySidebarOpen(false)}
                   className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
                 >
                   <ChevronsRight size={16} />
                 </div>
-                <HistoryIcon size={16} />
-                History
+                <div className="flex gap-1">
+                  <HistoryIcon size={16} />
+                  History
+                </div>
+                <div className="ml-4 flex gap-1">
+                  <MinusSquareIcon size={12} />
+                  <Slider
+                    className="w-24"
+                    min={1}
+                    max={3}
+                    step={1}
+                    value={[historyZoomLevel]}
+                    onValueChange={([value]) =>
+                      setHistoryZoomLevel(value as HistoryZoomLevel)
+                    }
+                  />
+                  <PlusSquareIcon size={12} />
+                </div>
               </div>
 
               <div className="flex-grow overflow-hidden">
@@ -617,6 +597,7 @@ export const Demo3: React.FC<{ docUrl: AutomergeUrl }> = ({ docUrl }) => {
                   docUrl={selectedBranch?.url ?? docUrl}
                   setDocHeads={setDocHeadsFromHistorySidebar}
                   setDiff={setDiffFromHistorySidebar}
+                  zoomLevel={historyZoomLevel}
                 />
               </div>
             </div>

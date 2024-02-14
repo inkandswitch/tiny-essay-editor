@@ -18,6 +18,8 @@ import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvata
 import { DiffWithProvenance } from "../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
+export type HistoryZoomLevel = 1 | 2 | 3;
+
 type MilestoneSelection = {
   type: "milestone";
   heads: Heads;
@@ -39,7 +41,8 @@ export const BasicHistoryLog: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-}> = ({ docUrl, setDocHeads, setDiff }) => {
+  zoomLevel: HistoryZoomLevel;
+}> = ({ docUrl, setDocHeads, setDiff, zoomLevel }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
@@ -48,6 +51,7 @@ export const BasicHistoryLog: React.FC<{
   // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
     () => getMarkersForDoc(handle, repo),
+    // Important to have doc as a dependency here even though the linter says not needed
     [doc, handle, repo]
   );
 
@@ -55,9 +59,28 @@ export const BasicHistoryLog: React.FC<{
   const { groupedChanges } = useMemo(() => {
     if (!doc) return { groupedChanges: [], changeCount: 0 };
 
+    let algorithm = "ByAuthor";
+    let numericParameter = 100;
+
+    switch (zoomLevel) {
+      case 1:
+        algorithm = "ByDate";
+        break;
+      case 2:
+        algorithm = "ByAuthorOrTime";
+        numericParameter = 60;
+        break;
+      case 3:
+        algorithm = "ByAuthorOrTime";
+        numericParameter = 1;
+        break;
+      default:
+        break;
+    }
+
     const { changeCount, changeGroups } = getGroupedChanges(doc, {
-      algorithm: "ByAuthor",
-      numericParameter: 100,
+      algorithm,
+      numericParameter,
       markers,
     });
 
@@ -65,7 +88,7 @@ export const BasicHistoryLog: React.FC<{
       changeCount,
       groupedChanges: changeGroups,
     };
-  }, [doc, markers]);
+  }, [doc, markers, zoomLevel]);
 
   /** If there's a marker that specifies "hide history before this", we
    *  collapse change groups before that point by default.
@@ -413,12 +436,21 @@ export const BasicHistoryLog: React.FC<{
                     <div className="text-sm">
                       {changeGroup.authorUrls.length > 0 && (
                         <div className=" text-gray-600 inline">
-                          {changeGroup.authorUrls.map((contactUrl) => (
-                            <InlineContactAvatar
-                              key={contactUrl}
-                              url={contactUrl}
-                              size="sm"
-                            />
+                          {changeGroup.authorUrls.map((contactUrl, index) => (
+                            <div className="inline">
+                              <InlineContactAvatar
+                                key={contactUrl}
+                                url={contactUrl}
+                                size="sm"
+                              />
+                              {changeGroup.authorUrls.length > 2 &&
+                                index < changeGroup.authorUrls.length - 1 && (
+                                  <span>,</span>
+                                )}
+                              {index === changeGroup.authorUrls.length - 2 && (
+                                <span> and </span>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}{" "}

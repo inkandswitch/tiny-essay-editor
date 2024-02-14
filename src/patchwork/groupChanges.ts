@@ -73,6 +73,7 @@ type GroupingAlgorithm = (
   numericParameter: number
 ) => boolean;
 
+// A grouping algorithm returns a boolean denoting whether the new change should be added to the current group.
 export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
   ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
@@ -123,6 +124,34 @@ export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
     return newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
   },
 
+  ByAuthorOrTime: (currentGroup, newChange, maxGapInMinutes) => {
+    const authorMatch =
+      !newChange.metadata?.author ||
+      currentGroup.authorUrls.includes(
+        newChange.metadata?.author as AutomergeUrl
+      );
+    const timeMatch =
+      newChange.time === undefined ||
+      newChange.time === 0 ||
+      currentGroup.time === undefined ||
+      currentGroup.time === 0 ||
+      newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
+    return authorMatch && timeMatch;
+  },
+
+  ByDate: (currentGroup: ChangeGroup, newChange: DecodedChangeWithMetadata) => {
+    if (!newChange.time || !currentGroup.time) {
+      return false;
+    }
+
+    const newChangeDate = new Date(newChange.time).toUTCString().split(" ")[1];
+    const currentGroupDate = new Date(currentGroup.time)
+      .toUTCString()
+      .split(" ")[1];
+
+    return newChangeDate === currentGroupDate;
+  },
+
   // Other groupings to try:
   // - time based sessions
   // - use a manual grouping persisted somewhere?
@@ -137,6 +166,7 @@ export const GROUPINGS_THAT_TAKE_BATCH_SIZE: Array<keyof typeof GROUPINGS> = [
 
 export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
   "ByEditTime",
+  "ByAuthorOrTime",
 ];
 
 export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
