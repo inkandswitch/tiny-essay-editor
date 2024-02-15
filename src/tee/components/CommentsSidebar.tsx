@@ -413,7 +413,7 @@ export const CommentsSidebar = ({
       }
 
       if (patch.raw.splice) {
-        patches.push(patch.raw.delete);
+        patches.push(patch.raw.splice);
       }
 
       doPatchesEffect(patches, mergePatch);
@@ -489,9 +489,14 @@ export const CommentsSidebar = ({
         );
       });
 
-      changeDoc((doc) => {
-        A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
-      });
+      try {
+        changeDoc((doc) => {
+          // todo: this throws an error but it kindof works
+          A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
