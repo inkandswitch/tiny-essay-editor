@@ -16,6 +16,7 @@ import {
   CrownIcon,
   Edit3Icon,
   GitBranchIcon,
+  GitBranchPlusIcon,
   HistoryIcon,
   MergeIcon,
   MilestoneIcon,
@@ -60,6 +61,7 @@ import {
 } from "../branches";
 import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
+import { toast } from "sonner";
 
 interface MakeBranchOptions {
   name?: string;
@@ -79,9 +81,21 @@ export const Demo3: React.FC<{
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
-  const [showChangesFlag, setShowChangesFlag] = useState<boolean>(false);
+  const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
+
+  // Reset compare view settings every time you switch branches
+  useEffect(() => {
+    if (selectedBranch.type === "main") {
+      setCompareWithMainFlag(false);
+      setShowChangesFlag(false);
+    }
+    if (selectedBranch.type === "branch") {
+      setShowChangesFlag(true);
+      setCompareWithMainFlag(false);
+    }
+  }, [selectedBranch]);
 
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
     useState<boolean>(false);
@@ -149,6 +163,7 @@ export const Demo3: React.FC<{
         createdBy: account?.contactHandle?.url,
       });
       setSelectedBranch({ type: "branch", url: branchHandle.url });
+      toast("Created a new branch");
       return branchHandle;
     },
     [repo, handle, account?.contactHandle?.url]
@@ -179,6 +194,7 @@ export const Demo3: React.FC<{
     (branchUrl: AutomergeUrl) => {
       setSelectedBranch({ type: "main" });
       deleteBranch({ docHandle: handle, branchUrl });
+      toast("Deleted branch");
     },
     [handle]
   );
@@ -192,6 +208,7 @@ export const Demo3: React.FC<{
         branchHandle,
         mergedBy: account?.contactHandle?.url,
       });
+      toast.success("Branch merged to main");
     },
     [docUrl, repo, account?.contactHandle?.url]
   );
@@ -203,6 +220,8 @@ export const Demo3: React.FC<{
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
     });
+
+    toast("Incorporated updates from main");
   };
 
   const renameBranch = useCallback(
@@ -404,6 +423,7 @@ export const Demo3: React.FC<{
                   branchUrl={selectedBranchLink.url}
                   handleDeleteBranch={handleDeleteBranch}
                   handleRenameBranch={renameBranch}
+                  handleRebaseBranch={rebaseBranch}
                 />
               )}
 
@@ -449,16 +469,6 @@ export const Demo3: React.FC<{
                       <MergeIcon className="mr-2" size={12} />
                       Merge
                     </Button>
-                    <Button
-                      onClick={(e) => {
-                        rebaseBranch(selectedBranchLink.url);
-                      }}
-                      variant="outline"
-                      className="h-6 text-x"
-                      disabled={!selectedBranchNeedsRebase}
-                    >
-                      Update from main
-                    </Button>
                   </>
                 )}
                 {selectedBranch.type === "branch" && (
@@ -489,7 +499,7 @@ export const Demo3: React.FC<{
                         setCompareWithMainFlag(!compareWithMainFlag)
                       }
                     />
-                    <label htmlFor="side-by-side">Show branch and main</label>
+                    <label htmlFor="side-by-side">Show next to main</label>
                   </div>
                 )}
               </div>
@@ -515,13 +525,17 @@ export const Demo3: React.FC<{
             </div>
             <div className="h-full items-stretch justify-stretch relative flex flex-col">
               {compareWithMainFlag && (
-                <div className="w-full flex top-0 bg-gray-50 pt-4">
+                <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
                   <div className="flex-1 pl-4">
                     <div className="inline-flex items-center gap-1">
-                      <CrownIcon className="inline" size={12} /> main
+                      <CrownIcon className="inline mr-1" size={12} /> Main
                     </div>
                   </div>
-                  <div className="flex-1 pl-4">{selectedBranchLink.name}</div>
+                  <div className="flex-1 pl-4">
+                    {" "}
+                    <GitBranchIcon className="inline mr-1" size={12} />
+                    {selectedBranchLink.name}
+                  </div>
                 </div>
               )}
               <div className="flex-1 min-h-0 overflow-auto">
@@ -611,12 +625,14 @@ const BranchActions: React.FC<{
   branchUrl: AutomergeUrl;
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;
+  handleRebaseBranch: (branchUrl: AutomergeUrl) => void;
 }> = ({
   doc,
   branchDoc,
   branchUrl,
   handleDeleteBranch,
   handleRenameBranch,
+  handleRebaseBranch,
 }) => {
   const branchHeads = useMemo(
     () => (branchDoc ? JSON.stringify(A.getHeads(branchDoc)) : undefined),
@@ -646,18 +662,42 @@ const BranchActions: React.FC<{
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="mr-4 w-72">
+        <DropdownMenuItem
+          onClick={() => {
+            const newName = prompt("Enter the new name for this branch:");
+            if (newName && newName.trim() !== "") {
+              handleRenameBranch(branchUrl, newName.trim());
+            }
+          }}
+        >
+          <Edit3Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
+          Rename branch
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            handleRebaseBranch(branchUrl);
+          }}
+        >
+          <GitBranchPlusIcon
+            className="inline-block text-gray-500 mr-2"
+            size={14}
+          />{" "}
+          Incorporate updates from main
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            if (
+              window.confirm("Are you sure you want to delete this branch?")
+            ) {
+              handleDeleteBranch(branchUrl);
+            }
+          }}
+        >
+          <Trash2Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
+          Delete branch
+        </DropdownMenuItem>
+        <DropdownMenuSeparator></DropdownMenuSeparator>
         <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => {
-              const newName = prompt("Enter the new name for this branch:");
-              if (newName && newName.trim() !== "") {
-                handleRenameBranch(branchUrl, newName.trim());
-              }
-            }}
-          >
-            <Edit3Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
-            Rename branch
-          </DropdownMenuItem>
           <DropdownMenuLabel>Suggested renames:</DropdownMenuLabel>
           {nameSuggestions.length === 0 && (
             <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
@@ -673,20 +713,6 @@ const BranchActions: React.FC<{
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
-        <DropdownMenuSeparator></DropdownMenuSeparator>
-
-        <DropdownMenuItem
-          onClick={() => {
-            if (
-              window.confirm("Are you sure you want to delete this branch?")
-            ) {
-              handleDeleteBranch(branchUrl);
-            }
-          }}
-        >
-          <Trash2Icon className="inline-block text-gray-500 mr-2" size={14} />{" "}
-          Delete branch
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
