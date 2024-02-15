@@ -313,7 +313,18 @@ export const Demo3: React.FC<{
                   } else if (value === "__moveChangesToBranch") {
                     moveCurrentChangesToBranch();
                   } else {
-                    setSelectedBranch(JSON.parse(value as string));
+                    const selection = JSON.parse(
+                      value as string
+                    ) as SelectedBranch;
+                    setSelectedBranch(selection);
+                    if (selection.type === "branch") {
+                      const newBranchName = doc.branchMetadata.branches.find(
+                        (b) => b.url === selection.url
+                      )?.name;
+                      toast(`Switched to branch: ${newBranchName}`);
+                    } else if (selection.type === "main") {
+                      toast("Switched to Main");
+                    }
                   }
                 }}
               >

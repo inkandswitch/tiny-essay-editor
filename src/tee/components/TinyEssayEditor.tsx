@@ -201,9 +201,7 @@ export const TinyEssayEditor = ({
          */}
         <div className="flex @xl:mt-4 @xl:mr-2 @xl:mb-8 @xl:ml-[-100px] @4xl:ml-[-200px] w-full @xl:w-4/5  max-w-[722px]">
           <div
-            className={`group absolute -z-10 bg-white box-border rounded-md px-8 py-4 w-10 h-full transition-all border border-gray-200 hover:border-gray-400 ${
-              showBranchLayers ? "mt-4 -ml-4" : ""
-            } `}
+            className={`group absolute -z-10 bg-white box-border rounded-md px-8 py-4 w-10 h-full transition-all border border-gray-200 hover:border-gray-400 mt-4 -ml-4  `}
             onClick={() => selectMainBranch && selectMainBranch()}
           >
             <div className="absolute -left-10 top-0 text-gray-500 font-semibold text-xs transition-opacity duration-300 ease-in-out group-hover:opacity-100 opacity-0">
@@ -211,11 +209,11 @@ export const TinyEssayEditor = ({
             </div>
           </div>
           <div
-            className={`w-full bg-white box-border rounded-md px-8 py-4 ${
+            className={`w-full bg-white box-border rounded-md px-8 py-4 transition-all duration-700 ${
               readOnly
                 ? " border-2 border-dashed border-slate-400"
                 : "border border-gray-200 "
-            } `}
+            } ${showBranchLayers ? "" : "mt-4 -ml-4"}`}
           >
             <MarkdownEditor
               handle={handle}
