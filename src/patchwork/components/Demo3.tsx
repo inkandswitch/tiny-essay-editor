@@ -17,6 +17,7 @@ import {
   Edit3Icon,
   GitBranchIcon,
   GitBranchPlusIcon,
+  GitMergeIcon,
   HistoryIcon,
   MergeIcon,
   MilestoneIcon,
@@ -208,6 +209,7 @@ export const Demo3: React.FC<{
         branchHandle,
         mergedBy: account?.contactHandle?.url,
       });
+      setSelectedBranch({ type: "main" });
       toast.success("Branch merged to main");
     },
     [docUrl, repo, account?.contactHandle?.url]
@@ -233,6 +235,7 @@ export const Demo3: React.FC<{
         );
         if (copy) {
           copy.name = newName;
+          toast(`Renamed branch to "${newName}"`);
         }
       });
     },
@@ -435,6 +438,7 @@ export const Demo3: React.FC<{
                   handleDeleteBranch={handleDeleteBranch}
                   handleRenameBranch={renameBranch}
                   handleRebaseBranch={rebaseBranch}
+                  handleMergeBranch={handleMergeBranch}
                 />
               )}
 
@@ -465,13 +469,12 @@ export const Demo3: React.FC<{
                 </div>
               )}
 
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-700 ">
+              <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
                 {selectedBranch.type === "branch" && (
-                  <>
+                  <div className="mr-2">
                     <Button
                       onClick={(e) => {
                         handleMergeBranch(selectedBranchLink.url);
-                        setSelectedBranch({ type: "main" });
                         e.stopPropagation();
                       }}
                       variant="outline"
@@ -480,7 +483,7 @@ export const Demo3: React.FC<{
                       <MergeIcon className="mr-2" size={12} />
                       Merge
                     </Button>
-                  </>
+                  </div>
                 )}
                 {selectedBranch.type === "branch" && (
                   <div className="flex items-center mr-1">
@@ -637,6 +640,7 @@ const BranchActions: React.FC<{
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;
   handleRebaseBranch: (branchUrl: AutomergeUrl) => void;
+  handleMergeBranch: (branchUrl: AutomergeUrl) => void;
 }> = ({
   doc,
   branchDoc,
@@ -644,6 +648,7 @@ const BranchActions: React.FC<{
   handleDeleteBranch,
   handleRenameBranch,
   handleRebaseBranch,
+  handleMergeBranch,
 }) => {
   const branchHeads = useMemo(
     () => (branchDoc ? JSON.stringify(A.getHeads(branchDoc)) : undefined),
@@ -694,6 +699,14 @@ const BranchActions: React.FC<{
             size={14}
           />{" "}
           Incorporate updates from main
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            handleMergeBranch(branchUrl);
+          }}
+        >
+          <GitMergeIcon className="inline-block text-gray-500 mr-2" size={14} />{" "}
+          Merge branch
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
