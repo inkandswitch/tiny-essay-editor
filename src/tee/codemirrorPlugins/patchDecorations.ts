@@ -93,28 +93,34 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
           ["splice", "del"].includes(patch.action)
       );
 
-    const sortedPatches = sortBy(patches, (patch) => patch.path[1]);
-
-    const decorations = sortedPatches.flatMap((patch) => {
-      switch (patch.action) {
-        case "splice": {
-          const from = patch.path[1] as number;
-          const length = patch.value.length;
-          const decoration =
-            diffStyle === "private" ? privateDecoration : spliceDecoration;
-          return [decoration.range(from, from + length)];
-        }
-        case "del": {
-          if (patch.path.length < 2) {
-            console.error("this is so weird! why??");
-            return [];
+    const decorations = patches
+      .flatMap((patch) => {
+        switch (patch.action) {
+          case "splice": {
+            const from = patch.path[1] as number;
+            const length = patch.value.length;
+            const decoration =
+              diffStyle === "private" ? privateDecoration : spliceDecoration;
+            return [decoration.range(from, from + length)];
           }
-          const from = patch.path[1] as number;
-          return [makeDeleteDecoration(patch.removed).range(from)];
+          case "del": {
+            if (patch.path.length < 2) {
+              console.error("this is so weird! why??");
+              return [];
+            }
+            const from = patch.path[1] as number;
+            return [makeDeleteDecoration(patch.removed).range(from)];
+          }
         }
-      }
-      return [];
-    });
+        return [];
+      })
+      .filter((decoration) => {
+        if (decoration.from === decoration.to) {
+          console.warn("empty patch decoration", decoration);
+          return false;
+        }
+        return true;
+      });
 
-    return Decoration.set(decorations);
+    return Decoration.set(decorations, true);
   });
