@@ -430,7 +430,7 @@ export const Demo3: React.FC<{
                 </SelectContent>
               </Select>
 
-              {selectedBranch.type === "branch" && (
+              {selectedBranch.type === "branch" && selectedBranchLink?.url && (
                 <BranchActions
                   doc={doc}
                   branchDoc={branchDoc}
@@ -538,7 +538,7 @@ export const Demo3: React.FC<{
               )}
             </div>
             <div className="h-full items-stretch justify-stretch relative flex flex-col">
-              {compareWithMainFlag && (
+              {compareWithMainFlag && selectedBranchLink?.name && (
                 <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
                   <div className="flex-1 pl-4">
                     <div className="inline-flex items-center gap-1">
