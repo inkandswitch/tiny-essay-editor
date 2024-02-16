@@ -93,34 +93,26 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
           ["splice", "del"].includes(patch.action)
       );
 
-    const decorations = patches
-      .flatMap((patch) => {
-        switch (patch.action) {
-          case "splice": {
-            const from = patch.path[1] as number;
-            const length = patch.value.length;
-            const decoration =
-              diffStyle === "private" ? privateDecoration : spliceDecoration;
-            return [decoration.range(from, from + length)];
-          }
-          case "del": {
-            if (patch.path.length < 2) {
-              console.error("this is so weird! why??");
-              return [];
-            }
-            const from = patch.path[1] as number;
-            return [makeDeleteDecoration(patch.removed).range(from)];
-          }
+    const decorations = patches.flatMap((patch) => {
+      switch (patch.action) {
+        case "splice": {
+          const from = patch.path[1] as number;
+          const length = patch.value.length;
+          const decoration =
+            diffStyle === "private" ? privateDecoration : spliceDecoration;
+          return [decoration.range(from, from + length)];
         }
-        return [];
-      })
-      .filter((decoration) => {
-        if (decoration.from === decoration.to) {
-          console.warn("empty patch decoration", decoration);
-          return false;
+        case "del": {
+          if (patch.path.length < 2) {
+            console.error("this is so weird! why??");
+            return [];
+          }
+          const from = patch.path[1] as number;
+          return [makeDeleteDecoration(patch.removed).range(from)];
         }
-        return true;
-      });
+      }
+      return [];
+    });
 
     return Decoration.set(decorations, true);
   });
