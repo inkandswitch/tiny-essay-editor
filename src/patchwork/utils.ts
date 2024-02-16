@@ -6,6 +6,7 @@ import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { sortBy } from "lodash";
 import { useDebounce } from "./components/Spatial";
+import * as wasm from "@automerge/automerge-wasm";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -330,3 +331,24 @@ export function getCursorPositionSafely(
     return null;
   }
 }
+
+// this creates a copy of the document with only the changes up until the passed in heads
+// some functions like A.merge in automerge don't work with view documents
+// if you need to pass a document at a certain heads to these functions use copyDocAtHeads instead
+export const copyDocAtHeads = <T>(doc: A.Doc<T>, heads: A.Heads): A.Doc<T> => {
+  const saved = A.save(doc);
+  const wasmDoc = wasm.load(saved);
+  const extraneousChanges = new Set(
+    wasmDoc.getChanges(heads).map((change) => A.decodeChange(change).hash)
+  );
+
+  const desiredChanges = A.getAllChanges(doc)
+    .map((c) => A.decodeChange(c))
+    .filter((change) => !extraneousChanges.has(change.hash))
+    .map((change) => A.encodeChange(change));
+
+  let cloned = A.init<T>();
+  let [resultDoc] = A.applyChanges(cloned, desiredChanges);
+
+  return resultDoc;
+};

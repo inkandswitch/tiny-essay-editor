@@ -29,7 +29,7 @@ import {
   MergeIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { next as A, ChangeFn, uuid } from "@automerge/automerge";
+import { next as A, ChangeFn, Doc, uuid } from "@automerge/automerge";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import this from @automerge/automerge directly
 
 import {
@@ -54,13 +54,15 @@ import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/patchwork/groupChanges";
 import { HistoryFilter } from "./HistoryFilter";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
-import path from "path";
+import { useHandle } from "@automerge/automerge-repo-react-hooks";
+import { copyDocAtHeads } from "@/patchwork/utils";
 
 const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work for deletes so I'm disabling it for now
 
 export const CommentsSidebar = ({
   doc,
   changeDoc,
+  handle,
   mainDocHandle,
   selection,
   annotationsWithPositions,
@@ -76,6 +78,7 @@ export const CommentsSidebar = ({
 }: {
   doc: MarkdownDoc;
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
+  handle: DocHandle<MarkdownDoc>;
   mainDocHandle?: DocHandle<MarkdownDoc>;
   selection: TextSelection;
   annotationsWithPositions: TextAnnotationWithPosition[];
@@ -422,7 +425,7 @@ export const CommentsSidebar = ({
       const spliceCursor = A.getCursor(doc, ["content"], index - 1);
 
       // insert change on main at the heads when this branch was forked of
-      const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
+      let newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
         const spliceIndexInMain = getCursorPositionSafely(
           mainDoc,
           ["content"],
@@ -434,26 +437,19 @@ export const CommentsSidebar = ({
         }
       });
 
+      handle.update((doc) =>
+        A.merge(doc, copyDocAtHeads(mainDocHandle.docSync(), newDiffBase))
+      );
+
+      changeDoc((doc) => {
+        A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
+      });
+
       // update diff base of branch to include merged change in main
       changeDoc((doc) => {
         doc.branchMetadata.source.branchHeads = JSON.parse(
           JSON.stringify(newDiffBase)
         );
-      });
-
-      // merge new diff base into branch and delete the original text
-      try {
-        changeDoc((doc) => {
-          // todo: this throws an error but it kindof works
-          A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
-        });
-      } catch (err) {
-        console.error(err);
-      }
-
-      // todo: should do this in the changeDoc call above
-      changeDoc((doc) => {
-        A.splice(doc, ["content"], patch.path[1] as number, patch.value.length);
       });
     } else if (patch.action === "del") {
       let index = patch.path[1] as number;
@@ -489,14 +485,12 @@ export const CommentsSidebar = ({
         );
       });
 
-      try {
-        changeDoc((doc) => {
-          // todo: this throws an error but it kindof works
-          A.merge(doc, A.view(mainDocHandle.docSync(), newDiffBase));
-        });
-      } catch (err) {
-        console.error(err);
-      }
+      /* merge new diff base into branch
+       *
+       * todo: these update and change calls should happen at the newDiffBase heads */
+      handle.update((doc) =>
+        A.merge(doc, copyDocAtHeads(mainDocHandle.docSync(), newDiffBase))
+      );
     }
   };
 

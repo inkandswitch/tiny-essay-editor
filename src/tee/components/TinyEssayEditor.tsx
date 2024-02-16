@@ -232,6 +232,7 @@ export const TinyEssayEditor = ({
           </div>
           <div className="ml-2 w-0">
             <CommentsSidebar
+              handle={handle}
               diffBase={diffBase}
               doc={docAtHeads}
               changeDoc={changeDoc}
