@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Button } from "@/components/ui/button";
 import {
+  FolderDoc,
   useCurrentAccount,
   useCurrentAccountDoc,
   useCurrentRootFolderDoc,
@@ -286,7 +287,13 @@ const parseCurrentUrlHash = (): UrlHashParams => {
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
-const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
+const useSelectedDoc = ({
+  rootFolderDoc,
+  changeRootFolderDoc,
+}: {
+  rootFolderDoc: FolderDoc;
+  changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
+}) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
   const [selectedDoc] = useDocument(selectedDocUrl);
 
@@ -294,6 +301,10 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
     if (!doc) {
       alert(`Could not find document with URL: ${docUrl}`);
+      return;
+    }
+    if (!Object.keys(docTypes).includes(doc.type)) {
+      alert(`Unknown doc type: ${doc.type}`);
       return;
     }
     setUrlHashForDoc({ docUrl, docType: doc.type });
