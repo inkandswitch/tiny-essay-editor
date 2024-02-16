@@ -38,7 +38,7 @@ Check out the `version-control-project` branch in the vendored automerge-repo. B
 
 ```
 cd src/vendor/vendored-automerge-repo
-git checkout version-control-project
+git checkout chronicle
 ```
 
 Install and build automerge-repo
