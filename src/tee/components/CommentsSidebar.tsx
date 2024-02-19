@@ -425,17 +425,26 @@ export const CommentsSidebar = ({
       const spliceCursor = A.getCursor(doc, ["content"], index - 1);
 
       // insert change on main at the heads when this branch was forked of
-      let newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
-        const spliceIndexInMain = getCursorPositionSafely(
-          mainDoc,
-          ["content"],
-          spliceCursor
-        );
+      let newDiffBase = mainDocHandle.changeAt(
+        handle.docSync().branchMetadata.source.branchHeads, // read branchHeads directly, diffBase might be stale
+        (mainDoc) => {
+          const spliceIndexInMain = getCursorPositionSafely(
+            mainDoc,
+            ["content"],
+            spliceCursor
+          );
 
-        if (spliceIndexInMain !== null) {
-          A.splice(mainDoc, ["content"], spliceIndexInMain + 1, 0, patch.value);
+          if (spliceIndexInMain !== null) {
+            A.splice(
+              mainDoc,
+              ["content"],
+              spliceIndexInMain + 1,
+              0,
+              patch.value
+            );
+          }
         }
-      });
+      );
 
       handle.update((doc) =>
         A.merge(doc, copyDocAtHeads(mainDocHandle.docSync(), newDiffBase))
@@ -466,17 +475,20 @@ export const CommentsSidebar = ({
       );
 
       // apply delete on main at the heads when this branch was forked of
-      const newDiffBase = mainDocHandle.changeAt(diffBase, (mainDoc) => {
-        const spliceIndexInMain = getCursorPositionSafely(
-          mainDoc,
-          ["content"],
-          spliceCursor
-        );
+      const newDiffBase = mainDocHandle.changeAt(
+        handle.docSync().branchMetadata.source.branchHeads, // read branchHeads directly, diffBase might be stale
+        (mainDoc) => {
+          const spliceIndexInMain = getCursorPositionSafely(
+            mainDoc,
+            ["content"],
+            spliceCursor
+          );
 
-        if (spliceIndexInMain !== null) {
-          A.splice(mainDoc, ["content"], spliceIndexInMain + 1, patch.length);
+          if (spliceIndexInMain !== null) {
+            A.splice(mainDoc, ["content"], spliceIndexInMain + 1, patch.length);
+          }
         }
-      });
+      );
 
       // update diff base of branch to include merged change in main
       changeDoc((doc) => {
@@ -484,13 +496,6 @@ export const CommentsSidebar = ({
           JSON.stringify(newDiffBase)
         );
       });
-
-      /* merge new diff base into branch
-       *
-       * todo: these update and change calls should happen at the newDiffBase heads */
-      handle.update((doc) =>
-        A.merge(doc, copyDocAtHeads(mainDocHandle.docSync(), newDiffBase))
-      );
     }
   };
 
