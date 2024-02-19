@@ -4,7 +4,7 @@ import * as A from "@automerge/automerge/next";
 import { useEffect, useMemo, useRef } from "react";
 import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { sortBy } from "lodash";
+import { lastIndexOf, sortBy } from "lodash";
 import { useDebounce } from "./components/Spatial";
 import * as wasm from "@automerge/automerge-wasm";
 
@@ -271,28 +271,50 @@ export const combinePatches = (
   return patchesWithReplaces;
 };
 
+// only creates overlap if the strings overlap on full words
+// Example: str1: "Here text", str2: "Here next" would return 5 ("Here ...")
 const getOverlapStart = (str1: string, str2: string) => {
+  if (str1 === str2) {
+    return str1.length;
+  }
+
+  const lastWordStart = str1.lastIndexOf(" ") + 1;
+
   let overlapLength = 0;
-  for (let i = 0; i < str1.length && i < str2.length; i++) {
+  for (
+    let i = 0;
+    i < str1.length && i < str2.length && i < lastWordStart;
+    i++
+  ) {
     if (str1[i] === str2[i]) {
       overlapLength++;
     } else {
       break;
     }
   }
+
   return overlapLength;
 };
 
+// only creates overlap if the strings overlap on full words
+// Example: str1: "Text here", str2: "Test here" would return 5 ("... here")
 const getOverlapEnd = (str1: string, str2: string) => {
+  if (str1 === str2) {
+    return str1.length;
+  }
+
+  const firstWordStart = str1.indexOf(" ") - 1;
   let overlapLength = 0;
+
   const minLength = Math.min(str1.length, str2.length);
-  for (let i = 1; i <= minLength; i++) {
+  for (let i = 1; i <= minLength && i < firstWordStart; i++) {
     if (str1[str1.length - i] === str2[str2.length - i]) {
       overlapLength++;
     } else {
       break;
     }
   }
+
   return overlapLength;
 };
 
