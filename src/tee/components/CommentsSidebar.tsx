@@ -27,6 +27,7 @@ import {
   UndoIcon,
   CheckIcon,
   MergeIcon,
+  ArrowRight,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { next as A, ChangeFn, Doc, uuid } from "@automerge/automerge";
@@ -64,6 +65,7 @@ export const CommentsSidebar = ({
   changeDoc,
   handle,
   mainDocHandle,
+  branchDocHandle,
   selection,
   annotationsWithPositions,
   selectedAnnotationIds,
@@ -80,6 +82,7 @@ export const CommentsSidebar = ({
   changeDoc: (changeFn: ChangeFn<MarkdownDoc>) => void;
   handle: DocHandle<MarkdownDoc>;
   mainDocHandle?: DocHandle<MarkdownDoc>;
+  branchDocHandle?: DocHandle<MarkdownDoc>;
   selection: TextSelection;
   annotationsWithPositions: TextAnnotationWithPosition[];
   selectedAnnotationIds: string[];
@@ -520,6 +523,10 @@ export const CommentsSidebar = ({
     }
   };
 
+  const moveEditsToBranch = (annotation: TextAnnotation) => {
+    alert("not implemented yet");
+  };
+
   const toggleAnnotationIsMarkedReviewed = (annotation: TextAnnotation) => {
     let draftId: string;
 
@@ -663,6 +670,9 @@ export const CommentsSidebar = ({
               mainDocHandle
                 ? () => mergeEditsFromAnnotation(annotation)
                 : undefined
+            }
+            moveEditsToBranch={
+              branchDocHandle ? () => moveEditsToBranch(annotation) : undefined
             }
             toggleAnnotationIsMarkedReviewed={() =>
               toggleAnnotationIsMarkedReviewed(annotation)
@@ -845,6 +855,7 @@ interface AnnotationViewProps {
   undoEditsFromAnnotation: () => void;
   toggleAnnotationIsMarkedReviewed: () => void;
   mergeEditsFromAnnotation?: () => void;
+  moveEditsToBranch?: () => void;
   resolveThread: () => void;
   addedComments: { threadId: string; commentIndex: number }[];
 }
@@ -864,6 +875,7 @@ export const TextAnnotationView = ({
   undoEditsFromAnnotation,
   toggleAnnotationIsMarkedReviewed,
   mergeEditsFromAnnotation,
+  moveEditsToBranch,
   resolveThread,
   addedComments,
 }: AnnotationViewProps) => {
@@ -1033,6 +1045,16 @@ export const TextAnnotationView = ({
               >
                 <MergeIcon size={14} className="" />
                 Merge
+              </div>
+            )}
+
+            {moveEditsToBranch && (
+              <div
+                className="flex hover:text-gray-800 gap-2 items-center"
+                onClick={() => moveEditsToBranch()}
+              >
+                <ArrowRight size={14} className="" />
+                Move edits to branch
               </div>
             )}
           </div>

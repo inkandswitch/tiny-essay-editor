@@ -280,6 +280,12 @@ export const Demo3: React.FC<{
 
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
 
+  const branchDocHandle = useHandle<MarkdownDoc>(
+    selectedBranch && selectedBranch.type === "branch"
+      ? selectedBranch?.url
+      : undefined
+  );
+
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
   if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
@@ -557,6 +563,7 @@ export const Demo3: React.FC<{
                   {selectedBranch.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
                       docUrl={docUrl}
+                      branchDocHandle={branchDocHandle}
                       key={`compare-${docUrl}`}
                       diff={showDiff ? currentEditSessionDiff : undefined}
                       diffBase={

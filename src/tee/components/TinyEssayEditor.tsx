@@ -7,7 +7,7 @@ import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { MarkdownDoc } from "../schema";
 import { DiffWithProvenance } from "@/patchwork/schema";
 
-import { PatchWithAttr } from "@automerge/automerge-wasm";
+import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
 import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
 import { CommentsSidebar } from "./CommentsSidebar";
@@ -30,6 +30,7 @@ import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
 export const TinyEssayEditor = ({
   docUrl,
   mainDocHandle,
+  branchDocHandle,
   docHeads,
   diff,
   readOnly,
@@ -45,6 +46,7 @@ export const TinyEssayEditor = ({
 }: {
   docUrl: AutomergeUrl;
   mainDocHandle?: DocHandle<MarkdownDoc>;
+  branchDocHandle?: DocHandle<MarkdownDoc>;
   docHeads?: Heads;
   diff?: DiffWithProvenance;
   readOnly?: boolean;
@@ -237,6 +239,7 @@ export const TinyEssayEditor = ({
               doc={docAtHeads}
               changeDoc={changeDoc}
               mainDocHandle={mainDocHandle}
+              branchDocHandle={branchDocHandle}
               selection={selection}
               reviewStateFilter={reviewStateFilter}
               setReviewStateFilter={setReviewStateFilter}
