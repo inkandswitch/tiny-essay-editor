@@ -54,6 +54,9 @@ const ESSAY_STYLES = {
     borderBottom: "rgb(0 202 0 / 30%) 2px solid",
     borderRadius: "3px",
   },
+  ".cm-patch-splice.active": {
+    backgroundColor: "rgb(0 255 0 / 20%)",
+  },
   ".cm-patch-splice .cm-comment-thread, .cm-comment-thread .cm-patch-splice": {
     backgroundColor: "rgb(100 202 0 / 5%)",
   },
@@ -65,6 +68,10 @@ const ESSAY_STYLES = {
   ".cm-patch-private": {
     backgroundColor: "rgb(184 0 255 / 12%)",
     borderBottom: "rgb(184 0 255 / 40%) 2px solid",
+    borderRadius: "3px",
+  },
+  ".cm-patch-private.active": {
+    backgroundColor: "rgb(184 0 255 / 24%)",
     borderRadius: "3px",
   },
   ".cm-patch-private::before": {

@@ -1,11 +1,13 @@
 import { EditorView, Decoration } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
-import { AnnotationPosition } from "../schema";
+import { AnnotationPosition, TextAnnotationForUI } from "../schema";
 import { amRangeToCMRange } from "../utils";
 import { sortBy } from "lodash";
 
 export const setAnnotationsEffect =
-  StateEffect.define<(AnnotationPosition & { id: string })[]>();
+  StateEffect.define<
+    ((AnnotationPosition & { id: string }) | TextAnnotationForUI)[]
+  >();
 export const annotationsField = StateField.define<
   (AnnotationPosition & { id: string })[]
 >({
@@ -37,15 +39,19 @@ export const annotationDecorations = EditorView.decorations.compute(
     const decorations =
       sortBy(annotations ?? [], (annotation) => annotation.from)?.flatMap(
         (annotation) => {
-          const cmRange = amRangeToCMRange(annotation);
-          if (annotation.to > annotation.from) {
-            if (annotation.active) {
-              return activeThreadDecoration.range(cmRange.from, cmRange.to);
-            } else {
-              return commentThreadDecoration.range(cmRange.from, cmRange.to);
-            }
-          } else {
+          if (annotation.to === annotation.from) {
             return [];
+          }
+
+          if (!("type" in annotation) || annotation.type !== "thread") {
+            return [];
+          }
+
+          const cmRange = amRangeToCMRange(annotation);
+          if (annotation.active) {
+            return activeThreadDecoration.range(cmRange.from, cmRange.to);
+          } else {
+            return commentThreadDecoration.range(cmRange.from, cmRange.to);
           }
         }
       ) ?? [];

@@ -2,7 +2,7 @@ import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import * as A from "@automerge/automerge/next";
 import { StateEffect, StateField } from "@codemirror/state";
 import { DiffStyle } from "../components/MarkdownEditor";
-import { sortBy } from "lodash";
+import { annotationsField } from "./annotations";
 
 // Stuff for patches decoration
 // TODO: move this into a separate file
@@ -22,10 +22,12 @@ export const patchesField = StateField.define<A.Patch[]>({
 });
 class DeletionMarker extends WidgetType {
   deletedText: string;
+  isActive: boolean;
 
-  constructor(deletedText: string) {
+  constructor(deletedText: string, isActive: boolean) {
     super();
     this.deletedText = deletedText;
+    this.isActive = isActive;
   }
 
   toDOM(): HTMLElement {
@@ -36,7 +38,9 @@ class DeletionMarker extends WidgetType {
     box.style.color = "rgb(236 35 35)";
     box.style.margin = "0 4px";
     box.style.fontSize = "0.8em";
-    box.style.backgroundColor = "rgb(255 0 0 / 10%)";
+    box.style.backgroundColor = this.isActive
+      ? "rgb(255 0 0 / 20%)"
+      : "rgb(255 0 0 / 10%)";
     box.style.borderRadius = "3px";
     box.style.cursor = "default";
     box.innerText = "⌫";
@@ -67,24 +71,36 @@ class DeletionMarker extends WidgetType {
     return box;
   }
 
-  eq() {
-    // todo: i think this is right for now until we show hover of del text etc
-    return true;
+  eq(other) {
+    return (
+      other.deletedText === this.deletedText && other.isActive === this.isActive
+    );
   }
 
   ignoreEvent() {
     return true;
   }
 }
+
 const privateDecoration = Decoration.mark({ class: "cm-patch-private" });
+const privateDecorationActive = Decoration.mark({
+  class: "cm-patch-private active",
+});
 const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
-const makeDeleteDecoration = (deletedText: string) =>
+const spliceDecorationActive = Decoration.mark({
+  class: "cm-patch-splice active",
+});
+const makeDeleteDecoration = (deletedText: string, isActive: boolean) =>
   Decoration.widget({
-    widget: new DeletionMarker(deletedText),
+    widget: new DeletionMarker(deletedText, isActive),
     side: 1,
   });
 export const patchDecorations = (diffStyle: DiffStyle) =>
-  EditorView.decorations.compute([patchesField], (state) => {
+  EditorView.decorations.compute([patchesField, annotationsField], (state) => {
+    const activeAnnotations = state
+      .field(annotationsField)
+      .filter((annotationsField) => annotationsField.active);
+
     const patches = state
       .field(patchesField)
       .filter(
@@ -98,8 +114,19 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
         case "splice": {
           const from = patch.path[1] as number;
           const length = patch.value.length;
+          const isActive = activeAnnotations.some(
+            (annotation) =>
+              from >= annotation.from && from + length <= annotation.to
+          );
+
           const decoration =
-            diffStyle === "private" ? privateDecoration : spliceDecoration;
+            diffStyle === "private"
+              ? isActive
+                ? privateDecorationActive
+                : privateDecoration
+              : isActive
+              ? spliceDecorationActive
+              : spliceDecoration;
           return [decoration.range(from, from + length)];
         }
         case "del": {
@@ -108,7 +135,11 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
             return [];
           }
           const from = patch.path[1] as number;
-          return [makeDeleteDecoration(patch.removed).range(from)];
+          const isActive = activeAnnotations.some(
+            (annotation) => from >= annotation.from && from <= annotation.to
+          );
+
+          return [makeDeleteDecoration(patch.removed, isActive).range(from)];
         }
       }
       return [];
