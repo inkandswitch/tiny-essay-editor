@@ -7,7 +7,7 @@ import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { MarkdownDoc } from "../schema";
 import { DiffWithProvenance } from "@/patchwork/schema";
 
-import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
+import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
 import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
 import { CommentsSidebar } from "./CommentsSidebar";

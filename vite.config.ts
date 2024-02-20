@@ -43,4 +43,8 @@ export default defineConfig({
       },
     },
   },
+
+  define: {
+    "process.env": {}, // helps react-trello run
+  },
 });

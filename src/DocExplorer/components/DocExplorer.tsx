@@ -32,6 +32,7 @@ import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
 import { BotEditor } from "@/bots/BotEditor";
 import { toast } from "sonner";
+import { KanbanBoard } from "@/kanban/components/Kanban";
 
 export type Tool = {
   id: string;
@@ -90,6 +91,13 @@ const TOOLS = {
     },
   ],
   bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
+  kanban: [
+    {
+      id: "kanban",
+      name: "Kanban",
+      component: KanbanBoard,
+    },
+  ],
 };
 
 export const DocExplorer: React.FC = () => {

@@ -2,6 +2,7 @@ import { TLDrawDatatype } from "@/tldraw/datatype";
 import { EssayDatatype } from "@/tee/datatype";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
 import { Repo } from "@automerge/automerge-repo";
+import { KanbanBoardDatatype } from "@/kanban/datatype";
 
 export interface DataType {
   id: string;
@@ -16,6 +17,7 @@ export const docTypes = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
   bot: EssayEditingBotDatatype,
+  kanban: KanbanBoardDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;

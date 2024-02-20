@@ -68,6 +68,7 @@
     "react": "^18.2.0",
     "react-arborist": "^3.3.1",
     "react-dom": "^18.2.0",
+    "react-trello": "^2.2.11",
     "react-usestateref": "^1.0.8",
     "sonner": "^1.4.0",
     "tailwind-merge": "^1.14.0",
