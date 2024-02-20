@@ -95,7 +95,7 @@ const TOOLS = {
     {
       id: "kanban",
       name: "Kanban",
-      component: KanbanBoard,
+      component: Demo3,
     },
   ],
 };

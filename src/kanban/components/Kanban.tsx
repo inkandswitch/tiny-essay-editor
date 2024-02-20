@@ -1,13 +1,27 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import * as A from "@automerge/automerge/next";
 
 import { KanbanBoardDoc } from "../schema";
 
 import Board from "react-trello";
 import { useMemo } from "react";
 
-export const KanbanBoard = ({ docUrl }: { docUrl: AutomergeUrl }) => {
-  const [doc, changeDoc] = useDocument<KanbanBoardDoc>(docUrl); // used to trigger re-rendering when the doc loads
+export const KanbanBoard = ({
+  docUrl,
+  docHeads,
+  readOnly,
+}: {
+  docUrl: AutomergeUrl;
+  docHeads?: A.Heads;
+  readOnly?: boolean;
+}) => {
+  const [latestDoc, changeDoc] = useDocument<KanbanBoardDoc>(docUrl); // used to trigger re-rendering when the doc loads
+
+  const doc = useMemo(
+    () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
+    [latestDoc, docHeads]
+  );
 
   const dataForBoard = useMemo(() => {
     if (!doc) {
@@ -29,11 +43,11 @@ export const KanbanBoard = ({ docUrl }: { docUrl: AutomergeUrl }) => {
     <div className="h-full overflow-auto">
       <Board
         data={dataForBoard}
-        draggable
-        editable
-        canAddLanes
-        canEditLanes
-        editLaneTitle
+        draggable={!readOnly}
+        editable={!readOnly}
+        canAddLanes={!readOnly}
+        canEditLanes={!readOnly}
+        editLaneTitle={!readOnly}
         onCardAdd={(card, laneId) =>
           changeDoc((doc) => {
             console.log(card);

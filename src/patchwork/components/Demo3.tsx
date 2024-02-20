@@ -63,6 +63,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
+import { KanbanBoard } from "@/kanban/components/Kanban";
 
 interface MakeBranchOptions {
   name?: string;
@@ -560,7 +561,7 @@ export const Demo3: React.FC<{
               )}
               <div className="flex-1 min-h-0 overflow-auto">
                 <div className="flex">
-                  {selectedBranch.type === "branch" && compareWithMainFlag && (
+                  {/* {selectedBranch.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
                       docUrl={docUrl}
                       branchDocHandle={branchDocHandle}
@@ -572,21 +573,12 @@ export const Demo3: React.FC<{
                       showDiffAsComments
                       actorIdToAuthor={actorIdToAuthor}
                     />
-                  )}
-                  <TinyEssayEditor
+                  )} */}
+                  <KanbanBoard
                     docUrl={selectedBranchLink?.url ?? docUrl}
-                    mainDocHandle={compareWithMainFlag ? handle : undefined}
                     docHeads={docHeads}
                     readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
                     key={`main-${docUrl}`}
-                    diff={diffForEditor}
-                    diffBase={diffBase}
-                    showDiffAsComments
-                    actorIdToAuthor={actorIdToAuthor}
-                    showBranchLayers={
-                      selectedBranch.type === "branch" && !compareWithMainFlag
-                    }
-                    selectMainBranch={() => setSelectedBranch({ type: "main" })}
                   />
                 </div>
               </div>
