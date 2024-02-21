@@ -125,6 +125,8 @@ export type User = {
 type _MarkdownDoc = {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
+
+  /** Important note: these are what we call "edit groups" in the UI currently */
   drafts: { [key: string]: PersistedDraft };
   users: User[];
 };
