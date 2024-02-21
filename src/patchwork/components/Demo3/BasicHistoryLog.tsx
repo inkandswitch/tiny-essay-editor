@@ -10,12 +10,12 @@ import {
   ChangeGroup,
   getGroupedChanges,
   getMarkersForDoc,
-} from "../groupChanges";
+} from "../../groupChanges";
 
 import { CalendarIcon, MilestoneIcon } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { DiffWithProvenance } from "../schema";
+import { DiffWithProvenance } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
 export type HistoryZoomLevel = 1 | 2 | 3;

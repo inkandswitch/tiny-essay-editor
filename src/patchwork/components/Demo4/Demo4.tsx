@@ -1,5 +1,5 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { DiffWithProvenance } from "../schema";
+import { DiffWithProvenance } from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -20,6 +20,7 @@ import {
   GitMergeIcon,
   HistoryIcon,
   MergeIcon,
+  MessageSquareIcon,
   MilestoneIcon,
   MinusSquareIcon,
   MoreHorizontal,
@@ -28,7 +29,7 @@ import {
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../../utils";
 import {
   Select,
   SelectTrigger,
@@ -51,15 +52,15 @@ import { useCurrentAccount } from "@/DocExplorer/account";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { combinePatches } from "../utils";
-import { BasicHistoryLog, HistoryZoomLevel } from "./BasicHistoryLog";
-import { Hash } from "./Hash";
+import { combinePatches } from "../../utils";
+import { HistoryZoomLevel, ReviewSidebar } from "./ReviewSidebar";
+import { Hash } from "../Hash";
 import {
   createBranch,
   deleteBranch,
   mergeBranch,
   suggestBranchName,
-} from "../branches";
+} from "../../branches";
 import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
@@ -69,7 +70,7 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
-export const Demo3: React.FC<{
+export const Demo4: React.FC<{
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
@@ -526,7 +527,7 @@ export const Demo3: React.FC<{
               {!isHistorySidebarOpen && (
                 <div
                   className={` ml-auto ${
-                    isHistorySidebarOpen ? "mr-72" : "mr-4"
+                    isHistorySidebarOpen ? "mr-96" : "mr-4"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -537,7 +538,7 @@ export const Demo3: React.FC<{
                       variant="outline"
                       className="h-8 text-x"
                     >
-                      <HistoryIcon size={20} />
+                      <MessageSquareIcon size={20} />
                     </Button>
                   </div>
                 </div>
@@ -595,7 +596,7 @@ export const Demo3: React.FC<{
 
           {isHistorySidebarOpen && (
             <div className=" bg-white border-l border-gray-200 py-2 h-full overflow-hidden flex flex-col">
-              <div className="px-2 pb-2 flex gap-2 items-center text-sm font-semibold text-gray-600 ">
+              <div className="px-2 pb-2 flex gap-2 items-center text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
                 <div
                   onClick={() => setIsHistorySidebarOpen(false)}
                   className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
@@ -603,8 +604,8 @@ export const Demo3: React.FC<{
                   <ChevronsRight size={16} />
                 </div>
                 <div className="flex gap-1">
-                  <HistoryIcon size={16} />
-                  History
+                  <MessageSquareIcon size={16} />
+                  Review
                 </div>
                 <div className="ml-4 flex gap-1">
                   <MinusSquareIcon size={12} />
@@ -623,7 +624,7 @@ export const Demo3: React.FC<{
               </div>
 
               <div className="flex-grow overflow-hidden">
-                <BasicHistoryLog
+                <ReviewSidebar
                   // set key to trigger re-mount on branch change
                   key={selectedBranchLink?.url ?? docUrl}
                   docUrl={selectedBranchLink?.url ?? docUrl}

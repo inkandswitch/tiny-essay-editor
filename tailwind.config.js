@@ -76,6 +76,10 @@ module.exports = {
       //   serif: ["Merriweather", "serif"],
       //   narrow: ["Arial Narrow", "Arial", "sans-serif"],
       // },
+      boxShadow: {
+        upward:
+          "0 -4px 6px -4px rgba(0, 0, 0, 0.05), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)",
+      },
     },
   },
   plugins: [

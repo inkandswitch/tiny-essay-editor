@@ -23,7 +23,7 @@ import { SpatialHistoryPlayground } from "@/patchwork/components/Spatial";
 import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
 import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
-import { Demo3 } from "@/patchwork/components/Demo3";
+import { Demo3 } from "@/patchwork/components/Demo3/Demo3";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { Toaster } from "@/components/ui/sonner";
@@ -31,7 +31,7 @@ import { Toaster } from "@/components/ui/sonner";
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
 import { BotEditor } from "@/bots/BotEditor";
-import { toast } from "sonner";
+import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
 
 export type Tool = {
   id: string;
@@ -41,6 +41,11 @@ export type Tool = {
 
 const TOOLS = {
   essay: [
+    {
+      id: "demo4",
+      name: "Demo 4",
+      component: Demo4,
+    },
     {
       id: "demo3",
       name: "Demo 3",
