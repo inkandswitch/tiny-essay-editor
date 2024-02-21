@@ -1,20 +1,38 @@
-import {EditorView, Decoration, DecorationSet, ViewPlugin, ViewUpdate} from "@codemirror/view"
-import {StateField, StateEffect} from "@codemirror/state"
+import {
+  EditorView,
+  Decoration,
+  DecorationSet,
+  ViewPlugin,
+  ViewUpdate,
+} from "@codemirror/view";
+import { StateField, StateEffect } from "@codemirror/state";
+import { next as A } from "@automerge/automerge";
 
 export interface UserData {
-  name: string,
-  color: string
+  name: string;
+  color: string;
 }
 
 export interface SelectionData {
-  selections: {from: number, to: number}[], 
-  cursor: number 
+  selections: { from: A.Cursor; to: A.Cursor }[];
+  cursor: A.Cursor;
+}
+
+export interface SelectionDataResolved {
+  selections: { from: number; to: number }[];
+  cursor: number;
 }
 
 export interface UserSelectionData {
-  peerId: string,
-  user: UserData,
-  selection: SelectionData
+  peerId: string;
+  user: UserData;
+  selection: SelectionData;
+}
+
+export interface UserSelectionDataResolved {
+  peerId: string;
+  user: UserData;
+  selection: SelectionDataResolved;
 }
 
 // Effects to update remote selections and cursors
@@ -31,8 +49,11 @@ const remoteStateField = StateField.define<DecorationSet>({
     for (const effect of tr.effects) {
       if (effect.is(setPeerSelectionData)) {
         decorations = Decoration.none;
-        effect.value.forEach(({user, selection}) => {
-          if (!user || !selection) { console.log("missing", user, selection); return }
+        effect.value.forEach(({ user, selection }) => {
+          if (!user || !selection) {
+            console.log("missing", user, selection);
+            return;
+          }
           // Make a widget for the cursor position.
           const widget = Decoration.widget({
             widget: new CursorWidget(user.name, user.color),
@@ -40,43 +61,70 @@ const remoteStateField = StateField.define<DecorationSet>({
           }).range(selection.cursor);
 
           // Now mark for highlight any selected ranges.
-          const ranges = selection.selections.filter(({from, to}) => (from !== to)).map(({from, to}) => 
-            Decoration.mark({class: "remote-selection", attributes: {style: `background-color: color-mix(in srgb, ${user.color} 20%, transparent)`}}).range(from, to)
-          );
+          const ranges = selection.selections
+            .filter(({ from, to }) => from !== to)
+            .map(({ from, to }) =>
+              Decoration.mark({
+                class: "remote-selection",
+                attributes: {
+                  style: `background-color: color-mix(in srgb, ${user.color} 20%, transparent)`,
+                },
+              }).range(from, to)
+            );
 
           // Add all this to the decorations set. (We could optimize this by avoiding recreating unchanged values later.)
-          decorations = decorations.update({add: [widget, ...ranges], sort: true});
+          decorations = decorations.update({
+            add: [widget, ...ranges],
+            sort: true,
+          });
         });
       }
     }
     return decorations;
   },
-  provide: f => EditorView.decorations.from(f)
+  provide: (f) => EditorView.decorations.from(f),
 });
 
-const emitterPlugin = (setLocalSelections: (s: SelectionData) => void) => ViewPlugin.fromClass(class {
-  view: EditorView;
-  constructor(view: EditorView) {
-    this.view = view
-    this.emitLocalChanges(view);
-  }
+const emitterPlugin = (
+  doc: A.Doc<any>,
+  path: A.Prop,
+  setLocalSelections: (s: SelectionData) => void
+) =>
+  ViewPlugin.fromClass(
+    class {
+      view: EditorView;
+      constructor(view: EditorView) {
+        this.view = view;
+        this.emitLocalChanges(view);
+      }
 
-  update(update: ViewUpdate) {
-    if (update.selectionSet || update.docChanged) {
-      this.emitLocalChanges(update.view);
+      update(update: ViewUpdate) {
+        if (update.selectionSet || update.docChanged) {
+          this.emitLocalChanges(update.view);
+        }
+      }
+
+      emitLocalChanges(view: EditorView) {
+        const { state } = view;
+        const selections = state.selection.ranges.map((r) => ({
+          from: A.getCursor(doc, path.slice(), r.from), // need to slice the path because getCursor mutates the path
+          to: A.getCursor(doc, path.slice(), r.to),
+        }));
+        const cursor = A.getCursor(
+          doc,
+          path.slice(),
+          state.selection.main.head
+        );
+        setLocalSelections({ selections, cursor });
+      }
+    },
+    {
+      decorations: (plugin) => plugin.view.state.field(remoteStateField),
     }
-  }
+  );
 
-  emitLocalChanges(view: EditorView) {
-    const {state} = view;
-    const selections = state.selection.ranges.map(r => ({from: r.from, to: r.to}));
-    const cursor = state.selection.main.head;
-    setLocalSelections({selections, cursor})
-  }
-}, {
-  decorations: plugin => plugin.view.state.field(remoteStateField)
-});
-
-export const collaborativePlugin = (setLocalSelections: (s: SelectionData) => void) => [
-  emitterPlugin(setLocalSelections), remoteStateField
-] 
+export const collaborativePlugin = (
+  doc: A.Doc<any>,
+  path: A.Prop,
+  setLocalSelections: (s: SelectionData) => void
+) => [emitterPlugin(doc, path, setLocalSelections), remoteStateField];

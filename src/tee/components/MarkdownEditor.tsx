@@ -39,8 +39,15 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { type SelectionData, collaborativePlugin, setPeerSelectionData } from "../codemirrorPlugins/remoteCursors";
-import { useLocalAwareness, useRemoteAwareness } from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
+import {
+  type SelectionData,
+  collaborativePlugin,
+  setPeerSelectionData,
+} from "../codemirrorPlugins/remoteCursors";
+import {
+  useLocalAwareness,
+  useRemoteAwareness,
+} from "@/vendor/vendored-automerge-repo/packages/automerge-repo-react-hooks/dist";
 import { useCurrentAccount } from "@/DocExplorer/account";
 
 export type TextSelection = {
@@ -78,23 +85,35 @@ export function MarkdownEditor({
   const userId = account?.contactHandle?.url;
   const userDoc = account?.contactHandle?.docSync();
 
-   // Initialize userMetadata as a ref
-   const userMetadataRef = useRef({name: "Anonymous", color: "pink", userId});
+  // Initialize userMetadata as a ref
+  const userMetadataRef = useRef({ name: "Anonymous", color: "pink", userId });
 
-   useEffect(() => {
-     if (userDoc) {
-       if (userDoc.type === "registered") {
-         const { color, name } = userDoc;
-         // Update the ref directly
-         userMetadataRef.current = { ...userMetadataRef.current, color, name, userId };
-       } else {
-         userMetadataRef.current = { ...userMetadataRef.current, userId };
-       }
-     }
-   }, [userId, userDoc]);
+  useEffect(() => {
+    if (userDoc) {
+      if (userDoc.type === "registered") {
+        const { color, name } = userDoc;
+        // Update the ref directly
+        userMetadataRef.current = {
+          ...userMetadataRef.current,
+          color,
+          name,
+          userId,
+        };
+      } else {
+        userMetadataRef.current = { ...userMetadataRef.current, userId };
+      }
+    }
+  }, [userId, userDoc]);
 
-  const [, setLocalSelections] = useLocalAwareness({handle, userId, initialState: {}});
-  const [remoteSelections] = useRemoteAwareness({handle, localUserId: userId});
+  const [, setLocalSelections] = useLocalAwareness({
+    handle,
+    userId,
+    initialState: {},
+  });
+  const [remoteSelections] = useRemoteAwareness({
+    handle,
+    localUserId: userId,
+  });
   const [lastSelections, setLastSelections] = useState(remoteSelections);
 
   // Propagate activeThreadId into the codemirror
@@ -108,30 +127,40 @@ export function MarkdownEditor({
     // compare the new selections to the last selections
     // if they are different, update the codemirror
     // we need to do a deep comparison because the object reference will change
-    if (JSON.stringify(remoteSelections) === JSON.stringify(lastSelections)) {
-      return // bail out
+    /*    if (JSON.stringify(remoteSelections) === JSON.stringify(lastSelections)) {
+      return; // bail out
     }
     setLastSelections(remoteSelections);
+*/
 
-    const peerSelections = Object.entries(remoteSelections).map(([userId, selection]) => {
-      return {
-        userId,
-        ...selection
+    const peerSelections = Object.entries(remoteSelections).map(
+      ([userId, selection]) => {
+        return {
+          userId,
+          ...selection,
+        };
       }
-    })
+    );
+
+    console.log("peerSelections", peerSelections);
+
+    /*
     editorRoot.current?.dispatch({
       effects: setPeerSelectionData.of(peerSelections),
-    });
+    });*/
   }, [remoteSelections, lastSelections]);
 
-  const setLocalSelectionsWithUserData = useCallback((selection: SelectionData) => {
-    const localSelections = {
-      user: userMetadataRef.current, // Access the current value of the ref
-      selection,
-      userId: userMetadataRef.current.userId // Ensure you're using the ref's current value
-    };
-    setLocalSelections(localSelections);
-  }, [setLocalSelections, userMetadataRef])
+  const setLocalSelectionsWithUserData = useCallback(
+    (selection: SelectionData) => {
+      const localSelections = {
+        user: userMetadataRef.current, // Access the current value of the ref
+        selection,
+        userId: userMetadataRef.current.userId, // Ensure you're using the ref's current value
+      };
+      setLocalSelections(localSelections);
+    },
+    [setLocalSelections, userMetadataRef]
+  );
 
   useEffect(() => {
     if (!handleReady) {
@@ -141,7 +170,11 @@ export function MarkdownEditor({
     const source = doc.content; // this should use path
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
-    const cursorPlugin = collaborativePlugin(setLocalSelectionsWithUserData);
+    const cursorPlugin = collaborativePlugin(
+      doc,
+      path,
+      setLocalSelectionsWithUserData
+    );
     const view = new EditorView({
       doc: source,
       extensions: [
