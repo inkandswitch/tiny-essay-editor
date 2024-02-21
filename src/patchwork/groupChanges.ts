@@ -176,7 +176,8 @@ export const getMarkersForDoc = <
 
   /** Mark discussion threads */
   markers = markers.concat(
-    Object.values(doc.discussions).map((discussion) => ({
+    // default value is there for compat with old docs
+    Object.values(doc.discussions ?? {}).map((discussion) => ({
       heads: discussion.heads,
       type: "discussionThread",
       discussion,
