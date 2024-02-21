@@ -38,7 +38,8 @@ export interface UserSelectionDataResolved {
 // Effects to update remote selections and cursors
 import { CursorWidget } from "./CursorWidget";
 
-export const setPeerSelectionData = StateEffect.define<UserSelectionData[]>();
+export const setPeerSelectionData =
+  StateEffect.define<UserSelectionDataResolved[]>();
 
 // State field to track remote selections and cursors
 const remoteStateField = StateField.define<DecorationSet>({

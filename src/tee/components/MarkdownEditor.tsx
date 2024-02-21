@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-
+import { next as A } from "@automerge/automerge";
 import {
   EditorView,
   keymap,
@@ -43,6 +43,7 @@ import {
   type SelectionData,
   collaborativePlugin,
   setPeerSelectionData,
+  UserSelectionDataResolved,
 } from "../codemirrorPlugins/remoteCursors";
 import {
   useLocalAwareness,
@@ -127,27 +128,40 @@ export function MarkdownEditor({
     // compare the new selections to the last selections
     // if they are different, update the codemirror
     // we need to do a deep comparison because the object reference will change
-    /*    if (JSON.stringify(remoteSelections) === JSON.stringify(lastSelections)) {
+    /*if (JSON.stringify(remoteSelections) === JSON.stringify(lastSelections)) {
       return; // bail out
     }
-    setLastSelections(remoteSelections);
-*/
+    setLastSelections(remoteSelections);*/
 
-    const peerSelections = Object.entries(remoteSelections).map(
-      ([userId, selection]) => {
-        return {
-          userId,
-          ...selection,
-        };
+    const peerSelections: UserSelectionDataResolved = Object.entries(
+      remoteSelections
+    ).flatMap(([userId, peerUserSelectionData]) => {
+      const { user, selection } = peerUserSelectionData;
+
+      if (!selection) {
+        return [];
       }
-    );
 
-    console.log("peerSelections", peerSelections);
+      const doc = handle.docSync();
 
-    /*
+      return [
+        {
+          userId,
+          user,
+          selection: {
+            cursor: A.getCursorPosition(doc, ["content"], selection.cursor),
+            selections: selection.selections.map(({ from, to }) => ({
+              from: A.getCursorPosition(doc, ["content"], from),
+              to: A.getCursorPosition(doc, ["content"], to),
+            })),
+          },
+        },
+      ];
+    });
+
     editorRoot.current?.dispatch({
       effects: setPeerSelectionData.of(peerSelections),
-    });*/
+    });
   }, [remoteSelections, lastSelections]);
 
   const setLocalSelectionsWithUserData = useCallback(
@@ -157,6 +171,7 @@ export function MarkdownEditor({
         selection,
         userId: userMetadataRef.current.userId, // Ensure you're using the ref's current value
       };
+
       setLocalSelections(localSelections);
     },
     [setLocalSelections, userMetadataRef]
