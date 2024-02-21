@@ -9,10 +9,14 @@ import { splice } from "@automerge/automerge/next";
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
+
+  // TODO: these init values should not be in the MarkdownDoc init;
+  // they should come from the other specific schemas.
   doc.branchMetadata = {
     source: null,
     branches: [],
   };
+  doc.discussions = {};
 };
 
 // When a copy of the document has been made,

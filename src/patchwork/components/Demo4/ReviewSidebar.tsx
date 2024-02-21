@@ -1,5 +1,6 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
 import {
   useDocument,
   useHandle,
@@ -12,19 +13,14 @@ import {
   getMarkersForDoc,
 } from "../../groupChanges";
 
-import {
-  CalendarIcon,
-  MilestoneIcon,
-  SendHorizonalIcon,
-  SendHorizontalIcon,
-  SendIcon,
-  Share2Icon,
-} from "lucide-react";
+import { CalendarIcon, MilestoneIcon, SendHorizontalIcon } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { DiffWithProvenance } from "../../schema";
+import { DiffWithProvenance, DiscussionComment } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
+import { uuid } from "@automerge/automerge";
+import { CommentView } from "@/tee/components/CommentsSidebar";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -66,6 +62,8 @@ export const ReviewSidebar: React.FC<{
   const repo = useRepo();
   const account = useCurrentAccount();
   const scrollerRef = useScrollToBottom();
+
+  const [commentBoxContent, setCommentBoxContent] = useState("");
 
   // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
@@ -261,6 +259,40 @@ export const ReviewSidebar: React.FC<{
     );
   };
 
+  console.log(doc);
+
+  const createDiscussion = () => {
+    /** migration for legacy docs */
+
+    const comment: DiscussionComment = {
+      id: uuid(),
+      content: commentBoxContent,
+      timestamp: Date.now(),
+      contactUrl: account?.contactHandle?.url,
+    };
+    const discussionId = uuid();
+    /** hmmmm is this right? are you commenting on the old doc you're viewing? i think yes? */
+    const heads = JSON.parse(
+      JSON.stringify(
+        docHeads && docHeads.length > 0 ? docHeads : A.getHeads(doc)
+      )
+    );
+    changeDoc((doc) => {
+      if (!doc.discussions) {
+        doc.discussions = {};
+      }
+
+      doc.discussions[discussionId] = {
+        id: discussionId,
+        heads,
+        resolved: false,
+        comments: [comment],
+      };
+    });
+
+    setCommentBoxContent("");
+  };
+
   return (
     <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600">
       <div
@@ -315,93 +347,6 @@ export const ReviewSidebar: React.FC<{
                   </div>
                 )}
 
-                {changeGroup.markers.map((marker) => (
-                  <div
-                    key={marker.heads[0]}
-                    className={`text-xs text-gray-500 p-2 mx-6 my-2 border border-yellow-300 shadow-md select-none ${
-                      selection?.type === "milestone" &&
-                      selection?.heads === marker.heads
-                        ? "bg-yellow-200"
-                        : "bg-yellow-50 hover:bg-yellow-200"
-                    } ${headIsVisible(marker.heads[0]) ? "" : "opacity-50"} ${
-                      parseInt(marker.heads[0], 58) % 2 === 0
-                        ? "rotate-2"
-                        : "-rotate-2"
-                    }`}
-                    onClick={() => {
-                      setSelection({
-                        type: "milestone",
-                        heads: marker.heads,
-                      });
-                    }}
-                  >
-                    {marker.type === "tag" && (
-                      <div>
-                        <div>
-                          <div className="text-sm">
-                            {marker.tag.createdBy && (
-                              <div className=" text-gray-600 inline">
-                                <InlineContactAvatar
-                                  key={marker.tag.createdBy}
-                                  url={marker.tag.createdBy}
-                                  size="sm"
-                                />
-                              </div>
-                            )}{" "}
-                            <div className="inline font-normal">
-                              marked a milestone:
-                            </div>{" "}
-                            <div className="inline font-semibold">
-                              {marker.tag.name}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {marker.type === "otherBranchMergedIntoThisDoc" && (
-                      <div>
-                        <div className="text-sm">
-                          {marker.branch.mergeMetadata!.mergedBy && (
-                            <div className=" text-gray-600 inline">
-                              <InlineContactAvatar
-                                key={marker.branch.mergeMetadata!.mergedBy}
-                                url={marker.branch.mergeMetadata!.mergedBy}
-                                size="sm"
-                              />
-                            </div>
-                          )}{" "}
-                          <div className="inline font-normal">
-                            merged a branch:
-                          </div>{" "}
-                          <div className="inline font-semibold">
-                            {marker.branch.name}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {marker.type === "originOfThisBranch" && (
-                      <div>
-                        <div className="text-sm">
-                          {marker.branch.createdBy && (
-                            <div className=" text-gray-600 inline">
-                              <InlineContactAvatar
-                                key={marker.branch.createdBy}
-                                url={marker.branch.createdBy}
-                                size="sm"
-                              />
-                            </div>
-                          )}{" "}
-                          <div className="inline font-normal">
-                            started this branch:
-                          </div>{" "}
-                          <div className="inline font-semibold">
-                            {marker.branch.name}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
                 {lastHiddenChangeGroupIndex === index &&
                   showHiddenChangeGroups && (
                     <div className="text-xs text-gray-500 pl-2 my-2">
@@ -533,6 +478,93 @@ export const ReviewSidebar: React.FC<{
                     </div>
                   </div>
                 )}
+                {changeGroup.markers.map((marker) => (
+                  <div
+                    key={marker.heads[0]}
+                    className={`text-xs text-gray-500 p-2 mx-6 my-2  select-none bg-gray-100 ${
+                      headIsVisible(marker.heads[0]) ? "" : "opacity-50"
+                    }`}
+                    onClick={() => {
+                      setSelection({
+                        type: "milestone",
+                        heads: marker.heads,
+                      });
+                    }}
+                  >
+                    {marker.type === "discussionThread" && (
+                      <div>
+                        {marker.discussion.comments.map((comment) => (
+                          <CommentView comment={comment} />
+                        ))}
+                      </div>
+                    )}
+                    {marker.type === "tag" && (
+                      <div>
+                        <div>
+                          <div className="text-sm">
+                            {marker.tag.createdBy && (
+                              <div className=" text-gray-600 inline">
+                                <InlineContactAvatar
+                                  key={marker.tag.createdBy}
+                                  url={marker.tag.createdBy}
+                                  size="sm"
+                                />
+                              </div>
+                            )}{" "}
+                            <div className="inline font-normal">
+                              marked a milestone:
+                            </div>{" "}
+                            <div className="inline font-semibold">
+                              {marker.tag.name}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marker.type === "otherBranchMergedIntoThisDoc" && (
+                      <div>
+                        <div className="text-sm">
+                          {marker.branch.mergeMetadata!.mergedBy && (
+                            <div className=" text-gray-600 inline">
+                              <InlineContactAvatar
+                                key={marker.branch.mergeMetadata!.mergedBy}
+                                url={marker.branch.mergeMetadata!.mergedBy}
+                                size="sm"
+                              />
+                            </div>
+                          )}{" "}
+                          <div className="inline font-normal">
+                            merged a branch:
+                          </div>{" "}
+                          <div className="inline font-semibold">
+                            {marker.branch.name}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marker.type === "originOfThisBranch" && (
+                      <div>
+                        <div className="text-sm">
+                          {marker.branch.createdBy && (
+                            <div className=" text-gray-600 inline">
+                              <InlineContactAvatar
+                                key={marker.branch.createdBy}
+                                url={marker.branch.createdBy}
+                                size="sm"
+                              />
+                            </div>
+                          )}{" "}
+                          <div className="inline font-normal">
+                            started this branch:
+                          </div>{" "}
+                          <div className="inline font-semibold">
+                            {marker.branch.name}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           );
@@ -559,14 +591,24 @@ export const ReviewSidebar: React.FC<{
       <div className="pt-4 border-t border-gray-300 shadow-upward">
         <div className="mx-2">
           <textarea
+            value={commentBoxContent}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                createDiscussion();
+              }
+            }}
+            onChange={(e) => setCommentBoxContent(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md h-16"
             placeholder="Leave a comment..."
-          ></textarea>
+          />
           <div className="flex justify-end mt-2 text-sm">
-            <Button variant="ghost">
-              <SendHorizontalIcon size={14} className="mr-1" />
-              Send
-            </Button>
+            <div className="flex items-center">
+              <Button variant="ghost" onClick={createDiscussion}>
+                <SendHorizontalIcon size={14} className="mr-1" />
+                Send
+                <span className="text-gray-400 text-xs ml-1">⌘+enter</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

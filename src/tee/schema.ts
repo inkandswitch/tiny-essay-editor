@@ -7,6 +7,7 @@ import {
   Taggable,
   Diffable,
   SpatialBranchable,
+  Discussable,
 } from "@/patchwork/schema";
 
 export type Comment = {
@@ -135,4 +136,5 @@ export type MarkdownDoc = _MarkdownDoc &
   Branchable &
   Taggable &
   Diffable &
-  SpatialBranchable;
+  SpatialBranchable &
+  Discussable;

@@ -1225,7 +1225,7 @@ function isPunctuation(value: string) {
   return PUNCTUATION_REGEX.test(value);
 }
 
-function CommentView({
+export function CommentView({
   comment,
   highlightDiff,
 }: {
@@ -1247,10 +1247,6 @@ function CommentView({
           <div className="text-xs text-gray-400">
             {getRelativeTimeString(comment.timestamp)}
           </div>
-        </div>
-
-        <div className="flex-0 text-gray-500">
-          <MoreHorizontalIcon size={14} />
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { TextPatch } from "./utils";
 import * as A from "@automerge/automerge/next";
+import { EditRange } from "@/tee/schema";
 
 export type SpatialBranchable = {
   spatialBranches: SpatialBranch[];
@@ -67,4 +68,30 @@ export type SpatialBranch = {
   from: A.Cursor;
   to: A.Cursor;
   docUrl: AutomergeUrl;
+};
+
+export type DiscussionTarget = EditRange; // | ... future other options from other doctypes
+
+export type DiscussionComment = {
+  id: string;
+  content: string;
+  contactUrl?: AutomergeUrl;
+  timestamp: number;
+};
+
+export type Discussion = {
+  id: string;
+  heads: A.Heads;
+  resolved: boolean;
+  comments: DiscussionComment[];
+
+  /** An optional specific object being commented on --
+   *  could be an object in the document (eg in a text doc, a range of chars)
+   *  or possibly (not sure yet) an object in the meta discussion like a change group
+   */
+  target?: DiscussionTarget;
+};
+
+export type Discussable = {
+  discussions: { [key: string]: Discussion };
 };

@@ -3,6 +3,8 @@ import {
   Branch,
   Branchable,
   DiffWithProvenance,
+  Discussable,
+  Discussion,
   Tag,
   Taggable,
 } from "./schema";
@@ -37,6 +39,7 @@ export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
       source: Branchable["branchMetadata"]["source"];
       branch: Branch;
     }
+  | { type: "discussionThread"; discussion: Discussion }
 );
 
 /** Change group attributes that could work for any document */
@@ -156,7 +159,9 @@ export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
   "ByAuthorOrTime",
 ];
 
-export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
+export const getMarkersForDoc = <
+  DocType extends Branchable & Taggable & Discussable
+>(
   handle: DocHandle<DocType>,
   repo: Repo
 ): HeadsMarker[] => {
@@ -168,6 +173,15 @@ export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
     type: "tag" as const,
     tag,
   }));
+
+  /** Mark discussion threads */
+  markers = markers.concat(
+    Object.values(doc.discussions).map((discussion) => ({
+      heads: discussion.heads,
+      type: "discussionThread",
+      discussion,
+    }))
+  );
 
   /** Mark branch merge points */
   markers = markers.concat(
@@ -196,6 +210,8 @@ export const getMarkersForDoc = <DocType extends Branchable & Taggable>(
       });
     }
   }
+
+  console.log({ markers });
 
   return markers;
 };
