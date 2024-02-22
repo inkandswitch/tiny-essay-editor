@@ -326,10 +326,10 @@ export const ReviewSidebar: React.FC<{
   };
 
   return (
-    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600  bg-neutral-100">
+    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
         ref={scrollerRef}
-        className="overflow-auto pt-3 flex-grow flex flex-col pb-4 history"
+        className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
       >
         <div className="mt-auto">
           {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
@@ -502,6 +502,7 @@ export const ReviewSidebar: React.FC<{
                       className={`text-xs text-gray-500 p-2  select-none  ${
                         headIsVisible(marker.heads[0]) ? "" : "opacity-50"
                       }`}
+                      // todo: we should generalize selection to any kind of marker
                       onClick={() => {
                         setSelection({
                           type: "milestone",
@@ -535,7 +536,14 @@ export const ReviewSidebar: React.FC<{
                           </ItemView>
                         ))}
                       {marker.type === "tag" && (
-                        <div className="items-top flex gap-1 rounded-full -ml-1 pl-1 bg-gray-100 border-2 border-gray-300 shadow-sm">
+                        <div
+                          className={`items-top flex gap-1 rounded-full -ml-1 pl-1 border-2 border-gray-300 shadow-sm ${
+                            selection?.type === "milestone" &&
+                            selection?.heads === marker.heads
+                              ? "bg-gray-200"
+                              : "bg-gray-100"
+                          }`}
+                        >
                           <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
                             <MilestoneIcon
                               className="h-[10px] w-[10px] text-white"

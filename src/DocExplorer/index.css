@@ -171,8 +171,7 @@
   @apply bg-neutral-300;
   @apply absolute;
   border-radius: 3px;
-  /* this 34px is coupled to the position of the now icon */
-  bottom: 34px;
+  bottom: 0;
   content: '';
   left: 15px;
   top: 8px;
