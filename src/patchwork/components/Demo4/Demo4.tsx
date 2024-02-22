@@ -591,7 +591,6 @@ export const Demo4: React.FC<{
                     }
                     selectMainBranch={() => setSelectedBranch({ type: "main" })}
                     onChangeSelection={(selection) => {
-                      console.log("selection", selection);
                       setTextSelection(selection);
                     }}
                   />
@@ -630,7 +629,6 @@ export const Demo4: React.FC<{
               </div>
 
               <div className="flex-grow overflow-hidden">
-                {JSON.stringify(textSelection)}
                 <ReviewSidebar
                   // set key to trigger re-mount on branch change
                   key={selectedBranchLink?.url ?? docUrl}
