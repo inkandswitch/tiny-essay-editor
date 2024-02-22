@@ -267,9 +267,39 @@ export const ReviewSidebar: React.FC<{
     );
   };
 
-  console.log(doc);
+  // There are 3 cases
+  // - a milestone is selected -> use the heads of the milestone
+  // - a change group (range) is selected -> use the heads of the changegroup
+  // - nothing is selected -> use the heads of the latest changegroup
+  //
+  // we use the current active heads to assign comments
+  const currentlyActiveHeads = useMemo<A.Heads>(() => {
+    if (!selection) {
+      if (groupedChanges.length === 0) {
+        return null;
+      }
+
+      const latestChangeGroup = groupedChanges[groupedChanges.length - 1];
+      return A.getHeads(latestChangeGroup.docAtEndOfChangeGroup);
+    }
+
+    if (selection.type === "milestone") {
+      return selection.heads;
+    }
+
+    if (selection.type === "changeGroups") {
+      const selectedChangeGroup = groupedChanges.find(
+        (group) => group.id === selection.to
+      );
+      return A.getHeads(selectedChangeGroup.docAtEndOfChangeGroup);
+    }
+  }, [groupedChanges, selection]);
 
   const createDiscussion = () => {
+    if (commentBoxContent === "") {
+      return;
+    }
+
     /** migration for legacy docs */
 
     const comment: DiscussionComment = {
@@ -279,12 +309,6 @@ export const ReviewSidebar: React.FC<{
       contactUrl: account?.contactHandle?.url,
     };
     const discussionId = uuid();
-    /** hmmmm is this right? are you commenting on the old doc you're viewing? i think yes? */
-    const heads = JSON.parse(
-      JSON.stringify(
-        docHeads && docHeads.length > 0 ? docHeads : A.getHeads(doc)
-      )
-    );
     changeDoc((doc) => {
       if (!doc.discussions) {
         doc.discussions = {};
@@ -292,7 +316,7 @@ export const ReviewSidebar: React.FC<{
 
       doc.discussions[discussionId] = {
         id: discussionId,
-        heads,
+        heads: currentlyActiveHeads,
         resolved: false,
         comments: [comment],
       };
@@ -360,7 +384,6 @@ export const ReviewSidebar: React.FC<{
                       {!changeGroup.time && "Unknown time"}
                     </div>
                   )}
-
                   {lastHiddenChangeGroupIndex === index &&
                     showHiddenChangeGroups && (
                       <div className="text-xs text-gray-500 pl-2 my-2">
