@@ -375,14 +375,17 @@ export const ReviewSidebar: React.FC<{
                     new Date(
                       groupedChanges[index + 1]?.time
                     ).toDateString() && (
-                    <div className="text-xs font-normal text-gray-500 mt-2 mb-2 flex items-center justify-center p-1 w-full">
-                      {changeGroup.time &&
-                        new Date(changeGroup.time).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          weekday: "long",
-                        })}
-                      {!changeGroup.time && "Unknown time"}
+                    <div className="text-sm font-semibold text-gray-400 my-2 px-4 flex items-center justify-between p-1 w-full">
+                      <hr className="flex-grow border-t border-gray-300 mr-2 ml-4" />
+                      <div>
+                        {changeGroup.time &&
+                          new Date(changeGroup.time).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            weekday: "short",
+                          })}
+                        {!changeGroup.time && "Unknown time"}
+                      </div>
                     </div>
                   )}
                   {lastHiddenChangeGroupIndex === index &&
