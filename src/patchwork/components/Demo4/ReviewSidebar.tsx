@@ -400,13 +400,7 @@ export const ReviewSidebar: React.FC<{
                     )}
                   {!hideGroupButShowMarkers && (
                     <div
-                      className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
-                        selectedChangeGroups.includes(changeGroup)
-                          ? "bg-blue-100 bg-opacity-50"
-                          : headIsVisible(changeGroup.id)
-                          ? ""
-                          : "opacity-50"
-                      } `}
+                      className={`relative group px-1 pt-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none `}
                       data-id={changeGroup.id}
                       key={changeGroup.id}
                       onClick={(e) => {
@@ -419,7 +413,7 @@ export const ReviewSidebar: React.FC<{
                           .length === 0 &&
                         index !== 0 && (
                           <div
-                            className="absolute top-1 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                            className="absolute top-0 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
                             onClick={() => {
                               changeDoc((doc) => {
                                 if (!doc.tags) {
@@ -442,7 +436,13 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <div className="font-bold flex ml-[16px]">
+                      <div
+                        className={`cursor-pointer  p-1 rounded-full font-bold flex ml-[16px] ${
+                          selectedChangeGroups.includes(changeGroup)
+                            ? "bg-blue-100 bg-opacity-50"
+                            : "bg-transparent"
+                        } `}
+                      >
                         <span
                           className={`text-green-600  mr-2 ${
                             changeGroup.charsAdded === 0 && "opacity-50"
@@ -537,7 +537,7 @@ export const ReviewSidebar: React.FC<{
                         ))}
                       {marker.type === "tag" && (
                         <div
-                          className={`items-top flex gap-1 rounded-full -ml-1 pl-1 border-2 border-gray-300 shadow-sm ${
+                          className={`cursor-pointer items-top flex gap-1 rounded-full -ml-1 pl-1 border-2 border-gray-300 shadow-sm ${
                             selection?.type === "milestone" &&
                             selection?.heads === marker.heads
                               ? "bg-gray-200"
