@@ -6,14 +6,21 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import {
   ChangeGroup,
   getGroupedChanges,
   getMarkersForDoc,
 } from "../../groupChanges";
 
-import { CalendarIcon, MilestoneIcon, SendHorizontalIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  MilestoneIcon,
+  SendHorizontalIcon,
+  GitPullRequest,
+  Pencil,
+  Milestone,
+} from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { DiffWithProvenance, DiscussionComment } from "../../schema";
@@ -21,6 +28,7 @@ import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
 import { CommentView } from "@/tee/components/CommentsSidebar";
+import { useSlots } from "@/patchwork/utils";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -294,7 +302,7 @@ export const ReviewSidebar: React.FC<{
   };
 
   return (
-    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600">
+    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
         ref={scrollerRef}
         className="overflow-y-auto pt-3 flex-grow flex flex-col pb-4"
@@ -330,13 +338,16 @@ export const ReviewSidebar: React.FC<{
           if (hideGroupEntirely) {
             return null;
           }
+
+          const isEditGroupSelected =
+            selectedChangeGroups.includes(changeGroup);
+
           return (
             <div key={changeGroup.id}>
               <div className="relative">
                 {new Date(changeGroup.time).toDateString() !==
                   new Date(groupedChanges[index + 1]?.time).toDateString() && (
-                  <div className="text-xs text-gray-700 font-semibold mt-2 mb-2 flex items-center border-b border-gray-400 p-1">
-                    <CalendarIcon size={14} className="mr-1" />
+                  <div className="text-xs font-normal text-gray-500 mt-2 mb-2 flex items-center justify-center p-1 w-full">
                     {changeGroup.time &&
                       new Date(changeGroup.time).toLocaleString("en-US", {
                         month: "short",
@@ -360,9 +371,9 @@ export const ReviewSidebar: React.FC<{
                   )}
                 {!hideGroupButShowMarkers && (
                   <div
-                    className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none border-b border-gray-200 ${
+                    className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
                       selectedChangeGroups.includes(changeGroup)
-                        ? "bg-blue-100"
+                        ? "bg-blue-100 bg-opacity-50"
                         : headIsVisible(changeGroup.id)
                         ? ""
                         : "opacity-50"
@@ -401,87 +412,106 @@ export const ReviewSidebar: React.FC<{
                           Save milestone
                         </div>
                       )}
-                    <div className="text-sm">
-                      {changeGroup.authorUrls.length > 0 && (
-                        <div className=" text-gray-600 inline">
-                          {changeGroup.authorUrls.map((contactUrl, index) => (
-                            <div className="inline">
-                              <InlineContactAvatar
-                                key={contactUrl}
-                                url={contactUrl}
-                                size="sm"
-                              />
-                              {changeGroup.authorUrls.length > 2 &&
-                                index < changeGroup.authorUrls.length - 1 && (
-                                  <span>,</span>
-                                )}
-                              {index === changeGroup.authorUrls.length - 2 && (
-                                <span> and </span>
+
+                    <ItemView>
+                      <ItemIcon>
+                        <Pencil
+                          className="h-[10px] w-[10px] text-white"
+                          strokeWidth={2}
+                        />
+                      </ItemIcon>
+
+                      <ItemContent>
+                        <div className="text-sm">
+                          {changeGroup.authorUrls.length > 0 && (
+                            <div className=" text-gray-600 inline">
+                              {changeGroup.authorUrls.map(
+                                (contactUrl, index) => (
+                                  <div className="inline">
+                                    <InlineContactAvatar
+                                      key={contactUrl}
+                                      url={contactUrl}
+                                      size="sm"
+                                    />
+                                    {changeGroup.authorUrls.length > 2 &&
+                                      index <
+                                        changeGroup.authorUrls.length - 1 && (
+                                        <span>,</span>
+                                      )}
+                                    {index ===
+                                      changeGroup.authorUrls.length - 2 && (
+                                      <span> and </span>
+                                    )}
+                                  </div>
+                                )
                               )}
                             </div>
-                          ))}
+                          )}{" "}
+                          {changeGroup.editCount > 0 && (
+                            <div className="inline font-normal">
+                              made{" "}
+                              {changeGroup.editCount === 1
+                                ? "an"
+                                : changeGroup.editCount}{" "}
+                              edit
+                              {changeGroup.editCount > 1 ? "s" : ""}
+                            </div>
+                          )}
+                          {changeGroup.editCount > 0 &&
+                            changeGroup.commentsAdded > 0 && (
+                              <div className="inline font-normal"> and </div>
+                            )}
+                          <div className="inline font-normal">
+                            {changeGroup.commentsAdded > 0
+                              ? `added ${changeGroup.commentsAdded} comment${
+                                  changeGroup.commentsAdded > 1 ? "s" : ""
+                                }`
+                              : ""}
+                          </div>
                         </div>
-                      )}{" "}
-                      {changeGroup.editCount > 0 && (
-                        <div className="inline font-normal">
-                          made{" "}
-                          {changeGroup.editCount === 1
-                            ? "an"
-                            : changeGroup.editCount}{" "}
-                          edit
-                          {changeGroup.editCount > 1 ? "s" : ""}
+                        <div className="mt-1 font-bold flex">
+                          <span
+                            className={`text-green-600  mr-2 ${
+                              changeGroup.charsAdded === 0 && "opacity-50"
+                            }`}
+                          >
+                            +{changeGroup.charsAdded}
+                          </span>
+                          <span
+                            className={`text-red-600 mr-2 ${
+                              !changeGroup.charsDeleted && "opacity-50"
+                            }`}
+                          >
+                            -{changeGroup.charsDeleted || 0}
+                          </span>
+                          <span
+                            className={`text-gray-500 ${
+                              changeGroup.commentsAdded === 0 && "opacity-50"
+                            }`}
+                          >
+                            💬{changeGroup.commentsAdded}
+                          </span>
+                          {changeGroup.time && (
+                            <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
+                              {new Date(changeGroup.time).toLocaleString(
+                                "en-US",
+                                {
+                                  hour: "numeric",
+                                  minute: "numeric",
+                                  hour12: true,
+                                }
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {changeGroup.editCount > 0 &&
-                        changeGroup.commentsAdded > 0 && (
-                          <div className="inline font-normal"> and </div>
-                        )}
-                      <div className="inline font-normal">
-                        {changeGroup.commentsAdded > 0
-                          ? `added ${changeGroup.commentsAdded} comment${
-                              changeGroup.commentsAdded > 1 ? "s" : ""
-                            }`
-                          : ""}
-                      </div>
-                    </div>
-                    <div className="mt-1 font-bold flex">
-                      <span
-                        className={`text-green-600  mr-2 ${
-                          changeGroup.charsAdded === 0 && "opacity-50"
-                        }`}
-                      >
-                        +{changeGroup.charsAdded}
-                      </span>
-                      <span
-                        className={`text-red-600 mr-2 ${
-                          !changeGroup.charsDeleted && "opacity-50"
-                        }`}
-                      >
-                        -{changeGroup.charsDeleted || 0}
-                      </span>
-                      <span
-                        className={`text-gray-500 ${
-                          changeGroup.commentsAdded === 0 && "opacity-50"
-                        }`}
-                      >
-                        💬{changeGroup.commentsAdded}
-                      </span>
-                      {changeGroup.time && (
-                        <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
-                          {new Date(changeGroup.time).toLocaleString("en-US", {
-                            hour: "numeric",
-                            minute: "numeric",
-                            hour12: true,
-                          })}
-                        </div>
-                      )}
-                    </div>
+                      </ItemContent>
+                    </ItemView>
                   </div>
                 )}
                 {changeGroup.markers.map((marker) => (
                   <div
                     key={marker.heads[0]}
-                    className={`text-xs text-gray-500 p-2 mx-6 my-2  select-none bg-gray-100 ${
+                    className={`text-xs text-gray-500 p-2  select-none  ${
                       headIsVisible(marker.heads[0]) ? "" : "opacity-50"
                     }`}
                     onClick={() => {
@@ -499,8 +529,15 @@ export const ReviewSidebar: React.FC<{
                       </div>
                     )}
                     {marker.type === "tag" && (
-                      <div>
-                        <div>
+                      <ItemView>
+                        <ItemIcon>
+                          <Milestone
+                            className="h-[10px] w-[10px] text-white"
+                            strokeWidth={2}
+                          />
+                        </ItemIcon>
+
+                        <ItemContent>
                           <div className="text-sm">
                             {marker.tag.createdBy && (
                               <div className=" text-gray-600 inline">
@@ -518,29 +555,38 @@ export const ReviewSidebar: React.FC<{
                               {marker.tag.name}
                             </div>
                           </div>
-                        </div>
-                      </div>
+                        </ItemContent>
+                      </ItemView>
                     )}
                     {marker.type === "otherBranchMergedIntoThisDoc" && (
-                      <div>
-                        <div className="text-sm">
-                          {marker.branch.mergeMetadata!.mergedBy && (
-                            <div className=" text-gray-600 inline">
-                              <InlineContactAvatar
-                                key={marker.branch.mergeMetadata!.mergedBy}
-                                url={marker.branch.mergeMetadata!.mergedBy}
-                                size="sm"
-                              />
+                      <ItemView>
+                        <ItemIcon>
+                          <GitPullRequest
+                            className="h-[10px] w-[10px] text-white"
+                            strokeWidth={2}
+                          />
+                        </ItemIcon>
+
+                        <ItemContent>
+                          <div className="text-sm">
+                            {marker.branch.mergeMetadata!.mergedBy && (
+                              <div className=" text-gray-600 inline">
+                                <InlineContactAvatar
+                                  key={marker.branch.mergeMetadata!.mergedBy}
+                                  url={marker.branch.mergeMetadata!.mergedBy}
+                                  size="sm"
+                                />
+                              </div>
+                            )}{" "}
+                            <div className="inline font-normal">
+                              merged a branch:
+                            </div>{" "}
+                            <div className="inline font-semibold">
+                              {marker.branch.name}
                             </div>
-                          )}{" "}
-                          <div className="inline font-normal">
-                            merged a branch:
-                          </div>{" "}
-                          <div className="inline font-semibold">
-                            {marker.branch.name}
                           </div>
-                        </div>
-                      </div>
+                        </ItemContent>
+                      </ItemView>
                     )}
                     {marker.type === "originOfThisBranch" && (
                       <div>
@@ -588,7 +634,7 @@ export const ReviewSidebar: React.FC<{
           />
         </div>
       </div>
-      <div className="pt-4 border-t border-gray-300 shadow-upward">
+      <div className="pt-4 border-t border-gray-300 shadow-upward bg-white z-10">
         <div className="mx-2">
           <textarea
             value={commentBoxContent}
@@ -612,6 +658,23 @@ export const ReviewSidebar: React.FC<{
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
+const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+const ItemView = ({ children }: { children: ReactNode | ReactNode[] }) => {
+  const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
+
+  return (
+    <div className="items-top flex gap-1">
+      <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-purple-600 outline outline-2 outline-gray-100">
+        {slots.icon}
+      </div>
+
+      <div className="flex-1 rounded p-1 shadow bg-white">{slots.content}</div>
     </div>
   );
 };
