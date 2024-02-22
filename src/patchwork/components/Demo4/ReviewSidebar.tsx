@@ -326,10 +326,10 @@ export const ReviewSidebar: React.FC<{
   };
 
   return (
-    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
+    <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600  bg-neutral-100">
       <div
         ref={scrollerRef}
-        className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
+        className="overflow-auto pt-3 flex-grow flex flex-col pb-4 history"
       >
         <div className="mt-auto">
           {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
@@ -374,8 +374,8 @@ export const ReviewSidebar: React.FC<{
                     new Date(
                       groupedChanges[index + 1]?.time
                     ).toDateString() && (
-                    <div className="text-sm font-semibold text-gray-400 my-2 px-4 flex items-center justify-between p-1 w-full">
-                      <hr className="flex-grow border-t border-gray-300 mr-2 ml-4" />
+                    <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
+                      <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
                       <div>
                         {changeGroup.time &&
                           new Date(changeGroup.time).toLocaleString("en-US", {
@@ -626,24 +626,15 @@ export const ReviewSidebar: React.FC<{
               </div>
             );
           })}
-          <div
-            className={`flex cursor-pointer justify-center items-center text-red-800 ${
-              docHeads.length > 0 ? "opacity-50" : ""
-            }`}
-            onClick={() => setSelection(null)}
-          >
-            <hr
-              className={`border-dashed flex-grow mr-2 border-red-800 ${
-                docHeads.length > 0 ? "opacity-50" : ""
-              }`}
-            />
-            now
-            <hr
-              className={`border-dashed flex-grow ml-2 border-red-800 ${
-                docHeads.length > 0 ? "opacity-50" : ""
-              }`}
-            />
-          </div>
+        </div>
+        <div
+          className={`flex cursor-pointer items-center text-gray-400 font-semibold mt-1.5  ${
+            docHeads.length > 0 ? "opacity-50" : ""
+          }`}
+          onClick={() => setSelection(null)}
+        >
+          <div className="ml-[8px] bg-gray-200 rounded-full h-[16px] w-[16px]"></div>
+          <div className="ml-2">Now</div>
         </div>
       </div>
 
