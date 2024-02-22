@@ -14,7 +14,7 @@ import {
 } from "../../groupChanges";
 
 import {
-  CalendarIcon,
+  MessageSquare,
   MilestoneIcon,
   SendHorizontalIcon,
   GitPullRequest,
@@ -524,13 +524,31 @@ export const ReviewSidebar: React.FC<{
                         });
                       }}
                     >
-                      {marker.type === "discussionThread" && (
-                        <div>
-                          {marker.discussion.comments.map((comment) => (
-                            <CommentView comment={comment} />
-                          ))}
-                        </div>
-                      )}
+                      {marker.type === "discussionThread" &&
+                        marker.discussion.comments.map((comment) => (
+                          <ItemView>
+                            <ItemIcon>
+                              <MessageSquare
+                                className="h-[10px] w-[10px] text-white"
+                                strokeWidth={2}
+                              />
+                            </ItemIcon>
+
+                            <ItemContent>
+                              <div className="text-sm">
+                                <div className=" text-gray-600 inline">
+                                  <InlineContactAvatar
+                                    url={comment.contactUrl}
+                                    size="sm"
+                                  />
+                                </div>
+                                <div className="font-normal">
+                                  {comment.content}
+                                </div>
+                              </div>
+                            </ItemContent>
+                          </ItemView>
+                        ))}
                       {marker.type === "tag" && (
                         <ItemView>
                           <ItemIcon>
