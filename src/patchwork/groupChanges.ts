@@ -285,6 +285,38 @@ export const getGroupedChanges = (
     changeGroups.push(currentGroup);
   };
 
+  // for each merged branch in the doc, we need to start a change group for that branch.
+  // anytime we hit a change claimed by a merged branch, it's not considered in the regular
+  // grouping logic, it's instead added to the single group for that branch.
+  // then we add the branch's change group to the list once we hit its merge point.
+
+  const branchChangeGroups: {
+    [key: string]: { changeGroup: ChangeGroup; changeHashes: Set<Hash> };
+  } = {};
+  for (const branch of doc.branchMetadata.branches) {
+    if (branch.mergeMetadata) {
+      branchChangeGroups[branch.url] = {
+        changeGroup: {
+          id: branch.mergeMetadata.mergeHeads[0],
+          changes: [],
+          actorIds: [],
+          authorUrls: [],
+          docAtEndOfChangeGroup: undefined,
+          diff: { patches: [], fromHeads: [], toHeads: [] },
+          markers: [],
+          time: undefined,
+          charsAdded: 0,
+          charsDeleted: 0,
+          commentsAdded: 0,
+          editCount: 0,
+          headings: [],
+        },
+        changeHashes: new Set(),
+      };
+    }
+  }
+
+  // Now we loop over the changes and make our groups.
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
 
