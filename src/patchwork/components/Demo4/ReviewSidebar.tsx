@@ -305,7 +305,7 @@ export const ReviewSidebar: React.FC<{
     <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
         ref={scrollerRef}
-        className="overflow-y-auto pt-3 flex-grow flex flex-col pb-4"
+        className="overflow-y-auto pt-3 flex-grow flex flex-col pb-4 justify-end"
       >
         {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
           <div className="text-xs text-gray-500 pl-2 mb-2">
