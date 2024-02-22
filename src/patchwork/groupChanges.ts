@@ -323,7 +323,7 @@ export const getGroupedChanges = (
           decodedChangesForDoc: changes,
           branchHeads: branch.mergeMetadata.mergeHeads,
           mainHeads: getHeads(doc),
-          baseHeads: branch.branchHeads,
+          baseHeads: branch.branchHeads ?? [],
         }),
         mergeMetadata: branch.mergeMetadata,
       };
