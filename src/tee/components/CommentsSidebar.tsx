@@ -52,7 +52,7 @@ import { truncate } from "lodash";
 import { useDocument } from "@/useDocumentVendored";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ReadonlySnippetView } from "./ReadonlySnippetView";
-import { getAttrOfPatch } from "@/patchwork/groupChanges";
+import { getAttrOfPatch } from "@/patchwork/groupPatches";
 import { HistoryFilter } from "./HistoryFilter";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { useHandle } from "@automerge/automerge-repo-react-hooks";

@@ -102,7 +102,7 @@ export const Demo4: React.FC<{
   }, [selectedBranch]);
 
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   useEffect(() => {
     if (!isHistorySidebarOpen) {
@@ -638,7 +638,6 @@ export const Demo4: React.FC<{
                   zoomLevel={historyZoomLevel}
                   textSelection={textSelection}
                   onClearTextSelection={() => {
-                    console.log("clear text selection");
                     setTextSelection({ from: 0, to: 0, yCoord: 0 });
                   }}
                 />

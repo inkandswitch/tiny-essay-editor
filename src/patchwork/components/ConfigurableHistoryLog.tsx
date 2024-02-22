@@ -7,9 +7,9 @@ import {
   ChangeGroup,
   GROUPINGS_THAT_TAKE_BATCH_SIZE,
   GROUPINGS_THAT_TAKE_GAP_TIME,
-  charsAddedAndDeletedByPatches,
   getGroupedChanges,
 } from "../groupChanges";
+import { charsAddedAndDeletedByPatches } from "@/tee/statsForChangeGroup";
 import { GROUPINGS } from "../groupChanges";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";

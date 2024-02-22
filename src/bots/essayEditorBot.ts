@@ -64,9 +64,6 @@ ${JSON.stringify(functionsSpec)}
   ${targetDocHandle.docSync().content}
   `;
 
-  console.log(systemPrompt);
-  console.log(message);
-
   const response = await openaiClient.chat.completions.create({
     model: DEFAULT_MODEL,
     temperature: 0,
@@ -89,7 +86,6 @@ ${JSON.stringify(functionsSpec)}
 
   try {
     const parsed: any = JSON.parse(output.function_call.arguments);
-    console.log("parsed", parsed);
 
     const branchHandle = createBranch({
       name: `Edits by ${contactDoc.name}`,
