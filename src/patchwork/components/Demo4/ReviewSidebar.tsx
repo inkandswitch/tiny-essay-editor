@@ -17,7 +17,6 @@ import {
   MessageSquare,
   MilestoneIcon,
   SendHorizontalIcon,
-  Pencil,
   Milestone,
   MergeIcon,
 } from "lucide-react";
@@ -536,34 +535,30 @@ export const ReviewSidebar: React.FC<{
                           </ItemView>
                         ))}
                       {marker.type === "tag" && (
-                        <ItemView>
-                          <ItemIcon>
-                            <Milestone
+                        <div className="items-top flex gap-1 rounded-full -ml-1 pl-1 bg-gray-100 border-2 border-gray-300 shadow-sm">
+                          <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
+                            <MilestoneIcon
                               className="h-[10px] w-[10px] text-white"
                               strokeWidth={2}
                             />
-                          </ItemIcon>
+                          </div>
 
-                          <ItemContent>
-                            <div className="text-sm">
-                              {marker.tag.createdBy && (
-                                <div className=" text-gray-600 inline">
-                                  <InlineContactAvatar
-                                    key={marker.tag.createdBy}
-                                    url={marker.tag.createdBy}
-                                    size="sm"
-                                  />
-                                </div>
-                              )}{" "}
-                              <div className="inline font-normal">
-                                marked a milestone:
-                              </div>{" "}
-                              <div className="inline font-semibold">
-                                {marker.tag.name}
-                              </div>
+                          <div className="flex-1 p-1 text-sm flex">
+                            <div className="font-semibold">
+                              {marker.tag.name}
                             </div>
-                          </ItemContent>
-                        </ItemView>
+                            {marker.tag.createdBy && (
+                              <div className=" text-gray-600 ml-auto">
+                                <InlineContactAvatar
+                                  key={marker.tag.createdBy}
+                                  url={marker.tag.createdBy}
+                                  size="sm"
+                                  showName={false}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                       {marker.type === "otherBranchMergedIntoThisDoc" && (
                         <ItemView>
