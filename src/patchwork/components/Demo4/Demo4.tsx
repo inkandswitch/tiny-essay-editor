@@ -638,7 +638,6 @@ export const Demo4: React.FC<{
                   zoomLevel={historyZoomLevel}
                   textSelection={textSelection}
                   onClearTextSelection={() => {
-                    console.log("clear text selection");
                     setTextSelection({ from: 0, to: 0, yCoord: 0 });
                   }}
                 />

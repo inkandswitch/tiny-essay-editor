@@ -185,7 +185,6 @@ export const getChangesFromMergedBranch = ({
     fromHeads: baseHeads,
     toHeads: branchHeads,
   });
-  console.log({ changesInMain, changesInBranch });
 
   return new Set([...changesInBranch].filter((x) => !changesInMain.has(x)));
 };

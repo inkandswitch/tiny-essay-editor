@@ -124,8 +124,6 @@ export const ReviewSidebar: React.FC<{
     };
   }, [doc, markers, zoomLevel]);
 
-  console.log("THE GROUPS", groupedChanges);
-
   /** If there's a marker that specifies "hide history before this", we
    *  collapse change groups before that point by default.
    */

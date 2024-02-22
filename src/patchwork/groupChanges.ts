@@ -274,7 +274,6 @@ export const getGroupedChanges = (
 
   // define a helper for pushing a new group onto the list
   const pushGroup = (group: ChangeGroup) => {
-    console.log("push group", structuredClone(group));
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     group.diff = diffWithProvenance(doc, diffHeads, [group.id]);
@@ -330,8 +329,6 @@ export const getGroupedChanges = (
     }
   }
 
-  console.log("branch change groups", branchChangeGroups);
-
   // Now we loop over the changes and make our groups.
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
@@ -341,8 +338,6 @@ export const getGroupedChanges = (
     let changeCameFromMergedBranch = false;
     for (const branchChangeGroup of Object.values(branchChangeGroups)) {
       if (branchChangeGroup.changeHashes.has(decodedChange.hash)) {
-        console.log("CHANGE: from merged branch!");
-
         // Now that we've hit changes from a branch, cut off the current group that was formed on main.
         // (TODO: maybe we should be looking out for "branch started" markers on the primary loop instead?)
         if (currentGroup) {
@@ -382,12 +377,6 @@ export const getGroupedChanges = (
             decodedChange.hash
           )
         ) {
-          console.log("time to push branch change group", decodedChange.hash);
-          console.log("markers", markers);
-          console.log(
-            "Merge heads",
-            branchChangeGroup.mergeMetadata.mergeHeads
-          );
           const mergeMarker = markers.find(
             (marker) =>
               isEqual(
@@ -396,9 +385,7 @@ export const getGroupedChanges = (
               ) && marker.type === "otherBranchMergedIntoThisDoc"
           );
           if (mergeMarker) {
-            console.log("found merge marker");
             branchChangeGroup.changeGroup.markers.push(mergeMarker);
-            console.log("bcg", structuredClone(branchChangeGroup));
           }
 
           // todo: what other finalizing do we need to do here..? any?
@@ -411,8 +398,6 @@ export const getGroupedChanges = (
 
     if (changeCameFromMergedBranch) {
       continue;
-    } else {
-      console.log("CHANGE: not from merged branch");
     }
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
