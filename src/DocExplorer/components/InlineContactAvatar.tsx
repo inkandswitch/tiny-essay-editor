@@ -20,16 +20,10 @@ interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {
   size: "default" | "sm" | "lg";
 }
 
-const initials = (name: string) => {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("");
-};
-
 export const InlineContactAvatar = ({
   url,
   showImage = true,
+  showName = true,
 }: ContactAvatarProps) => {
   const [maybeAnonymousContact] = useDocument<ContactDoc>(url);
   const [registeredContact] = useDocument<RegisteredContactDoc>(undefined);
@@ -60,7 +54,7 @@ export const InlineContactAvatar = ({
         </AvatarFallback>
       </Avatar>
 
-      <span>{name ?? "Anonymous"}</span>
+      {showName && <span>{name ?? "Anonymous"}</span>}
     </div>
   );
 };

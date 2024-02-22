@@ -17,9 +17,9 @@ import {
   MessageSquare,
   MilestoneIcon,
   SendHorizontalIcon,
-  GitPullRequest,
   Pencil,
   Milestone,
+  MergeIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
@@ -27,7 +27,6 @@ import { DiffWithProvenance, DiscussionComment } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
-import { CommentView } from "@/tee/components/CommentsSidebar";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
@@ -441,99 +440,58 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <ItemView>
-                        <ItemIcon>
-                          <Pencil
-                            className="h-[10px] w-[10px] text-white"
-                            strokeWidth={2}
-                          />
-                        </ItemIcon>
+                      <div className="font-bold flex ml-[16px]">
+                        <span
+                          className={`text-green-600  mr-2 ${
+                            changeGroup.charsAdded === 0 && "opacity-50"
+                          }`}
+                        >
+                          +{changeGroup.charsAdded}
+                        </span>
+                        <span
+                          className={`text-red-600 mr-2 ${
+                            !changeGroup.charsDeleted && "opacity-50"
+                          }`}
+                        >
+                          -{changeGroup.charsDeleted || 0}
+                        </span>
+                        <span
+                          className={`text-gray-500 ${
+                            changeGroup.commentsAdded === 0 && "opacity-50"
+                          }`}
+                        >
+                          💬{changeGroup.commentsAdded}
+                        </span>
 
-                        <ItemContent>
-                          <div className="text-sm">
-                            {changeGroup.authorUrls.length > 0 && (
-                              <div className=" text-gray-600 inline">
-                                {changeGroup.authorUrls.map(
-                                  (contactUrl, index) => (
-                                    <div className="inline">
-                                      <InlineContactAvatar
-                                        key={contactUrl}
-                                        url={contactUrl}
-                                        size="sm"
-                                      />
-                                      {changeGroup.authorUrls.length > 2 &&
-                                        index <
-                                          changeGroup.authorUrls.length - 1 && (
-                                          <span>,</span>
-                                        )}
-                                      {index ===
-                                        changeGroup.authorUrls.length - 2 && (
-                                        <span> and </span>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            )}{" "}
-                            {changeGroup.editCount > 0 && (
-                              <div className="inline font-normal">
-                                made{" "}
-                                {changeGroup.editCount === 1
-                                  ? "an"
-                                  : changeGroup.editCount}{" "}
-                                edit
-                                {changeGroup.editCount > 1 ? "s" : ""}
-                              </div>
-                            )}
-                            {changeGroup.editCount > 0 &&
-                              changeGroup.commentsAdded > 0 && (
-                                <div className="inline font-normal"> and </div>
-                              )}
-                            <div className="inline font-normal">
-                              {changeGroup.commentsAdded > 0
-                                ? `added ${changeGroup.commentsAdded} comment${
-                                    changeGroup.commentsAdded > 1 ? "s" : ""
-                                  }`
-                                : ""}
+                        <div className="ml-auto">
+                          {changeGroup.authorUrls.length > 0 && (
+                            <div className=" text-gray-600 inline">
+                              {changeGroup.authorUrls.map((contactUrl) => (
+                                <div className="inline">
+                                  <InlineContactAvatar
+                                    key={contactUrl}
+                                    url={contactUrl}
+                                    size="sm"
+                                    showName={false}
+                                  />
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                          <div className="mt-1 font-bold flex">
-                            <span
-                              className={`text-green-600  mr-2 ${
-                                changeGroup.charsAdded === 0 && "opacity-50"
-                              }`}
-                            >
-                              +{changeGroup.charsAdded}
-                            </span>
-                            <span
-                              className={`text-red-600 mr-2 ${
-                                !changeGroup.charsDeleted && "opacity-50"
-                              }`}
-                            >
-                              -{changeGroup.charsDeleted || 0}
-                            </span>
-                            <span
-                              className={`text-gray-500 ${
-                                changeGroup.commentsAdded === 0 && "opacity-50"
-                              }`}
-                            >
-                              💬{changeGroup.commentsAdded}
-                            </span>
-                            {changeGroup.time && (
-                              <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
-                                {new Date(changeGroup.time).toLocaleString(
-                                  "en-US",
-                                  {
-                                    hour: "numeric",
-                                    minute: "numeric",
-                                    hour12: true,
-                                  }
-                                )}
-                              </div>
+                          )}
+                        </div>
+                        {changeGroup.time && (
+                          <div className=" font-normal text-gray-500 mb-2 text-xs mr-3 w-14 text-right">
+                            {new Date(changeGroup.time).toLocaleString(
+                              "en-US",
+                              {
+                                hour: "numeric",
+                                minute: "numeric",
+                                hour12: true,
+                              }
                             )}
                           </div>
-                        </ItemContent>
-                      </ItemView>
+                        )}
+                      </div>
                     </div>
                   )}
                   {changeGroup.markers.map((marker) => (
@@ -607,28 +565,37 @@ export const ReviewSidebar: React.FC<{
                       {marker.type === "otherBranchMergedIntoThisDoc" && (
                         <ItemView>
                           <ItemIcon>
-                            <GitPullRequest
+                            <MergeIcon
                               className="h-[10px] w-[10px] text-white"
                               strokeWidth={2}
                             />
                           </ItemIcon>
 
                           <ItemContent>
-                            <div className="text-sm">
-                              {marker.branch.mergeMetadata!.mergedBy && (
-                                <div className=" text-gray-600 inline">
-                                  <InlineContactAvatar
-                                    key={marker.branch.mergeMetadata!.mergedBy}
-                                    url={marker.branch.mergeMetadata!.mergedBy}
-                                    size="sm"
-                                  />
+                            <div className="text-sm flex">
+                              <div>
+                                <div className="inline font-semibold">
+                                  {marker.branch.name}
+                                </div>{" "}
+                                <div className="inline font-normal">
+                                  was merged
                                 </div>
-                              )}{" "}
-                              <div className="inline font-normal">
-                                merged a branch:
-                              </div>{" "}
-                              <div className="inline font-semibold">
-                                {marker.branch.name}
+                              </div>
+                              <div className="ml-auto">
+                                {marker.branch.mergeMetadata!.mergedBy && (
+                                  <div className=" text-gray-600 inline">
+                                    <InlineContactAvatar
+                                      key={
+                                        marker.branch.mergeMetadata!.mergedBy
+                                      }
+                                      url={
+                                        marker.branch.mergeMetadata!.mergedBy
+                                      }
+                                      size="sm"
+                                      showName={false}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </ItemContent>
@@ -799,10 +766,13 @@ const ItemView = ({ children }: { children: ReactNode | ReactNode[] }) => {
 
   return (
     <div className="items-top flex gap-1">
-      <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-purple-600 outline outline-2 outline-gray-100">
-        {slots.icon}
-      </div>
+      {slots.icon && (
+        <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-purple-600 outline outline-2 outline-gray-100">
+          {slots.icon}
+        </div>
+      )}
 
+      {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
       <div className="flex-1 rounded p-1 shadow bg-white">{slots.content}</div>
     </div>
   );
