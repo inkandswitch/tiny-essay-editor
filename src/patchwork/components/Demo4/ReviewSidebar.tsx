@@ -305,233 +305,120 @@ export const ReviewSidebar: React.FC<{
     <div className="h-full w-96 border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
         ref={scrollerRef}
-        className="overflow-y-auto pt-3 flex-grow flex flex-col pb-4 justify-end"
+        className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
       >
-        {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
-          <div className="text-xs text-gray-500 pl-2 mb-2">
-            {lastHiddenChangeGroupIndex + 1} changes hidden
-            <span
-              className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
-              onClick={() => setShowHiddenChangeGroups(true)}
-            >
-              Show
-            </span>
-          </div>
-        )}
-        {groupedChanges.map((changeGroup, index) => {
-          // GL note 2/13
-          // The logic here is a bit weird because of how we associate markers and change groups.
-          // Mostly, hiding groups is straightforward. We just don't show groups before the hidden index.
-          // But at the boundary things get odd.
-          // A marker is associated with the change group before it.
-          // When we hide changes, we want to show the marker after the last hidden group, but we don't want to show the last hidden group.
-          // This means that for the last hidden group, we hide the contents but show the marker.
-          // It's possible that markers should live more on their own in the grouping list, or maybe even be associated with the group after them..?
-          // But neither of those are obviously better than associating a marker with a group before, so we're sticking with this for now.
+        <div className="mt-auto">
+          {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
+            <div className="text-xs text-gray-500 pl-2 mb-2">
+              {lastHiddenChangeGroupIndex + 1} changes hidden
+              <span
+                className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
+                onClick={() => setShowHiddenChangeGroups(true)}
+              >
+                Show
+              </span>
+            </div>
+          )}
+          {groupedChanges.map((changeGroup, index) => {
+            // GL note 2/13
+            // The logic here is a bit weird because of how we associate markers and change groups.
+            // Mostly, hiding groups is straightforward. We just don't show groups before the hidden index.
+            // But at the boundary things get odd.
+            // A marker is associated with the change group before it.
+            // When we hide changes, we want to show the marker after the last hidden group, but we don't want to show the last hidden group.
+            // This means that for the last hidden group, we hide the contents but show the marker.
+            // It's possible that markers should live more on their own in the grouping list, or maybe even be associated with the group after them..?
+            // But neither of those are obviously better than associating a marker with a group before, so we're sticking with this for now.
 
-          const hideGroupEntirely =
-            index < lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
+            const hideGroupEntirely =
+              index < lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
 
-          const hideGroupButShowMarkers =
-            index === lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
+            const hideGroupButShowMarkers =
+              index === lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
 
-          if (hideGroupEntirely) {
-            return null;
-          }
+            if (hideGroupEntirely) {
+              return null;
+            }
 
-          const isEditGroupSelected =
-            selectedChangeGroups.includes(changeGroup);
+            const isEditGroupSelected =
+              selectedChangeGroups.includes(changeGroup);
 
-          return (
-            <div key={changeGroup.id}>
-              <div className="relative">
-                {new Date(changeGroup.time).toDateString() !==
-                  new Date(groupedChanges[index + 1]?.time).toDateString() && (
-                  <div className="text-xs font-normal text-gray-500 mt-2 mb-2 flex items-center justify-center p-1 w-full">
-                    {changeGroup.time &&
-                      new Date(changeGroup.time).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        weekday: "long",
-                      })}
-                    {!changeGroup.time && "Unknown time"}
-                  </div>
-                )}
-
-                {lastHiddenChangeGroupIndex === index &&
-                  showHiddenChangeGroups && (
-                    <div className="text-xs text-gray-500 pl-2 my-2">
-                      <span
-                        className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
-                        onClick={() => setShowHiddenChangeGroups(false)}
-                      >
-                        Hide changes before this
-                      </span>
+            return (
+              <div key={changeGroup.id}>
+                <div className="relative">
+                  {new Date(changeGroup.time).toDateString() !==
+                    new Date(
+                      groupedChanges[index + 1]?.time
+                    ).toDateString() && (
+                    <div className="text-xs font-normal text-gray-500 mt-2 mb-2 flex items-center justify-center p-1 w-full">
+                      {changeGroup.time &&
+                        new Date(changeGroup.time).toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          weekday: "long",
+                        })}
+                      {!changeGroup.time && "Unknown time"}
                     </div>
                   )}
-                {!hideGroupButShowMarkers && (
-                  <div
-                    className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
-                      selectedChangeGroups.includes(changeGroup)
-                        ? "bg-blue-100 bg-opacity-50"
-                        : headIsVisible(changeGroup.id)
-                        ? ""
-                        : "opacity-50"
-                    } `}
-                    data-id={changeGroup.id}
-                    key={changeGroup.id}
-                    onClick={(e) => {
-                      handleClickOnChangeGroup(e, changeGroup);
-                    }}
-                  >
-                    {selection?.type === "changeGroups" &&
-                      selection.to === changeGroup.id &&
-                      changeGroup.markers.filter((m) => m.type === "tag")
-                        .length === 0 &&
-                      index !== 0 && (
-                        <div
-                          className="absolute top-1 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
-                          onClick={() => {
-                            changeDoc((doc) => {
-                              if (!doc.tags) {
-                                doc.tags = [];
-                              }
-                              doc.tags.push({
-                                name: window.prompt("Tag name:"),
-                                heads: [changeGroup.id],
-                                createdAt: Date.now(),
-                                createdBy: account?.contactHandle?.url,
-                              });
-                            });
-                          }}
+
+                  {lastHiddenChangeGroupIndex === index &&
+                    showHiddenChangeGroups && (
+                      <div className="text-xs text-gray-500 pl-2 my-2">
+                        <span
+                          className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
+                          onClick={() => setShowHiddenChangeGroups(false)}
                         >
-                          <MilestoneIcon
-                            size={12}
-                            className="inline-block mr-1"
-                          />
-                          Save milestone
-                        </div>
-                      )}
-
-                    <ItemView>
-                      <ItemIcon>
-                        <Pencil
-                          className="h-[10px] w-[10px] text-white"
-                          strokeWidth={2}
-                        />
-                      </ItemIcon>
-
-                      <ItemContent>
-                        <div className="text-sm">
-                          {changeGroup.authorUrls.length > 0 && (
-                            <div className=" text-gray-600 inline">
-                              {changeGroup.authorUrls.map(
-                                (contactUrl, index) => (
-                                  <div className="inline">
-                                    <InlineContactAvatar
-                                      key={contactUrl}
-                                      url={contactUrl}
-                                      size="sm"
-                                    />
-                                    {changeGroup.authorUrls.length > 2 &&
-                                      index <
-                                        changeGroup.authorUrls.length - 1 && (
-                                        <span>,</span>
-                                      )}
-                                    {index ===
-                                      changeGroup.authorUrls.length - 2 && (
-                                      <span> and </span>
-                                    )}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          )}{" "}
-                          {changeGroup.editCount > 0 && (
-                            <div className="inline font-normal">
-                              made{" "}
-                              {changeGroup.editCount === 1
-                                ? "an"
-                                : changeGroup.editCount}{" "}
-                              edit
-                              {changeGroup.editCount > 1 ? "s" : ""}
-                            </div>
-                          )}
-                          {changeGroup.editCount > 0 &&
-                            changeGroup.commentsAdded > 0 && (
-                              <div className="inline font-normal"> and </div>
-                            )}
-                          <div className="inline font-normal">
-                            {changeGroup.commentsAdded > 0
-                              ? `added ${changeGroup.commentsAdded} comment${
-                                  changeGroup.commentsAdded > 1 ? "s" : ""
-                                }`
-                              : ""}
-                          </div>
-                        </div>
-                        <div className="mt-1 font-bold flex">
-                          <span
-                            className={`text-green-600  mr-2 ${
-                              changeGroup.charsAdded === 0 && "opacity-50"
-                            }`}
-                          >
-                            +{changeGroup.charsAdded}
-                          </span>
-                          <span
-                            className={`text-red-600 mr-2 ${
-                              !changeGroup.charsDeleted && "opacity-50"
-                            }`}
-                          >
-                            -{changeGroup.charsDeleted || 0}
-                          </span>
-                          <span
-                            className={`text-gray-500 ${
-                              changeGroup.commentsAdded === 0 && "opacity-50"
-                            }`}
-                          >
-                            💬{changeGroup.commentsAdded}
-                          </span>
-                          {changeGroup.time && (
-                            <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
-                              {new Date(changeGroup.time).toLocaleString(
-                                "en-US",
-                                {
-                                  hour: "numeric",
-                                  minute: "numeric",
-                                  hour12: true,
-                                }
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </ItemContent>
-                    </ItemView>
-                  </div>
-                )}
-                {changeGroup.markers.map((marker) => (
-                  <div
-                    key={marker.heads[0]}
-                    className={`text-xs text-gray-500 p-2  select-none  ${
-                      headIsVisible(marker.heads[0]) ? "" : "opacity-50"
-                    }`}
-                    onClick={() => {
-                      setSelection({
-                        type: "milestone",
-                        heads: marker.heads,
-                      });
-                    }}
-                  >
-                    {marker.type === "discussionThread" && (
-                      <div>
-                        {marker.discussion.comments.map((comment) => (
-                          <CommentView comment={comment} />
-                        ))}
+                          Hide changes before this
+                        </span>
                       </div>
                     )}
-                    {marker.type === "tag" && (
+                  {!hideGroupButShowMarkers && (
+                    <div
+                      className={`relative group px-1 py-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none ${
+                        selectedChangeGroups.includes(changeGroup)
+                          ? "bg-blue-100 bg-opacity-50"
+                          : headIsVisible(changeGroup.id)
+                          ? ""
+                          : "opacity-50"
+                      } `}
+                      data-id={changeGroup.id}
+                      key={changeGroup.id}
+                      onClick={(e) => {
+                        handleClickOnChangeGroup(e, changeGroup);
+                      }}
+                    >
+                      {selection?.type === "changeGroups" &&
+                        selection.to === changeGroup.id &&
+                        changeGroup.markers.filter((m) => m.type === "tag")
+                          .length === 0 &&
+                        index !== 0 && (
+                          <div
+                            className="absolute top-1 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
+                            onClick={() => {
+                              changeDoc((doc) => {
+                                if (!doc.tags) {
+                                  doc.tags = [];
+                                }
+                                doc.tags.push({
+                                  name: window.prompt("Tag name:"),
+                                  heads: [changeGroup.id],
+                                  createdAt: Date.now(),
+                                  createdBy: account?.contactHandle?.url,
+                                });
+                              });
+                            }}
+                          >
+                            <MilestoneIcon
+                              size={12}
+                              className="inline-block mr-1"
+                            />
+                            Save milestone
+                          </div>
+                        )}
+
                       <ItemView>
                         <ItemIcon>
-                          <Milestone
+                          <Pencil
                             className="h-[10px] w-[10px] text-white"
                             strokeWidth={2}
                           />
@@ -539,101 +426,219 @@ export const ReviewSidebar: React.FC<{
 
                         <ItemContent>
                           <div className="text-sm">
-                            {marker.tag.createdBy && (
+                            {changeGroup.authorUrls.length > 0 && (
                               <div className=" text-gray-600 inline">
-                                <InlineContactAvatar
-                                  key={marker.tag.createdBy}
-                                  url={marker.tag.createdBy}
-                                  size="sm"
-                                />
+                                {changeGroup.authorUrls.map(
+                                  (contactUrl, index) => (
+                                    <div className="inline">
+                                      <InlineContactAvatar
+                                        key={contactUrl}
+                                        url={contactUrl}
+                                        size="sm"
+                                      />
+                                      {changeGroup.authorUrls.length > 2 &&
+                                        index <
+                                          changeGroup.authorUrls.length - 1 && (
+                                          <span>,</span>
+                                        )}
+                                      {index ===
+                                        changeGroup.authorUrls.length - 2 && (
+                                        <span> and </span>
+                                      )}
+                                    </div>
+                                  )
+                                )}
                               </div>
                             )}{" "}
+                            {changeGroup.editCount > 0 && (
+                              <div className="inline font-normal">
+                                made{" "}
+                                {changeGroup.editCount === 1
+                                  ? "an"
+                                  : changeGroup.editCount}{" "}
+                                edit
+                                {changeGroup.editCount > 1 ? "s" : ""}
+                              </div>
+                            )}
+                            {changeGroup.editCount > 0 &&
+                              changeGroup.commentsAdded > 0 && (
+                                <div className="inline font-normal"> and </div>
+                              )}
                             <div className="inline font-normal">
-                              marked a milestone:
-                            </div>{" "}
-                            <div className="inline font-semibold">
-                              {marker.tag.name}
+                              {changeGroup.commentsAdded > 0
+                                ? `added ${changeGroup.commentsAdded} comment${
+                                    changeGroup.commentsAdded > 1 ? "s" : ""
+                                  }`
+                                : ""}
                             </div>
+                          </div>
+                          <div className="mt-1 font-bold flex">
+                            <span
+                              className={`text-green-600  mr-2 ${
+                                changeGroup.charsAdded === 0 && "opacity-50"
+                              }`}
+                            >
+                              +{changeGroup.charsAdded}
+                            </span>
+                            <span
+                              className={`text-red-600 mr-2 ${
+                                !changeGroup.charsDeleted && "opacity-50"
+                              }`}
+                            >
+                              -{changeGroup.charsDeleted || 0}
+                            </span>
+                            <span
+                              className={`text-gray-500 ${
+                                changeGroup.commentsAdded === 0 && "opacity-50"
+                              }`}
+                            >
+                              💬{changeGroup.commentsAdded}
+                            </span>
+                            {changeGroup.time && (
+                              <div className=" font-normal text-gray-500 mb-2 text-xs ml-auto mr-3">
+                                {new Date(changeGroup.time).toLocaleString(
+                                  "en-US",
+                                  {
+                                    hour: "numeric",
+                                    minute: "numeric",
+                                    hour12: true,
+                                  }
+                                )}
+                              </div>
+                            )}
                           </div>
                         </ItemContent>
                       </ItemView>
-                    )}
-                    {marker.type === "otherBranchMergedIntoThisDoc" && (
-                      <ItemView>
-                        <ItemIcon>
-                          <GitPullRequest
-                            className="h-[10px] w-[10px] text-white"
-                            strokeWidth={2}
-                          />
-                        </ItemIcon>
+                    </div>
+                  )}
+                  {changeGroup.markers.map((marker) => (
+                    <div
+                      key={marker.heads[0]}
+                      className={`text-xs text-gray-500 p-2  select-none  ${
+                        headIsVisible(marker.heads[0]) ? "" : "opacity-50"
+                      }`}
+                      onClick={() => {
+                        setSelection({
+                          type: "milestone",
+                          heads: marker.heads,
+                        });
+                      }}
+                    >
+                      {marker.type === "discussionThread" && (
+                        <div>
+                          {marker.discussion.comments.map((comment) => (
+                            <CommentView comment={comment} />
+                          ))}
+                        </div>
+                      )}
+                      {marker.type === "tag" && (
+                        <ItemView>
+                          <ItemIcon>
+                            <Milestone
+                              className="h-[10px] w-[10px] text-white"
+                              strokeWidth={2}
+                            />
+                          </ItemIcon>
 
-                        <ItemContent>
+                          <ItemContent>
+                            <div className="text-sm">
+                              {marker.tag.createdBy && (
+                                <div className=" text-gray-600 inline">
+                                  <InlineContactAvatar
+                                    key={marker.tag.createdBy}
+                                    url={marker.tag.createdBy}
+                                    size="sm"
+                                  />
+                                </div>
+                              )}{" "}
+                              <div className="inline font-normal">
+                                marked a milestone:
+                              </div>{" "}
+                              <div className="inline font-semibold">
+                                {marker.tag.name}
+                              </div>
+                            </div>
+                          </ItemContent>
+                        </ItemView>
+                      )}
+                      {marker.type === "otherBranchMergedIntoThisDoc" && (
+                        <ItemView>
+                          <ItemIcon>
+                            <GitPullRequest
+                              className="h-[10px] w-[10px] text-white"
+                              strokeWidth={2}
+                            />
+                          </ItemIcon>
+
+                          <ItemContent>
+                            <div className="text-sm">
+                              {marker.branch.mergeMetadata!.mergedBy && (
+                                <div className=" text-gray-600 inline">
+                                  <InlineContactAvatar
+                                    key={marker.branch.mergeMetadata!.mergedBy}
+                                    url={marker.branch.mergeMetadata!.mergedBy}
+                                    size="sm"
+                                  />
+                                </div>
+                              )}{" "}
+                              <div className="inline font-normal">
+                                merged a branch:
+                              </div>{" "}
+                              <div className="inline font-semibold">
+                                {marker.branch.name}
+                              </div>
+                            </div>
+                          </ItemContent>
+                        </ItemView>
+                      )}
+                      {marker.type === "originOfThisBranch" && (
+                        <div>
                           <div className="text-sm">
-                            {marker.branch.mergeMetadata!.mergedBy && (
+                            {marker.branch.createdBy && (
                               <div className=" text-gray-600 inline">
                                 <InlineContactAvatar
-                                  key={marker.branch.mergeMetadata!.mergedBy}
-                                  url={marker.branch.mergeMetadata!.mergedBy}
+                                  key={marker.branch.createdBy}
+                                  url={marker.branch.createdBy}
                                   size="sm"
                                 />
                               </div>
                             )}{" "}
                             <div className="inline font-normal">
-                              merged a branch:
+                              started this branch:
                             </div>{" "}
                             <div className="inline font-semibold">
                               {marker.branch.name}
                             </div>
                           </div>
-                        </ItemContent>
-                      </ItemView>
-                    )}
-                    {marker.type === "originOfThisBranch" && (
-                      <div>
-                        <div className="text-sm">
-                          {marker.branch.createdBy && (
-                            <div className=" text-gray-600 inline">
-                              <InlineContactAvatar
-                                key={marker.branch.createdBy}
-                                url={marker.branch.createdBy}
-                                size="sm"
-                              />
-                            </div>
-                          )}{" "}
-                          <div className="inline font-normal">
-                            started this branch:
-                          </div>{" "}
-                          <div className="inline font-semibold">
-                            {marker.branch.name}
-                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-        <div
-          className={`flex cursor-pointer justify-center items-center text-red-800 ${
-            docHeads.length > 0 ? "opacity-50" : ""
-          }`}
-          onClick={() => setSelection(null)}
-        >
-          <hr
-            className={`border-dashed flex-grow mr-2 border-red-800 ${
+            );
+          })}
+          <div
+            className={`flex cursor-pointer justify-center items-center text-red-800 ${
               docHeads.length > 0 ? "opacity-50" : ""
             }`}
-          />
-          now
-          <hr
-            className={`border-dashed flex-grow ml-2 border-red-800 ${
-              docHeads.length > 0 ? "opacity-50" : ""
-            }`}
-          />
+            onClick={() => setSelection(null)}
+          >
+            <hr
+              className={`border-dashed flex-grow mr-2 border-red-800 ${
+                docHeads.length > 0 ? "opacity-50" : ""
+              }`}
+            />
+            now
+            <hr
+              className={`border-dashed flex-grow ml-2 border-red-800 ${
+                docHeads.length > 0 ? "opacity-50" : ""
+              }`}
+            />
+          </div>
         </div>
       </div>
+
       <div className="pt-4 border-t border-gray-300 shadow-upward bg-white z-10">
         <div className="mx-2">
           <textarea
