@@ -29,18 +29,21 @@ import {
   DecodedChange,
   getAllChanges,
   view,
+  getHeads,
 } from "@automerge/automerge/next";
 import { diffWithProvenance } from "./utils";
 import {
   ChangeMetadata,
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
-import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Change, Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import {
   MarkdownDocChangeGroup,
   showChangeGroupInLog,
   statsForChangeGroup,
 } from "@/tee/statsForChangeGroup";
+import { getChangesFromMergedBranch } from "./branches";
+import { isEqual } from "lodash";
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
@@ -270,19 +273,20 @@ export const getGroupedChanges = (
   let currentGroup: ChangeGroup | null = null;
 
   // define a helper for pushing a new group onto the list
-  const pushCurrentGroup = () => {
+  const pushGroup = (group: ChangeGroup) => {
+    console.log("push group", structuredClone(group));
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
-    currentGroup.diff = diffWithProvenance(doc, diffHeads, [currentGroup.id]);
-    currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
+    group.diff = diffWithProvenance(doc, diffHeads, [group.id]);
+    group.docAtEndOfChangeGroup = view(doc, [group.id]);
 
-    const TEEChangeGroup = statsForChangeGroup(currentGroup);
-    currentGroup = { ...currentGroup, ...TEEChangeGroup };
+    const TEEChangeGroup = statsForChangeGroup(group);
+    const groupWithStats = { ...group, ...TEEChangeGroup };
 
-    if (!showChangeGroupInLog(currentGroup)) {
+    if (!showChangeGroupInLog(groupWithStats)) {
       return;
     }
-    changeGroups.push(currentGroup);
+    changeGroups.push(groupWithStats);
   };
 
   // for each merged branch in the doc, we need to start a change group for that branch.
@@ -291,7 +295,11 @@ export const getGroupedChanges = (
   // then we add the branch's change group to the list once we hit its merge point.
 
   const branchChangeGroups: {
-    [key: string]: { changeGroup: ChangeGroup; changeHashes: Set<Hash> };
+    [key: string]: {
+      changeGroup: ChangeGroup;
+      changeHashes: Set<Hash>;
+      mergeMetadata: Branch["mergeMetadata"];
+    };
   } = {};
   for (const branch of doc.branchMetadata.branches) {
     if (branch.mergeMetadata) {
@@ -311,14 +319,101 @@ export const getGroupedChanges = (
           editCount: 0,
           headings: [],
         },
-        changeHashes: new Set(),
+        changeHashes: getChangesFromMergedBranch({
+          decodedChangesForDoc: changes,
+          branchHeads: branch.mergeMetadata.mergeHeads,
+          mainHeads: getHeads(doc),
+          baseHeads: branch.branchHeads,
+        }),
+        mergeMetadata: branch.mergeMetadata,
       };
     }
   }
 
+  console.log("branch change groups", branchChangeGroups);
+
   // Now we loop over the changes and make our groups.
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
+
+    // If the change came from a merged branch, add it to the group for that branch,
+    // don't include it in our raw grouping.
+    let changeCameFromMergedBranch = false;
+    for (const branchChangeGroup of Object.values(branchChangeGroups)) {
+      if (branchChangeGroup.changeHashes.has(decodedChange.hash)) {
+        console.log("CHANGE: from merged branch!");
+
+        // Now that we've hit changes from a branch, cut off the current group that was formed on main.
+        // (TODO: maybe we should be looking out for "branch started" markers on the primary loop instead?)
+        if (currentGroup) {
+          pushGroup(currentGroup);
+          currentGroup = null;
+        }
+
+        // we'll use this to break out of the main loop
+        changeCameFromMergedBranch = true;
+        branchChangeGroup.changeGroup.changes.push(decodedChange);
+
+        // TODO: DRY the logic for updating these fields
+        if (decodedChange.time && decodedChange.time > 0) {
+          branchChangeGroup.changeGroup.time = decodedChange.time;
+        }
+        if (
+          !branchChangeGroup.changeGroup.actorIds.includes(decodedChange.actor)
+        ) {
+          branchChangeGroup.changeGroup.actorIds.push(decodedChange.actor);
+        }
+        if (
+          decodedChange.metadata?.author &&
+          !branchChangeGroup.changeGroup.authorUrls.includes(
+            decodedChange.metadata.author as AutomergeUrl
+          )
+        ) {
+          branchChangeGroup.changeGroup.authorUrls.push(
+            decodedChange.metadata.author as AutomergeUrl
+          );
+        }
+
+        // If this is the change that was the last one for the branch
+        // pre-merged, then it's time to add the change group for this branch
+        // to our list of groups
+        if (
+          branchChangeGroup.mergeMetadata.mergeHeads.includes(
+            decodedChange.hash
+          )
+        ) {
+          console.log("time to push branch change group", decodedChange.hash);
+          console.log("markers", markers);
+          console.log(
+            "Merge heads",
+            branchChangeGroup.mergeMetadata.mergeHeads
+          );
+          const mergeMarker = markers.find(
+            (marker) =>
+              isEqual(
+                marker.heads,
+                branchChangeGroup.mergeMetadata.mergeHeads
+              ) && marker.type === "otherBranchMergedIntoThisDoc"
+          );
+          if (mergeMarker) {
+            console.log("found merge marker");
+            branchChangeGroup.changeGroup.markers.push(mergeMarker);
+            console.log("bcg", structuredClone(branchChangeGroup));
+          }
+
+          // todo: what other finalizing do we need to do here..? any?
+          pushGroup(branchChangeGroup.changeGroup);
+        }
+
+        continue;
+      }
+    }
+
+    if (changeCameFromMergedBranch) {
+      continue;
+    } else {
+      console.log("CHANGE: not from merged branch");
+    }
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
     if (
@@ -353,12 +448,12 @@ export const getGroupedChanges = (
       );
       if (matchingMarkers.length > 0) {
         currentGroup.markers = matchingMarkers;
-        pushCurrentGroup();
+        pushGroup(currentGroup);
         currentGroup = null;
       }
     } else {
       if (currentGroup) {
-        pushCurrentGroup();
+        pushGroup(currentGroup);
       }
       currentGroup = {
         // the "ID" is the hash of the latest change in the group.
@@ -388,7 +483,7 @@ export const getGroupedChanges = (
   }
 
   if (currentGroup) {
-    pushCurrentGroup();
+    pushGroup(currentGroup);
   }
 
   return { changeGroups, changeCount: changes.length };

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "vitest";
-import { compareBranchToMain } from "../src/patchwork/branches";
+import { getChangesFromMergedBranch } from "../src/patchwork/branches";
 import * as A from "@automerge/automerge/next";
 
 describe("compareBranches", () => {
@@ -26,7 +26,7 @@ describe("compareBranches", () => {
       A.decodeChange(change)
     );
 
-    const result = compareBranchToMain({
+    const result = getChangesFromMergedBranch({
       decodedChangesForDoc: decodedChanges,
       branchHeads,
       // main hasn't moved past the base in this case
@@ -34,10 +34,7 @@ describe("compareBranches", () => {
       baseHeads,
     });
 
-    assert.deepEqual(result, {
-      onlyInMain: new Set([]),
-      onlyInBranch: new Set([branchHeads[0]]),
-    });
+    assert.deepEqual(result, new Set([branchHeads[0]]));
   });
 
   it("returns 2 changes on a branch, with nothing else concurrent on main", () => {
@@ -72,7 +69,7 @@ describe("compareBranches", () => {
       A.decodeChange(change)
     );
 
-    const result = compareBranchToMain({
+    const result = getChangesFromMergedBranch({
       decodedChangesForDoc: decodedChanges,
       branchHeads,
       // main hasn't moved past the base in this case
@@ -80,10 +77,57 @@ describe("compareBranches", () => {
       baseHeads,
     });
 
-    assert.deepEqual(result, {
-      onlyInMain: new Set([]),
-      onlyInBranch: new Set(branchChangeHashes),
+    assert.deepEqual(result, new Set(branchChangeHashes));
+  });
+
+  it("returns 2 changes on a branch, with some other stuff afterwards on main post-merge", () => {
+    //  x main
+    //  |\
+    //  | \
+    //  |  x
+    //  |  |
+    //  |  x branch
+    //  | /
+    //  |/
+    //  x
+
+    const emptyDoc = A.init<any>();
+    const baseDoc = A.change(emptyDoc, (d) => {
+      d.content = "hello";
     });
+    const baseHeads = A.getHeads(baseDoc);
+
+    // make 2 changes on the branch
+    const branchChangeHashes = [];
+    let branchDoc = A.change(baseDoc, (d) => {
+      d.content = "world";
+    });
+    branchChangeHashes.push(A.getHeads(branchDoc)[0]);
+    branchDoc = A.change(branchDoc, (d) => {
+      d.content = "yo";
+    });
+    branchChangeHashes.push(A.getHeads(branchDoc)[0]);
+    const branchHeads = A.getHeads(branchDoc);
+
+    // merge!
+    const mergedDoc = A.merge(A.clone(branchDoc), A.clone(baseDoc));
+
+    // do one more thing on main
+    const finalDoc = A.change(A.clone(mergedDoc), (d) => {
+      d.content = "bar";
+    });
+    const decodedChanges = A.getAllChanges(finalDoc).map((change) =>
+      A.decodeChange(change)
+    );
+
+    const result = getChangesFromMergedBranch({
+      decodedChangesForDoc: decodedChanges,
+      branchHeads,
+      mainHeads: A.getHeads(finalDoc),
+      baseHeads,
+    });
+
+    assert.deepEqual(result, new Set(branchChangeHashes));
   });
 
   it("returns 2 changes on a branch, with 1 change concurrent on main", () => {
@@ -122,17 +166,14 @@ describe("compareBranches", () => {
       A.decodeChange(change)
     );
 
-    const result = compareBranchToMain({
+    const result = getChangesFromMergedBranch({
       decodedChangesForDoc: decodedChanges,
       branchHeads,
       mainHeads,
       baseHeads,
     });
 
-    assert.deepEqual(result, {
-      onlyInMain: new Set(mainHeads),
-      onlyInBranch: new Set(branchChangeHashes),
-    });
+    assert.deepEqual(result, new Set(branchChangeHashes));
   });
 
   it("returns 3 changes on a branch, with 1 change concurrent on main, and main merged into branch", () => {
@@ -189,7 +230,7 @@ describe("compareBranches", () => {
       A.decodeChange(change)
     );
 
-    const result = compareBranchToMain({
+    const result = getChangesFromMergedBranch({
       decodedChangesForDoc: decodedChanges,
       branchHeads,
       mainHeads,
@@ -198,12 +239,6 @@ describe("compareBranches", () => {
 
     assert.equal(branchChangeHashes.length, 3);
 
-    assert.deepEqual(result, {
-      // the branch has everything in main
-      onlyInMain: new Set([]),
-
-      // the branch also has 3 changes not in main
-      onlyInBranch: new Set(branchChangeHashes),
-    });
+    assert.deepEqual(result, new Set(branchChangeHashes));
   });
 });

@@ -17,7 +17,6 @@ import {
   MessageSquare,
   MilestoneIcon,
   SendHorizontalIcon,
-  Milestone,
   MergeIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
@@ -124,6 +123,8 @@ export const ReviewSidebar: React.FC<{
       groupedChanges: changeGroups,
     };
   }, [doc, markers, zoomLevel]);
+
+  console.log("THE GROUPS", groupedChanges);
 
   /** If there's a marker that specifies "hide history before this", we
    *  collapse change groups before that point by default.
@@ -387,12 +388,18 @@ export const ReviewSidebar: React.FC<{
               return null;
             }
 
+            const isABranchMergeGroup = changeGroup.markers.some(
+              (m) => m.type === "otherBranchMergedIntoThisDoc"
+            );
+
+            const selected = selectedChangeGroups.includes(changeGroup);
+
             return (
               <div key={changeGroup.id}>
                 <div className="relative">
                   {new Date(changeGroup.time).toDateString() !==
                     new Date(
-                      groupedChanges[index + 1]?.time
+                      groupedChanges[index - 1]?.time
                     ).toDateString() && (
                     <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
                       <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
@@ -418,7 +425,7 @@ export const ReviewSidebar: React.FC<{
                         </span>
                       </div>
                     )}
-                  {!hideGroupButShowMarkers && (
+                  {!hideGroupButShowMarkers && !isABranchMergeGroup && (
                     <div
                       className={`relative group px-1 pt-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none `}
                       data-id={changeGroup.id}
@@ -456,64 +463,10 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <div
-                        className={`cursor-pointer  p-1 rounded-full font-bold flex ml-[16px] ${
-                          selectedChangeGroups.includes(changeGroup)
-                            ? "bg-blue-100 bg-opacity-50"
-                            : "bg-transparent"
-                        } `}
-                      >
-                        <span
-                          className={`text-green-600  mr-2 ${
-                            changeGroup.charsAdded === 0 && "opacity-50"
-                          }`}
-                        >
-                          +{changeGroup.charsAdded}
-                        </span>
-                        <span
-                          className={`text-red-600 mr-2 ${
-                            !changeGroup.charsDeleted && "opacity-50"
-                          }`}
-                        >
-                          -{changeGroup.charsDeleted || 0}
-                        </span>
-                        <span
-                          className={`text-gray-500 ${
-                            changeGroup.commentsAdded === 0 && "opacity-50"
-                          }`}
-                        >
-                          💬{changeGroup.commentsAdded}
-                        </span>
-
-                        <div className="ml-auto">
-                          {changeGroup.authorUrls.length > 0 && (
-                            <div className=" text-gray-600 inline">
-                              {changeGroup.authorUrls.map((contactUrl) => (
-                                <div className="inline">
-                                  <InlineContactAvatar
-                                    key={contactUrl}
-                                    url={contactUrl}
-                                    size="sm"
-                                    showName={false}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        {changeGroup.time && (
-                          <div className=" font-normal text-gray-500 mb-2 text-xs mr-3 w-14 text-right">
-                            {new Date(changeGroup.time).toLocaleString(
-                              "en-US",
-                              {
-                                hour: "numeric",
-                                minute: "numeric",
-                                hour12: true,
-                              }
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <EditSummary
+                        changeGroup={changeGroup}
+                        selected={selected}
+                      />
                     </div>
                   )}
                   {changeGroup.markers.map((marker) => (
@@ -534,7 +487,7 @@ export const ReviewSidebar: React.FC<{
                         /* todo: support multiple comments */
                         marker.discussion.comments.map((comment) => {
                           return (
-                            <ItemView>
+                            <ItemView selected={selected}>
                               <ItemIcon>
                                 <MessageSquare
                                   className="h-[10px] w-[10px] text-white"
@@ -609,45 +562,6 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         </div>
                       )}
-                      {marker.type === "otherBranchMergedIntoThisDoc" && (
-                        <ItemView>
-                          <ItemIcon>
-                            <MergeIcon
-                              className="h-[10px] w-[10px] text-white"
-                              strokeWidth={2}
-                            />
-                          </ItemIcon>
-
-                          <ItemContent>
-                            <div className="text-sm flex">
-                              <div>
-                                <div className="inline font-semibold">
-                                  {marker.branch.name}
-                                </div>{" "}
-                                <div className="inline font-normal">
-                                  was merged
-                                </div>
-                              </div>
-                              <div className="ml-auto">
-                                {marker.branch.mergeMetadata!.mergedBy && (
-                                  <div className=" text-gray-600 inline">
-                                    <InlineContactAvatar
-                                      key={
-                                        marker.branch.mergeMetadata!.mergedBy
-                                      }
-                                      url={
-                                        marker.branch.mergeMetadata!.mergedBy
-                                      }
-                                      size="sm"
-                                      showName={false}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </ItemContent>
-                        </ItemView>
-                      )}
                       {marker.type === "originOfThisBranch" && (
                         <div>
                           <div className="text-sm">
@@ -671,6 +585,13 @@ export const ReviewSidebar: React.FC<{
                       )}
                     </div>
                   ))}
+                  {isABranchMergeGroup && (
+                    <MergedBranchView
+                      changeGroup={changeGroup}
+                      selected={selected}
+                      setSelection={setSelection}
+                    />
+                  )}
                 </div>
               </div>
             );
@@ -718,6 +639,114 @@ export const ReviewSidebar: React.FC<{
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const EditSummary = ({
+  changeGroup,
+  selected,
+}: {
+  changeGroup: ChangeGroup;
+  selected: boolean;
+}) => {
+  return (
+    <div
+      className={`group cursor-pointer  p-1 rounded-full font-bold flex ml-[16px] ${
+        selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
+      } `}
+    >
+      <span
+        className={`text-green-600  mr-2 ${
+          changeGroup.charsAdded === 0 && "opacity-50"
+        }`}
+      >
+        +{changeGroup.charsAdded}
+      </span>
+      <span
+        className={`text-red-600 mr-2 ${
+          !changeGroup.charsDeleted && "opacity-50"
+        }`}
+      >
+        -{changeGroup.charsDeleted || 0}
+      </span>
+      <span
+        className={`text-gray-500 ${
+          changeGroup.commentsAdded === 0 && "opacity-50"
+        }`}
+      >
+        💬{changeGroup.commentsAdded}
+      </span>
+
+      <div className="ml-auto">
+        {changeGroup.authorUrls.length > 0 && (
+          <div className=" text-gray-600 inline">
+            {changeGroup.authorUrls.map((contactUrl) => (
+              <div className="inline">
+                <InlineContactAvatar
+                  key={contactUrl}
+                  url={contactUrl}
+                  size="sm"
+                  showName={false}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MergedBranchView: React.FC<{
+  changeGroup: ChangeGroup;
+  selected: boolean;
+  setSelection: (s: Selection) => void;
+}> = ({ changeGroup, selected, setSelection }) => {
+  const branch = changeGroup.markers.find(
+    (m) => m.type === "otherBranchMergedIntoThisDoc"
+    // @ts-expect-error -- this should be fine, why does TS not get it?
+  ).branch;
+  return (
+    <div
+      className="ml-[8px]"
+      onClick={() =>
+        setSelection({
+          type: "changeGroups",
+          from: changeGroup.id,
+          to: changeGroup.id,
+        })
+      }
+    >
+      <ItemView selected={selected}>
+        <ItemIcon>
+          <MergeIcon className="h-[10px] w-[10px] text-white" strokeWidth={2} />
+        </ItemIcon>
+
+        <ItemContent>
+          <div className="text-sm flex select-none">
+            <div>
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+              <div className="inline font-normal">was merged</div>
+            </div>
+            <div className="ml-auto">
+              {branch.mergeMetadata!.mergedBy && (
+                <div className=" text-gray-600 inline">
+                  <InlineContactAvatar
+                    key={branch.mergeMetadata!.mergedBy}
+                    url={branch.mergeMetadata!.mergedBy}
+                    size="sm"
+                    showName={false}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </ItemContent>
+      </ItemView>
+      <div className="pl-6 mt-1">
+        <EditSummary changeGroup={changeGroup} selected={selected} />
       </div>
     </div>
   );
@@ -799,7 +828,13 @@ const HighlightSnippetView = ({
 const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
 const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
 
-const ItemView = ({ children }: { children: ReactNode | ReactNode[] }) => {
+const ItemView = ({
+  selected,
+  children,
+}: {
+  selected: boolean;
+  children: ReactNode | ReactNode[];
+}) => {
   const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
 
   return (
@@ -811,7 +846,13 @@ const ItemView = ({ children }: { children: ReactNode | ReactNode[] }) => {
       )}
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
-      <div className="flex-1 rounded p-1 shadow bg-white">{slots.content}</div>
+      <div
+        className={`cursor-pointer flex-1 rounded p-1 shadow ${
+          selected ? "bg-blue-100" : "bg-white"
+        }`}
+      >
+        {slots.content}
+      </div>
     </div>
   );
 };

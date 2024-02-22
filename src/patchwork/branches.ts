@@ -160,7 +160,7 @@ ${JSON.stringify(afterDoc)}
  *                    This is technically only needed for performance reasons --
  *                    it lets us cutoff our search of the change DAG without going all the way to the root.
  */
-export const compareBranchToMain = ({
+export const getChangesFromMergedBranch = ({
   decodedChangesForDoc,
   branchHeads,
   mainHeads,
@@ -170,10 +170,14 @@ export const compareBranchToMain = ({
   branchHeads: A.Heads;
   mainHeads: A.Heads;
   baseHeads: A.Heads;
-}): { onlyInBranch: Set<Hash>; onlyInMain: Set<Hash> } => {
+}): Set<Hash> => {
   const changesInMain = getHashesBetweenHeads({
     decodedChanges: decodedChangesForDoc,
-    fromHeads: baseHeads,
+    // This is a bit subtle so it's worth explaining.
+    // We can't let changes from the branch be included in the "changes in main"
+    // So we start a search backwards from our "to heads" which is latest main;
+    // our "from heads" which we abort at is: either the base heads, or the branch heads.
+    fromHeads: [...baseHeads, ...branchHeads],
     toHeads: mainHeads,
   });
   const changesInBranch = getHashesBetweenHeads({
@@ -181,18 +185,9 @@ export const compareBranchToMain = ({
     fromHeads: baseHeads,
     toHeads: branchHeads,
   });
+  console.log({ changesInMain, changesInBranch });
 
-  const onlyInBranch = new Set(
-    [...changesInBranch].filter((x) => !changesInMain.has(x))
-  );
-  const onlyInMain = new Set(
-    [...changesInMain].filter((x) => !changesInBranch.has(x))
-  );
-
-  return {
-    onlyInBranch,
-    onlyInMain,
-  };
+  return new Set([...changesInBranch].filter((x) => !changesInMain.has(x)));
 };
 
 const getHashesBetweenHeads = ({
@@ -213,11 +208,11 @@ const getHashesBetweenHeads = ({
     if (!change) {
       throw new Error("Change not found in changes");
     }
-    hashes.add(hash);
     // todo: is this right? any head in the from heads stops the traversal?
     if (fromHeads.includes(change.hash)) {
       break;
     }
+    hashes.add(hash);
     workQueue.push(...change.deps);
   }
 

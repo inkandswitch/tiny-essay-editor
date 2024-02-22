@@ -102,7 +102,7 @@ export const Demo4: React.FC<{
   }, [selectedBranch]);
 
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   useEffect(() => {
     if (!isHistorySidebarOpen) {
