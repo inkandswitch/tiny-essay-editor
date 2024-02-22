@@ -463,10 +463,12 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <EditSummary
-                        changeGroup={changeGroup}
-                        selected={selected}
-                      />
+                      <div className="ml-[16px]">
+                        <EditSummary
+                          changeGroup={changeGroup}
+                          selected={selected}
+                        />
+                      </div>
                     </div>
                   )}
                   {changeGroup.markers.map((marker) => (
@@ -653,7 +655,7 @@ const EditSummary = ({
 }) => {
   return (
     <div
-      className={`group cursor-pointer  p-1 rounded-full font-bold flex ml-[16px] ${
+      className={`group cursor-pointer  p-1 rounded-full font-bold flex ${
         selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
       } `}
     >
@@ -745,7 +747,8 @@ const MergedBranchView: React.FC<{
           </div>
         </ItemContent>
       </ItemView>
-      <div className="pl-6 mt-1">
+      <div className="mt-1 flex gap-1">
+        <div className="ml-8 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
         <EditSummary changeGroup={changeGroup} selected={selected} />
       </div>
     </div>

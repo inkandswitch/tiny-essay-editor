@@ -36,7 +36,7 @@ import {
   ChangeMetadata,
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
-import { Change, Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import {
   MarkdownDocChangeGroup,
   showChangeGroupInLog,
