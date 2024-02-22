@@ -3,6 +3,7 @@ import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Branchable } from "./schema";
 import { getStringCompletion } from "@/llm";
 import { MarkdownDoc } from "@/tee/schema";
+import { Hash } from "@automerge/automerge-wasm";
 
 export const createBranch = <DocType extends Branchable>({
   repo,
@@ -145,4 +146,80 @@ ${JSON.stringify(afterDoc)}
   const result = await getStringCompletion(prompt);
 
   return result;
+};
+
+/** Returns 2 lists of change hashes present in one branch but not the other
+ *  Framed in terms of "branch" and "main" but works fine for any 2 branches
+ *
+ * @param decodedChangesForDoc - The changes for the document
+ *   (we pass in the decoded changes because we've already done this work elsewhere
+ *   and it's expensive to redo it if we pass in the document itself)
+ * @param branchHeads - The heads of the branch
+ * @param mainHeads - The heads of the main document
+ * @param baseHeads - The heads of the point where this branch diverged from main.
+ *                    This is technically only needed for performance reasons --
+ *                    it lets us cutoff our search of the change DAG without going all the way to the root.
+ */
+export const compareBranchToMain = ({
+  decodedChangesForDoc,
+  branchHeads,
+  mainHeads,
+  baseHeads,
+}: {
+  decodedChangesForDoc: A.DecodedChange[];
+  branchHeads: A.Heads;
+  mainHeads: A.Heads;
+  baseHeads: A.Heads;
+}): { onlyInBranch: Set<Hash>; onlyInMain: Set<Hash> } => {
+  const changesInMain = getHashesBetweenHeads({
+    decodedChanges: decodedChangesForDoc,
+    fromHeads: baseHeads,
+    toHeads: mainHeads,
+  });
+  const changesInBranch = getHashesBetweenHeads({
+    decodedChanges: decodedChangesForDoc,
+    fromHeads: baseHeads,
+    toHeads: branchHeads,
+  });
+
+  const onlyInBranch = new Set(
+    [...changesInBranch].filter((x) => !changesInMain.has(x))
+  );
+  const onlyInMain = new Set(
+    [...changesInMain].filter((x) => !changesInBranch.has(x))
+  );
+
+  return {
+    onlyInBranch,
+    onlyInMain,
+  };
+};
+
+const getHashesBetweenHeads = ({
+  decodedChanges,
+  fromHeads,
+  toHeads,
+}: {
+  decodedChanges: A.DecodedChange[];
+  fromHeads: A.Heads;
+  toHeads: A.Heads;
+}): Set<Hash> => {
+  const hashes = new Set<Hash>();
+  const workQueue = structuredClone(toHeads);
+
+  while (workQueue.length > 0) {
+    const hash = workQueue.shift();
+    const change = decodedChanges.find((change) => change.hash === hash);
+    if (!change) {
+      throw new Error("Change not found in changes");
+    }
+    hashes.add(hash);
+    // todo: is this right? any head in the from heads stops the traversal?
+    if (fromHeads.includes(change.hash)) {
+      break;
+    }
+    workQueue.push(...change.deps);
+  }
+
+  return hashes;
 };
