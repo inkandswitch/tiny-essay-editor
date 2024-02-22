@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
 import { CommentView } from "@/tee/components/CommentsSidebar";
 import { useSlots } from "@/patchwork/utils";
+import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -64,7 +65,8 @@ export const ReviewSidebar: React.FC<{
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
   zoomLevel: HistoryZoomLevel;
-}> = ({ docUrl, setDocHeads, setDiff, zoomLevel }) => {
+  textSelection: TextSelection;
+}> = ({ docUrl, setDocHeads, setDiff, zoomLevel, textSelection }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
@@ -681,6 +683,14 @@ export const ReviewSidebar: React.FC<{
       </div>
 
       <div className="pt-4 border-t border-gray-300 shadow-upward bg-white z-10">
+        {textSelection && textSelection.from !== textSelection.to && (
+          <HighlightSnippetView
+            from={textSelection.from}
+            to={textSelection.to}
+            text={doc.content}
+          />
+        )}
+
         <div className="mx-2">
           <textarea
             value={commentBoxContent}
@@ -704,6 +714,79 @@ export const ReviewSidebar: React.FC<{
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface HighlightSnippetViewProps {
+  from: number;
+  to: number;
+  text: string;
+}
+
+const SNIPPET_CUTOFF = 75;
+
+const STOP_CHARACTER = [".", "!", "?", "\n"];
+
+const HighlightSnippetView = ({
+  from,
+  to,
+  text,
+}: HighlightSnippetViewProps) => {
+  let start = from;
+  let startWithEllipsis = true;
+  while (start > 0) {
+    if (STOP_CHARACTER.includes(text.charAt(start - 1))) {
+      startWithEllipsis = false;
+      break;
+    }
+
+    // make sure we don't cut in the middle of a word
+    if (from - start - 1 === SNIPPET_CUTOFF) {
+      while (text.charAt(start) !== " ") {
+        start++;
+      }
+      break;
+    }
+
+    start--;
+  }
+
+  let end = from;
+  let endWithEllipsis = true;
+  while (end < text.length) {
+    if (STOP_CHARACTER.includes(text.charAt(end))) {
+      endWithEllipsis = false;
+      break;
+    }
+
+    // make sure we don't cut in the middle of a word
+    if (end - to + 1 === SNIPPET_CUTOFF) {
+      while (text.charAt(end) !== " ") {
+        end--;
+      }
+      break;
+    }
+
+    end++;
+  }
+
+  const before = startWithEllipsis
+    ? `...${text.slice(start, from)}`
+    : text.slice(start, from).trimStart();
+  const highlight = text.slice(from, to);
+  const after = endWithEllipsis
+    ? `${text.slice(to, end)}...`
+    : text.slice(to, end).trimEnd();
+
+  return (
+    <div
+      className="border-l-2 border-l border-gray-200 p-2 m-2 whitespace-pre-wrap cm-line font-normal"
+      style={{ fontFamily: "Merriweather, serif" }}
+    >
+      {before}
+      <span style={{ background: "rgb(255 249 194)" }}>{highlight}</span>
+      {after}
     </div>
   );
 };

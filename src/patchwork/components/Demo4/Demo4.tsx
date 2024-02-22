@@ -64,6 +64,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
+import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 interface MakeBranchOptions {
   name?: string;
@@ -79,13 +80,14 @@ export const Demo4: React.FC<{
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const account = useCurrentAccount();
-
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
+
+  const [textSelection, setTextSelection] = useState<TextSelection>();
 
   // Reset compare view settings every time you switch branches
   useEffect(() => {
@@ -588,6 +590,7 @@ export const Demo4: React.FC<{
                       selectedBranch.type === "branch" && !compareWithMainFlag
                     }
                     selectMainBranch={() => setSelectedBranch({ type: "main" })}
+                    onChangeSelection={setTextSelection}
                   />
                 </div>
               </div>
@@ -631,6 +634,7 @@ export const Demo4: React.FC<{
                   setDocHeads={setDocHeadsFromHistorySidebar}
                   setDiff={setDiffFromHistorySidebar}
                   zoomLevel={historyZoomLevel}
+                  textSelection={textSelection}
                 />
               </div>
             </div>
