@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
+import { EditRange } from "@/tee/schema";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -64,7 +65,15 @@ export const ReviewSidebar: React.FC<{
   setDiff: (diff: DiffWithProvenance) => void;
   zoomLevel: HistoryZoomLevel;
   textSelection: TextSelection;
-}> = ({ docUrl, setDocHeads, setDiff, zoomLevel, textSelection }) => {
+  onClearTextSelection: () => void;
+}> = ({
+  docUrl,
+  setDocHeads,
+  setDiff,
+  zoomLevel,
+  textSelection,
+  onClearTextSelection,
+}) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
@@ -309,6 +318,15 @@ export const ReviewSidebar: React.FC<{
       contactUrl: account?.contactHandle?.url,
     };
     const discussionId = uuid();
+
+    let target: EditRange = undefined;
+    if (textSelection && textSelection.from !== textSelection.to) {
+      target = {
+        fromCursor: A.getCursor(doc, ["content"], textSelection.from),
+        toCursor: A.getCursor(doc, ["content"], textSelection.to),
+      };
+    }
+
     changeDoc((doc) => {
       if (!doc.discussions) {
         doc.discussions = {};
@@ -320,8 +338,13 @@ export const ReviewSidebar: React.FC<{
         resolved: false,
         comments: [comment],
       };
+
+      if (target) {
+        doc.discussions[discussionId].target = target;
+      }
     });
 
+    onClearTextSelection();
     setCommentBoxContent("");
   };
 
@@ -363,9 +386,6 @@ export const ReviewSidebar: React.FC<{
             if (hideGroupEntirely) {
               return null;
             }
-
-            const isEditGroupSelected =
-              selectedChangeGroups.includes(changeGroup);
 
             return (
               <div key={changeGroup.id}>
@@ -511,30 +531,51 @@ export const ReviewSidebar: React.FC<{
                       }}
                     >
                       {marker.type === "discussionThread" &&
-                        marker.discussion.comments.map((comment) => (
-                          <ItemView>
-                            <ItemIcon>
-                              <MessageSquare
-                                className="h-[10px] w-[10px] text-white"
-                                strokeWidth={2}
-                              />
-                            </ItemIcon>
+                        /* todo: support multiple comments */
+                        marker.discussion.comments.map((comment) => {
+                          return (
+                            <ItemView>
+                              <ItemIcon>
+                                <MessageSquare
+                                  className="h-[10px] w-[10px] text-white"
+                                  strokeWidth={2}
+                                />
+                              </ItemIcon>
+                              <ItemContent>
+                                <div className="text-sm">
+                                  <div className=" text-gray-600 inline">
+                                    <InlineContactAvatar
+                                      url={comment.contactUrl}
+                                      size="sm"
+                                    />
+                                  </div>
+                                  {marker.discussion.target && (
+                                    <HighlightSnippetView
+                                      text={
+                                        changeGroup.docAtEndOfChangeGroup
+                                          .content
+                                      }
+                                      from={A.getCursorPosition(
+                                        changeGroup.docAtEndOfChangeGroup,
+                                        ["content"],
+                                        marker.discussion.target.fromCursor
+                                      )}
+                                      to={A.getCursorPosition(
+                                        changeGroup.docAtEndOfChangeGroup,
+                                        ["content"],
+                                        marker.discussion.target.toCursor
+                                      )}
+                                    />
+                                  )}
 
-                            <ItemContent>
-                              <div className="text-sm">
-                                <div className=" text-gray-600 inline">
-                                  <InlineContactAvatar
-                                    url={comment.contactUrl}
-                                    size="sm"
-                                  />
+                                  <div className="font-normal pl-3">
+                                    {comment.content}
+                                  </div>
                                 </div>
-                                <div className="font-normal">
-                                  {comment.content}
-                                </div>
-                              </div>
-                            </ItemContent>
-                          </ItemView>
-                        ))}
+                              </ItemContent>
+                            </ItemView>
+                          );
+                        })}
                       {marker.type === "tag" && (
                         <div
                           className={`cursor-pointer items-top flex gap-1 rounded-full -ml-1 pl-1 border-2 border-gray-300 shadow-sm ${

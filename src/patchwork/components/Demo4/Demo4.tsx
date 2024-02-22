@@ -590,7 +590,10 @@ export const Demo4: React.FC<{
                       selectedBranch.type === "branch" && !compareWithMainFlag
                     }
                     selectMainBranch={() => setSelectedBranch({ type: "main" })}
-                    onChangeSelection={setTextSelection}
+                    onChangeSelection={(selection) => {
+                      console.log("selection", selection);
+                      setTextSelection(selection);
+                    }}
                   />
                 </div>
               </div>
@@ -627,6 +630,7 @@ export const Demo4: React.FC<{
               </div>
 
               <div className="flex-grow overflow-hidden">
+                {JSON.stringify(textSelection)}
                 <ReviewSidebar
                   // set key to trigger re-mount on branch change
                   key={selectedBranchLink?.url ?? docUrl}
@@ -635,6 +639,10 @@ export const Demo4: React.FC<{
                   setDiff={setDiffFromHistorySidebar}
                   zoomLevel={historyZoomLevel}
                   textSelection={textSelection}
+                  onClearTextSelection={() => {
+                    console.log("clear text selection");
+                    setTextSelection({ from: 0, to: 0, yCoord: 0 });
+                  }}
                 />
               </div>
             </div>
