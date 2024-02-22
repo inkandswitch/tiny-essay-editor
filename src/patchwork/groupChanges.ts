@@ -1,3 +1,16 @@
+// This file puts changes from a doc into groups for display in the UI.
+// There are various algorithms that can govern what makes a group.
+// It can accept manual markers to split groups.
+
+// It also calculates some stats for each group, both generic to all docs
+// as well as calling out to some datatype-specific summarization.
+// (For now, the datatype is fixed to MarkdownDoc, but there is a clear boundary;
+// the TEE code defines MarkdownDoc-specific stats.)
+
+// Known issues:
+// - getAllChanges returns different orders on different devices;
+//   we should define a total order for changes across all devices.
+
 import { MarkdownDoc } from "@/tee/schema";
 import {
   Branch,
@@ -14,16 +27,20 @@ import {
   decodeChange,
   ActorId,
   DecodedChange,
-  Patch,
   getAllChanges,
   view,
 } from "@automerge/automerge/next";
-import { TextPatch, diffWithProvenance } from "./utils";
+import { diffWithProvenance } from "./utils";
 import {
   ChangeMetadata,
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
-import { Heads, PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import {
+  MarkdownDocChangeGroup,
+  showChangeGroupInLog,
+  statsForChangeGroup,
+} from "@/tee/statsForChangeGroup";
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
@@ -43,32 +60,21 @@ export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
 );
 
 /** Change group attributes that could work for any document */
-type GenericChangeGroup = {
+export type GenericChangeGroup = {
   id: string;
   changes: DecodedChangeWithMetadata[];
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
-  // TODO make this a generic type
+  // TODO make this a generic type --
+  // making it Doc<unknown> highlights the places where we currently expect
+  // this to be a MarkdownDoc that need to be generalized more.
   docAtEndOfChangeGroup: Doc<MarkdownDoc>;
   diff: DiffWithProvenance;
   markers: HeadsMarker[];
   time?: number;
 };
 
-/** These attributes are specific to TEE.
- *  Eventually they should somehow be specified by the Essay datatype.
- */
-type TEEChangeGroup = {
-  /* number of distinct edit ranges */
-  editCount: number;
-
-  charsAdded: number;
-  charsDeleted: number;
-  headings: Heading[];
-  commentsAdded: number;
-};
-
-export type ChangeGroup = GenericChangeGroup & TEEChangeGroup;
+export type ChangeGroup = GenericChangeGroup & MarkdownDocChangeGroup;
 
 type GroupingAlgorithm = (
   currentGroup: ChangeGroup,
@@ -77,6 +83,7 @@ type GroupingAlgorithm = (
 ) => boolean;
 
 // A grouping algorithm returns a boolean denoting whether the new change should be added to the current group.
+// Some of these algorithms rely on MarkdownDoc-specific stats; need to generalize that further.
 export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
   ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
@@ -212,9 +219,23 @@ export const getMarkersForDoc = <
     }
   }
 
-  console.log({ markers });
-
   return markers;
+};
+
+// NOTE: this should be pushed down the stack as we formalize
+// support for structured metadata on changes.
+const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
+  return getAllChanges(doc).map((change) => {
+    let decodedChange = decodeChange(change) as DecodedChangeWithMetadata;
+    decodedChange.metadata = {};
+    try {
+      const metadata = JSON.parse(decodedChange.message);
+      decodedChange = { ...decodedChange, metadata };
+    } catch (e) {
+      // do nothing for now...
+    }
+    return decodedChange;
+  });
 };
 
 /* returns all the changes from this doc, grouped in a simple way for now. */
@@ -242,92 +263,30 @@ export const getGroupedChanges = (
     markers: [],
   }
 ) => {
-  const changes = getAllChanges(doc);
+  // TODO: we should sort this list in a stable way across devices.
+  const changes = getAllChangesWithMetadata(doc);
   const changeGroups: ChangeGroup[] = [];
 
   let currentGroup: ChangeGroup | null = null;
 
+  // define a helper for pushing a new group onto the list
   const pushCurrentGroup = () => {
     const diffHeads =
       changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
     currentGroup.diff = diffWithProvenance(doc, diffHeads, [currentGroup.id]);
+    currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
 
-    // Finalize the stats on the group based on the diff
+    const TEEChangeGroup = statsForChangeGroup(currentGroup);
+    currentGroup = { ...currentGroup, ...TEEChangeGroup };
 
-    currentGroup.charsAdded = currentGroup.diff.patches.reduce(
-      (total, patch) => {
-        if (patch.path[0] !== "content") {
-          return total;
-        }
-        if (patch.action === "splice") {
-          return total + patch.value.length;
-        } else {
-          return total;
-        }
-      },
-      0
-    );
-
-    currentGroup.charsDeleted = currentGroup.diff.patches.reduce(
-      (total, patch) => {
-        if (patch.path[0] !== "content") {
-          return total;
-        }
-        if (patch.action === "del") {
-          return total + patch.length;
-        } else {
-          return total;
-        }
-      },
-      0
-    );
-
-    currentGroup.commentsAdded = currentGroup.diff.patches.reduce(
-      (total, patch) => {
-        const isNewComment =
-          patch.path[0] === "commentThreads" &&
-          patch.path.length === 4 &&
-          patch.action === "insert";
-
-        if (!isNewComment) {
-          return total;
-        } else {
-          return total + 1;
-        }
-      },
-      0
-    );
-
-    // GL 1/19: For now, only show a group if it edited the text or added a comment.
-    // THIS IS A HACK, revisit this logic and think about it more carefully!
-    if (
-      currentGroup.charsAdded === 0 &&
-      currentGroup.charsDeleted === 0 &&
-      currentGroup.commentsAdded === 0
-    ) {
+    if (!showChangeGroupInLog(currentGroup)) {
       return;
     }
-
-    currentGroup.docAtEndOfChangeGroup = view(doc, [currentGroup.id]);
-    currentGroup.headings = extractHeadings(
-      currentGroup.docAtEndOfChangeGroup,
-      currentGroup.diff.patches
-    );
-    currentGroup.editCount = currentGroup.diff.patches.filter(
-      (p) => p.path[0] === "content"
-    ).length;
     changeGroups.push(currentGroup);
   };
 
   for (let i = 0; i < changes.length; i++) {
-    const change = changes[i];
-    let decodedChange = decodeChange(change) as DecodedChangeWithMetadata;
-    decodedChange.metadata = {};
-
-    try {
-      const metadata = JSON.parse(decodedChange.message);
-      decodedChange = { ...decodedChange, metadata };
-    } catch (e) {}
+    const decodedChange = changes[i];
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
     if (
@@ -377,13 +336,8 @@ export const getGroupedChanges = (
         id: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
-        charsAdded: decodedChange.ops.reduce((total, op) => {
-          // @ts-ignore
-          return op.action === "set" && op.insert === true ? total + 1 : total;
-        }, 0),
-        charsDeleted: decodedChange.ops.reduce((total, op) => {
-          return op.action === "del" ? total + 1 : total;
-        }, 0),
+        charsAdded: 0,
+        charsDeleted: 0,
         commentsAdded: 0,
         diff: { patches: [], fromHeads: [], toHeads: [] },
         markers: [],
@@ -407,167 +361,3 @@ export const getGroupedChanges = (
 
   return { changeGroups, changeCount: changes.length };
 };
-
-export type Heading = {
-  index: number;
-  text: string;
-  patches: Patch[];
-};
-
-// todo: doesn't handle replace
-export const extractHeadings = (
-  doc: MarkdownDoc,
-  patches: (Patch | TextPatch)[]
-): Heading[] => {
-  const headingData: Heading[] = [];
-  const regex = /^##\s(.*)/gm;
-  let match;
-
-  while ((match = regex.exec(doc.content)) != null) {
-    headingData.push({ index: match.index, text: match[1], patches: [] });
-  }
-
-  for (const patch of patches) {
-    if (
-      patch.path[0] !== "content" ||
-      !["splice", "del"].includes(patch.action)
-    ) {
-      continue;
-    }
-    let patchStart: number, patchEnd: number;
-    switch (patch.action) {
-      case "del": {
-        patchStart = patch.path[1] as number;
-        patchEnd = patchStart + patch.length;
-        break;
-      }
-      case "splice": {
-        patchStart = patch.path[1] as number;
-        patchEnd = patchStart + patch.value.length;
-        break;
-      }
-      default: {
-        continue;
-      }
-    }
-
-    // The heading was edited if it overlaps with the patch.
-    for (let i = 0; i < headingData.length; i++) {
-      const heading = headingData[i];
-      if (heading.index >= patchStart && heading.index <= patchEnd) {
-        heading.patches.push(patch);
-      }
-      if (
-        heading.index < patchStart &&
-        headingData[i + 1]?.index > patchStart
-      ) {
-        heading.patches.push(patch);
-      }
-    }
-  }
-
-  return headingData;
-};
-
-export const charsAddedAndDeletedByPatches = (
-  patches: Patch[]
-): { charsAdded: number; charsDeleted: number } => {
-  return patches.reduce(
-    (acc, patch) => {
-      if (patch.action === "splice") {
-        acc.charsAdded += patch.value.length;
-      } else if (patch.action === "del") {
-        acc.charsDeleted += patch.length;
-      }
-      return acc;
-    },
-    { charsAdded: 0, charsDeleted: 0 }
-  );
-};
-
-type PatchGroup = {
-  groupStartIndex: number;
-  groupEndIndex: number;
-  patches: (Patch | TextPatch)[];
-};
-
-// This is a quick hacky grouping
-// Probably better to iterate over patches rather than groups..?
-const groupPatchesByDelimiter =
-  (delimiter: string) =>
-  (doc: MarkdownDoc, patches: (Patch | TextPatch)[]): PatchGroup[] => {
-    if (!doc?.content) return [];
-    const patchGroups: PatchGroup[] = [];
-
-    let currentGroup: PatchGroup | null = null;
-
-    const createNewGroupFromPatch = (patch: Patch | TextPatch) => {
-      const patchStart = patch.path[1] as number;
-      const patchEnd = patchStart + getSizeOfPatch(patch);
-      const groupStartIndex =
-        doc.content.lastIndexOf(delimiter, patchStart) + 1;
-      const groupEndIndex = doc.content.indexOf(delimiter, patchEnd);
-      return {
-        groupStartIndex: groupStartIndex >= 0 ? groupStartIndex : patchStart,
-        groupEndIndex: groupEndIndex >= 0 ? groupEndIndex : patchEnd,
-        patches: [patch],
-      };
-    };
-
-    for (let i = 0; i < patches.length; i++) {
-      const patch = patches[i];
-      if (
-        patch.path[0] !== "content" ||
-        !["splice", "del"].includes(patch.action)
-      ) {
-        continue;
-      }
-
-      const patchStart = patch.path[1] as number;
-      const patchEnd = patchStart + getSizeOfPatch(patch);
-
-      if (currentGroup) {
-        if (patchStart <= currentGroup.groupEndIndex) {
-          currentGroup.patches.push(patch);
-          if (patchEnd > currentGroup.groupEndIndex) {
-            currentGroup.groupEndIndex = patchEnd;
-          }
-        } else {
-          patchGroups.push(currentGroup);
-          currentGroup = createNewGroupFromPatch(patch);
-        }
-      } else {
-        currentGroup = createNewGroupFromPatch(patch);
-      }
-    }
-
-    if (currentGroup) {
-      patchGroups.push(currentGroup);
-    }
-
-    return patchGroups;
-  };
-
-const getSizeOfPatch = (patch: Patch | TextPatch): number => {
-  switch (patch.action) {
-    case "del":
-      return patch.length;
-    case "splice":
-      return patch.value.length;
-    default:
-      throw new Error("unsupported patch type");
-  }
-};
-
-export const getAttrOfPatch = <T>(
-  patch: Patch | PatchWithAttr<T> | TextPatch
-): T | undefined => {
-  if (patch.action === "replace") {
-    return getAttrOfPatch(patch.raw.splice); // todo: this is not correct delete and insert could be from different authors
-  }
-
-  return "attr" in patch ? patch.attr : undefined;
-};
-
-export const groupPatchesByLine = groupPatchesByDelimiter("\n");
-export const groupPatchesByParagraph = groupPatchesByDelimiter("\n\n");
