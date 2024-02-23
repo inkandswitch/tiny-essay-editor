@@ -290,7 +290,7 @@ export const Demo4: React.FC<{
   const [width, setWidth] = useState(0);
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("comments");
+  const [reviewMode, setReviewMode] = useState("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
     []
