@@ -10,7 +10,14 @@ import {
 import { DiffWithProvenance } from "@/patchwork/schema";
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
-import { ReactElement, useEffect, useMemo, useState } from "react";
+import {
+  ReactElement,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import ReactDOMServer from "react-dom/server";
 import { sortBy } from "lodash";
 // import { getDiffBaseOfDoc } from "@/chronicle/components/EditGroups";
@@ -626,4 +633,12 @@ export const useAnnotationsWithPositions = ({
   );
 
   return threadsWithPositions;
+};
+
+export const useStaticCallback = <Params extends any[], Result>(
+  callback: (...args: Params) => Result
+): ((...args: Params) => Result) => {
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+  return useCallback((...args: Params) => callbackRef.current(...args), []);
 };

@@ -9,7 +9,11 @@ import { DiffWithProvenance } from "@/patchwork/schema";
 
 import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
-import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
+import {
+  ReviewStateFilter,
+  useAnnotationsWithPositions,
+  useStaticCallback,
+} from "../utils";
 import { CommentsSidebar } from "./CommentsSidebar";
 
 // TODO: audit the CSS being imported here;
@@ -74,13 +78,21 @@ export const TinyEssayEditor = ({
     AutomergeUrl[]
   >([]);
 
-  const setSelection = (selection: TextSelection) => {
-    _setSelection(selection);
+  const setSelection = useStaticCallback((newSelection: TextSelection) => {
+    if (
+      selection &&
+      newSelection.from === selection.from &&
+      newSelection.to === selection.to
+    ) {
+      return;
+    }
+
+    _setSelection(newSelection);
 
     if (onChangeSelection) {
-      onChangeSelection(selection);
+      onChangeSelection(newSelection);
     }
-  };
+  });
 
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilter>(
     {
