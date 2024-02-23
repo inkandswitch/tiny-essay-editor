@@ -65,6 +65,8 @@ import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SpatialCommentsList } from "./SpatialCommentsList";
 
 interface MakeBranchOptions {
   name?: string;
@@ -282,6 +284,7 @@ export const Demo4: React.FC<{
       : undefined);
 
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
+  const [reviewMode, setReviewMode] = useState("timeline");
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
@@ -601,46 +604,60 @@ export const Demo4: React.FC<{
 
           {isHistorySidebarOpen && (
             <div className=" bg-white border-l border-gray-200 py-2 h-full overflow-hidden flex flex-col">
-              <div className="px-2 pb-2 flex gap-2 items-center text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
-                <div
-                  onClick={() => setIsHistorySidebarOpen(false)}
-                  className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
-                >
-                  <ChevronsRight size={16} />
+              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div
+                    onClick={() => setIsHistorySidebarOpen(false)}
+                    className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
+                  >
+                    <ChevronsRight size={16} />
+                  </div>
+                  <div className="flex gap-1">
+                    <MessageSquareIcon size={16} />
+                    Review
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <MessageSquareIcon size={16} />
-                  Review
-                </div>
-                <div className="ml-4 flex gap-1">
-                  <MinusSquareIcon size={12} />
-                  <Slider
-                    className="w-24"
-                    min={1}
-                    max={3}
-                    step={1}
-                    value={[historyZoomLevel]}
-                    onValueChange={([value]) =>
-                      setHistoryZoomLevel(value as HistoryZoomLevel)
-                    }
-                  />
-                  <PlusSquareIcon size={12} />
-                </div>
+
+                <Tabs value={reviewMode} onValueChange={setReviewMode}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="comments">Comments</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {reviewMode === "timeline" && (
+                  <div className="flex gap-1 w-full">
+                    <MinusSquareIcon size={12} />
+                    <Slider
+                      min={1}
+                      max={3}
+                      step={1}
+                      value={[historyZoomLevel]}
+                      onValueChange={([value]) =>
+                        setHistoryZoomLevel(value as HistoryZoomLevel)
+                      }
+                    />
+                    <PlusSquareIcon size={12} />
+                  </div>
+                )}
               </div>
 
-              <div className="flex-grow overflow-hidden">
-                <ReviewSidebar
-                  // set key to trigger re-mount on branch change
-                  key={selectedBranchLink?.url ?? docUrl}
-                  docUrl={selectedBranchLink?.url ?? docUrl}
-                  setDocHeads={setDocHeadsFromHistorySidebar}
-                  setDiff={setDiffFromHistorySidebar}
-                  zoomLevel={historyZoomLevel}
-                  textSelection={textSelection}
-                  onClearTextSelection={() => {
-                    setTextSelection({ from: 0, to: 0, yCoord: 0 });
-                  }}
-                />
+              <div className="flex-grow overflow-hidden w-96">
+                {reviewMode === "timeline" && (
+                  <ReviewSidebar
+                    // set key to trigger re-mount on branch change
+                    key={selectedBranchLink?.url ?? docUrl}
+                    docUrl={selectedBranchLink?.url ?? docUrl}
+                    setDocHeads={setDocHeadsFromHistorySidebar}
+                    setDiff={setDiffFromHistorySidebar}
+                    zoomLevel={historyZoomLevel}
+                    textSelection={textSelection}
+                    onClearTextSelection={() => {
+                      setTextSelection({ from: 0, to: 0, yCoord: 0 });
+                    }}
+                  />
+                )}
+                {reviewMode === "comments" && <SpatialCommentsList />}
               </div>
             </div>
           )}
