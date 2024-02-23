@@ -111,9 +111,12 @@ const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
     return height;
   }
 
-  const commentHeights = annotation.comments.map(
-    (comment) => 64 + Math.floor(comment.content.length / 60) * 20
-  );
+  const commentHeights =
+    "comments" in annotation
+      ? annotation.comments.map(
+          (comment) => 64 + Math.floor(comment.content.length / 60) * 20
+        )
+      : [];
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
 
   if (annotation.type === "draft") {
