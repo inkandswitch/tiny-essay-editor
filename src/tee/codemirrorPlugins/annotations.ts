@@ -43,7 +43,10 @@ export const annotationDecorations = EditorView.decorations.compute(
             return [];
           }
 
-          if (!("type" in annotation) || annotation.type !== "thread") {
+          if (
+            !("type" in annotation) ||
+            (annotation.type !== "thread" && annotation.type !== "discussion")
+          ) {
             return [];
           }
 

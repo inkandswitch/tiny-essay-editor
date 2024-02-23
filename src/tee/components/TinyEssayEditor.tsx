@@ -1,10 +1,11 @@
+import { next as A } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { MarkdownDoc } from "../schema";
+import { DiscussionAnotationForUI, MarkdownDoc } from "../schema";
 import { DiffWithProvenance } from "@/patchwork/schema";
 
 import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
@@ -200,6 +201,41 @@ export const TinyEssayEditor = ({
     );
   }, [diff, visibleAuthorsForEdits, reviewStateFilter, docAtHeads]);
 
+  const discussionAnnotations = useMemo<DiscussionAnotationForUI[]>(() => {
+    if (!doc?.discussions) {
+      return [];
+    }
+
+    return Object.values(doc.discussions).flatMap((discussion) => {
+      if (discussion.target && discussion.target.type !== "editRange") {
+        return [];
+      }
+
+      try {
+        return [
+          {
+            type: "discussion",
+            discussion,
+            from: A.getCursorPosition(
+              doc,
+              ["content"],
+              discussion.target.value.fromCursor
+            ),
+            to: A.getCursorPosition(
+              doc,
+              ["content"],
+              discussion.target.value.toCursor
+            ),
+            active: false, // todo: provide active state
+            id: discussion.id,
+          },
+        ];
+      } catch (err) {
+        return [];
+      }
+    });
+  }, [doc?.discussions]);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
@@ -242,6 +278,7 @@ export const TinyEssayEditor = ({
               diffStyle={diffStyle ?? "normal"}
               foldRanges={foldRanges}
               debugHighlights={debugHighlights}
+              discussionAnnotations={discussionAnnotations}
             />
           </div>
           <div className="ml-2 w-0">

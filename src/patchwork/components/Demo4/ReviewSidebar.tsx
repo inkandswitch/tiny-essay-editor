@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
-import { EditRange } from "@/tee/schema";
+import { EditRangeTarget } from "../../schema";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -318,11 +318,14 @@ export const ReviewSidebar: React.FC<{
     };
     const discussionId = uuid();
 
-    let target: EditRange = undefined;
+    let target: EditRangeTarget = undefined;
     if (textSelection && textSelection.from !== textSelection.to) {
       target = {
-        fromCursor: A.getCursor(doc, ["content"], textSelection.from),
-        toCursor: A.getCursor(doc, ["content"], textSelection.to),
+        type: "editRange",
+        value: {
+          fromCursor: A.getCursor(doc, ["content"], textSelection.from),
+          toCursor: A.getCursor(doc, ["content"], textSelection.to),
+        },
       };
     }
 
@@ -502,24 +505,28 @@ export const ReviewSidebar: React.FC<{
                                       size="sm"
                                     />
                                   </div>
-                                  {marker.discussion.target && (
-                                    <HighlightSnippetView
-                                      text={
-                                        changeGroup.docAtEndOfChangeGroup
-                                          .content
-                                      }
-                                      from={A.getCursorPosition(
-                                        changeGroup.docAtEndOfChangeGroup,
-                                        ["content"],
-                                        marker.discussion.target.fromCursor
-                                      )}
-                                      to={A.getCursorPosition(
-                                        changeGroup.docAtEndOfChangeGroup,
-                                        ["content"],
-                                        marker.discussion.target.toCursor
-                                      )}
-                                    />
-                                  )}
+                                  {marker.discussion.target &&
+                                    marker.discussion.target.type ===
+                                      "editRange" && (
+                                      <HighlightSnippetView
+                                        text={
+                                          changeGroup.docAtEndOfChangeGroup
+                                            .content
+                                        }
+                                        from={A.getCursorPosition(
+                                          changeGroup.docAtEndOfChangeGroup,
+                                          ["content"],
+                                          marker.discussion.target.value
+                                            .fromCursor
+                                        )}
+                                        to={A.getCursorPosition(
+                                          changeGroup.docAtEndOfChangeGroup,
+                                          ["content"],
+                                          marker.discussion.target.value
+                                            .toCursor
+                                        )}
+                                      />
+                                    )}
 
                                   <div className="font-normal pl-3">
                                     {comment.content}
@@ -816,7 +823,7 @@ const HighlightSnippetView = ({
 
   return (
     <div
-      className="border-l-2 border-l border-gray-200 p-2 m-2 whitespace-pre-wrap cm-line font-normal"
+      className="border-l-2 border-gray-200 p-2 m-2 whitespace-pre-wrap cm-line font-normal"
       style={{ fontFamily: "Merriweather, serif" }}
     >
       {before}

@@ -8,6 +8,7 @@ import {
   Diffable,
   SpatialBranchable,
   Discussable,
+  Discussion,
 } from "@/patchwork/schema";
 
 export type Comment = {
@@ -94,10 +95,18 @@ export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
   }>;
 };
 
+// this will eventually replace thread annotations
+export type DiscussionAnnotation = {
+  type: "discussion";
+  id: string;
+  discussion: Discussion;
+};
+
 export type TextAnnotation =
   | DraftAnnotation
   | PatchAnnotation
-  | ThreadAnnotation;
+  | ThreadAnnotation
+  | DiscussionAnnotation;
 
 // TODO: define some helpers for TextAnnotation which switch on the type;
 // eg for seeing if the annotation overlaps with a given cursor position...
@@ -110,6 +119,9 @@ export type AnnotationPosition = {
 
 /** Augment a persistent comment thread w/ ephemeral info for the UI */
 export type TextAnnotationForUI = TextAnnotation & AnnotationPosition;
+
+export type DiscussionAnotationForUI = DiscussionAnnotation &
+  AnnotationPosition;
 
 export type TextAnnotationWithPosition = TextAnnotationForUI & {
   yCoord: number;

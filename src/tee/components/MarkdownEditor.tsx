@@ -40,7 +40,11 @@ import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
-import { TextAnnotationForUI, MarkdownDoc } from "../schema";
+import {
+  TextAnnotationForUI,
+  MarkdownDoc,
+  DiscussionAnotationForUI,
+} from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 import {
   setPatchesEffect,
@@ -70,6 +74,7 @@ export type EditorProps = {
   setView: (view: EditorView) => void;
   setActiveThreadIds: (threadIds: string[]) => void;
   threadsWithPositions: TextAnnotationForUI[];
+  discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
   diff?: (A.Patch | TextPatch)[];
@@ -93,6 +98,7 @@ export function MarkdownEditor({
   debugHighlights,
   onOpenSnippet,
   foldRanges,
+  discussionAnnotations,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -133,30 +139,32 @@ export function MarkdownEditor({
   useEffect(() => {
     editorRoot.current?.dispatch({
       effects: setAnnotationsEffect.of(
-        annotationsWithPositions.flatMap((annotation) => {
-          switch (annotation.type) {
-            case "thread": {
-              return annotation;
+        annotationsWithPositions
+          .flatMap((annotation) => {
+            switch (annotation.type) {
+              case "thread": {
+                return annotation;
+              }
+              case "patch": {
+                return annotation;
+              }
+              case "draft": {
+                return annotation.editRangesWithComments.map((range) => ({
+                  id: annotation.id,
+                  from: range.editRange.from,
+                  to: range.editRange.to,
+                  active: annotation.active,
+                }));
+              }
+              default: {
+                return [];
+              }
             }
-            case "patch": {
-              return annotation;
-            }
-            case "draft": {
-              return annotation.editRangesWithComments.map((range) => ({
-                id: annotation.id,
-                from: range.editRange.from,
-                to: range.editRange.to,
-                active: annotation.active,
-              }));
-            }
-            default: {
-              return [];
-            }
-          }
-        })
+          })
+          .concat(discussionAnnotations)
       ),
     });
-  }, [annotationsWithPositions]);
+  }, [annotationsWithPositions, discussionAnnotations]);
 
   useEffect(() => {
     if (!handleReady) {

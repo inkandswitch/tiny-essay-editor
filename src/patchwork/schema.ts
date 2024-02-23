@@ -70,7 +70,12 @@ export type SpatialBranch = {
   docUrl: AutomergeUrl;
 };
 
-export type DiscussionTarget = EditRange; // | ... future other options from other doctypes
+export interface EditRangeTarget {
+  type: "editRange";
+  value: EditRange;
+}
+
+export type DiscussionTarget = EditRangeTarget; // | ... future other options from other doctypes
 
 export type DiscussionComment = {
   id: string;
