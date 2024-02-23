@@ -286,6 +286,8 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
+  const [height, setHeight] = useState(0);
+  const [width, setWidth] = useState(0);
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
   const [reviewMode, setReviewMode] = useState("comments");
@@ -293,6 +295,16 @@ export const Demo4: React.FC<{
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
     []
   );
+
+  // todo: actually handle resizing
+  useEffect(() => {
+    if (!scrollContainer) {
+      return;
+    }
+
+    setHeight(scrollContainer.clientHeight);
+    setWidth(scrollContainer.clientWidth);
+  }, [scrollContainer]);
 
   const activeDiscussionTargetPositions = useMemo<
     DiscussionTargetPosition[]
@@ -302,10 +314,16 @@ export const Demo4: React.FC<{
     }
 
     return sortBy(
-      discussionTargetPositions.filter(
-        ({ y }) =>
-          y >= scrollOffset && y <= scrollOffset + scrollContainer.clientHeight
-      ),
+      discussionTargetPositions
+        .filter(
+          ({ y }) =>
+            y >= scrollOffset &&
+            y <= scrollOffset + scrollContainer.clientHeight
+        )
+        .map((position) => ({
+          ...position,
+          y: position.y - scrollOffset - 100, // I'm not sure where this magic number comes from
+        })),
       (position) => position.y
     );
   }, [scrollOffset, discussionTargetPositions, scrollContainer]);
@@ -588,48 +606,69 @@ export const Demo4: React.FC<{
                   </div>
                 </div>
               )}
-              <div
-                className="flex-1 min-h-0 overflow-auto"
-                ref={setScrollContainer}
-                onScroll={(event) => {
-                  setScrollOffset((event.target as HTMLDivElement).scrollTop);
-                }}
-              >
-                <div className="flex">
-                  {selectedBranch.type === "branch" && compareWithMainFlag && (
+              <div className="flex-1 min-h-0 relative">
+                <svg
+                  width={width}
+                  height={height}
+                  className="absolute z-50 pointer-events-none"
+                >
+                  {activeDiscussionTargetPositions.map((position) => (
+                    <BezierCurve
+                      x1={width}
+                      y1={0}
+                      x2={position.x}
+                      y2={position.y}
+                    />
+                  ))}
+                </svg>
+                <div
+                  className="h-full overflow-auto"
+                  ref={setScrollContainer}
+                  onScroll={(event) => {
+                    setScrollOffset((event.target as HTMLDivElement).scrollTop);
+                  }}
+                >
+                  <div className="flex">
+                    {selectedBranch.type === "branch" &&
+                      compareWithMainFlag && (
+                        <TinyEssayEditor
+                          docUrl={docUrl}
+                          branchDocHandle={branchDocHandle}
+                          key={`compare-${docUrl}`}
+                          diff={showDiff ? currentEditSessionDiff : undefined}
+                          diffBase={
+                            showDiff
+                              ? currentEditSessionDiff?.fromHeads
+                              : undefined
+                          }
+                          showDiffAsComments
+                          actorIdToAuthor={actorIdToAuthor}
+                        />
+                      )}
                     <TinyEssayEditor
-                      docUrl={docUrl}
-                      branchDocHandle={branchDocHandle}
-                      key={`compare-${docUrl}`}
-                      diff={showDiff ? currentEditSessionDiff : undefined}
-                      diffBase={
-                        showDiff ? currentEditSessionDiff?.fromHeads : undefined
-                      }
+                      docUrl={selectedBranchLink?.url ?? docUrl}
+                      mainDocHandle={compareWithMainFlag ? handle : undefined}
+                      docHeads={docHeads}
+                      readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
+                      key={`main-${docUrl}`}
+                      diff={diffForEditor}
+                      diffBase={diffBase}
                       showDiffAsComments
                       actorIdToAuthor={actorIdToAuthor}
+                      showBranchLayers={
+                        selectedBranch.type === "branch" && !compareWithMainFlag
+                      }
+                      selectMainBranch={() =>
+                        setSelectedBranch({ type: "main" })
+                      }
+                      onChangeSelection={(selection) => {
+                        setTextSelection(selection);
+                      }}
+                      onUpdateDiscussionTargetPositions={
+                        setDiscussionTargetPositions
+                      }
                     />
-                  )}
-                  <TinyEssayEditor
-                    docUrl={selectedBranchLink?.url ?? docUrl}
-                    mainDocHandle={compareWithMainFlag ? handle : undefined}
-                    docHeads={docHeads}
-                    readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
-                    key={`main-${docUrl}`}
-                    diff={diffForEditor}
-                    diffBase={diffBase}
-                    showDiffAsComments
-                    actorIdToAuthor={actorIdToAuthor}
-                    showBranchLayers={
-                      selectedBranch.type === "branch" && !compareWithMainFlag
-                    }
-                    selectMainBranch={() => setSelectedBranch({ type: "main" })}
-                    onChangeSelection={(selection) => {
-                      setTextSelection(selection);
-                    }}
-                    onUpdateDiscussionTargetPositions={
-                      setDiscussionTargetPositions
-                    }
-                  />
+                  </div>
                 </div>
               </div>
             </div>
@@ -846,4 +885,22 @@ const BranchActions: React.FC<{
       </DropdownMenuContent>
     </DropdownMenu>
   );
+};
+
+interface BezierCurveProps {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
+  // You might want to calculate control points based on start and end, or pass them as props.
+  // This is a simple example; adjust control points as needed.
+  const controlPoint1 = { x: x1 + (x2 - x1) / 3, y: y1 };
+  const controlPoint2 = { x: x1 + (2 * (x2 - x1)) / 3, y: y2 };
+
+  const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
+
+  return <path d={pathData} stroke="#ebe5b2" fill="none" strokeWidth="2" />;
 };
