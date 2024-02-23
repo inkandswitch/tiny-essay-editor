@@ -607,20 +607,22 @@ export const Demo4: React.FC<{
                 </div>
               )}
               <div className="flex-1 min-h-0 relative">
-                <svg
-                  width={width}
-                  height={height}
-                  className="absolute z-50 pointer-events-none"
-                >
-                  {activeDiscussionTargetPositions.map((position) => (
-                    <BezierCurve
-                      x1={width}
-                      y1={0}
-                      x2={position.x}
-                      y2={position.y}
-                    />
-                  ))}
-                </svg>
+                {reviewMode === "comments" && (
+                  <svg
+                    width={width}
+                    height={height}
+                    className="absolute z-50 pointer-events-none"
+                  >
+                    {activeDiscussionTargetPositions.map((position) => (
+                      <BezierCurve
+                        x1={width}
+                        y1={0}
+                        x2={position.x}
+                        y2={position.y}
+                      />
+                    ))}
+                  </svg>
+                )}
                 <div
                   className="h-full overflow-auto"
                   ref={setScrollContainer}
