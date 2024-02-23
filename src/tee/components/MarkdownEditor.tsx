@@ -58,6 +58,10 @@ import {
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
 import { TextPatch } from "@/patchwork/utils";
+import {
+  discussionTargetPositionListener,
+  DiscussionTargetPosition,
+} from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export type TextSelection = {
   from: number;
@@ -82,6 +86,9 @@ export type EditorProps = {
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
+  onUpdateDiscussionTargetPositions?: (
+    positions: DiscussionTargetPosition[]
+  ) => void;
 };
 
 export function MarkdownEditor({
@@ -99,6 +106,7 @@ export function MarkdownEditor({
   onOpenSnippet,
   foldRanges,
   discussionAnnotations,
+  onUpdateDiscussionTargetPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -248,6 +256,13 @@ export function MarkdownEditor({
             return placeholder;
           },
         }),
+        ...(onUpdateDiscussionTargetPositions
+          ? [
+              discussionTargetPositionListener(
+                onUpdateDiscussionTargetPositions
+              ),
+            ]
+          : []),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?

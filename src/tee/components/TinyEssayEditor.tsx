@@ -31,6 +31,7 @@ import {
 import { uniq } from "lodash";
 import "../../tee/index.css";
 import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
+import { DiscussionTargetPosition } from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -48,6 +49,7 @@ export const TinyEssayEditor = ({
   debugHighlights,
   showBranchLayers,
   selectMainBranch,
+  onUpdateDiscussionTargetPositions,
 }: {
   docUrl: AutomergeUrl;
   mainDocHandle?: DocHandle<MarkdownDoc>;
@@ -64,6 +66,9 @@ export const TinyEssayEditor = ({
   debugHighlights?: DebugHighlight[];
   showBranchLayers?: boolean;
   selectMainBranch?: () => void;
+  onUpdateDiscussionTargetPositions?: (
+    positions: DiscussionTargetPosition[]
+  ) => void;
 }) => {
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -279,6 +284,9 @@ export const TinyEssayEditor = ({
               foldRanges={foldRanges}
               debugHighlights={debugHighlights}
               discussionAnnotations={discussionAnnotations}
+              onUpdateDiscussionTargetPositions={
+                onUpdateDiscussionTargetPositions
+              }
             />
           </div>
           <div className="ml-2 w-0">

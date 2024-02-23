@@ -770,7 +770,7 @@ const SNIPPET_CUTOFF = 75;
 
 const STOP_CHARACTER = [".", "!", "?", "\n"];
 
-const HighlightSnippetView = ({
+export const HighlightSnippetView = ({
   from,
   to,
   text,

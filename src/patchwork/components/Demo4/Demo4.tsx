@@ -9,7 +9,7 @@ import {
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { isEqual, truncate } from "lodash";
+import { isEqual, truncate, sortBy } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -67,6 +67,9 @@ import { toast } from "sonner";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SpatialCommentsList } from "./SpatialCommentsList";
+import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
+import { HighlightSnippetView } from "./ReviewSidebar";
 
 interface MakeBranchOptions {
   name?: string;
@@ -283,8 +286,29 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
+  const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("timeline");
+  const [reviewMode, setReviewMode] = useState("comments");
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
+    []
+  );
+
+  const activeDiscussionTargetPositions = useMemo<
+    DiscussionTargetPosition[]
+  >(() => {
+    if (!scrollContainer) {
+      return [];
+    }
+
+    return sortBy(
+      discussionTargetPositions.filter(
+        ({ y }) =>
+          y >= scrollOffset && y <= scrollOffset + scrollContainer.clientHeight
+      ),
+      (position) => position.y
+    );
+  }, [scrollOffset, discussionTargetPositions, scrollContainer]);
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
@@ -564,7 +588,13 @@ export const Demo4: React.FC<{
                   </div>
                 </div>
               )}
-              <div className="flex-1 min-h-0 overflow-auto">
+              <div
+                className="flex-1 min-h-0 overflow-auto"
+                ref={setScrollContainer}
+                onScroll={(event) => {
+                  setScrollOffset((event.target as HTMLDivElement).scrollTop);
+                }}
+              >
                 <div className="flex">
                   {selectedBranch.type === "branch" && compareWithMainFlag && (
                     <TinyEssayEditor
@@ -596,6 +626,9 @@ export const Demo4: React.FC<{
                     onChangeSelection={(selection) => {
                       setTextSelection(selection);
                     }}
+                    onUpdateDiscussionTargetPositions={
+                      setDiscussionTargetPositions
+                    }
                   />
                 </div>
               </div>
@@ -657,7 +690,46 @@ export const Demo4: React.FC<{
                     }}
                   />
                 )}
-                {reviewMode === "comments" && <SpatialCommentsList />}
+                {reviewMode === "comments" && (
+                  <div>
+                    {activeDiscussionTargetPositions.map(
+                      ({ x, y, discussion }) => {
+                        const comment = discussion.comments[0];
+
+                        return (
+                          <div className="text-sm">
+                            <div className=" text-gray-600 inline">
+                              <InlineContactAvatar
+                                url={comment.contactUrl}
+                                size="sm"
+                              />
+                            </div>
+                            {discussion.target &&
+                              discussion.target.type === "editRange" && (
+                                <HighlightSnippetView
+                                  text={doc.content}
+                                  from={A.getCursorPosition(
+                                    doc,
+                                    ["content"],
+                                    discussion.target.value.fromCursor
+                                  )}
+                                  to={A.getCursorPosition(
+                                    doc,
+                                    ["content"],
+                                    discussion.target.value.toCursor
+                                  )}
+                                />
+                              )}
+
+                            <div className="font-normal pl-3">
+                              {comment.content}
+                            </div>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
