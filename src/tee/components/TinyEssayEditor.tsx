@@ -239,7 +239,7 @@ export const TinyEssayEditor = ({
         return [];
       }
     });
-  }, [doc?.discussions]);
+  }, [doc?.discussions, doc?.content]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {

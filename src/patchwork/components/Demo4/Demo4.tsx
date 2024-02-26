@@ -339,8 +339,6 @@ export const Demo4: React.FC<{
   }, [scrollOffset, discussionTargetPositions, scrollContainer]);
 
   const activeDiscussions = useMemo(() => {
-    console.log("reeval active discussions");
-
     return activeDiscussionTargetPositions.map(({ discussion }) => discussion);
   }, [activeDiscussionTargetPositions]);
 
