@@ -78,8 +78,6 @@ import {
   DiscussionTargetPosition,
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
-import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { HighlightSnippetView } from "./ReviewSidebar";
 import { useStaticCallback } from "@/tee/utils";
 
 interface MakeBranchOptions {

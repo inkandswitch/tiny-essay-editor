@@ -100,3 +100,11 @@ export type Discussion = {
 export type Discussable = {
   discussions: { [key: string]: Discussion };
 };
+
+export type HasChangeGroupSummaries = {
+  changeGroupSummaries: {
+    [key: string]: {
+      title: string;
+    };
+  };
+};

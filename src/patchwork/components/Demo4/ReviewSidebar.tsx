@@ -23,7 +23,11 @@ import {
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { DiffWithProvenance, DiscussionComment } from "../../schema";
+import {
+  DiffWithProvenance,
+  DiscussionComment,
+  HasChangeGroupSummaries,
+} from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
@@ -36,6 +40,7 @@ import { completions, slashCommands } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
 import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
+import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -426,8 +431,15 @@ export const ReviewSidebar: React.FC<{
     }
   };
 
+  // @ts-expect-error temporary thing to populate change summaries
+  window.populateChangeSummaries = () =>
+    populateChangeGroupSummaries({
+      groups: groupedChanges,
+      handle,
+    });
+
   return (
-    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-gray-50">
+    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
         ref={scrollerRef}
         className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
@@ -533,11 +545,20 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <div className="ml-[16px]">
-                        <EditSummary
-                          changeGroup={changeGroup}
-                          selected={selected}
-                        />
+                      <div className="flex ml-2">
+                        <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
+                        <div className="flex-grow">
+                          <EditSummary
+                            changeGroup={changeGroup}
+                            selected={selected}
+                            summary={
+                              doc.changeGroupSummaries
+                                ? doc.changeGroupSummaries[changeGroup.id]
+                                    ?.title
+                                : undefined
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -700,6 +721,11 @@ export const ReviewSidebar: React.FC<{
                   {isABranchMergeGroup && (
                     <MergedBranchView
                       changeGroup={changeGroup}
+                      summary={
+                        doc.changeGroupSummaries
+                          ? doc.changeGroupSummaries[changeGroup.id]?.title
+                          : undefined
+                      }
                       selected={selected}
                       setSelection={setSelection}
                     />
@@ -800,39 +826,21 @@ export const ReviewSidebar: React.FC<{
 };
 
 const EditSummary = ({
+  summary,
   changeGroup,
   selected,
 }: {
+  summary: string | undefined;
   changeGroup: ChangeGroup;
   selected: boolean;
 }) => {
   return (
     <div
-      className={`group cursor-pointer  p-1 rounded-full font-bold flex ${
+      className={`group cursor-pointer  p-1 rounded-full font-medium text-xs flex ${
         selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
       } `}
     >
-      <span
-        className={`text-green-600  mr-2 ${
-          changeGroup.charsAdded === 0 && "opacity-50"
-        }`}
-      >
-        +{changeGroup.charsAdded}
-      </span>
-      <span
-        className={`text-red-600 mr-2 ${
-          !changeGroup.charsDeleted && "opacity-50"
-        }`}
-      >
-        -{changeGroup.charsDeleted || 0}
-      </span>
-      <span
-        className={`text-gray-500 ${
-          changeGroup.commentsAdded === 0 && "opacity-50"
-        }`}
-      >
-        💬{changeGroup.commentsAdded}
-      </span>
+      <div className="mr-2 text-gray-500">{summary}</div>
 
       <div className="ml-auto">
         {changeGroup.authorUrls.length > 0 && (
@@ -856,9 +864,10 @@ const EditSummary = ({
 
 const MergedBranchView: React.FC<{
   changeGroup: ChangeGroup;
+  summary: string | undefined;
   selected: boolean;
   setSelection: (s: Selection) => void;
-}> = ({ changeGroup, selected, setSelection }) => {
+}> = ({ changeGroup, selected, setSelection, summary }) => {
   const branch = changeGroup.markers.find(
     (m) => m.type === "otherBranchMergedIntoThisDoc"
     // @ts-expect-error -- this should be fine, why does TS not get it?
@@ -901,8 +910,14 @@ const MergedBranchView: React.FC<{
         </ItemContent>
       </ItemView>
       <div className="mt-1 flex gap-1">
+        {/* This is a curved line showing the connection between the branch and the edits*/}
         <div className="ml-8 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-        <EditSummary changeGroup={changeGroup} selected={selected} />
+
+        <EditSummary
+          changeGroup={changeGroup}
+          selected={selected}
+          summary={summary}
+        />
       </div>
     </div>
   );
