@@ -195,10 +195,12 @@ export const ReviewSidebar: React.FC<{
     switch (selection.type) {
       case "milestone":
         return selection.heads;
-      case "changeGroups":
-        return [selection.to];
+      case "changeGroups": {
+        const group = groupedChanges.find((g) => g.id === selection.to);
+        return [group.to];
+      }
     }
-  }, [selection]);
+  }, [selection, groupedChanges]);
 
   // sync the diff and docHeads up to the parent component when the selection changes
   useEffect(() => {
@@ -298,10 +300,10 @@ export const ReviewSidebar: React.FC<{
     const lastVisibleChangeGroupId =
       selection.type === "changeGroups"
         ? selection.to
-        : groupedChanges.find((cg) => cg.id === selection.heads[0]).id;
+        : groupedChanges.find((cg) => cg.to === selection.heads[0]).id;
     return (
       groupedChanges.map((c) => c.id).indexOf(lastVisibleChangeGroupId) >=
-      groupedChanges.map((c) => c.id).indexOf(head)
+      groupedChanges.map((c) => c.to).indexOf(head)
     );
   };
 
@@ -519,7 +521,7 @@ export const ReviewSidebar: React.FC<{
                             onClick={() => {
                               createMilestone({
                                 name: window.prompt("Tag name:"),
-                                heads: [changeGroup.id],
+                                heads: [changeGroup.to],
                               });
                             }}
                           >

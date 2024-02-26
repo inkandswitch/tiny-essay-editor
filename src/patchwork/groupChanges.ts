@@ -64,7 +64,11 @@ export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
 
 /** Change group attributes that could work for any document */
 export type GenericChangeGroup = {
+  // Uniquely IDs the changes in this group.
+  // (Concretely, we make IDs from heads + to heads, which I think does stably ID changes?)
   id: string;
+  from: Hash;
+  to: Hash;
   changes: DecodedChangeWithMetadata[];
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
@@ -274,10 +278,12 @@ export const getGroupedChanges = (
 
   // define a helper for pushing a new group onto the list
   const pushGroup = (group: ChangeGroup) => {
+    group.id = `${group.from}-${group.to}`;
+
     const diffHeads =
-      changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].id] : [];
-    group.diff = diffWithProvenance(doc, diffHeads, [group.id]);
-    group.docAtEndOfChangeGroup = view(doc, [group.id]);
+      changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].to] : [];
+    group.diff = diffWithProvenance(doc, diffHeads, [group.to]);
+    group.docAtEndOfChangeGroup = view(doc, [group.to]);
 
     const TEEChangeGroup = statsForChangeGroup(group);
     const groupWithStats = { ...group, ...TEEChangeGroup };
@@ -304,7 +310,9 @@ export const getGroupedChanges = (
     if (branch.mergeMetadata) {
       branchChangeGroups[branch.url] = {
         changeGroup: {
-          id: branch.mergeMetadata.mergeHeads[0],
+          id: `${branch.branchHeads[0]}-${branch.mergeMetadata.mergeHeads[0]}`,
+          from: branch.branchHeads[0],
+          to: branch.mergeMetadata.mergeHeads[0],
           changes: [],
           actorIds: [],
           authorUrls: [],
@@ -406,7 +414,7 @@ export const getGroupedChanges = (
       GROUPINGS[algorithm](currentGroup, decodedChange, numericParameter)
     ) {
       currentGroup.changes.push(decodedChange);
-      currentGroup.id = decodedChange.hash;
+      currentGroup.to = decodedChange.hash;
       if (decodedChange.time && decodedChange.time > 0) {
         currentGroup.time = decodedChange.time;
       }
@@ -445,7 +453,9 @@ export const getGroupedChanges = (
         // TODO: revisit whether this makes sense as an identifier for the group?
         // It's a bit dangerous to store this separately from the changes since they
         // might get out of sync, but it's super convenient in the view...
-        id: decodedChange.hash,
+        id: `${decodedChange.hash}-${decodedChange.hash}`,
+        from: decodedChange.hash,
+        to: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
         charsAdded: 0,

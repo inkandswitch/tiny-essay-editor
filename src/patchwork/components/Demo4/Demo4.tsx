@@ -413,6 +413,8 @@ export const Demo4: React.FC<{
 
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
+  console.log("docHeads", docHeads);
+
   const activeMilestone = doc?.tags?.find((t) => isEqual(t.heads, docHeads));
 
   return (
