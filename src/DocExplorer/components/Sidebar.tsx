@@ -67,7 +67,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [openNewDocPopoverVisible, setOpenNewDocPopoverVisible] =
     useState(false);
   const [openUrlInput, setOpenUrlInput] = useState("");
-  const automergeUrlMatch = openUrlInput.match(/(automerge:[a-zA-Z0-9]*)/);
+  const automergeUrlMatch =
+    openUrlInput
+    .replace(/%3A/g, ':')
+    .match(/(automerge:[a-zA-Z0-9]*)/);
   const automergeUrlToOpen =
     automergeUrlMatch &&
     automergeUrlMatch[1] &&
