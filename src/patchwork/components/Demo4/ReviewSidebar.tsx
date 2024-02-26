@@ -427,7 +427,7 @@ export const ReviewSidebar: React.FC<{
   };
 
   return (
-    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
+    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-gray-50">
       <div
         ref={scrollerRef}
         className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
@@ -720,7 +720,7 @@ export const ReviewSidebar: React.FC<{
         </div>
       </div>
 
-      <div className="pt-2  bg-gray-100 z-10">
+      <div className="pt-2 bg-gray-50 z-10">
         {textSelection && textSelection.from !== textSelection.to && doc && (
           <HighlightSnippetView
             from={textSelection.from}

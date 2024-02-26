@@ -757,7 +757,7 @@ export const Demo4: React.FC<{
           </div>
 
           {isHistorySidebarOpen && (
-            <div className="bg-white border-l border-gray-200 py-2 h-full flex flex-col relative">
+            <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
               <div
                 className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
                 onClick={() => setIsHistorySidebarOpen(false)}
@@ -773,7 +773,7 @@ export const Demo4: React.FC<{
                   </TabsList>
                 </Tabs>
 
-                {reviewMode === "timeline" && (
+                {/* {reviewMode === "timeline" && (
                   <div className="flex gap-1 w-full">
                     <MinusSquareIcon size={12} />
                     <Slider
@@ -787,7 +787,7 @@ export const Demo4: React.FC<{
                     />
                     <PlusSquareIcon size={12} />
                   </div>
-                )}
+                )} */}
               </div>
 
               <div className="flex-grow overflow-hidden w-96">
