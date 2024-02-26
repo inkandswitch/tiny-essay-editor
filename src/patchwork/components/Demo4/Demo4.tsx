@@ -764,16 +764,12 @@ export const Demo4: React.FC<{
                   >
                     <ChevronsRight size={16} />
                   </div>
-                  <div className="flex gap-1">
-                    <MessageSquareIcon size={16} />
-                    Review
-                  </div>
                 </div>
 
                 <Tabs value={reviewMode} onValueChange={setReviewMode}>
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
                     <TabsTrigger value="comments">Comments</TabsTrigger>
+                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
