@@ -729,6 +729,7 @@ export const Demo4: React.FC<{
                     onClearTextSelection={() => {
                       setTextSelection({ from: 0, to: 0, yCoord: 0 });
                     }}
+                    setSelectedBranch={setSelectedBranch}
                   />
                 )}
                 {reviewMode === "comments" && (

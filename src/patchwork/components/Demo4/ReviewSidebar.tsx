@@ -19,6 +19,7 @@ import {
   MilestoneIcon,
   SendHorizontalIcon,
   MergeIcon,
+  GitBranchIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
@@ -33,6 +34,8 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { completions, slashCommands } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
+import { createBranch } from "@/patchwork/branches";
+import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -63,10 +66,28 @@ const useScrollToBottom = () => {
   return scrollerRef;
 };
 
+type CommentBoxAction =
+  | { type: "comment"; value: string }
+  | { type: "branch"; name?: string }
+  | { type: "milestone"; name?: string };
+
+const parseCommentBoxContent = (content: string): CommentBoxAction => {
+  if (content.startsWith("/branch")) {
+    const name = content.replace("/branch", "").trim();
+    return { type: "branch", name: name || undefined };
+  } else if (content.startsWith("/milestone")) {
+    const name = content.replace("/milestone", "").trim();
+    return { type: "milestone", name: name || undefined };
+  } else {
+    return { type: "comment", value: content };
+  }
+};
+
 export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
+  setSelectedBranch: (branch: SelectedBranch) => void;
   zoomLevel: HistoryZoomLevel;
   textSelection: TextSelection;
   onClearTextSelection: () => void;
@@ -74,6 +95,7 @@ export const ReviewSidebar: React.FC<{
   docUrl,
   setDocHeads,
   setDiff,
+  setSelectedBranch,
   zoomLevel,
   textSelection,
   onClearTextSelection,
@@ -85,6 +107,9 @@ export const ReviewSidebar: React.FC<{
   const scrollerRef = useScrollToBottom();
 
   const [commentBoxContent, setCommentBoxContent] = useState("");
+
+  const parsedCommentBoxContent: CommentBoxAction =
+    parseCommentBoxContent(commentBoxContent);
 
   // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
@@ -355,6 +380,50 @@ export const ReviewSidebar: React.FC<{
     setCommentBoxContent("");
   };
 
+  const createMilestone = ({
+    name,
+    heads,
+  }: {
+    name: string;
+    heads: A.Heads;
+  }) => {
+    changeDoc((doc) => {
+      if (!doc.tags) {
+        doc.tags = [];
+      }
+      doc.tags.push({
+        name,
+        heads,
+        createdAt: Date.now(),
+        createdBy: account?.contactHandle?.url,
+      });
+    });
+  };
+
+  const onSubmit = () => {
+    if (parsedCommentBoxContent.type === "comment") {
+      createDiscussion();
+    }
+    if (parsedCommentBoxContent.type === "branch") {
+      const newBranch = createBranch({
+        repo,
+        handle,
+        name: parsedCommentBoxContent.name,
+        heads: currentlyActiveHeads,
+        createdBy: account?.contactHandle?.url,
+      });
+      setSelectedBranch({ type: "branch", url: newBranch.url });
+      setCommentBoxContent("");
+    }
+    if (parsedCommentBoxContent.type === "milestone") {
+      createMilestone({
+        name: parsedCommentBoxContent.name || new Date().toLocaleDateString(),
+        heads: currentlyActiveHeads,
+      });
+      setCommentBoxContent("");
+    }
+  };
+
   return (
     <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
       <div
@@ -448,16 +517,9 @@ export const ReviewSidebar: React.FC<{
                           <div
                             className="absolute top-0 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
                             onClick={() => {
-                              changeDoc((doc) => {
-                                if (!doc.tags) {
-                                  doc.tags = [];
-                                }
-                                doc.tags.push({
-                                  name: window.prompt("Tag name:"),
-                                  heads: [changeGroup.id],
-                                  createdAt: Date.now(),
-                                  createdBy: account?.contactHandle?.url,
-                                });
+                              createMilestone({
+                                name: window.prompt("Tag name:"),
+                                heads: [changeGroup.id],
                               });
                             }}
                           >
@@ -680,7 +742,7 @@ export const ReviewSidebar: React.FC<{
             onChange={(value) => setCommentBoxContent(value)}
             onKeyDown={(e) => {
               if (e.metaKey && e.key === "Enter") {
-                createDiscussion();
+                onSubmit();
                 e.stopPropagation();
               }
             }}
@@ -706,11 +768,27 @@ export const ReviewSidebar: React.FC<{
 
           <div className="flex justify-end mt-2 text-sm">
             <div className="flex items-center">
-              <Button variant="ghost" onClick={createDiscussion}>
-                <SendHorizontalIcon size={14} className="mr-1" />
-                Comment
-                <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
-              </Button>
+              {parsedCommentBoxContent.type === "comment" && (
+                <Button variant="ghost" onClick={onSubmit}>
+                  <SendHorizontalIcon size={14} className="mr-1" />
+                  Comment
+                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                </Button>
+              )}
+              {parsedCommentBoxContent.type === "branch" && (
+                <Button variant="ghost" onClick={onSubmit}>
+                  <GitBranchIcon size={14} className="mr-1" />
+                  Create branch
+                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                </Button>
+              )}
+              {parsedCommentBoxContent.type === "milestone" && (
+                <Button variant="ghost" onClick={onSubmit}>
+                  <MilestoneIcon size={14} className="mr-1" />
+                  Save milestone
+                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
