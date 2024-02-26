@@ -719,7 +719,7 @@ export const ReviewSidebar: React.FC<{
       </div>
 
       <div className="pt-2  bg-gray-100 z-10">
-        {textSelection && textSelection.from !== textSelection.to && (
+        {textSelection && textSelection.from !== textSelection.to && doc && (
           <HighlightSnippetView
             from={textSelection.from}
             to={textSelection.to}

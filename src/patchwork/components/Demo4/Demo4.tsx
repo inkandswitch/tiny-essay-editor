@@ -1,5 +1,5 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { DiffWithProvenance } from "../../schema";
+import { DiffWithProvenance, EditRangeTarget } from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -372,8 +372,20 @@ export const Demo4: React.FC<{
   );
 
   const activeDiscussions = useMemo(() => {
-    return activeDiscussionTargetPositions.map(({ discussion }) => discussion);
-  }, [activeDiscussionTargetPositions]);
+    if (!doc || !doc.discussions) {
+      return;
+    }
+
+    return sortBy(
+      Object.values(doc.discussions).filter(
+        (discussion) => discussion.target.type === "editRange"
+      ),
+      (discussion) => {
+        const target = discussion.target as EditRangeTarget;
+        return A.getCursorPosition(doc, ["content"], target.value.fromCursor);
+      }
+    );
+  }, [doc?.content, doc?.discussions]);
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
