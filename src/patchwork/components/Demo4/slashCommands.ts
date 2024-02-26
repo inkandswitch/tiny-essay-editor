@@ -5,6 +5,25 @@ import {
   Completion,
 } from "@codemirror/autocomplete";
 
+export function createApplyWithBracketSelection(label) {
+  return function (view, completion, from, to) {
+    const insertText = label;
+    const startBracketIndex = insertText.indexOf("[");
+    const endBracketIndex = insertText.indexOf("]");
+
+    // Ensure there are brackets to select text between.
+    if (startBracketIndex !== -1 && endBracketIndex !== -1) {
+      view.dispatch({
+        changes: { from, to, insert: insertText },
+        selection: {
+          anchor: from + startBracketIndex,
+          head: from + endBracketIndex + 1,
+        },
+      });
+    }
+  };
+}
+
 export function slashCommands(data: Completion[] = []): Extension {
   return autocompletion({
     override: [

@@ -31,7 +31,10 @@ import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { EditRangeTarget } from "../../schema";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { slashCommands } from "./slashCommands";
+import {
+  createApplyWithBracketSelection,
+  slashCommands,
+} from "./slashCommands";
 import { EditorView } from "@codemirror/view";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
@@ -68,8 +71,14 @@ const completions = [
   { label: "@geoffrey" },
   { label: "@max" },
   { label: "@paul" },
-  { label: "/branch " },
-  { label: "/milestone " },
+  {
+    label: "/branch [name]",
+    apply: createApplyWithBracketSelection("/branch [name]"),
+  },
+  {
+    label: "/milestone [name]",
+    apply: createApplyWithBracketSelection("/milestone [name]"),
+  },
 ];
 
 export const ReviewSidebar: React.FC<{
