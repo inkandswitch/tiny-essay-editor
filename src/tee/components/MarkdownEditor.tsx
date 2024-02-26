@@ -39,6 +39,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { suppressSaveShortcut } from "../codemirrorPlugins/suppressSaveShortcut";
 
 export type TextSelection = {
   from: number;
@@ -125,6 +126,7 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
+        suppressSaveShortcut,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
