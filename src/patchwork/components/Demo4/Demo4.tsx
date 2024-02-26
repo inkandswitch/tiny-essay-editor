@@ -294,8 +294,7 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
-  const [height, setHeight] = useState(0);
-  const [width, setWidth] = useState(0);
+  const [rect, setRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
   const [reviewMode, setReviewMode] = useState("comments");
@@ -305,17 +304,26 @@ export const Demo4: React.FC<{
   );
 
   const [commentPositionMap, setCommentPositionMap] = useState({});
-  const bezierCurveLayerElementRef = useRef<HTMLDivElement>();
+  const [bezierCurveLayerElement, setBezierCurveLayerElement] =
+    useState<HTMLDivElement>();
 
-  // todo: actually handle resizing
   useEffect(() => {
-    if (!scrollContainer) {
+    if (!bezierCurveLayerElement) {
       return;
     }
 
-    setHeight(scrollContainer.clientHeight);
-    setWidth(scrollContainer.clientWidth);
-  }, [scrollContainer]);
+    // Step 2: Set up the ResizeObserver
+    const observer = new ResizeObserver(() => {
+      setRect(bezierCurveLayerElement.getBoundingClientRect());
+    });
+
+    observer.observe(bezierCurveLayerElement);
+
+    // Step 3: Clean up
+    return () => {
+      observer.disconnect();
+    };
+  }, [bezierCurveLayerElement]);
 
   const activeDiscussionTargetPositions = useMemo<
     DiscussionTargetPosition[]
@@ -333,18 +341,20 @@ export const Demo4: React.FC<{
         )
         .map((position) => ({
           ...position,
-          y: position.y - scrollOffset - 100, // I'm not sure where this magic number comes from
+          y: position.y - scrollOffset - rect.top,
+          x: position.x - rect.left,
         })),
       (position) => position.y
     );
-  }, [scrollOffset, discussionTargetPositions, scrollContainer]);
+  }, [scrollOffset, discussionTargetPositions, scrollContainer, rect]);
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
       setDiscussionTargetPositions(
         targetPositions.map((position) => ({
           ...position,
-          y: position.y + scrollOffset,
+          y: position.y,
+          x: position.x,
         }))
       );
     }
@@ -632,35 +642,37 @@ export const Demo4: React.FC<{
                   </div>
                 </div>
               )}
-              <div
-                className="flex-1 min-h-0 relative"
-                ref={bezierCurveLayerElementRef}
-              >
+              <div className="flex-1 min-h-0 relative">
                 {reviewMode === "comments" && isHistorySidebarOpen && (
-                  <svg
-                    width={width}
-                    height={height}
-                    className="absolute z-50 pointer-events-none"
+                  <div
+                    ref={setBezierCurveLayerElement}
+                    className="absolute z-50 top-0 right-0 bottom-0 left-0 pointer-events-none"
                   >
-                    {activeDiscussionTargetPositions.map((position, index) => {
-                      const commentPosition =
-                        commentPositionMap[position.discussion.id];
+                    {rect && (
+                      <svg width={rect.width} height={rect.height}>
+                        {activeDiscussionTargetPositions.map(
+                          (position, index) => {
+                            const commentPosition =
+                              commentPositionMap[position.discussion.id];
 
-                      if (!commentPosition) {
-                        return;
-                      }
+                            if (!commentPosition) {
+                              return;
+                            }
 
-                      return (
-                        <BezierCurve
-                          key={position.discussion.id}
-                          x1={width}
-                          y1={commentPositionMap[position.discussion.id]}
-                          x2={position.x}
-                          y2={position.y}
-                        />
-                      );
-                    })}
-                  </svg>
+                            return (
+                              <BezierCurve
+                                key={position.discussion.id}
+                                x1={rect.width}
+                                y1={commentPositionMap[position.discussion.id]}
+                                x2={position.x}
+                                y2={position.y + rect.top}
+                              />
+                            );
+                          }
+                        )}
+                      </svg>
+                    )}
+                  </div>
                 )}
                 <div
                   className="h-full overflow-auto"
@@ -773,7 +785,7 @@ export const Demo4: React.FC<{
                 )}
                 {reviewMode === "comments" && (
                   <SpatialCommentsList
-                    bezierCurveLayerElement={bezierCurveLayerElementRef.current}
+                    bezierCurveLayerElement={bezierCurveLayerElement}
                     activeDiscussions={activeDiscussions}
                     onChangeCommentPositionMap={setCommentPositionMap}
                   />
@@ -911,5 +923,5 @@ const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
 
   const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
 
-  return <path d={pathData} stroke="#ebe5b2" fill="none" strokeWidth="2" />;
+  return <path d={pathData} stroke="#000" fill="none" strokeWidth="2" />;
 };
