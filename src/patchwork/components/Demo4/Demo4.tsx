@@ -74,7 +74,10 @@ import { toast } from "sonner";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SpatialCommentsList } from "./SpatialCommentsList";
-import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import {
+  DiscussionTargetPosition,
+  OverlayContainer,
+} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { HighlightSnippetView } from "./ReviewSidebar";
 import { useStaticCallback } from "@/tee/utils";
@@ -294,7 +297,7 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
-  const [rect, setRect] = useState<DOMRect>();
+  const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
   const [reviewMode, setReviewMode] = useState("comments");
@@ -302,6 +305,20 @@ export const Demo4: React.FC<{
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
     []
   );
+
+  const overlayContainer = useMemo<OverlayContainer>(() => {
+    if (!bezierCurveLayerRect || reviewMode !== "comments") {
+      return;
+    }
+
+    return {
+      scrollOffset,
+      width: bezierCurveLayerRect.width,
+      height: bezierCurveLayerRect.height,
+      top: bezierCurveLayerRect.top,
+      left: bezierCurveLayerRect.left,
+    };
+  }, [bezierCurveLayerRect, scrollOffset, reviewMode]);
 
   const [commentPositionMap, setCommentPositionMap] = useState({});
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
@@ -314,7 +331,7 @@ export const Demo4: React.FC<{
 
     // Step 2: Set up the ResizeObserver
     const observer = new ResizeObserver(() => {
-      setRect(bezierCurveLayerElement.getBoundingClientRect());
+      setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
     });
 
     observer.observe(bezierCurveLayerElement);
@@ -332,21 +349,13 @@ export const Demo4: React.FC<{
       return [];
     }
 
-    return sortBy(
-      discussionTargetPositions
-        .filter(
-          ({ y }) =>
-            y >= scrollOffset &&
-            y <= scrollOffset + scrollContainer.clientHeight
-        )
-        .map((position) => ({
-          ...position,
-          y: position.y - scrollOffset - rect.top,
-          x: position.x - rect.left,
-        })),
-      (position) => position.y
-    );
-  }, [scrollOffset, discussionTargetPositions, scrollContainer, rect]);
+    return sortBy(discussionTargetPositions, (position) => position.y);
+  }, [
+    scrollOffset,
+    discussionTargetPositions,
+    scrollContainer,
+    bezierCurveLayerRect,
+  ]);
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
@@ -648,8 +657,11 @@ export const Demo4: React.FC<{
                     ref={setBezierCurveLayerElement}
                     className="absolute z-50 top-0 right-0 bottom-0 left-0 pointer-events-none"
                   >
-                    {rect && (
-                      <svg width={rect.width} height={rect.height}>
+                    {bezierCurveLayerRect && (
+                      <svg
+                        width={bezierCurveLayerRect.width}
+                        height={bezierCurveLayerRect.height}
+                      >
                         {activeDiscussionTargetPositions.map(
                           (position, index) => {
                             const commentPosition =
@@ -662,10 +674,10 @@ export const Demo4: React.FC<{
                             return (
                               <BezierCurve
                                 key={position.discussion.id}
-                                x1={rect.width}
+                                x1={bezierCurveLayerRect.width}
                                 y1={commentPositionMap[position.discussion.id]}
                                 x2={position.x}
-                                y2={position.y + rect.top}
+                                y2={position.y + bezierCurveLayerRect.top}
                               />
                             );
                           }
@@ -720,6 +732,7 @@ export const Demo4: React.FC<{
                       onUpdateDiscussionTargetPositions={
                         onUpdateDiscussionTargetPositions
                       }
+                      overlayContainer={overlayContainer}
                     />
                   </div>
                 </div>
@@ -923,5 +936,5 @@ const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
 
   const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
 
-  return <path d={pathData} stroke="#000" fill="none" strokeWidth="2" />;
+  return <path d={pathData} stroke="#e5e7eb" fill="none" strokeWidth="2" />;
 };

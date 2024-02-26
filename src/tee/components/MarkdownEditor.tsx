@@ -61,6 +61,9 @@ import { TextPatch } from "@/patchwork/utils";
 import {
   discussionTargetPositionListener,
   DiscussionTargetPosition,
+  overlayContainerField,
+  OverlayContainer,
+  setOverlayContainerEffect,
 } from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export type TextSelection = {
@@ -86,6 +89,7 @@ export type EditorProps = {
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
+  overlayContainer: OverlayContainer;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
@@ -106,6 +110,7 @@ export function MarkdownEditor({
   onOpenSnippet,
   foldRanges,
   discussionAnnotations,
+  overlayContainer,
   onUpdateDiscussionTargetPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
@@ -120,6 +125,13 @@ export function MarkdownEditor({
       effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
   }, [debugHighlights, editorRoot.current]);
+
+  // Propagate overlayContainer into codemirror
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      effects: setOverlayContainerEffect.of(overlayContainer),
+    });
+  }, [overlayContainer]);
 
   // propagate fold ranges into codemirror
   useEffect(() => {
@@ -241,6 +253,7 @@ export function MarkdownEditor({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
+        overlayContainerField,
         codeFolding({
           placeholderDOM: () => {
             // TODO use a nicer API for creating these elements?

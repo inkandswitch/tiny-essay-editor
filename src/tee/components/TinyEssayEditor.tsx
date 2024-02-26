@@ -31,7 +31,10 @@ import {
 import { uniq } from "lodash";
 import "../../tee/index.css";
 import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
-import { DiscussionTargetPosition } from "../codemirrorPlugins/discussionTargetPositionListener";
+import {
+  DiscussionTargetPosition,
+  OverlayContainer,
+} from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -49,6 +52,7 @@ export const TinyEssayEditor = ({
   debugHighlights,
   showBranchLayers,
   selectMainBranch,
+  overlayContainer,
   onUpdateDiscussionTargetPositions,
 }: {
   docUrl: AutomergeUrl;
@@ -66,6 +70,7 @@ export const TinyEssayEditor = ({
   debugHighlights?: DebugHighlight[];
   showBranchLayers?: boolean;
   selectMainBranch?: () => void;
+  overlayContainer?: OverlayContainer;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
@@ -284,6 +289,7 @@ export const TinyEssayEditor = ({
               foldRanges={foldRanges}
               debugHighlights={debugHighlights}
               discussionAnnotations={discussionAnnotations}
+              overlayContainer={overlayContainer}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
               }
