@@ -89,7 +89,7 @@ export type EditorProps = {
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
-  overlayContainer: OverlayContainer;
+  overlayContainer?: OverlayContainer;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
