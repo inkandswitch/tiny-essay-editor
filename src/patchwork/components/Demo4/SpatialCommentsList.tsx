@@ -21,8 +21,6 @@ export const SpatialCommentsList = React.memo(
     const containerOffsetRef = useRef<number>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
 
-    console.log("render");
-
     useEffect(() => {
       if (!bezierCurveLayerElement) {
         return;

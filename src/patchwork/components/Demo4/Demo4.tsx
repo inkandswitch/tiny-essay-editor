@@ -300,7 +300,7 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("comments");
+  const [reviewMode, setReviewMode] = useState("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
     []
@@ -333,6 +333,8 @@ export const Demo4: React.FC<{
     const observer = new ResizeObserver(() => {
       setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
     });
+
+    setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
 
     observer.observe(bezierCurveLayerElement);
 
@@ -936,5 +938,5 @@ const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
 
   const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
 
-  return <path d={pathData} stroke="#e5e7eb" fill="none" strokeWidth="2" />;
+  return <path d={pathData} stroke="#d1d5db" fill="none" strokeWidth="2" />;
 };

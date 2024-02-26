@@ -921,6 +921,10 @@ export const HighlightSnippetView = ({
   to,
   text,
 }: HighlightSnippetViewProps) => {
+  if (from >= text.length || to >= text.length) {
+    return null;
+  }
+
   let start = from;
   let startWithEllipsis = true;
   while (start > 0) {
