@@ -77,6 +77,7 @@ import { SpatialCommentsList } from "./SpatialCommentsList";
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { HighlightSnippetView } from "./ReviewSidebar";
+import { useStaticCallback } from "@/tee/utils";
 
 interface MakeBranchOptions {
   name?: string;
@@ -337,6 +338,17 @@ export const Demo4: React.FC<{
       (position) => position.y
     );
   }, [scrollOffset, discussionTargetPositions, scrollContainer]);
+
+  const onUpdateDiscussionTargetPositions = useStaticCallback(
+    (targetPositions) => {
+      setDiscussionTargetPositions(
+        targetPositions.map((position) => ({
+          ...position,
+          y: position.y + scrollOffset,
+        }))
+      );
+    }
+  );
 
   const activeDiscussions = useMemo(() => {
     return activeDiscussionTargetPositions.map(({ discussion }) => discussion);
@@ -694,7 +706,7 @@ export const Demo4: React.FC<{
                         setTextSelection(selection);
                       }}
                       onUpdateDiscussionTargetPositions={
-                        setDiscussionTargetPositions
+                        onUpdateDiscussionTargetPositions
                       }
                     />
                   </div>
