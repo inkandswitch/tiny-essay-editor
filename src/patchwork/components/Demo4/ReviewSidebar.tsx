@@ -31,10 +31,7 @@ import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { EditRangeTarget } from "../../schema";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import {
-  createApplyWithBracketSelection,
-  slashCommands,
-} from "./slashCommands";
+import { completions, slashCommands } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
@@ -65,21 +62,6 @@ const useScrollToBottom = () => {
   }, [scrollerRef.current]);
   return scrollerRef;
 };
-
-const completions = [
-  { label: "@adam" },
-  { label: "@geoffrey" },
-  { label: "@max" },
-  { label: "@paul" },
-  {
-    label: "/branch [name]",
-    apply: createApplyWithBracketSelection("/branch [name]"),
-  },
-  {
-    label: "/milestone [name]",
-    apply: createApplyWithBracketSelection("/milestone [name]"),
-  },
-];
 
 export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
@@ -513,7 +495,7 @@ export const ReviewSidebar: React.FC<{
                         /* todo: support multiple comments */
                         marker.discussion.comments.map((comment) => {
                           return (
-                            <ItemView selected={selected}>
+                            <ItemView selected={selected} key={comment.id}>
                               <ItemIcon>
                                 <MessageSquare
                                   className="h-[10px] w-[10px] text-white"
