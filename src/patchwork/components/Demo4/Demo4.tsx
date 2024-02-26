@@ -757,17 +757,15 @@ export const Demo4: React.FC<{
           </div>
 
           {isHistorySidebarOpen && (
-            <div className=" bg-white border-l border-gray-200 py-2 h-full overflow-hidden flex flex-col">
-              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <div
-                    onClick={() => setIsHistorySidebarOpen(false)}
-                    className="p-2 cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-8"
-                  >
-                    <ChevronsRight size={16} />
-                  </div>
-                </div>
+            <div className="bg-white border-l border-gray-200 py-2 h-full flex flex-col relative">
+              <div
+                className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
+                onClick={() => setIsHistorySidebarOpen(false)}
+              >
+                <ChevronsRight size={16} />
+              </div>
 
+              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
                 <Tabs value={reviewMode} onValueChange={setReviewMode}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="comments">Comments</TabsTrigger>
