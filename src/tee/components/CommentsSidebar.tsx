@@ -584,8 +584,10 @@ export const CommentsSidebar = ({
           />
         </div>
       )}
-      <div className="fixed top-[40vh] right-0 z-[1000]">
-        <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
+      {
+        // hide edit group buttons for now
+        /*<div className="fixed top-[40vh] right-0 z-[1000]">
+       <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
           <Button
             variant="outline"
             disabled={!showGroupingButton}
@@ -610,7 +612,7 @@ export const CommentsSidebar = ({
             Group
             <span className="ml-1 text-gray-400">(⌘-G)</span>
           </div>
-        </div>
+          </div>
         <div className="group text-xs font-gray-600 p-2 ml-12 flex flex-row-reverse items-center z-[1000]">
           <Button
             variant="outline"
@@ -648,7 +650,8 @@ export const CommentsSidebar = ({
             Revert
           </div>
         </div>
-      </div>
+      </div>*/
+      }
 
       {annotationsWithPositions.map((annotation) => {
         return (

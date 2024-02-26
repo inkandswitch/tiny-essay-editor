@@ -6,7 +6,14 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { isEqual, truncate, sortBy } from "lodash";
@@ -290,11 +297,14 @@ export const Demo4: React.FC<{
   const [width, setWidth] = useState(0);
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("timeline");
+  const [reviewMode, setReviewMode] = useState("comments");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
     []
   );
+
+  const [commentPositionMap, setCommentPositionMap] = useState({});
+  const bezierCurveLayerElementRef = useRef<HTMLDivElement>();
 
   // todo: actually handle resizing
   useEffect(() => {
@@ -327,6 +337,12 @@ export const Demo4: React.FC<{
       (position) => position.y
     );
   }, [scrollOffset, discussionTargetPositions, scrollContainer]);
+
+  const activeDiscussions = useMemo(() => {
+    console.log("reeval active discussions");
+
+    return activeDiscussionTargetPositions.map(({ discussion }) => discussion);
+  }, [activeDiscussionTargetPositions]);
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
@@ -606,21 +622,34 @@ export const Demo4: React.FC<{
                   </div>
                 </div>
               )}
-              <div className="flex-1 min-h-0 relative">
-                {reviewMode === "comments" && (
+              <div
+                className="flex-1 min-h-0 relative"
+                ref={bezierCurveLayerElementRef}
+              >
+                {reviewMode === "comments" && isHistorySidebarOpen && (
                   <svg
                     width={width}
                     height={height}
                     className="absolute z-50 pointer-events-none"
                   >
-                    {activeDiscussionTargetPositions.map((position) => (
-                      <BezierCurve
-                        x1={width}
-                        y1={0}
-                        x2={position.x}
-                        y2={position.y}
-                      />
-                    ))}
+                    {activeDiscussionTargetPositions.map((position, index) => {
+                      const commentPosition =
+                        commentPositionMap[position.discussion.id];
+
+                      if (!commentPosition) {
+                        return;
+                      }
+
+                      return (
+                        <BezierCurve
+                          key={position.discussion.id}
+                          x1={width}
+                          y1={commentPositionMap[position.discussion.id]}
+                          x2={position.x}
+                          y2={position.y}
+                        />
+                      );
+                    })}
                   </svg>
                 )}
                 <div
@@ -733,44 +762,11 @@ export const Demo4: React.FC<{
                   />
                 )}
                 {reviewMode === "comments" && (
-                  <div>
-                    {activeDiscussionTargetPositions.map(
-                      ({ x, y, discussion }) => {
-                        const comment = discussion.comments[0];
-
-                        return (
-                          <div className="text-sm">
-                            <div className=" text-gray-600 inline">
-                              <InlineContactAvatar
-                                url={comment.contactUrl}
-                                size="sm"
-                              />
-                            </div>
-                            {discussion.target &&
-                              discussion.target.type === "editRange" && (
-                                <HighlightSnippetView
-                                  text={doc.content}
-                                  from={A.getCursorPosition(
-                                    doc,
-                                    ["content"],
-                                    discussion.target.value.fromCursor
-                                  )}
-                                  to={A.getCursorPosition(
-                                    doc,
-                                    ["content"],
-                                    discussion.target.value.toCursor
-                                  )}
-                                />
-                              )}
-
-                            <div className="font-normal pl-3">
-                              {comment.content}
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
+                  <SpatialCommentsList
+                    bezierCurveLayerElement={bezierCurveLayerElementRef.current}
+                    activeDiscussions={activeDiscussions}
+                    onChangeCommentPositionMap={setCommentPositionMap}
+                  />
                 )}
               </div>
             </div>
