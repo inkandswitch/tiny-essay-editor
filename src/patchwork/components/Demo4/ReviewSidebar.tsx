@@ -543,7 +543,43 @@ export const ReviewSidebar: React.FC<{
                                     )}
 
                                   <div className="font-normal pl-3">
-                                    {comment.content}
+                                    {/* We use a readonly Codemirror to show markdown preview for comments
+                                        using the same style that was used for entering the comment */}
+                                    <CodeMirror
+                                      readOnly
+                                      editable={false}
+                                      basicSetup={{
+                                        foldGutter: false,
+                                        highlightActiveLine: false,
+                                        lineNumbers: false,
+                                      }}
+                                      className="min-h-12 max-h-24 overflow-y-auto"
+                                      extensions={[
+                                        markdown({
+                                          base: markdownLanguage,
+                                          codeLanguages: languages,
+                                        }),
+                                      ]}
+                                      value={comment.content}
+                                      theme={EditorView.theme({
+                                        "&.cm-editor": {
+                                          height: "100%",
+                                        },
+                                        "&.cm-focused": {
+                                          outline: "none",
+                                        },
+                                        ".cm-scroller": {
+                                          height: "100%",
+                                        },
+                                        ".cm-content": {
+                                          height: "100%",
+                                          fontSize: "14px",
+                                          fontFamily:
+                                            "ui-sans-serif, system-ui, sans-serif",
+                                          fontWeight: "normal",
+                                        },
+                                      })}
+                                    />
                                   </div>
                                 </div>
                               </ItemContent>
@@ -645,7 +681,7 @@ export const ReviewSidebar: React.FC<{
               highlightActiveLine: false,
               lineNumbers: false,
             }}
-            className="rounded border-none bg-white shadow min-h-12 max-h-24 overflow-y-auto"
+            className="rounded border-none bg-white p-1 shadow min-h-12 max-h-24 overflow-y-auto"
             extensions={[
               markdown({ base: markdownLanguage, codeLanguages: languages }),
               slashCommands(completions),
@@ -681,8 +717,8 @@ export const ReviewSidebar: React.FC<{
             <div className="flex items-center">
               <Button variant="ghost" onClick={createDiscussion}>
                 <SendHorizontalIcon size={14} className="mr-1" />
-                Send
-                <span className="text-gray-400 text-xs ml-1">⌘+enter</span>
+                Comment
+                <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
               </Button>
             </div>
           </div>
