@@ -1,6 +1,7 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
+import CodeMirror from "@uiw/react-codemirror";
 import {
   useDocument,
   useHandle,
@@ -28,6 +29,10 @@ import { uuid } from "@automerge/automerge";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { EditRangeTarget } from "../../schema";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
+import { slashCommands } from "./slashCommands";
+import { EditorView } from "@codemirror/view";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -57,6 +62,15 @@ const useScrollToBottom = () => {
   }, [scrollerRef.current]);
   return scrollerRef;
 };
+
+const completions = [
+  { label: "@adam" },
+  { label: "@geoffrey" },
+  { label: "@max" },
+  { label: "@paul" },
+  { label: "/branch " },
+  { label: "/milestone " },
+];
 
 export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
@@ -615,7 +629,7 @@ export const ReviewSidebar: React.FC<{
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-300 shadow-upward bg-white z-10">
+      <div className="pt-2  bg-gray-100 z-10">
         {textSelection && textSelection.from !== textSelection.to && (
           <HighlightSnippetView
             from={textSelection.from}
@@ -625,17 +639,44 @@ export const ReviewSidebar: React.FC<{
         )}
 
         <div className="mx-2">
-          <textarea
-            value={commentBoxContent}
+          <CodeMirror
+            basicSetup={{
+              foldGutter: false,
+              highlightActiveLine: false,
+              lineNumbers: false,
+            }}
+            className="rounded border-none bg-white shadow min-h-12 max-h-24 overflow-y-auto"
+            extensions={[
+              markdown({ base: markdownLanguage, codeLanguages: languages }),
+              slashCommands(completions),
+            ]}
+            onChange={(value) => setCommentBoxContent(value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              if (e.metaKey && e.key === "Enter") {
                 createDiscussion();
+                e.stopPropagation();
               }
             }}
-            onChange={(e) => setCommentBoxContent(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md h-16"
-            placeholder="Leave a comment..."
+            value={commentBoxContent}
+            theme={EditorView.theme({
+              "&.cm-editor": {
+                height: "100%",
+              },
+              "&.cm-focused": {
+                outline: "none",
+              },
+              ".cm-scroller": {
+                height: "100%",
+              },
+              ".cm-content": {
+                height: "100%",
+                fontSize: "14px",
+                fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                fontWeight: "normal",
+              },
+            })}
           />
+
           <div className="flex justify-end mt-2 text-sm">
             <div className="flex items-center">
               <Button variant="ghost" onClick={createDiscussion}>
