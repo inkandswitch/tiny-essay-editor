@@ -1,3 +1,5 @@
+const colors = require("tailwindcss/colors");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -17,6 +19,7 @@ module.exports = {
     },
     extend: {
       colors: {
+        gray: colors.neutral,
         customGray: "#F2F2F2",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
