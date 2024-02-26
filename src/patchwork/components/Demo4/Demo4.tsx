@@ -377,8 +377,8 @@ export const Demo4: React.FC<{
     }
 
     return sortBy(
-      Object.values(doc.discussions).filter(
-        (discussion) => discussion.target.type === "editRange"
+      Object.values(doc.discussions ?? {}).filter(
+        (discussion) => discussion.target?.type === "editRange"
       ),
       (discussion) => {
         const target = discussion.target as EditRangeTarget;
