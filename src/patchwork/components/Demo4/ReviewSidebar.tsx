@@ -933,9 +933,8 @@ const EditSummary = ({
   let summary;
   if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
     summary = `${
-      changeGroup.diff.patches.filter((patch) =>
-        patchIsUserFacing(patch as A.Patch)
-      ).length
+      changeGroup.diff.patches.filter((patch) => patchIsUserFacing(patch))
+        .length
     } edits`;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
