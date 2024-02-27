@@ -18,6 +18,7 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   GitMergeIcon,
+  Link,
   MergeIcon,
   MessageSquareIcon,
   MilestoneIcon,
@@ -855,6 +856,26 @@ const BranchActions: React.FC<{
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="mr-4 w-72">
+        <DropdownMenuItem
+          onClick={() => {
+            const baseUrl = window.location.href;
+            const separator = baseUrl.includes("#") ? "&" : "?";
+            const branchParam = `branch=${branchUrl}`;
+            const newUrl = `${baseUrl}${separator}${branchParam}`;
+
+            navigator.clipboard.writeText(newUrl).then(
+              () => {
+                toast("Link copied to clipboard");
+              },
+              () => {
+                toast.error("Failed to copy link to clipboard");
+              }
+            );
+          }}
+        >
+          <Link className="inline-block text-gray-500 mr-2" size={14} /> Copy
+          link to branch
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
             const newName = prompt("Enter the new name for this branch:");

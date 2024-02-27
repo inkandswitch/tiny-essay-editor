@@ -16,11 +16,12 @@ export const setUrlHashForDoc = (params: UrlHashParams) => {
     return;
   }
 
-  const { docUrl, docType } = params;
+  const { docUrl, docType, branch } = params;
 
   const newHash = queryString.stringify({
     docUrl,
     docType,
+    branch: branch?.type === "branch" ? branch.url : undefined,
   });
   window.location.hash = newHash;
 };

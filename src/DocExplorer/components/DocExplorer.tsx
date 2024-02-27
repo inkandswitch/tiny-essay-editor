@@ -106,10 +106,19 @@ export const DocExplorer: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showToolPicker, setShowToolPicker] = useState(false);
 
-  const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({
+  const {
+    selectedDoc,
+    selectDoc,
+    selectedDocUrl,
+    selectedBranch,
+    selectBranch,
+  } = useSelectedDoc({
     rootFolderDoc,
     changeRootFolderDoc,
   });
+
+  console.log("selected doc url", selectedDocUrl);
+  console.log("selected branch", selectedBranch);
 
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -127,10 +136,6 @@ export const DocExplorer: React.FC = () => {
   }, [availableTools]);
 
   const ToolComponent = activeTool?.component;
-
-  const [selectedBranch, setSelectedBranch] = useState<SelectedBranch>({
-    type: "main",
-  });
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
@@ -154,7 +159,11 @@ export const DocExplorer: React.FC = () => {
       );
 
       // By updating the URL to the new doc, we'll trigger a navigation
-      setUrlHashForDoc({ docUrl: newDocHandle.url, docType: type });
+      setUrlHashForDoc({
+        docUrl: newDocHandle.url,
+        docType: type,
+        branch: { type: "main" },
+      });
     },
     [changeRootFolderDoc, repo, rootFolderDoc]
   );
@@ -273,7 +282,7 @@ export const DocExplorer: React.FC = () => {
               selectedDocUrl={selectedDocUrl}
               selectDoc={selectDoc}
               deleteFromAccountDocList={deleteFromRootFolder}
-              setSelectedBranch={setSelectedBranch}
+              setSelectedBranch={selectBranch}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
@@ -301,7 +310,7 @@ export const DocExplorer: React.FC = () => {
                   key={selectedDocUrl}
                   // @ts-expect-error not all tools understand branching yet... but they probably will eventually..?
                   selectedBranch={selectedBranch}
-                  setSelectedBranch={setSelectedBranch}
+                  setSelectedBranch={selectBranch}
                 />
               )}
             </div>
@@ -332,6 +341,7 @@ export const DocExplorer: React.FC = () => {
 export type UrlHashParams = {
   docUrl: AutomergeUrl;
   docType: DocType;
+  branch?: SelectedBranch;
 } | null;
 
 const isDocType = (x: string): x is DocType =>
@@ -348,12 +358,13 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     return {
       docUrl: possibleAutomergeUrl,
       docType: "tldraw",
+      branch: { type: "main" },
     };
   }
 
   // Now on to the main logic where we look for a url and type both.
   const parsedHash = queryString.parse(hash);
-  const { docUrl, docType } = parsedHash;
+  const { docUrl, docType, branchUrl } = parsedHash;
 
   if (typeof docUrl !== "string" || typeof docType !== "string") {
     return null;
@@ -369,9 +380,15 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     return null;
   }
 
+  const selectedBranch: SelectedBranch =
+    branchUrl && typeof branchUrl === "string" && isValidAutomergeUrl(branchUrl)
+      ? { type: "branch", url: branchUrl }
+      : { type: "main" };
+
   return {
     docUrl,
     docType,
+    branch: selectedBranch,
   };
 };
 
@@ -381,6 +398,9 @@ const parseCurrentUrlHash = (): UrlHashParams => {
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
   const selectedDocHandle = useHandle(selectedDocUrl);
+  const [selectedBranch, setSelectedBranch] = useState<SelectedBranch>({
+    type: "main",
+  });
 
   useEffect(() => {
     // @ts-expect-error window global for debugging
@@ -389,36 +409,61 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
 
   const [selectedDoc] = useDocument(selectedDocUrl);
 
-  const selectDoc = (docUrl: AutomergeUrl | null) => {
-    const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
-    if (!doc) {
-      alert(`Could not find document with URL: ${docUrl}`);
-      return;
-    }
-    setUrlHashForDoc({ docUrl, docType: doc.type });
-  };
+  const selectDoc = useCallback(
+    (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {
+      const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
+      if (!doc) {
+        alert(`Could not find document with URL: ${docUrl}`);
+        return;
+      }
+      setUrlHashForDoc({ docUrl, docType: doc.type, branch });
+    },
+    [rootFolderDoc]
+  );
 
-  // Add an existing doc to our collection
+  const selectBranch = useCallback(
+    (branch: SelectedBranch) => {
+      selectDoc(selectedDocUrl, branch);
+    },
+    [selectedDocUrl, selectDoc]
+  );
+
+  // open a doc given a URL
   const openDocFromUrl = useCallback(
-    ({ docUrl, docType }: { docUrl: AutomergeUrl; docType: DocType }) => {
+    ({
+      docUrl,
+      docType,
+      branch,
+    }: {
+      docUrl: AutomergeUrl;
+      docType: DocType;
+      branch?: SelectedBranch;
+    }) => {
       if (!rootFolderDoc) {
         return;
       }
 
+      // First add it to our root folder if it's not there yet
       // TODO: validate the doc's data schema here before adding to our collection
       if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
         changeRootFolderDoc((doc) =>
           doc.docs.unshift({
             type: docType,
-            name: "Unknown document", // TODO: sync up the name once we load the data
+            name: "Unknown document", // The name will load once we load the doc
             url: docUrl,
           })
         );
       }
 
       setSelectedDocUrl(docUrl);
+      if (branch) {
+        setSelectedBranch(branch);
+      } else {
+        setSelectedBranch({ type: "main" });
+      }
     },
-    [rootFolderDoc, changeRootFolderDoc, selectDoc]
+    // [rootFolderDoc, changeRootFolderDoc, selectDoc, setSelectedBranch]
+    [rootFolderDoc]
   );
 
   // observe the URL hash to change the selected document
@@ -445,6 +490,8 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     selectedDoc,
     selectDoc,
     openDocFromUrl,
+    selectedBranch,
+    selectBranch,
   };
 };
 export type SelectedBranch =
