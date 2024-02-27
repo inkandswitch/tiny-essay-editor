@@ -319,6 +319,7 @@ export const Demo4: React.FC<{
   }, [bezierCurveLayerRect, scrollOffset, reviewMode]);
 
   const [commentPositionMap, setCommentPositionMap] = useState({});
+
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
     useState<HTMLDivElement>();
 
@@ -683,28 +684,24 @@ export const Demo4: React.FC<{
                         width={bezierCurveLayerRect.width}
                         height={bezierCurveLayerRect.height}
                       >
-                        {activeDiscussionTargetPositions.map(
-                          (position, index) => {
-                            const commentPosition =
-                              commentPositionMap[position.discussion.id];
+                        {activeDiscussionTargetPositions.map((position) => {
+                          const commentPosition =
+                            commentPositionMap[position.discussion.id];
 
-                            console.log(position.y);
-
-                            if (!commentPosition) {
-                              return;
-                            }
-
-                            return (
-                              <BezierCurve
-                                key={position.discussion.id}
-                                x1={bezierCurveLayerRect.width}
-                                y1={commentPositionMap[position.discussion.id]}
-                                x2={position.x}
-                                y2={position.y + bezierCurveLayerRect.top}
-                              />
-                            );
+                          if (!commentPosition) {
+                            return;
                           }
-                        )}
+
+                          return (
+                            <BezierCurve
+                              key={position.discussion.id}
+                              x1={bezierCurveLayerRect.width}
+                              y1={commentPositionMap[position.discussion.id]}
+                              x2={position.x}
+                              y2={position.y + bezierCurveLayerRect.top}
+                            />
+                          );
+                        })}
                       </svg>
                     )}
                   </div>

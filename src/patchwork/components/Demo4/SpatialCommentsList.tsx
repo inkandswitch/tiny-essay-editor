@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Discussion } from "@/patchwork/schema";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import {
@@ -22,6 +22,7 @@ export const SpatialCommentsList = React.memo(
     overlayContainer,
     onChangeCommentPositionMap,
   }: SpatialCommentsListProps) => {
+    const [scrollOffset, setScrollOffset] = useState(0);
     const containerOffsetRef = useRef<number>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
 
@@ -31,9 +32,30 @@ export const SpatialCommentsList = React.memo(
         )
       : undefined;
 
+    const triggerChangeCommentPositionMap = () => {
+      const commentPositionMapWithScrollOffset = {};
+
+      for (const [id, position] of Object.entries(
+        commentPositionMapRef.current
+      )) {
+        commentPositionMapWithScrollOffset[id] = position - scrollOffset;
+      }
+
+      console.log("triggerChange", commentPositionMapWithScrollOffset);
+
+      onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
+    };
+
+    useEffect(() => {
+      triggerChangeCommentPositionMap();
+    }, [scrollOffset]);
+
     return (
       <div
-        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2"
+        onScroll={(evt) =>
+          setScrollOffset((evt.target as HTMLDivElement).scrollTop)
+        }
+        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2 overflow-auto"
         ref={(element) => {
           if (!element) {
             return;
@@ -60,12 +82,12 @@ export const SpatialCommentsList = React.memo(
                   } else {
                     const rect = element.getBoundingClientRect();
                     commentPositionMapRef.current[discussion.id] =
-                      (rect.top + rect.bottom) / 2 - overlayContainer.top;
+                      (rect.top + rect.bottom) / 2 -
+                      overlayContainer.top +
+                      scrollOffset;
                   }
 
-                  onChangeCommentPositionMap({
-                    ...commentPositionMapRef.current,
-                  });
+                  triggerChangeCommentPositionMap();
                 }}
                 key={discussion.id}
               >
