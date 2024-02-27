@@ -26,7 +26,6 @@ import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvata
 import {
   DiffWithProvenance,
   DiscussionComment,
-  HasChangeGroupSummaries,
 } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
