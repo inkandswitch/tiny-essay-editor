@@ -298,11 +298,11 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("timeline");
+  const [reviewMode, setReviewMode] = useState("comments");
   const [scrollOffset, setScrollOffset] = useState(0);
-  const [discussionTargetPositions, setDiscussionTargetPositions] = useState(
-    []
-  );
+  const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
+    DiscussionTargetPosition[]
+  >([]);
 
   const overlayContainer = useMemo<OverlayContainer>(() => {
     if (!bezierCurveLayerRect || reviewMode !== "comments") {
@@ -349,8 +349,15 @@ export const Demo4: React.FC<{
       return [];
     }
 
-    return sortBy(discussionTargetPositions, (position) => position.y);
+    return sortBy(discussionTargetPositions, (target) =>
+      A.getCursorPosition(
+        doc,
+        ["content"],
+        (target.discussion.target as EditRangeTarget).value.fromCursor
+      )
+    );
   }, [
+    doc?.content,
     scrollOffset,
     discussionTargetPositions,
     scrollContainer,
@@ -667,7 +674,9 @@ export const Demo4: React.FC<{
                 {reviewMode === "comments" && isHistorySidebarOpen && (
                   <div
                     ref={setBezierCurveLayerElement}
-                    className="absolute z-50 top-0 right-0 bottom-0 left-0 pointer-events-none"
+                    className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
+                      true ? "pointer-events-none" : ""
+                    }`}
                   >
                     {bezierCurveLayerRect && (
                       <svg
@@ -678,6 +687,8 @@ export const Demo4: React.FC<{
                           (position, index) => {
                             const commentPosition =
                               commentPositionMap[position.discussion.id];
+
+                            console.log(position.y);
 
                             if (!commentPosition) {
                               return;
@@ -789,6 +800,9 @@ export const Demo4: React.FC<{
                 {reviewMode === "comments" && (
                   <SpatialCommentsList
                     discussions={discussions}
+                    activeDiscussionTargetPositions={
+                      activeDiscussionTargetPositions
+                    }
                     onChangeCommentPositionMap={setCommentPositionMap}
                     overlayContainer={overlayContainer}
                   />

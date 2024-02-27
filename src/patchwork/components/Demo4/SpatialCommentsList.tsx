@@ -1,12 +1,16 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useMemo } from "react";
 import { Discussion } from "@/patchwork/schema";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { OverlayContainer } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import {
+  DiscussionTargetPosition,
+  OverlayContainer,
+} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 
 type CommentPositionMap = Record<string, number>;
 
 interface SpatialCommentsListProps {
   discussions: Discussion[];
+  activeDiscussionTargetPositions: DiscussionTargetPosition[];
   overlayContainer: OverlayContainer;
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
 }
@@ -14,11 +18,18 @@ interface SpatialCommentsListProps {
 export const SpatialCommentsList = React.memo(
   ({
     discussions,
+    activeDiscussionTargetPositions,
     overlayContainer,
     onChangeCommentPositionMap,
   }: SpatialCommentsListProps) => {
     const containerOffsetRef = useRef<number>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
+
+    const topComment = overlayContainer
+      ? activeDiscussionTargetPositions.find(
+          ({ y }) => y + overlayContainer.top > 0
+        )
+      : undefined;
 
     return (
       <div
@@ -38,7 +49,11 @@ export const SpatialCommentsList = React.memo(
 
             return (
               <div
-                className="p-2 cursor-pointer rounded shadow bg-white"
+                className={`p-2 cursor-pointer rounded shadow ${
+                  topComment && topComment.discussion.id === discussion.id
+                    ? "bg-yellow-100"
+                    : "bg-white"
+                }`}
                 ref={(element) => {
                   if (!element) {
                     delete commentPositionMapRef.current[discussion.id];
