@@ -15,6 +15,8 @@ interface SpatialCommentsListProps {
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
 }
 
+const DEBUG_HIGHLIGHT = false;
+
 export const SpatialCommentsList = React.memo(
   ({
     discussions,
@@ -23,7 +25,8 @@ export const SpatialCommentsList = React.memo(
     onChangeCommentPositionMap,
   }: SpatialCommentsListProps) => {
     const [scrollOffset, setScrollOffset] = useState(0);
-    const containerOffsetRef = useRef<number>();
+    const scrollContainerRectRef = useRef<DOMRect>();
+    const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
 
     const topComment = overlayContainer
@@ -38,10 +41,8 @@ export const SpatialCommentsList = React.memo(
       for (const [id, position] of Object.entries(
         commentPositionMapRef.current
       )) {
-        commentPositionMapWithScrollOffset[id] = position - scrollOffset;
+        commentPositionMapWithScrollOffset[id] = position - scrollOffset + 20;
       }
-
-      console.log("triggerChange", commentPositionMapWithScrollOffset);
 
       onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
     };
@@ -49,6 +50,18 @@ export const SpatialCommentsList = React.memo(
     useEffect(() => {
       triggerChangeCommentPositionMap();
     }, [scrollOffset]);
+
+    // scroll to the current top comment
+    useEffect(() => {
+      if (!scrollContainer || !topComment) {
+        return;
+      }
+
+      scrollContainer.scrollTo({
+        top: commentPositionMapRef.current[topComment.discussion.id],
+        behavior: "smooth",
+      });
+    }, [topComment, scrollContainer]);
 
     return (
       <div
@@ -60,8 +73,8 @@ export const SpatialCommentsList = React.memo(
           if (!element) {
             return;
           }
-          const rect = element.getBoundingClientRect();
-          containerOffsetRef.current = rect.top;
+          setScrollContainer(element);
+          scrollContainerRectRef.current = element.getBoundingClientRect();
         }}
       >
         {discussions &&
@@ -72,7 +85,9 @@ export const SpatialCommentsList = React.memo(
             return (
               <div
                 className={`p-2 cursor-pointer rounded shadow ${
-                  topComment && topComment.discussion.id === discussion.id
+                  topComment &&
+                  topComment.discussion.id === discussion.id &&
+                  DEBUG_HIGHLIGHT
                     ? "bg-yellow-100"
                     : "bg-white"
                 }`}
@@ -82,9 +97,7 @@ export const SpatialCommentsList = React.memo(
                   } else {
                     const rect = element.getBoundingClientRect();
                     commentPositionMapRef.current[discussion.id] =
-                      (rect.top + rect.bottom) / 2 -
-                      overlayContainer.top +
-                      scrollOffset;
+                      rect.top - overlayContainer.top + scrollOffset;
                   }
 
                   triggerChangeCommentPositionMap();
