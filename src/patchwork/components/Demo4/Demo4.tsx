@@ -770,7 +770,7 @@ export const Demo4: React.FC<{
                 </Tabs>
               </div>
 
-              <div className="flex-grow overflow-hidden w-96">
+              <div className="min-h-0 flex-grow w-96">
                 {reviewMode === "timeline" && (
                   <ReviewSidebar
                     // set key to trigger re-mount on branch change

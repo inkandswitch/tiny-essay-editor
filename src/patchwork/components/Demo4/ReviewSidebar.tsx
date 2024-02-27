@@ -438,10 +438,10 @@ export const ReviewSidebar: React.FC<{
     });
 
   return (
-    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-gray-50">
+    <div className="history h-full w-full flex flex-col text-xs text-gray-600">
       <div
+        className="overflow-y-scroll flex-1 flex flex-col"
         ref={scrollerRef}
-        className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
       >
         <div className="mt-auto">
           {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
