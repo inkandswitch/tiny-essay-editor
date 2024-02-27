@@ -1,7 +1,7 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { Patch } from "@automerge/automerge/next";
 import { truncate } from "lodash";
-import { Heading, extractHeadings } from "@/tee/statsForChangeGroup";
+import { Heading, extractHeadings } from "@/tee/changeGroupAnnotations";
 import { TextPatch } from "../utils";
 
 function patchOverlapsLine(start: number, end: number, patch: Patch): boolean {
