@@ -31,7 +31,7 @@ export const SpatialCommentsList = React.memo(
 
     return (
       <div
-        className="bg-gray-100 flex- h-full p-2 flex flex-col gap-2"
+        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2"
         ref={(element) => {
           if (!element) {
             return;
