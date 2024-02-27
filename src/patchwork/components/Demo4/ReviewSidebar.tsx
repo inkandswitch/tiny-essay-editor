@@ -537,7 +537,7 @@ export const ReviewSidebar: React.FC<{
                               doc.changeGroupSummaries
                                 ? doc.changeGroupSummaries[changeGroup.id]
                                     ?.title
-                                : undefined
+                                : `${changeGroup.diff.patches.length} edits`
                             }
                           />
                         </div>
@@ -792,7 +792,7 @@ export const ReviewSidebar: React.FC<{
                       summary={
                         doc.changeGroupSummaries
                           ? doc.changeGroupSummaries[changeGroup.id]?.title
-                          : undefined
+                          : `${changeGroup.diff.patches.length} edits`
                       }
                       selected={selected}
                       setSelection={setSelection}
