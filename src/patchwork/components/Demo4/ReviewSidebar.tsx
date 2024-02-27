@@ -439,7 +439,7 @@ export const ReviewSidebar: React.FC<{
     });
 
   return (
-    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-neutral-100">
+    <div className="h-full w-full border-r border-gray-200 overflow-y-hidden flex flex-col text-xs font-semibold text-gray-600 history bg-gray-50">
       <div
         ref={scrollerRef}
         className="overflow-auto pt-3 flex-grow flex flex-col pb-4"
