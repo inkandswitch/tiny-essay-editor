@@ -57,6 +57,7 @@ import { HistoryFilter } from "./HistoryFilter";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { copyDocAtHeads } from "@/patchwork/utils";
+import { DiscussionComment } from "@/patchwork/schema";
 
 const EXTEND_CHANGES_TO_WORD_BOUNDARIES = false; // @paul it doesn't quite work for deletes so I'm disabling it for now
 
@@ -182,33 +183,41 @@ export const CommentsSidebar = ({
     setSelectedAnnotationIds(selectedAnnotationIds);
   }, [selection?.from, selection?.to]);
 
-  const startCommentThreadAtSelection = (commentText: string) => {
-    if (!selection) return;
+  const startDiscusssionAtSelection = (commentText: string) => {
+    if (!selection || !commentText) return;
 
     const amRange = cmRangeToAMRange(selection);
 
     const fromCursor = A.getCursor(doc, ["content"], amRange.from);
     const toCursor = A.getCursor(doc, ["content"], amRange.to);
 
-    const comment: Comment = {
+    /** migration for legacy docs */
+    const comment: DiscussionComment = {
       id: uuid(),
       content: commentText,
-      userId: null,
-      contactUrl: account?.contactHandle.url,
       timestamp: Date.now(),
+      contactUrl: account?.contactHandle?.url,
     };
-
-    const thread: ThreadAnnotation = {
-      type: "thread",
-      id: uuid(),
-      comments: [comment],
-      resolved: false,
-      fromCursor,
-      toCursor,
-    };
+    const discussionId = uuid();
 
     changeDoc((doc) => {
-      doc.commentThreads[thread.id] = thread;
+      if (!doc.discussions) {
+        doc.discussions = {};
+      }
+
+      doc.discussions[discussionId] = {
+        id: discussionId,
+        // todo: this is wrong, we need to get the heads of the latest edit group / selected edit group
+        // we only have that information in the ReviewSidebar and
+        // we can't pull up this state because grouping is slow
+        heads: A.getHeads(doc),
+        resolved: false,
+        comments: [comment],
+        target: {
+          type: "editRange",
+          value: { fromCursor, toCursor },
+        },
+      };
     });
 
     setPendingCommentText("");
@@ -714,7 +723,7 @@ export const CommentsSidebar = ({
             // state ourselves as we now do elsewhere in the codebase
             onKeyDown={(event) => {
               if (event.key === "Enter" && event.metaKey) {
-                startCommentThreadAtSelection(pendingCommentText);
+                startDiscusssionAtSelection(pendingCommentText);
                 setSuppressButton(true);
                 setCommentBoxOpen(false);
                 event.preventDefault();
@@ -726,7 +735,7 @@ export const CommentsSidebar = ({
             <Button
               variant="outline"
               onClick={() => {
-                startCommentThreadAtSelection(pendingCommentText);
+                startDiscusssionAtSelection(pendingCommentText);
                 setSuppressButton(true);
               }}
             >

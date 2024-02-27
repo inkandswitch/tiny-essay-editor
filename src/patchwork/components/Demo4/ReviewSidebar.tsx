@@ -23,10 +23,7 @@ import {
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import {
-  DiffWithProvenance,
-  DiscussionComment,
-} from "../../schema";
+import { DiffWithProvenance, DiscussionComment } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
@@ -354,17 +351,6 @@ export const ReviewSidebar: React.FC<{
     };
     const discussionId = uuid();
 
-    let target: EditRangeTarget = undefined;
-    if (textSelection && textSelection.from !== textSelection.to) {
-      target = {
-        type: "editRange",
-        value: {
-          fromCursor: A.getCursor(doc, ["content"], textSelection.from),
-          toCursor: A.getCursor(doc, ["content"], textSelection.to),
-        },
-      };
-    }
-
     changeDoc((doc) => {
       if (!doc.discussions) {
         doc.discussions = {};
@@ -376,10 +362,6 @@ export const ReviewSidebar: React.FC<{
         resolved: false,
         comments: [comment],
       };
-
-      if (target) {
-        doc.discussions[discussionId].target = target;
-      }
     });
 
     onClearTextSelection();
@@ -439,10 +421,7 @@ export const ReviewSidebar: React.FC<{
 
   return (
     <div className="history h-full w-full flex flex-col text-xs text-gray-600">
-      <div
-        className="overflow-y-scroll flex-1 flex flex-col"
-        ref={scrollerRef}
-      >
+      <div className="overflow-y-scroll flex-1 flex flex-col" ref={scrollerRef}>
         <div className="mt-auto">
           {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
             <div className="text-xs text-gray-500 pl-2 mb-2">
@@ -671,9 +650,7 @@ export const ReviewSidebar: React.FC<{
                           }`}
                         >
                           <div className="flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
-                            <MilestoneIcon
-                              className="h-[12px] w-[12px] text-white"
-                            />
+                            <MilestoneIcon className="h-[12px] w-[12px] text-white" />
                           </div>
 
                           <div className="flex-1 p-1 text-sm flex">
@@ -800,21 +777,27 @@ export const ReviewSidebar: React.FC<{
                   <Button variant="ghost" onClick={onSubmit}>
                     <SendHorizontalIcon size={14} className="mr-1" />
                     Comment
-                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                    <span className="text-gray-400 text-xs ml-2">
+                      (⌘+enter)
+                    </span>
                   </Button>
                 )}
                 {parsedCommentBoxContent.type === "branch" && (
                   <Button variant="ghost" onClick={onSubmit}>
                     <GitBranchIcon size={14} className="mr-1" />
                     Create branch
-                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                    <span className="text-gray-400 text-xs ml-2">
+                      (⌘+enter)
+                    </span>
                   </Button>
                 )}
                 {parsedCommentBoxContent.type === "milestone" && (
                   <Button variant="ghost" onClick={onSubmit}>
                     <MilestoneIcon size={14} className="mr-1" />
                     Save milestone
-                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                    <span className="text-gray-400 text-xs ml-2">
+                      (⌘+enter)
+                    </span>
                   </Button>
                 )}
               </div>

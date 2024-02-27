@@ -53,6 +53,7 @@ export const TinyEssayEditor = ({
   showBranchLayers,
   selectMainBranch,
   overlayContainer,
+  currentlyActiveHeads,
   onUpdateDiscussionTargetPositions,
 }: {
   docUrl: AutomergeUrl;
@@ -71,6 +72,7 @@ export const TinyEssayEditor = ({
   showBranchLayers?: boolean;
   selectMainBranch?: () => void;
   overlayContainer?: OverlayContainer;
+  currentlyActiveHeads?: A.Heads;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
