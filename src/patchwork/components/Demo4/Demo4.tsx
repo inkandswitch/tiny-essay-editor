@@ -939,5 +939,13 @@ const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
 
   const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
 
-  return <path d={pathData} stroke="#d1d5db" fill="none" strokeWidth="2" />;
+  return (
+    <path
+      d={pathData}
+      stroke="#aaa"
+      fill="none"
+      strokeWidth="1"
+      strokeDasharray="3"
+    />
+  );
 };
