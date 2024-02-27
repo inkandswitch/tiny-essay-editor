@@ -369,7 +369,7 @@ export const Demo4: React.FC<{
     }
   );
 
-  const activeDiscussions = useMemo(() => {
+  const discussions = useMemo(() => {
     if (!doc || !doc.discussions) {
       return;
     }
@@ -788,9 +788,9 @@ export const Demo4: React.FC<{
                 )}
                 {reviewMode === "comments" && (
                   <SpatialCommentsList
-                    bezierCurveLayerElement={bezierCurveLayerElement}
-                    activeDiscussions={activeDiscussions}
+                    discussions={discussions}
                     onChangeCommentPositionMap={setCommentPositionMap}
+                    overlayContainer={overlayContainer}
                   />
                 )}
               </div>

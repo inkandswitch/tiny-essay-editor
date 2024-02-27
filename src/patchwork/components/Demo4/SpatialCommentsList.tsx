@@ -1,33 +1,24 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Discussion } from "@/patchwork/schema";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
+import { OverlayContainer } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 
 type CommentPositionMap = Record<string, number>;
 
 interface SpatialCommentsListProps {
-  bezierCurveLayerElement?: HTMLDivElement;
-  activeDiscussions: Discussion[];
+  discussions: Discussion[];
+  overlayContainer: OverlayContainer;
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
 }
 
 export const SpatialCommentsList = React.memo(
   ({
-    bezierCurveLayerElement,
-    activeDiscussions,
+    discussions,
+    overlayContainer,
     onChangeCommentPositionMap,
   }: SpatialCommentsListProps) => {
-    const [offset, setOffset] = useState(0);
-
     const containerOffsetRef = useRef<number>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
-
-    useEffect(() => {
-      if (!bezierCurveLayerElement) {
-        return;
-      }
-
-      setOffset(bezierCurveLayerElement.getBoundingClientRect().top);
-    }, [bezierCurveLayerElement]);
 
     return (
       <div
@@ -40,8 +31,9 @@ export const SpatialCommentsList = React.memo(
           containerOffsetRef.current = rect.top;
         }}
       >
-        {activeDiscussions &&
-          activeDiscussions.map((discussion) => {
+        {discussions &&
+          overlayContainer &&
+          discussions.map((discussion) => {
             const comment = discussion.comments[0];
 
             return (
@@ -53,7 +45,7 @@ export const SpatialCommentsList = React.memo(
                   } else {
                     const rect = element.getBoundingClientRect();
                     commentPositionMapRef.current[discussion.id] =
-                      (rect.top + rect.bottom) / 2 - offset;
+                      (rect.top + rect.bottom) / 2 - overlayContainer.top;
                   }
 
                   onChangeCommentPositionMap({
