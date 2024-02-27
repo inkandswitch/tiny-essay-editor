@@ -664,7 +664,7 @@ export const ReviewSidebar: React.FC<{
                         })}
                       {marker.type === "tag" && (
                         <div
-                          className={`cursor-pointer items-top flex gap-1 rounded-full -ml-1 pl-1 border-2 border-gray-300 shadow-sm ${
+                          className={`cursor-pointer items-top flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
                             selection?.type === "milestone" &&
                             selection?.heads === marker.heads
                               ? "bg-gray-200"

@@ -55,6 +55,9 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      borderWidth: {
+        1.5: "1.5px",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
