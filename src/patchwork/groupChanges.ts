@@ -30,7 +30,6 @@ import {
   getAllChanges,
   view,
   getHeads,
-  diff,
 } from "@automerge/automerge/next";
 import { diffWithProvenance } from "./utils";
 import {
@@ -40,10 +39,9 @@ import {
 import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import {
   MarkdownDocChangeGroup,
-  includeInChangeGroups,
   showChangeGroupInLog,
   statsForChangeGroup,
-} from "@/tee/changeGroupAnnotations";
+} from "@/tee/statsForChangeGroup";
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual } from "lodash";
 
@@ -355,12 +353,6 @@ export const getGroupedChanges = (
     // If the change came from a merged branch, add it to the group for that branch,
     // don't include it in our raw grouping.
     let changeCameFromMergedBranch = false;
-    const patchesForChange = diff(doc, decodedChange.deps, [
-      decodedChange.hash,
-    ]);
-    if (!includeInChangeGroups(patchesForChange)) {
-      continue;
-    }
     for (const branchChangeGroup of Object.values(branchChangeGroups)) {
       if (branchChangeGroup.changeHashes.has(decodedChange.hash)) {
         // Now that we've hit changes from a branch, cut off the current group that was formed on main.

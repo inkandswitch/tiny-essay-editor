@@ -7,14 +7,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  ReactNode,
-  useCallback,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import {
   ChangeGroup,
   getGroupedChanges,
@@ -45,8 +38,7 @@ import { EditorView } from "@codemirror/view";
 import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
-import { debounce, isEqual } from "lodash";
-import { patchIsUserFacing } from "@/tee/changeGroupAnnotations";
+import { isEqual } from "lodash";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -424,25 +416,6 @@ export const ReviewSidebar: React.FC<{
     }
   };
 
-  const debouncedPopulate = useCallback(
-    debounce(({ groups, handle, force }) => {
-      populateChangeGroupSummaries({ groups, handle, force });
-    }, 15000),
-    []
-  );
-
-  useEffect(() => {
-    debouncedPopulate({
-      groups: groupedChanges,
-      handle,
-    });
-
-    // Cleanup function to cancel the debounce if the component unmounts
-    return () => {
-      debouncedPopulate.cancel();
-    };
-  }, [groupedChanges, handle, debouncedPopulate]);
-
   // @ts-expect-error temporary thing to populate change summaries
   window.populateChangeSummaries = () =>
     populateChangeGroupSummaries({
@@ -560,7 +533,12 @@ export const ReviewSidebar: React.FC<{
                           <EditSummary
                             changeGroup={changeGroup}
                             selected={selected}
-                            doc={doc}
+                            summary={
+                              doc.changeGroupSummaries
+                                ? doc.changeGroupSummaries[changeGroup.id]
+                                    ?.title
+                                : `${changeGroup.diff.patches.length} edits`
+                            }
                           />
                         </div>
                       </div>
@@ -811,7 +789,11 @@ export const ReviewSidebar: React.FC<{
                   {isABranchMergeGroup && (
                     <MergedBranchView
                       changeGroup={changeGroup}
-                      doc={doc}
+                      summary={
+                        doc.changeGroupSummaries
+                          ? doc.changeGroupSummaries[changeGroup.id]?.title
+                          : `${changeGroup.diff.patches.length} edits`
+                      }
                       selected={selected}
                       setSelection={setSelection}
                     />
@@ -922,23 +904,14 @@ export const ReviewSidebar: React.FC<{
 };
 
 const EditSummary = ({
+  summary,
   changeGroup,
   selected,
-  doc,
 }: {
+  summary: string | undefined;
   changeGroup: ChangeGroup;
   selected: boolean;
-  doc: MarkdownDoc;
 }) => {
-  let summary;
-  if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-    summary = `${
-      changeGroup.diff.patches.filter((patch) => patchIsUserFacing(patch))
-        .length
-    } edits`;
-  } else {
-    summary = doc.changeGroupSummaries[changeGroup.id].title;
-  }
   return (
     <div
       className={`group cursor-pointer  p-1 rounded-full font-medium text-xs flex ${
@@ -969,10 +942,10 @@ const EditSummary = ({
 
 const MergedBranchView: React.FC<{
   changeGroup: ChangeGroup;
-  doc: MarkdownDoc;
+  summary: string | undefined;
   selected: boolean;
   setSelection: (s: Selection) => void;
-}> = ({ changeGroup, selected, setSelection, doc }) => {
+}> = ({ changeGroup, selected, setSelection, summary }) => {
   const branch = changeGroup.markers.find(
     (m) => m.type === "otherBranchMergedIntoThisDoc"
     // @ts-expect-error -- this should be fine, why does TS not get it?
@@ -1018,7 +991,11 @@ const MergedBranchView: React.FC<{
         {/* This is a curved line showing the connection between the branch and the edits*/}
         <div className="ml-8 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
 
-        <EditSummary changeGroup={changeGroup} selected={selected} doc={doc} />
+        <EditSummary
+          changeGroup={changeGroup}
+          selected={selected}
+          summary={summary}
+        />
       </div>
     </div>
   );

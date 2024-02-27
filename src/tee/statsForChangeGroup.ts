@@ -1,6 +1,3 @@
-// TEE MarkdownDoc-specific logic for describing and filtering groups of changes
-// for a history view.
-
 import { GenericChangeGroup } from "@/patchwork/groupChanges";
 
 import { TextPatch } from "@/patchwork/utils";
@@ -21,16 +18,6 @@ export type Heading = {
   index: number;
   text: string;
   patches: Patch[];
-};
-
-export const patchIsUserFacing = (patch: Patch) =>
-  patch.path[0] === "content" || patch.path[0] === "commentThreads";
-
-// Given a diff for what a change did, decides whether that change should be shown in the changelog.
-// Essentially a permit-list for what kinds of changes are worth showing.
-// Allows hiding internal metadata and other changes that are not user-facing.
-export const includeInChangeGroups = (diffForChange: Patch[]) => {
-  return diffForChange.some((patch) => patchIsUserFacing(patch));
 };
 
 // Compute stats for a change group on a MarkdownDoc
