@@ -178,6 +178,11 @@
   width: 2px;
 }
 
+/* Make things in the history appear above the history line */
+.history * {
+  z-index: 1;
+}
+
 .history-item {
   @apply relative;
 }
