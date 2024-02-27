@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { DiffWithProvenance, DiscussionComment } from "../../schema";
+import { Branch, DiffWithProvenance, DiscussionComment } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
@@ -123,7 +123,7 @@ export const ReviewSidebar: React.FC<{
       <div className="overflow-y-scroll flex-1 flex flex-col" ref={scrollerRef}>
         <div className="mt-auto">
           {changelogItems.map((item) => (
-            <div key={item.id}>
+            <div key={item.id} className="pl-2">
               {(() => {
                 switch (item.type) {
                   case "changeGroup":
@@ -137,7 +137,9 @@ export const ReviewSidebar: React.FC<{
                   case "originOfThisBranch":
                     return <div>Origin of this branch</div>;
                   case "otherBranchMergedIntoThisDoc":
-                    return <div>Branch merged</div>;
+                    return (
+                      <BranchMergedItem branch={item.branch} selected={false} />
+                    );
                   default: {
                     // Ensure we've handled all types
                     const exhaustiveCheck: never = item;
@@ -158,6 +160,43 @@ export const ReviewSidebar: React.FC<{
 
 const CommentBox = () => {
   return <div className="h-16 bg-red-100 p-5">Comment box</div>;
+};
+
+const BranchMergedItem: React.FC<{ branch: Branch; selected: boolean }> = ({
+  branch,
+  selected,
+}) => {
+  return (
+    <ItemView selected={selected} color="purple-600">
+      <ItemIcon>
+        <GitBranchPlusIcon
+          className="h-[10px] w-[10px] text-white"
+          strokeWidth={2}
+        />
+      </ItemIcon>
+
+      <ItemContent>
+        <div className="text-sm flex select-none">
+          <div>
+            <div className="inline font-normal">Branch merged:</div>{" "}
+            <div className="inline font-semibold">{branch.name}</div>{" "}
+          </div>
+          <div className="ml-auto">
+            {branch.createdBy && (
+              <div className=" text-gray-600 inline">
+                <InlineContactAvatar
+                  key={branch.createdBy}
+                  url={branch.createdBy}
+                  size="sm"
+                  showName={false}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
 };
 
 const useAutoPopulateChangeGroupSummaries = ({ handle, changelogItems }) => {
@@ -181,4 +220,40 @@ const useAutoPopulateChangeGroupSummaries = ({ handle, changelogItems }) => {
       debouncedPopulate.cancel();
     };
   }, [changelogItems, handle, debouncedPopulate]);
+};
+
+const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
+const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+const ItemView = ({
+  selected,
+  children,
+  color = "purple-600",
+}: {
+  selected: boolean;
+  children: ReactNode | ReactNode[];
+  color: string;
+}) => {
+  const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
+
+  return (
+    <div className="items-top flex gap-1">
+      {slots.icon && (
+        <div
+          className={`bg-${color} mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full  outline outline-2 outline-gray-100`}
+        >
+          {slots.icon}
+        </div>
+      )}
+
+      {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
+      <div
+        className={`cursor-pointer flex-1 rounded p-1 shadow ${
+          selected ? "bg-blue-100" : "bg-white"
+        }`}
+      >
+        {slots.content}
+      </div>
+    </div>
+  );
 };
