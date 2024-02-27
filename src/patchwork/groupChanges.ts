@@ -209,7 +209,7 @@ export const getMarkersForDoc = <
       }))
   );
 
-  /** Mark branch start points */
+  /** Mark where this branch started */
   if (doc.branchMetadata.source) {
     const branchMetadataAtSource = repo
       .find<Branchable>(doc.branchMetadata.source.url)
@@ -225,6 +225,15 @@ export const getMarkersForDoc = <
       });
     }
   }
+
+  /** Mark new branches off this one */
+  markers = markers.concat(
+    doc.branchMetadata.branches.map((branch) => ({
+      heads: branch.branchHeads,
+      type: "branchCreatedFromThisDoc",
+      branch,
+    }))
+  );
 
   return markers;
 };

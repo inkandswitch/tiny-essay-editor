@@ -20,6 +20,7 @@ import {
   SendHorizontalIcon,
   MergeIcon,
   GitBranchIcon,
+  GitBranchPlusIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
@@ -29,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
-import { EditRangeTarget } from "../../schema";
+
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { completions, slashCommands } from "./slashCommands";
@@ -37,6 +38,7 @@ import { EditorView } from "@codemirror/view";
 import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
+import { isEqual } from "lodash";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -88,6 +90,7 @@ export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
+  selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
   zoomLevel: HistoryZoomLevel;
   textSelection: TextSelection;
@@ -96,6 +99,7 @@ export const ReviewSidebar: React.FC<{
   docUrl,
   setDocHeads,
   setDiff,
+  selectedBranch,
   setSelectedBranch,
   zoomLevel,
   textSelection,
@@ -523,7 +527,7 @@ export const ReviewSidebar: React.FC<{
                           </div>
                         )}
 
-                      <div className="flex ml-2">
+                      <div className="flex ml-[7px]">
                         <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
                         <div className="flex-grow">
                           <EditSummary
@@ -596,10 +600,11 @@ export const ReviewSidebar: React.FC<{
                                       />
                                     )}
 
-                                  <div className="font-normal pl-3">
+                                  <div className="font-normal pl-3 text-gray-800">
                                     {/* We use a readonly Codemirror to show markdown preview for comments
                                         using the same style that was used for entering the comment */}
                                     <CodeMirror
+                                      value={comment.content.trim()}
                                       readOnly
                                       editable={false}
                                       basicSetup={{
@@ -614,7 +619,6 @@ export const ReviewSidebar: React.FC<{
                                         }),
                                         EditorView.lineWrapping,
                                       ]}
-                                      value={comment.content}
                                       theme={EditorView.theme({
                                         "&.cm-editor": {
                                           height: "100%",
@@ -640,6 +644,7 @@ export const ReviewSidebar: React.FC<{
                             </ItemView>
                           );
                         })}
+
                       {marker.type === "tag" && (
                         <div
                           className={`history-item outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
@@ -671,26 +676,114 @@ export const ReviewSidebar: React.FC<{
                         </div>
                       )}
                       {marker.type === "originOfThisBranch" && (
-                        <div>
-                          <div className="text-sm">
-                            {marker.branch.createdBy && (
-                              <div className=" text-gray-600 inline">
-                                <InlineContactAvatar
-                                  key={marker.branch.createdBy}
-                                  url={marker.branch.createdBy}
-                                  size="sm"
-                                />
+                        <ItemView selected={selected}>
+                          <ItemIcon>
+                            <GitBranchPlusIcon
+                              className="h-[10px] w-[10px] text-white"
+                              strokeWidth={2}
+                            />
+                          </ItemIcon>
+
+                          <ItemContent>
+                            <div className="text-sm flex select-none">
+                              <div>
+                                <div className="inline font-normal">
+                                  This branch created:
+                                </div>{" "}
+                                <div className="inline font-semibold">
+                                  {marker.branch.name}
+                                </div>{" "}
                               </div>
-                            )}{" "}
-                            <div className="inline font-normal">
-                              started this branch:
-                            </div>{" "}
-                            <div className="inline font-semibold">
-                              {marker.branch.name}
+                              <div className="ml-auto">
+                                {marker.branch.createdBy && (
+                                  <div className=" text-gray-600 inline">
+                                    <InlineContactAvatar
+                                      key={marker.branch.createdBy}
+                                      url={marker.branch.createdBy}
+                                      size="sm"
+                                      showName={false}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                          </ItemContent>
+                        </ItemView>
+
+                        // <div>
+                        //   <div className="text-sm">
+                        //     {marker.branch.createdBy && (
+                        //       <div className=" text-gray-600 inline">
+                        //         <InlineContactAvatar
+                        //           key={marker.branch.createdBy}
+                        //           url={marker.branch.createdBy}
+                        //           size="sm"
+                        //         />
+                        //       </div>
+                        //     )}{" "}
+                        //     <div className="inline font-normal">
+                        //       started this branch:
+                        //     </div>{" "}
+                        //     <div className="inline font-semibold">
+                        //       {marker.branch.name}
+                        //     </div>
+                        //   </div>
+                        // </div>
                       )}
+                      {/* we only show new branches off of main for now;
+                          because we're optimizing for branching off main, not branches-off-branches */}
+                      {selectedBranch.type === "main" &&
+                        marker.type === "branchCreatedFromThisDoc" && (
+                          <ItemView selected={selected}>
+                            <ItemIcon>
+                              <GitBranchPlusIcon
+                                className="h-[10px] w-[10px] text-white"
+                                strokeWidth={2}
+                              />
+                            </ItemIcon>
+
+                            <ItemContent>
+                              <div className="text-sm flex select-none">
+                                <div>
+                                  <div className="inline font-normal">
+                                    New branch:
+                                  </div>{" "}
+                                  <div className="inline font-semibold">
+                                    {marker.branch.name}
+                                  </div>{" "}
+                                </div>
+                                <div className="ml-auto">
+                                  {marker.branch.createdBy && (
+                                    <div className=" text-gray-600 inline">
+                                      <InlineContactAvatar
+                                        key={marker.branch.createdBy}
+                                        url={marker.branch.createdBy}
+                                        size="sm"
+                                        showName={false}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {!isEqual(selectedBranch, {
+                                type: "branch",
+                                url: marker.branch.url,
+                              }) && (
+                                <div
+                                  className="underline"
+                                  onClick={() =>
+                                    setSelectedBranch({
+                                      type: "branch",
+                                      url: marker.branch.url,
+                                    })
+                                  }
+                                >
+                                  View Branch
+                                </div>
+                              )}
+                            </ItemContent>
+                          </ItemView>
+                        )}
                     </div>
                   ))}
                   {isABranchMergeGroup && (
@@ -827,7 +920,7 @@ const EditSummary = ({
     >
       <div className="mr-2 text-gray-500">{summary}</div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex-shrink-0">
         {changeGroup.authorUrls.length > 0 && (
           <div className=" text-gray-600 inline">
             {changeGroup.authorUrls.map((contactUrl) => (

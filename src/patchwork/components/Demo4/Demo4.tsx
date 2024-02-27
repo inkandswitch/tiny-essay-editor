@@ -6,14 +6,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-  useRef,
-  useLayoutEffect,
-} from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { isEqual, truncate, sortBy } from "lodash";
@@ -25,14 +18,11 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   GitMergeIcon,
-  HistoryIcon,
   MergeIcon,
   MessageSquareIcon,
   MilestoneIcon,
-  MinusSquareIcon,
   MoreHorizontal,
   PlusIcon,
-  PlusSquareIcon,
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -797,6 +787,7 @@ export const Demo4: React.FC<{
                     onClearTextSelection={() => {
                       setTextSelection({ from: 0, to: 0, yCoord: 0 });
                     }}
+                    selectedBranch={selectedBranch}
                     setSelectedBranch={setSelectedBranch}
                   />
                 )}
