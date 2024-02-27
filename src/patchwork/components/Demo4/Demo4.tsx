@@ -772,22 +772,6 @@ export const Demo4: React.FC<{
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
                   </TabsList>
                 </Tabs>
-
-                {/* {reviewMode === "timeline" && (
-                  <div className="flex gap-1 w-full">
-                    <MinusSquareIcon size={12} />
-                    <Slider
-                      min={1}
-                      max={3}
-                      step={1}
-                      value={[historyZoomLevel]}
-                      onValueChange={([value]) =>
-                        setHistoryZoomLevel(value as HistoryZoomLevel)
-                      }
-                    />
-                    <PlusSquareIcon size={12} />
-                  </div>
-                )} */}
               </div>
 
               <div className="flex-grow overflow-hidden w-96">
