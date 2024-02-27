@@ -1,10 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Discussion } from "@/patchwork/schema";
+import { Discussion, DiscussionComment } from "@/patchwork/schema";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import {
   DiscussionTargetPosition,
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { useDocument } from "@/useDocumentVendored";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { getRelativeTimeString } from "@/tee/utils";
+import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  PopoverClose,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, Reply } from "lucide-react";
+import { MarkdownDoc } from "@/tee/schema";
+import { uuid } from "@automerge/automerge";
 
 type CommentPositionMap = Record<string, number>;
 
@@ -12,6 +27,7 @@ interface SpatialCommentsListProps {
   discussions: Discussion[];
   activeDiscussionTargetPositions: DiscussionTargetPosition[];
   overlayContainer: OverlayContainer;
+  changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
 }
 
@@ -22,12 +38,16 @@ export const SpatialCommentsList = React.memo(
     discussions,
     activeDiscussionTargetPositions,
     overlayContainer,
+    changeDoc,
     onChangeCommentPositionMap,
   }: SpatialCommentsListProps) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const scrollContainerRectRef = useRef<DOMRect>();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
+    const [pendingCommentText, setPendingCommentText] = useState("");
+    const [activeReplyThreadId, setActiveReplyThreadId] = useState<string>();
+    const account = useCurrentAccount();
 
     const topComment = overlayContainer
       ? activeDiscussionTargetPositions.find(
@@ -45,6 +65,24 @@ export const SpatialCommentsList = React.memo(
       }
 
       onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
+    };
+
+    const replyToDiscussion = (discussion: Discussion) => {
+      changeDoc((doc) => {
+        doc.discussions[discussion.id].comments.push({
+          id: uuid(),
+          content: pendingCommentText,
+          contactUrl: account.contactHandle.url,
+          timestamp: Date.now(),
+        });
+      });
+    };
+
+    const resolveDiscussion = (discussion: Discussion) => {
+      console.log("resolve discussion");
+      changeDoc((doc) => {
+        doc.discussions[discussion.id].resolved = true;
+      });
     };
 
     useEffect(() => {
@@ -80,11 +118,10 @@ export const SpatialCommentsList = React.memo(
         {discussions &&
           overlayContainer &&
           discussions.map((discussion) => {
-            const comment = discussion.comments[0];
-
             return (
               <div
-                className={`p-2 cursor-pointer rounded shadow ${
+                key={discussion.id}
+                className={`select-none mr-2 px-2 py-1 border border-gray-200 rounded-sm ${
                   topComment &&
                   topComment.discussion.id === discussion.id &&
                   DEBUG_HIGHLIGHT
@@ -100,15 +137,71 @@ export const SpatialCommentsList = React.memo(
                       rect.top - overlayContainer.top + scrollOffset;
                   }
 
-                  triggerChangeCommentPositionMap();
+                  // triggerChangeCommentPositionMap();
                 }}
-                key={discussion.id}
               >
-                <div className="text-gray-600 inline ">
-                  <InlineContactAvatar url={comment.contactUrl} size="sm" />
+                <div>
+                  {discussion.comments.map((comment, index) => (
+                    <div
+                      key={comment.id}
+                      className={
+                        index !== discussion.comments.length - 1
+                          ? "border-b border-gray-200"
+                          : ""
+                      }
+                    >
+                      <DiscusssionCommentView comment={comment} />
+                    </div>
+                  ))}
                 </div>
+                <div className="mt-1">
+                  <Popover
+                    open={activeReplyThreadId === discussion.id}
+                    onOpenChange={(open) => {
+                      open
+                        ? setActiveReplyThreadId(discussion.id)
+                        : setActiveReplyThreadId(null);
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button className="mr-2 px-2 h-8" variant="outline">
+                        <Reply className="mr-2" /> Reply
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <Textarea
+                        className="mb-4"
+                        value={pendingCommentText}
+                        onChange={(event) =>
+                          setPendingCommentText(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && event.metaKey) {
+                            replyToDiscussion(discussion);
+                            event.preventDefault();
+                          }
+                        }}
+                      />
 
-                <div className="font-normal">{comment.content}</div>
+                      <PopoverClose>
+                        <Button
+                          variant="outline"
+                          onClick={() => replyToDiscussion(discussion)}
+                        >
+                          Comment
+                          <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+                        </Button>
+                      </PopoverClose>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="outline"
+                    className="select-none h-8 px-2 "
+                    onClick={() => resolveDiscussion(discussion)}
+                  >
+                    <Check className="mr-2" /> Resolve
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -116,3 +209,23 @@ export const SpatialCommentsList = React.memo(
     );
   }
 );
+
+function DiscusssionCommentView({ comment }: { comment: DiscussionComment }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between p-1.5 text-sm">
+        <div className="">
+          <ContactAvatar url={comment.contactUrl} showName={true} size="sm" />
+        </div>
+
+        <div className="text-xs text-gray-400">
+          {getRelativeTimeString(comment.timestamp)}
+        </div>
+      </div>
+
+      <div className="p-1.5">
+        <p>{comment.content}</p>
+      </div>
+    </div>
+  );
+}

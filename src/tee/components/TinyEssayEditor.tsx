@@ -219,7 +219,10 @@ export const TinyEssayEditor = ({
     }
 
     return Object.values(doc.discussions).flatMap((discussion) => {
-      if (discussion.target && discussion.target.type !== "editRange") {
+      if (
+        (discussion.target && discussion.target.type !== "editRange") ||
+        discussion.resolved === true
+      ) {
         return [];
       }
 

@@ -376,7 +376,9 @@ export const Demo4: React.FC<{
 
     return sortBy(
       Object.values(activeDoc.discussions ?? {}).filter(
-        (discussion) => discussion.target?.type === "editRange"
+        (discussion) =>
+          discussion.target?.type === "editRange" &&
+          discussion.resolved === false
       ),
       (discussion) => {
         const target = discussion.target as EditRangeTarget;
@@ -793,6 +795,7 @@ export const Demo4: React.FC<{
                 )}
                 {reviewMode === "comments" && (
                   <SpatialCommentsList
+                    changeDoc={changeDoc}
                     discussions={discussions}
                     activeDiscussionTargetPositions={
                       activeDiscussionTargetPositions

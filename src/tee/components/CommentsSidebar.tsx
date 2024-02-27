@@ -1269,7 +1269,7 @@ export function CommentView({
   );
 }
 
-function CompactCommentView({ comment }: { comment: Comment }) {
+export function CompactCommentView({ comment }: { comment: Comment }) {
   const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
   if (!contactDoc) return <div></div>;
   const name = contactDoc.type === "anonymous" ? "Anonymous" : contactDoc.name;
