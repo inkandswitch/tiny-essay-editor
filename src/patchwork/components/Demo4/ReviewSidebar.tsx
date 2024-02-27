@@ -756,67 +756,69 @@ export const ReviewSidebar: React.FC<{
         )}
 
         <div className="mx-2">
-          <CodeMirror
-            basicSetup={{
-              foldGutter: false,
-              highlightActiveLine: false,
-              lineNumbers: false,
-            }}
-            className="rounded border-none bg-white p-1 shadow min-h-12 max-h-24 overflow-y-auto"
-            extensions={[
-              markdown({ base: markdownLanguage, codeLanguages: languages }),
-              slashCommands(completions),
-            ]}
-            onChange={(value) => setCommentBoxContent(value)}
-            onKeyDown={(e) => {
-              if (e.metaKey && e.key === "Enter") {
-                onSubmit();
-                e.stopPropagation();
-              }
-            }}
-            value={commentBoxContent}
-            theme={EditorView.theme({
-              "&.cm-editor": {
-                height: "100%",
-              },
-              "&.cm-focused": {
-                outline: "none",
-              },
-              ".cm-scroller": {
-                height: "100%",
-              },
-              ".cm-content": {
-                height: "100%",
-                fontSize: "14px",
-                fontFamily: "ui-sans-serif, system-ui, sans-serif",
-                fontWeight: "normal",
-              },
-            })}
-          />
+          <div className="rounded bg-white shadow">
+            <CodeMirror
+              basicSetup={{
+                foldGutter: false,
+                highlightActiveLine: false,
+                lineNumbers: false,
+              }}
+              className="p-1 min-h-12 max-h-24 overflow-y-auto"
+              extensions={[
+                markdown({ base: markdownLanguage, codeLanguages: languages }),
+                slashCommands(completions),
+              ]}
+              onChange={(value) => setCommentBoxContent(value)}
+              onKeyDown={(e) => {
+                if (e.metaKey && e.key === "Enter") {
+                  onSubmit();
+                  e.stopPropagation();
+                }
+              }}
+              value={commentBoxContent}
+              theme={EditorView.theme({
+                "&.cm-editor": {
+                  height: "100%",
+                },
+                "&.cm-focused": {
+                  outline: "none",
+                },
+                ".cm-scroller": {
+                  height: "100%",
+                },
+                ".cm-content": {
+                  height: "100%",
+                  fontSize: "14px",
+                  fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                  fontWeight: "normal",
+                },
+              })}
+            />
 
-          <div className="flex justify-end mt-2 text-sm">
-            <div className="flex items-center">
-              {parsedCommentBoxContent.type === "comment" && (
-                <Button variant="ghost" onClick={onSubmit}>
-                  <SendHorizontalIcon size={14} className="mr-1" />
-                  Comment
-                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
-                </Button>
-              )}
-              {parsedCommentBoxContent.type === "branch" && (
-                <Button variant="ghost" onClick={onSubmit}>
-                  <GitBranchIcon size={14} className="mr-1" />
-                  Create branch
-                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
-                </Button>
-              )}
-              {parsedCommentBoxContent.type === "milestone" && (
-                <Button variant="ghost" onClick={onSubmit}>
-                  <MilestoneIcon size={14} className="mr-1" />
-                  Save milestone
-                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
-                </Button>
-              )}
+            <div className="flex justify-end mt-2 text-sm">
+              <div className="flex items-center">
+                {parsedCommentBoxContent.type === "comment" && (
+                  <Button variant="ghost" onClick={onSubmit}>
+                    <SendHorizontalIcon size={14} className="mr-1" />
+                    Comment
+                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                  </Button>
+                )}
+                {parsedCommentBoxContent.type === "branch" && (
+                  <Button variant="ghost" onClick={onSubmit}>
+                    <GitBranchIcon size={14} className="mr-1" />
+                    Create branch
+                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                  </Button>
+                )}
+                {parsedCommentBoxContent.type === "milestone" && (
+                  <Button variant="ghost" onClick={onSubmit}>
+                    <MilestoneIcon size={14} className="mr-1" />
+                    Save milestone
+                    <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
