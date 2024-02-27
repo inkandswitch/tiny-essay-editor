@@ -31,7 +31,6 @@ export const completions: Completion[] = [
 export function createApplyWithSpaceAfterCompletion(label: string) {
   return function (view, completion, from, to) {
     const insertText = label;
-    console.log({ view, completion, from, to, insertText });
     view.dispatch({
       changes: { from, to, insert: `${insertText} ` },
       selection: {
