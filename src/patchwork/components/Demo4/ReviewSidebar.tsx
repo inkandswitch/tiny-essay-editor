@@ -10,6 +10,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import {
   ChangeGroup,
+  getChangelogItems,
   getGroupedChanges,
   getMarkersForDoc,
 } from "../../groupChanges";
@@ -152,6 +153,14 @@ export const ReviewSidebar: React.FC<{
       numericParameter,
       markers,
     });
+
+    const items = getChangelogItems(doc, {
+      algorithm,
+      numericParameter,
+      markers,
+    });
+
+    console.log(items);
 
     return {
       changeCount,

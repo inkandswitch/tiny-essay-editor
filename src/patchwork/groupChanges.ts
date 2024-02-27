@@ -49,8 +49,12 @@ interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
-/** A marker of a significant moment in the doc history */
-export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
+/** A marker of a moment in the doc history associated w/ some heads */
+export type HeadsMarker = {
+  id: string;
+  heads: Heads;
+  hideHistoryBeforeThis?: boolean;
+} & (
   | { type: "tag"; tag: Tag }
   | { type: "otherBranchMergedIntoThisDoc"; branch: Branch }
   | { type: "branchCreatedFromThisDoc"; branch: Branch }
@@ -60,6 +64,13 @@ export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
       branch: Branch;
     }
   | { type: "discussionThread"; discussion: Discussion }
+);
+
+// All ChangelogItems have an id, heads, and type
+
+export type ChangelogItem = { id: string; heads: Heads } & (
+  | { type: "changeGroup"; changeGroup: ChangeGroup }
+  | HeadsMarker
 );
 
 /** Change group attributes that could work for any document */
@@ -183,6 +194,7 @@ export const getMarkersForDoc = <
   if (!doc) return [];
   /** Mark tags aka milestones */
   let markers: HeadsMarker[] = (doc.tags ?? []).map((tag: Tag) => ({
+    id: `tag-${tag.heads[0]}-${tag.name}`,
     heads: tag.heads,
     type: "tag" as const,
     tag,
@@ -192,6 +204,7 @@ export const getMarkersForDoc = <
   markers = markers.concat(
     // default value is there for compat with old docs
     Object.values(doc.discussions ?? {}).map((discussion) => ({
+      id: `discussion-${discussion.id}`,
       heads: discussion.heads,
       type: "discussionThread",
       discussion,
@@ -203,6 +216,7 @@ export const getMarkersForDoc = <
     doc.branchMetadata.branches
       .filter((branch) => branch.mergeMetadata !== undefined)
       .map((branch) => ({
+        id: `branch-merge-${branch.mergeMetadata!.mergeHeads[0]}`,
         heads: branch.mergeMetadata!.mergeHeads,
         type: "otherBranchMergedIntoThisDoc",
         branch,
@@ -217,6 +231,7 @@ export const getMarkersForDoc = <
       .branchMetadata.branches.find((b) => b.url === handle.url);
     if (branchMetadataAtSource && doc.branchMetadata.source.branchHeads) {
       markers.push({
+        id: `origin-of-this-branch`,
         heads: doc.branchMetadata.source.branchHeads,
         type: "originOfThisBranch",
         source: doc.branchMetadata.source,
@@ -231,6 +246,7 @@ export const getMarkersForDoc = <
     doc.branchMetadata.branches
       .filter((branch) => branch.branchHeads !== undefined)
       .map((branch) => ({
+        id: `branch-created-${branch.branchHeads[0]}`,
         heads: branch.branchHeads,
         type: "branchCreatedFromThisDoc",
         branch,
@@ -256,25 +272,61 @@ const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
   });
 };
 
-/* returns all the changes from this doc, grouped in a simple way for now. */
-export const getGroupedChanges = (
+type ChangeGroupingOptions = {
+  /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
+  algorithm: keyof typeof GROUPINGS;
+
+  /** A numeric parameter used by some grouping algorithms for things like batch size.
+   *  TODO: this should probably be more specifically named per grouping algo?
+   */
+  numericParameter: number;
+
+  /** Markers to display at certain heads in the history */
+  markers: HeadsMarker[];
+};
+
+/** Returns a flat list of changelog items for display in the UI,
+ *  based on a list of change groups.
+ */
+export const getChangelogItems = (
   doc: Doc<MarkdownDoc>,
-  {
+  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
+    algorithm: "ByActorAndNumChanges",
+    numericParameter: 100,
+    markers: [],
+  }
+) => {
+  const { changeGroups } = getGroupedChanges(doc, {
     algorithm,
     numericParameter,
     markers,
-  }: {
-    /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
-    algorithm: keyof typeof GROUPINGS;
+  });
 
-    /** A numeric parameter used by some grouping algorithms for things like batch size.
-     *  TODO: this should probably be more specifically named per grouping algo?
-     */
-    numericParameter: number;
+  const changelogItems: ChangelogItem[] = [];
+  for (const changeGroup of changeGroups) {
+    changelogItems.push({
+      id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
+      type: "changeGroup",
+      changeGroup,
+      heads: [changeGroup.to],
+    });
+    for (const marker of changeGroup.markers) {
+      changelogItems.push(marker);
+    }
+  }
+  return changelogItems;
+};
 
-    /** Markers to display at certain heads in the history */
-    markers: HeadsMarker[];
-  } = {
+/** Returns a list of change groups using the specified algorithm.
+ *  Markers for specific moments in the history can be passed in;
+ *  these automatically split the groups at the marker.
+ *  The structure returned by this function is a list of change groups
+ *  with markers attached; if you want a flat list of changelog items
+ *  for display, use getChangelogItems.
+ */
+export const getGroupedChanges = (
+  doc: Doc<MarkdownDoc>,
+  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
     algorithm: "ByActorAndNumChanges",
     /** Some algorithms have a numeric parameter like batch size that the user can control */
     numericParameter: 100,
