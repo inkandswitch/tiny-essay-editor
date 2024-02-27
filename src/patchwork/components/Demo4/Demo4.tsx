@@ -75,6 +75,8 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
+type ReviewMode = "comments" | "timeline";
+
 export const Demo4: React.FC<{
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;
@@ -288,7 +290,7 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState("comments");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
