@@ -99,7 +99,7 @@ export const patchDecorations = (diffStyle: DiffStyle) =>
   EditorView.decorations.compute([patchesField, annotationsField], (state) => {
     const activeAnnotations = state
       .field(annotationsField)
-      .filter((annotationsField) => annotationsField.active);
+      .filter((annotationsField) => annotationsField?.active);
 
     const patches = state
       .field(patchesField)

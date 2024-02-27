@@ -37,27 +37,28 @@ export const annotationDecorations = EditorView.decorations.compute(
     // TODO: for threads which represent edit groups and point to multiple ranges of text,
     // we can highight all of those multiple ranges here.
     const decorations =
-      sortBy(annotations ?? [], (annotation) => annotation.from)?.flatMap(
-        (annotation) => {
-          if (annotation.to === annotation.from) {
-            return [];
-          }
-
-          if (
-            !("type" in annotation) ||
-            (annotation.type !== "thread" && annotation.type !== "discussion")
-          ) {
-            return [];
-          }
-
-          const cmRange = amRangeToCMRange(annotation);
-          if (annotation.active) {
-            return activeThreadDecoration.range(cmRange.from, cmRange.to);
-          } else {
-            return commentThreadDecoration.range(cmRange.from, cmRange.to);
-          }
+      sortBy(
+        annotations.filter((anotation) => anotation) ?? [],
+        (annotation) => annotation.from
+      )?.flatMap((annotation) => {
+        if (annotation.to === annotation.from) {
+          return [];
         }
-      ) ?? [];
+
+        if (
+          !("type" in annotation) ||
+          (annotation.type !== "thread" && annotation.type !== "discussion")
+        ) {
+          return [];
+        }
+
+        const cmRange = amRangeToCMRange(annotation);
+        if (annotation.active) {
+          return activeThreadDecoration.range(cmRange.from, cmRange.to);
+        } else {
+          return commentThreadDecoration.range(cmRange.from, cmRange.to);
+        }
+      }) ?? [];
 
     return Decoration.set(decorations);
   }
