@@ -607,12 +607,12 @@ export const ReviewSidebar: React.FC<{
                                         highlightActiveLine: false,
                                         lineNumbers: false,
                                       }}
-                                      className="min-h-12 max-h-24 overflow-y-auto"
                                       extensions={[
                                         markdown({
                                           base: markdownLanguage,
                                           codeLanguages: languages,
                                         }),
+                                        EditorView.lineWrapping,
                                       ]}
                                       value={comment.content}
                                       theme={EditorView.theme({
@@ -722,7 +722,7 @@ export const ReviewSidebar: React.FC<{
         </div>
       </div>
 
-      <div className="pt-2 bg-gray-50 z-10">
+      <div className="pt-2 px-2 bg-gray-50 z-10">
         {textSelection && textSelection.from !== textSelection.to && doc && (
           <HighlightSnippetView
             from={textSelection.from}
@@ -731,7 +731,7 @@ export const ReviewSidebar: React.FC<{
           />
         )}
 
-        <div className="mx-2">
+        <div>
           <div className="rounded bg-white shadow">
             <CodeMirror
               basicSetup={{
@@ -743,6 +743,7 @@ export const ReviewSidebar: React.FC<{
               extensions={[
                 markdown({ base: markdownLanguage, codeLanguages: languages }),
                 slashCommands(completions),
+                EditorView.lineWrapping,
               ]}
               onChange={(value) => setCommentBoxContent(value)}
               onKeyDown={(e) => {
