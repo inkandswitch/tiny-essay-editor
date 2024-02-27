@@ -663,17 +663,16 @@ export const ReviewSidebar: React.FC<{
                         })}
                       {marker.type === "tag" && (
                         <div
-                          className={`cursor-pointer items-top flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
+                          className={`history-item outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
                             selection?.type === "milestone" &&
                             selection?.heads === marker.heads
                               ? "bg-gray-200"
                               : "bg-gray-100"
                           }`}
                         >
-                          <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
+                          <div className="flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
                             <MilestoneIcon
-                              className="h-[10px] w-[10px] text-white"
-                              strokeWidth={2}
+                              className="h-[12px] w-[12px] text-white"
                             />
                           </div>
 
@@ -734,13 +733,14 @@ export const ReviewSidebar: React.FC<{
             );
           })}
         </div>
+
         <div
-          className={`flex cursor-pointer items-center text-gray-400 font-semibold mt-1.5  ${
+          className={`history-item flex cursor-pointer items-center text-gray-400 font-semibold mt-1.5  ${
             docHeads.length > 0 ? "opacity-50" : ""
           }`}
           onClick={() => setSelection(null)}
         >
-          <div className="ml-[8px] bg-gray-200 rounded-full h-[16px] w-[16px]"></div>
+          <div className="ml-[8px] bg-gray-300 outline outline-2 outline-gray-50 rounded-full h-[16px] w-[16px]"></div>
           <div className="ml-2">Now</div>
         </div>
       </div>
