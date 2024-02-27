@@ -343,6 +343,8 @@ export const Demo4: React.FC<{
     };
   }, [bezierCurveLayerElement]);
 
+  const activeDoc = branchDoc ?? doc;
+
   const activeDiscussionTargetPositions = useMemo<
     DiscussionTargetPosition[]
   >(() => {
@@ -352,7 +354,7 @@ export const Demo4: React.FC<{
 
     return sortBy(discussionTargetPositions, (target) =>
       A.getCursorPosition(
-        doc,
+        activeDoc,
         ["content"],
         (target.discussion.target as EditRangeTarget).value.fromCursor
       )
@@ -378,20 +380,24 @@ export const Demo4: React.FC<{
   );
 
   const discussions = useMemo(() => {
-    if (!doc || !doc.discussions) {
+    if (!activeDoc || !activeDoc.discussions) {
       return;
     }
 
     return sortBy(
-      Object.values(doc.discussions ?? {}).filter(
+      Object.values(activeDoc.discussions ?? {}).filter(
         (discussion) => discussion.target?.type === "editRange"
       ),
       (discussion) => {
         const target = discussion.target as EditRangeTarget;
-        return A.getCursorPosition(doc, ["content"], target.value.fromCursor);
+        return A.getCursorPosition(
+          activeDoc,
+          ["content"],
+          target.value.fromCursor
+        );
       }
     );
-  }, [doc?.content, doc?.discussions]);
+  }, [activeDoc?.content, activeDoc?.discussions]);
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
