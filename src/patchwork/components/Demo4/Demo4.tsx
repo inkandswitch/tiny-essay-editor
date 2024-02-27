@@ -761,7 +761,7 @@ export const Demo4: React.FC<{
                 <ChevronsRight size={16} />
               </div>
 
-              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-300 shadow-sm">
+              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
                 <Tabs value={reviewMode} onValueChange={setReviewMode}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="comments">Comments</TabsTrigger>
