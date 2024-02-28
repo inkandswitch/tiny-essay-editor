@@ -11,47 +11,32 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
   ReactNode,
   useCallback,
 } from "react";
 import {
   ChangeGroup,
   getChangelogItems,
-  getGroupedChanges,
   getMarkersForDoc,
 } from "../../groupChanges";
 
 import {
   MessageSquare,
   MilestoneIcon,
-  SendHorizontalIcon,
-  MergeIcon,
   GitBranchIcon,
   GitBranchPlusIcon,
   MoreHorizontal,
-  ShareIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import {
-  Branch,
-  DiffWithProvenance,
-  Discussion,
-  DiscussionComment,
-  Tag,
-} from "../../schema";
+import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { Button } from "@/components/ui/button";
-import { uuid } from "@automerge/automerge";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { completions, slashCommands } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 import { debounce, isEqual } from "lodash";
@@ -61,23 +46,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type MilestoneSelection = {
-  type: "milestone";
-  heads: Heads;
-};
-
-// the data structure that represents the range of change groups we've selected for showing diffs.
-type ChangeGroupSelection = {
-  type: "changeGroups";
-  /** The older (causally) change group in the selection */
-  from: ChangeGroup["id"];
-
-  /** The newer (causally) change group in the selection */
-  to: ChangeGroup["id"];
-};
-
-type Selection = MilestoneSelection | ChangeGroupSelection;
 
 const useScrollToBottom = () => {
   const scrollerRef = useRef<HTMLDivElement>(null);
