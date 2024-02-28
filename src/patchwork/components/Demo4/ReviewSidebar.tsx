@@ -98,12 +98,13 @@ export const ReviewSidebar: React.FC<{
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom();
+  const [showHiddenItems, setShowHiddenItems] = useState(false);
 
   // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
     () => getMarkersForDoc(handle, repo),
     // Important to have doc as a dependency here even though the linter says not needed
-    [doc, handle, repo]
+    [doc, handle, repo, mainDoc]
   );
 
   // The grouping function returns change groups starting from the latest change.
@@ -116,6 +117,15 @@ export const ReviewSidebar: React.FC<{
       markers,
     });
   }, [doc, markers]);
+
+  const hiddenItemBoundary = changelogItems.findIndex(
+    (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
+  );
+
+  const visibleItems =
+    hiddenItemBoundary > 0 && !showHiddenItems
+      ? changelogItems.slice(hiddenItemBoundary)
+      : changelogItems;
 
   const { selection, handleClick, clearSelection, itemsContainerRef } =
     useChangelogSelection({
@@ -137,28 +147,35 @@ export const ReviewSidebar: React.FC<{
     <div className="h-full w-full flex flex-col text-xs text-gray-600">
       {/* Show which branch we're on  */}
       <div className="bg-gray-50 border-gray-200 border-b">
-        <div className="flex items-center px-2 py-1">
-          <div className="font-bold">
-            {selectedBranch.type === "main" && (
-              <div className="flex items-center gap-2">
-                <CrownIcon className="inline" size={12} />
-                Main
-              </div>
-            )}
+        <div className="flex items-center">
+          <div
+            className="cursor-pointer text-gray-500 font-semibold underline w-12 flex-shrink-0"
+            onClick={() => setSelectedBranch({ type: "main" })}
+          >
             {selectedBranch.type === "branch" && (
-              <div className="flex items-center gap-2">
-                <GitBranchIcon className="inline" size={12} />
-                {selectedBranchLink?.name}
-                <div
-                  className="cursor-pointer text-gray-500 font-semibold underline"
-                  onClick={() => setSelectedBranch({ type: "main" })}
-                >
-                  <ChevronLeftIcon size={12} className="inline" />
-                  Back to main
-                </div>
-              </div>
+              <>
+                <ChevronLeftIcon size={12} className="inline" />
+                Main
+              </>
             )}
           </div>
+          <div className="flex-grow flex justify-center items-center px-2 py-1">
+            <div className="font-bold">
+              {selectedBranch.type === "main" && (
+                <div className="flex items-center gap-2">
+                  <CrownIcon className="inline" size={12} />
+                  Main
+                </div>
+              )}
+              {selectedBranch.type === "branch" && (
+                <div className="flex items-center gap-2">
+                  <GitBranchIcon className="inline" size={12} />
+                  {selectedBranchLink?.name}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="w-12 flex-shrink-0"></div>
         </div>
 
         {selection && (
@@ -182,8 +199,24 @@ export const ReviewSidebar: React.FC<{
         className="timeline overflow-y-auto flex-1 flex flex-col"
         ref={scrollerRef}
       >
+        {/* Show a toggle for hidden items */}
+
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
-          {changelogItems.map((item, index) => {
+          <div className="pl-6 text-xs  text-gray-500">
+            {!showHiddenItems && hiddenItemBoundary > 0 && (
+              <div className="flex gap-2">
+                <div>{hiddenItemBoundary + 1} items before branch creation</div>
+                <div
+                  className="font-semibold cursor-pointer underline"
+                  onClick={() => setShowHiddenItems(true)}
+                >
+                  show
+                </div>
+              </div>
+            )}
+          </div>
+
+          {visibleItems.map((item, index) => {
             const selected =
               selection &&
               index >= selection.from.index &&
@@ -389,7 +422,6 @@ const useChangelogSelection = ({
         }
       })
       .filter((patch) => patch !== undefined);
-    console.log(patches);
     setDiff({ patches, fromHeads: fromItem.heads, toHeads: toItem.heads });
   }, [selection, setDiff, setDocHeads, items]);
 
@@ -439,11 +471,7 @@ const useChangelogSelection = ({
     [...itemsContainerRef.current.children]
       .find((div) => div.attributes["data-item-id"]?.value === selection.from)
       ?.getBoundingClientRect().top - containerTop;
-  console.log(
-    [...(itemsContainerRef.current?.children ?? [])].map(
-      (div) => div.attributes["data-item-id"]?.value
-    )
-  );
+
   const toPos =
     [...(itemsContainerRef.current?.children ?? [])]
       .find((div) => div.attributes["data-item-id"]?.value === selection.to)
@@ -524,7 +552,6 @@ const BranchMergedItem: React.FC<{
   selected: boolean;
   doc: MarkdownDoc;
 }> = ({ branch, changeGroups, selected, doc }) => {
-  console.log("merged change groups", changeGroups);
   return (
     <div>
       <ItemView selected={selected} color="purple">
@@ -601,23 +628,6 @@ const BranchCreatedItem = ({
               <div className="inline font-semibold">{branch.name}</div>{" "}
             </div>
           </div>
-
-          {!isEqual(selectedBranch, {
-            type: "branch",
-            url: branch.url,
-          }) && (
-            <div
-              className="text-xs text-gray-400 hover:text-gray-600 font-semibold cursor-pointer select-none flex-shrink-0"
-              onClick={() =>
-                setSelectedBranch({
-                  type: "branch",
-                  url: branch.url,
-                })
-              }
-            >
-              View branch {">"}
-            </div>
-          )}
         </div>
       </ItemContent>
     </ItemView>

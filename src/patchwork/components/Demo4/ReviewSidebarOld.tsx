@@ -161,14 +161,6 @@ export const ReviewSidebar: React.FC<{
       markers,
     });
 
-    const items = getChangelogItems(doc, {
-      algorithm,
-      numericParameter,
-      markers,
-    });
-
-    console.log(items);
-
     return {
       changeCount,
       groupedChanges: changeGroups,

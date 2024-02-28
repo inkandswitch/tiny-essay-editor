@@ -219,6 +219,7 @@ export const getMarkersForDoc = <
         .map((comment) => comment.contactUrl)
         .filter(Boolean),
       discussion,
+      time: discussion.comments[0].timestamp,
     }))
   );
 
@@ -242,8 +243,8 @@ export const getMarkersForDoc = <
   if (doc.branchMetadata.source) {
     const branchMetadataAtSource = repo
       .find<Branchable>(doc.branchMetadata.source.url)
-      .docSync()
-      .branchMetadata.branches.find((b) => b.url === handle.url);
+      .docSync() // this may fail if we haven't loaded the main doc yet...
+      ?.branchMetadata?.branches.find((b) => b.url === handle.url);
     if (branchMetadataAtSource && doc.branchMetadata.source.branchHeads) {
       markers.push({
         id: `origin-of-this-branch`,
@@ -262,7 +263,11 @@ export const getMarkersForDoc = <
   /** Mark new branches off this one */
   markers = markers.concat(
     doc.branchMetadata.branches
-      .filter((branch) => branch.branchHeads !== undefined)
+      .filter(
+        (branch) =>
+          branch.branchHeads !== undefined &&
+          !isEqual(branch.branchHeads, doc.branchMetadata.source?.branchHeads)
+      )
       .map((branch) => ({
         id: `branch-created-${branch.branchHeads[0]}`,
         users: branch.createdBy ? [branch.createdBy] : [],
@@ -271,6 +276,8 @@ export const getMarkersForDoc = <
         branch,
       }))
   );
+
+  console.log("markers", markers);
 
   return markers;
 };
@@ -323,26 +330,36 @@ export const getChangelogItems = (
 
   const changelogItems: ChangelogItem[] = [];
   for (const changeGroup of changeGroups) {
-    // If this is a branch merge, we don't directly put the change group in --
-    // instead we put the changes inside of a branch merged item.
+    if (changeGroup.markers.find((m) => m.type === "originOfThisBranch")) {
+      console.log("EYOOO");
+    }
+    // If this is a branch merge, we treat it in a special way --
+    // we don't directly put the change group in as an item;
+    // we nest it inside the merge marker.
     const mergeMarker = changeGroup.markers.find(
       (m) => m.type === "otherBranchMergedIntoThisDoc"
     );
     if (mergeMarker) {
+      const otherMarkersForThisGroup = changeGroup.markers.filter(
+        (m) => m !== mergeMarker
+      );
+      for (const marker of otherMarkersForThisGroup) {
+        changelogItems.push({ ...marker, time: changeGroup.time });
+      }
       changelogItems.push({ ...mergeMarker, time: changeGroup.time });
-      continue;
-    }
-
-    changelogItems.push({
-      id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
-      type: "changeGroup",
-      changeGroup,
-      users: changeGroup.authorUrls,
-      heads: [changeGroup.to],
-      time: changeGroup.time,
-    });
-    for (const marker of changeGroup.markers) {
-      changelogItems.push({ ...marker, time: changeGroup.time });
+    } else {
+      // for normal change groups, push the group and then any markers
+      changelogItems.push({
+        id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
+        type: "changeGroup",
+        changeGroup,
+        users: changeGroup.authorUrls,
+        heads: [changeGroup.to],
+        time: changeGroup.time,
+      });
+      for (const marker of changeGroup.markers) {
+        changelogItems.push({ ...marker, time: changeGroup.time });
+      }
     }
   }
   return changelogItems;
