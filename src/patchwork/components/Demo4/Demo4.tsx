@@ -1,5 +1,5 @@
 import { MarkdownDoc } from "@/tee/schema";
-import { DiffWithProvenance, EditRangeTarget } from "../../schema";
+import { DiffWithProvenance, Discussion, EditRangeTarget } from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -341,12 +341,12 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
     useState<HTMLDivElement>();
 
+  // handle resize of bezierCureveLayerElement
   useEffect(() => {
     if (!bezierCurveLayerElement || !editorContainerElement) {
       return;
     }
 
-    // Step 2: Set up the ResizeObserver
     const observer = new ResizeObserver(() => {
       setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
       setEditorContainerRect(editorContainerElement.getBoundingClientRect());
@@ -357,7 +357,6 @@ export const Demo4: React.FC<{
     observer.observe(bezierCurveLayerElement);
     observer.observe(editorContainerElement);
 
-    // Step 3: Clean up
     return () => {
       observer.disconnect();
     };
@@ -420,6 +419,33 @@ export const Demo4: React.FC<{
       }
     );
   }, [activeDoc?.content, activeDoc?.discussions]);
+
+  useEffect(() => {
+    let focusedDiscussion: Discussion;
+
+    if (textSelection && textSelection.from === textSelection.to) {
+      focusedDiscussion = discussions.find((discussion) => {
+        if (!discussion.target || discussion.target.type !== "editRange") {
+          return false;
+        }
+
+        const from = A.getCursorPosition(
+          doc,
+          ["content"],
+          discussion.target.value.fromCursor
+        );
+        const to = A.getCursorPosition(
+          doc,
+          ["content"],
+          discussion.target.value.toCursor
+        );
+
+        return from <= textSelection.from && textSelection.from <= to;
+      });
+    }
+
+    setSelectedDiscussionId(focusedDiscussion?.id);
+  }, [textSelection]);
 
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"

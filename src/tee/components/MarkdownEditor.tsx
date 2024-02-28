@@ -80,6 +80,7 @@ export type EditorProps = {
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
   setActiveThreadIds: (threadIds: string[]) => void;
+  setSelectedDiscussion: (discussionId: string) => void;
   threadsWithPositions: TextAnnotationForUI[];
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
