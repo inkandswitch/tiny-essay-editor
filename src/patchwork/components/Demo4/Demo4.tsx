@@ -363,6 +363,34 @@ export const Demo4: React.FC<{
     };
   }, [bezierCurveLayerElement, editorContainerElement]);
 
+  // scroll selectedDiscussion into view
+  useEffect(() => {
+    if (!scrollContainer) {
+      return;
+    }
+
+    if (selectedDiscussionId) {
+      const target = activeDiscussionTargetPositions.find(
+        ({ discussion }) => discussion.id === selectedDiscussionId
+      );
+
+      if (!target) {
+        // todo: handle targets out of current view
+        console.log("not implemtned");
+        return;
+      }
+
+      if (target.x < 0 || target.y > bezierCurveLayerRect.height) {
+        scrollContainer.scrollBy({
+          top: target.y,
+          behavior: "smooth",
+        });
+      }
+
+      return;
+    }
+  }, [scrollContainer, selectedDiscussionId]);
+
   const activeDoc = branchDoc ?? doc;
 
   const activeDiscussionTargetPositions = useMemo<

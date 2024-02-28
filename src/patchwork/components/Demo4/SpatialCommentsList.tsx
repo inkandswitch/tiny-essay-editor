@@ -127,7 +127,7 @@ export const SpatialCommentsList = React.memo(
         top: commentPositionMapRef.current[topDiscussion.discussion.id].top,
         behavior: "smooth",
       });
-    }, [, topDiscussion, scrollContainer]);
+    }, [topDiscussion, scrollContainer]);
 
     return (
       <div
