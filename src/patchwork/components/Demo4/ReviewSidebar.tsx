@@ -1,20 +1,12 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import * as A from "@automerge/automerge/next";
 import CodeMirror from "@uiw/react-codemirror";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  ReactNode,
-  useCallback,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ChangeGroup,
   ChangelogItem,
@@ -34,7 +26,6 @@ import {
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
-import { useCurrentAccount } from "@/DocExplorer/account";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
@@ -42,7 +33,6 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { debounce, isEqual, truncate } from "lodash";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -540,7 +530,7 @@ const ChangeGroupDescription = ({
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   }
   return (
-    <div className={`w-full group  p-1 rounded-full font-medium text-xs flex`}>
+    <div className={`group  p-1 rounded-full font-medium text-xs flex`}>
       <div className="mr-2 text-gray-500">{summary}</div>
     </div>
   );
@@ -572,8 +562,20 @@ const BranchMergedItem: React.FC<{
         </ItemContent>
       </ItemView>
       {changeGroups.map((group) => (
-        <div className="pl-6">
+        <div className="pl-6 flex">
           <ChangeGroupItem group={group} selected={selected} doc={doc} />
+          <div className="flex items-center space-x-[-4px]">
+            {group.authorUrls.map((contactUrl) => (
+              <div className="rounded-full">
+                <InlineContactAvatar
+                  key={contactUrl}
+                  url={contactUrl}
+                  size="sm"
+                  showName={false}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
@@ -607,8 +609,6 @@ const MilestoneItem = ({
 const BranchCreatedItem = ({
   branch,
   selected,
-  selectedBranch,
-  setSelectedBranch,
 }: {
   branch: Branch;
   selected: boolean;
@@ -727,7 +727,6 @@ const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
 const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 const ItemView = ({
-  selected,
   children,
   color = "neutral",
 }: {
