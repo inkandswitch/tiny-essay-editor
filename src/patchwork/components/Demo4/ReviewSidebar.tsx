@@ -139,18 +139,19 @@ export const ReviewSidebar: React.FC<{
           {changelogItems.map((item) => (
             <div key={item.id} className="px-2 w-full flex items-center">
               {(() => {
+                const selected = false;
                 switch (item.type) {
                   case "changeGroup":
                     return (
                       <ChangeGroupItem
                         group={item.changeGroup}
                         doc={doc}
-                        selected={false}
+                        selected={selected}
                       />
                     );
                   case "tag":
                     return (
-                      <MilestoneItem milestone={item.tag} selected={false} />
+                      <MilestoneItem milestone={item.tag} selected={selected} />
                     );
                   case "branchCreatedFromThisDoc":
                     return (
@@ -158,21 +159,29 @@ export const ReviewSidebar: React.FC<{
                         selectedBranch={selectedBranch}
                         setSelectedBranch={setSelectedBranch}
                         branch={item.branch}
-                        selected={false}
+                        selected={selected}
                       />
                     );
                   case "discussionThread":
                     return (
                       <DiscussionThreadItem
                         discussion={item.discussion}
-                        selected={false}
+                        selected={selected}
                       />
                     );
                   case "originOfThisBranch":
-                    return <div>Origin of this branch</div>;
+                    return (
+                      <BranchOriginItem
+                        branch={item.branch}
+                        selected={selected}
+                      />
+                    );
                   case "otherBranchMergedIntoThisDoc":
                     return (
-                      <BranchMergedItem branch={item.branch} selected={false} />
+                      <BranchMergedItem
+                        branch={item.branch}
+                        selected={selected}
+                      />
                     );
                   default: {
                     // Ensure we've handled all types
@@ -360,6 +369,32 @@ const BranchCreatedItem = ({
               View branch {">"}
             </div>
           )}
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+const BranchOriginItem = ({
+  branch,
+  selected,
+}: {
+  branch: Branch;
+  selected: boolean;
+}) => {
+  return (
+    <ItemView selected={selected} color="neutral">
+      <ItemIcon>
+        <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
+      </ItemIcon>
+      <ItemContent>
+        <div>
+          <div className="text-sm flex select-none items-center">
+            <div className="mb-1">
+              <div className="inline font-normal">This branch started:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
+          </div>
         </div>
       </ItemContent>
     </ItemView>
