@@ -53,6 +53,7 @@ interface DecodedChangeWithMetadata extends DecodedChange {
 export type HeadsMarker = {
   id: string;
   heads: Heads;
+  users: AutomergeUrl[];
   hideHistoryBeforeThis?: boolean;
 } & (
   | { type: "tag"; tag: Tag }
@@ -66,12 +67,13 @@ export type HeadsMarker = {
   | { type: "discussionThread"; discussion: Discussion }
 );
 
-// All ChangelogItems have an id, heads, and type
-
-export type ChangelogItem = { id: string; heads: Heads } & (
-  | { type: "changeGroup"; changeGroup: ChangeGroup }
-  | HeadsMarker
-);
+// All ChangelogItems have a unique id, a heads, and some users asociated.
+// Then, each type of item has its own unique data associated too.
+export type ChangelogItem = {
+  id: string;
+  heads: Heads;
+  users: AutomergeUrl[];
+} & ({ type: "changeGroup"; changeGroup: ChangeGroup } | HeadsMarker);
 
 /** Change group attributes that could work for any document */
 export type GenericChangeGroup = {
@@ -198,6 +200,7 @@ export const getMarkersForDoc = <
     heads: tag.heads,
     type: "tag" as const,
     tag,
+    users: tag.createdBy ? [tag.createdBy] : [],
   }));
 
   /** Mark discussion threads */
@@ -207,6 +210,9 @@ export const getMarkersForDoc = <
       id: `discussion-${discussion.id}`,
       heads: discussion.heads,
       type: "discussionThread",
+      users: discussion.comments
+        .map((comment) => comment.contactUrl)
+        .filter(Boolean),
       discussion,
     }))
   );
@@ -219,6 +225,9 @@ export const getMarkersForDoc = <
         id: `branch-merge-${branch.mergeMetadata!.mergeHeads[0]}`,
         heads: branch.mergeMetadata!.mergeHeads,
         type: "otherBranchMergedIntoThisDoc",
+        users: branch.mergeMetadata!.mergedBy
+          ? [branch.mergeMetadata!.mergedBy]
+          : [],
         branch,
       }))
   );
@@ -233,6 +242,9 @@ export const getMarkersForDoc = <
       markers.push({
         id: `origin-of-this-branch`,
         heads: doc.branchMetadata.source.branchHeads,
+        users: branchMetadataAtSource.createdBy
+          ? [branchMetadataAtSource.createdBy]
+          : [],
         type: "originOfThisBranch",
         source: doc.branchMetadata.source,
         branch: branchMetadataAtSource,
@@ -247,6 +259,7 @@ export const getMarkersForDoc = <
       .filter((branch) => branch.branchHeads !== undefined)
       .map((branch) => ({
         id: `branch-created-${branch.branchHeads[0]}`,
+        users: branch.createdBy ? [branch.createdBy] : [],
         heads: branch.branchHeads,
         type: "branchCreatedFromThisDoc",
         branch,
@@ -308,6 +321,7 @@ export const getChangelogItems = (
       id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
       type: "changeGroup",
       changeGroup,
+      users: changeGroup.authorUrls,
       heads: [changeGroup.to],
     });
     for (const marker of changeGroup.markers) {

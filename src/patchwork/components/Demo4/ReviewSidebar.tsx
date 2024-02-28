@@ -131,7 +131,7 @@ export const ReviewSidebar: React.FC<{
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
         <div className="mt-auto flex flex-col gap-2">
           {changelogItems.map((item) => (
-            <div key={item.id} className="pl-2 w-full">
+            <div key={item.id} className="px-2 w-full flex items-center">
               {(() => {
                 switch (item.type) {
                   case "changeGroup":
@@ -161,6 +161,35 @@ export const ReviewSidebar: React.FC<{
                   }
                 }
               })()}
+              <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                <div className="flex items-center">
+                  {item.users.map((contactUrl) => (
+                    <div className="-ml-2 shadow rounded-full">
+                      <InlineContactAvatar
+                        key={contactUrl}
+                        url={contactUrl}
+                        size="sm"
+                        showName={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <MoreHorizontal
+                        size={18}
+                        className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
+                      />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="mr-4">
+                      <DropdownMenuItem>
+                        Context actions go here
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -189,23 +218,11 @@ const ChangeGroupItem: React.FC<{
         selected={selected}
         doc={doc}
       />
-      <div className="ml-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <MoreHorizontal
-              size={18}
-              className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="mr-4">
-            <DropdownMenuItem>Context actions go here</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
     </div>
   );
 };
 
+// Summary of a change group: textual + avatars
 const ChangeGroupDescription = ({
   changeGroup,
   selected,
@@ -229,23 +246,6 @@ const ChangeGroupDescription = ({
       } `}
     >
       <div className="mr-2 text-gray-500">{summary}</div>
-
-      <div className="ml-auto flex-shrink-0">
-        {changeGroup.authorUrls.length > 0 && (
-          <div className=" text-gray-600 inline">
-            {changeGroup.authorUrls.map((contactUrl) => (
-              <div className="inline">
-                <InlineContactAvatar
-                  key={contactUrl}
-                  url={contactUrl}
-                  size="sm"
-                  showName={false}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
@@ -268,31 +268,6 @@ const BranchMergedItem: React.FC<{ branch: Branch; selected: boolean }> = ({
           <div>
             <div className="inline font-normal">Branch merged:</div>{" "}
             <div className="inline font-semibold">{branch.name}</div>{" "}
-          </div>
-          <div className="ml-auto">
-            {branch.createdBy && (
-              <div className=" text-gray-600 inline">
-                <InlineContactAvatar
-                  key={branch.createdBy}
-                  url={branch.createdBy}
-                  size="sm"
-                  showName={false}
-                />
-              </div>
-            )}
-          </div>
-          <div className="ml-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal
-                  size={18}
-                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="mr-4">
-                <DropdownMenuItem>Context actions go here</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </ItemContent>
