@@ -49,10 +49,19 @@ interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
-/** A marker of a significant moment in the doc history */
-export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
+/** A marker of a moment in the doc history associated w/ some heads */
+export type HeadsMarker = {
+  id: string;
+  heads: Heads;
+  users: AutomergeUrl[];
+  hideHistoryBeforeThis?: boolean;
+} & (
   | { type: "tag"; tag: Tag }
-  | { type: "otherBranchMergedIntoThisDoc"; branch: Branch }
+  | {
+      type: "otherBranchMergedIntoThisDoc";
+      branch: Branch;
+      changeGroups: ChangeGroup[];
+    }
   | { type: "branchCreatedFromThisDoc"; branch: Branch }
   | {
       type: "originOfThisBranch";
@@ -61,6 +70,15 @@ export type HeadsMarker = { heads: Heads; hideHistoryBeforeThis?: boolean } & (
     }
   | { type: "discussionThread"; discussion: Discussion }
 );
+
+// All ChangelogItems have a unique id, a heads, and some users asociated.
+// Then, each type of item has its own unique data associated too.
+export type ChangelogItem = {
+  id: string;
+  heads: Heads;
+  users: AutomergeUrl[];
+  time: number;
+} & ({ type: "changeGroup"; changeGroup: ChangeGroup } | HeadsMarker);
 
 /** Change group attributes that could work for any document */
 export type GenericChangeGroup = {
@@ -183,18 +201,25 @@ export const getMarkersForDoc = <
   if (!doc) return [];
   /** Mark tags aka milestones */
   let markers: HeadsMarker[] = (doc.tags ?? []).map((tag: Tag) => ({
+    id: `tag-${tag.heads[0]}-${tag.name}`,
     heads: tag.heads,
     type: "tag" as const,
     tag,
+    users: tag.createdBy ? [tag.createdBy] : [],
   }));
 
   /** Mark discussion threads */
   markers = markers.concat(
     // default value is there for compat with old docs
     Object.values(doc.discussions ?? {}).map((discussion) => ({
+      id: `discussion-${discussion.id}`,
       heads: discussion.heads,
       type: "discussionThread",
+      users: discussion.comments
+        .map((comment) => comment.contactUrl)
+        .filter(Boolean),
       discussion,
+      time: discussion.comments[0].timestamp,
     }))
   );
 
@@ -203,9 +228,14 @@ export const getMarkersForDoc = <
     doc.branchMetadata.branches
       .filter((branch) => branch.mergeMetadata !== undefined)
       .map((branch) => ({
+        id: `branch-merge-${branch.mergeMetadata!.mergeHeads[0]}`,
         heads: branch.mergeMetadata!.mergeHeads,
         type: "otherBranchMergedIntoThisDoc",
+        users: branch.mergeMetadata!.mergedBy
+          ? [branch.mergeMetadata!.mergedBy]
+          : [],
         branch,
+        changeGroups: [],
       }))
   );
 
@@ -213,11 +243,15 @@ export const getMarkersForDoc = <
   if (doc.branchMetadata.source) {
     const branchMetadataAtSource = repo
       .find<Branchable>(doc.branchMetadata.source.url)
-      .docSync()
-      .branchMetadata.branches.find((b) => b.url === handle.url);
+      .docSync() // this may fail if we haven't loaded the main doc yet...
+      ?.branchMetadata?.branches.find((b) => b.url === handle.url);
     if (branchMetadataAtSource && doc.branchMetadata.source.branchHeads) {
       markers.push({
+        id: `origin-of-this-branch`,
         heads: doc.branchMetadata.source.branchHeads,
+        users: branchMetadataAtSource.createdBy
+          ? [branchMetadataAtSource.createdBy]
+          : [],
         type: "originOfThisBranch",
         source: doc.branchMetadata.source,
         branch: branchMetadataAtSource,
@@ -229,8 +263,14 @@ export const getMarkersForDoc = <
   /** Mark new branches off this one */
   markers = markers.concat(
     doc.branchMetadata.branches
-      .filter((branch) => branch.branchHeads !== undefined)
+      .filter(
+        (branch) =>
+          branch.branchHeads !== undefined &&
+          !isEqual(branch.branchHeads, doc.branchMetadata.source?.branchHeads)
+      )
       .map((branch) => ({
+        id: `branch-created-${branch.branchHeads[0]}`,
+        users: branch.createdBy ? [branch.createdBy] : [],
         heads: branch.branchHeads,
         type: "branchCreatedFromThisDoc",
         branch,
@@ -256,25 +296,82 @@ const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
   });
 };
 
-/* returns all the changes from this doc, grouped in a simple way for now. */
-export const getGroupedChanges = (
+type ChangeGroupingOptions = {
+  /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
+  algorithm: keyof typeof GROUPINGS;
+
+  /** A numeric parameter used by some grouping algorithms for things like batch size.
+   *  TODO: this should probably be more specifically named per grouping algo?
+   */
+  numericParameter: number;
+
+  /** Markers to display at certain heads in the history */
+  markers: HeadsMarker[];
+};
+
+/** Returns a flat list of changelog items for display in the UI,
+ *  based on a list of change groups.
+ */
+export const getChangelogItems = (
   doc: Doc<MarkdownDoc>,
-  {
+  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
+    algorithm: "ByActorAndNumChanges",
+    numericParameter: 100,
+    markers: [],
+  }
+) => {
+  const { changeGroups } = getGroupedChanges(doc, {
     algorithm,
     numericParameter,
     markers,
-  }: {
-    /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
-    algorithm: keyof typeof GROUPINGS;
+  });
 
-    /** A numeric parameter used by some grouping algorithms for things like batch size.
-     *  TODO: this should probably be more specifically named per grouping algo?
-     */
-    numericParameter: number;
+  const changelogItems: ChangelogItem[] = [];
+  for (const changeGroup of changeGroups) {
+    if (changeGroup.markers.find((m) => m.type === "originOfThisBranch")) {
+    }
+    // If this is a branch merge, we treat it in a special way --
+    // we don't directly put the change group in as an item;
+    // we nest it inside the merge marker.
+    const mergeMarker = changeGroup.markers.find(
+      (m) => m.type === "otherBranchMergedIntoThisDoc"
+    );
+    if (mergeMarker) {
+      const otherMarkersForThisGroup = changeGroup.markers.filter(
+        (m) => m !== mergeMarker
+      );
+      for (const marker of otherMarkersForThisGroup) {
+        changelogItems.push({ ...marker, time: changeGroup.time });
+      }
+      changelogItems.push({ ...mergeMarker, time: changeGroup.time });
+    } else {
+      // for normal change groups, push the group and then any markers
+      changelogItems.push({
+        id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
+        type: "changeGroup",
+        changeGroup,
+        users: changeGroup.authorUrls,
+        heads: [changeGroup.to],
+        time: changeGroup.time,
+      });
+      for (const marker of changeGroup.markers) {
+        changelogItems.push({ ...marker, time: changeGroup.time });
+      }
+    }
+  }
+  return changelogItems;
+};
 
-    /** Markers to display at certain heads in the history */
-    markers: HeadsMarker[];
-  } = {
+/** Returns a list of change groups using the specified algorithm.
+ *  Markers for specific moments in the history can be passed in;
+ *  these automatically split the groups at the marker.
+ *  The structure returned by this function is a list of change groups
+ *  with markers attached; if you want a flat list of changelog items
+ *  for display, use getChangelogItems.
+ */
+export const getGroupedChanges = (
+  doc: Doc<MarkdownDoc>,
+  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
     algorithm: "ByActorAndNumChanges",
     /** Some algorithms have a numeric parameter like batch size that the user can control */
     numericParameter: 100,
@@ -404,7 +501,11 @@ export const getGroupedChanges = (
               ) && marker.type === "otherBranchMergedIntoThisDoc"
           );
           if (mergeMarker) {
-            branchChangeGroup.changeGroup.markers.push(mergeMarker);
+            branchChangeGroup.changeGroup.markers.push({
+              ...mergeMarker,
+              // @ts-expect-error this is fine; we know we're adding to a merge marker
+              changeGroups: [branchChangeGroup.changeGroup],
+            });
           }
 
           // todo: what other finalizing do we need to do here..? any?

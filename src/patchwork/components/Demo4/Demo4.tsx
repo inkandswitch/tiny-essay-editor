@@ -56,7 +56,7 @@ import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../../utils";
-import { HistoryZoomLevel, ReviewSidebar } from "./ReviewSidebar";
+import { ReviewSidebar } from "./ReviewSidebar";
 import { Hash } from "../Hash";
 import {
   createBranch,
@@ -64,7 +64,6 @@ import {
   mergeBranch,
   suggestBranchName,
 } from "../../branches";
-import { Slider } from "@/components/ui/slider";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
@@ -300,7 +299,6 @@ export const Demo4: React.FC<{
   const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
-  const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
@@ -879,8 +877,8 @@ export const Demo4: React.FC<{
                   onValueChange={(value) => setReviewMode(value as ReviewMode)}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="comments">Comments</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="comments">Comments</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -893,7 +891,6 @@ export const Demo4: React.FC<{
                     docUrl={selectedBranchLink?.url ?? docUrl}
                     setDocHeads={setDocHeadsFromHistorySidebar}
                     setDiff={setDiffFromHistorySidebar}
-                    zoomLevel={historyZoomLevel}
                     textSelection={textSelection}
                     onClearTextSelection={() => {
                       setTextSelection({ from: 0, to: 0, yCoord: 0 });

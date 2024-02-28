@@ -162,22 +162,21 @@
   font-display: swap
 }
 
-
-.history {
+.timeline {
   @apply relative;
 }
 
-.history::before {
+.timeline::before {
   @apply bg-neutral-300;
   @apply absolute;
   border-radius: 3px;
-  bottom: 0;
-  content: '';
+  bottom: 15px;
+  content: "";
   left: 15px;
   top: 8px;
   width: 2px;
 }
 
-.history-item {
+.timeline-item {
   @apply relative;
 }

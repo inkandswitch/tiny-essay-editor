@@ -10,6 +10,7 @@ import {
   Discussable,
   Discussion,
   HasChangeGroupSummaries,
+  HasPatchworkMetadata,
 } from "@/patchwork/schema";
 
 export type Comment = {
@@ -145,10 +146,5 @@ type _MarkdownDoc = {
   users: User[];
 };
 
-export type MarkdownDoc = _MarkdownDoc &
-  Branchable &
-  Taggable &
-  Diffable &
-  SpatialBranchable &
-  Discussable &
-  HasChangeGroupSummaries;
+// Our final MarkdownDoc type has the Markdown stuff and the patchwork metadata
+export type MarkdownDoc = _MarkdownDoc & HasPatchworkMetadata;

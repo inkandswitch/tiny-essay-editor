@@ -1,63 +1,45 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import * as A from "@automerge/automerge/next";
 import CodeMirror from "@uiw/react-codemirror";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, useState, ReactNode } from "react";
+import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ChangeGroup,
-  getGroupedChanges,
+  ChangelogItem,
+  getChangelogItems,
   getMarkersForDoc,
 } from "../../groupChanges";
 
 import {
   MessageSquare,
   MilestoneIcon,
-  SendHorizontalIcon,
-  MergeIcon,
   GitBranchIcon,
   GitBranchPlusIcon,
+  MoreHorizontal,
+  CrownIcon,
+  ChevronLeftIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { DiffWithProvenance, DiscussionComment } from "../../schema";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { Button } from "@/components/ui/button";
-import { uuid } from "@automerge/automerge";
+import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { completions, slashCommands } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
-import { isEqual } from "lodash";
-
-export type HistoryZoomLevel = 1 | 2 | 3;
-
-type MilestoneSelection = {
-  type: "milestone";
-  heads: Heads;
-};
-
-// the data structure that represents the range of change groups we've selected for showing diffs.
-type ChangeGroupSelection = {
-  type: "changeGroups";
-  /** The older (causally) change group in the selection */
-  from: ChangeGroup["id"];
-
-  /** The newer (causally) change group in the selection */
-  to: ChangeGroup["id"];
-};
-
-type Selection = MilestoneSelection | ChangeGroupSelection;
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DiscussionInput } from "./DiscussionInput";
 
 const useScrollToBottom = () => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -69,783 +51,653 @@ const useScrollToBottom = () => {
   return scrollerRef;
 };
 
-type CommentBoxAction =
-  | { type: "comment"; value: string }
-  | { type: "branch"; name?: string }
-  | { type: "milestone"; name?: string };
+/** A position for one side of a changelog selection */
+type ChangelogSelectionAnchor = {
+  /* The itemId of the anchor */
+  itemId: string;
 
-const parseCommentBoxContent = (content: string): CommentBoxAction => {
-  if (content.startsWith("/branch")) {
-    const name = content.replace("/branch", "").trim();
-    return { type: "branch", name: name || undefined };
-  } else if (content.startsWith("/milestone")) {
-    const name = content.replace("/milestone", "").trim();
-    return { type: "milestone", name: name || undefined };
-  } else {
-    return { type: "comment", value: content };
-  }
+  /* The index of the anchor */
+  index: number;
+
+  /* The pixel position of the anchor */
+  yPos: number;
 };
+export type ChangelogSelection =
+  | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
+  | undefined;
 
 export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
-  setDocHeads: (heads: Heads) => void;
-  setDiff: (diff: DiffWithProvenance) => void;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-  zoomLevel: HistoryZoomLevel;
+  setDocHeads: (heads: Heads) => void;
+  setDiff: (diff: DiffWithProvenance) => void;
   textSelection: TextSelection;
   onClearTextSelection: () => void;
 }> = ({
   docUrl,
-  setDocHeads,
-  setDiff,
   selectedBranch,
   setSelectedBranch,
-  zoomLevel,
+  setDocHeads,
+  setDiff,
   textSelection,
   onClearTextSelection,
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata.source.url);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
-  const account = useCurrentAccount();
   const scrollerRef = useScrollToBottom();
-
-  const [commentBoxContent, setCommentBoxContent] = useState("");
-
-  const parsedCommentBoxContent: CommentBoxAction =
-    parseCommentBoxContent(commentBoxContent);
+  const [showHiddenItems, setShowHiddenItems] = useState(false);
 
   // TODO: technically this should also update when the "source doc" for this branch updates
   const markers = useMemo(
     () => getMarkersForDoc(handle, repo),
     // Important to have doc as a dependency here even though the linter says not needed
-    [doc, handle, repo]
+    [doc, handle, repo, mainDoc]
   );
 
   // The grouping function returns change groups starting from the latest change.
-  const { groupedChanges } = useMemo(() => {
-    if (!doc) return { groupedChanges: [], changeCount: 0 };
+  const changelogItems = useMemo(() => {
+    if (!doc) return [];
 
-    let algorithm = "ByAuthor";
-    let numericParameter = 100;
-
-    switch (zoomLevel) {
-      case 1:
-        algorithm = "ByEditTime";
-        numericParameter = 180;
-        break;
-      case 2:
-        algorithm = "ByAuthorOrTime";
-        numericParameter = 60;
-        break;
-      case 3:
-        algorithm = "ByAuthorOrTime";
-        numericParameter = 1;
-        break;
-      default:
-        break;
-    }
-
-    const { changeCount, changeGroups } = getGroupedChanges(doc, {
-      algorithm,
-      numericParameter,
+    return getChangelogItems(doc, {
+      algorithm: "ByAuthorOrTime",
+      numericParameter: 60,
       markers,
     });
+  }, [doc, markers]);
 
-    return {
-      changeCount,
-      groupedChanges: changeGroups,
-    };
-  }, [doc, markers, zoomLevel]);
+  const hiddenItemBoundary = changelogItems.findIndex(
+    (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
+  );
 
-  /** If there's a marker that specifies "hide history before this", we
-   *  collapse change groups before that point by default.
-   */
-  const lastHiddenChangeGroupIndex = markers.some(
-    (m) => m.hideHistoryBeforeThis
-  )
-    ? /** TODO: in the case of multiple markers with the flag set;
-       *  this logic will only hide before the first such marker;
-       *  unclear if this is what we want? See how it works in real cases;
-       *  we don't actually have a use case where it matters yet.
-       */
-      groupedChanges.findIndex((g) =>
-        g.markers.some((m) => m.hideHistoryBeforeThis)
-      )
-    : -1;
+  const visibleItems =
+    hiddenItemBoundary > 0 && !showHiddenItems
+      ? changelogItems.slice(hiddenItemBoundary)
+      : changelogItems;
 
-  const [showHiddenChangeGroups, setShowHiddenChangeGroups] = useState(false);
+  const { selection, handleClick, clearSelection, itemsContainerRef } =
+    useChangelogSelection({
+      items: changelogItems ?? [],
+      setDiff,
+      setDocHeads,
+    });
 
-  const [selection, setSelection] = useState<Selection | null>();
+  if (!doc) return null;
 
-  const selectedChangeGroups: ChangeGroup[] = useMemo(() => {
-    if (selection && selection.type === "changeGroups") {
-      const fromIndex = groupedChanges.findIndex(
-        (changeGroup) => changeGroup.id === selection.from
-      );
-      const toIndex = groupedChanges.findIndex(
-        (changeGroup) => changeGroup.id === selection.to
-      );
-      return groupedChanges.slice(fromIndex, toIndex + 1);
-    } else {
-      return [];
-    }
-  }, [selection, groupedChanges]);
+  const selectedBranchLink =
+    selectedBranch.type === "branch"
+      ? mainDoc?.branchMetadata.branches.find(
+          (b) => b.url === selectedBranch.url
+        )
+      : undefined;
 
-  // TODO: is the heads for a group always the id of the group?
-  // for now it works because the id of the group is the last change in the group...
-  const docHeads = useMemo(() => {
-    if (!selection) return [];
-    switch (selection.type) {
-      case "milestone":
-        return selection.heads;
-      case "changeGroups": {
-        const group = groupedChanges.find((g) => g.id === selection.to);
-        return [group.to];
-      }
-    }
-  }, [selection, groupedChanges]);
+  return (
+    <div className="h-full w-full flex flex-col text-xs text-gray-600">
+      {/* Show which branch we're on  */}
+      <div className="bg-gray-50 border-gray-200 border-b">
+        <div className="flex items-center">
+          <div
+            className="cursor-pointer text-gray-500 font-semibold underline w-12 flex-shrink-0"
+            onClick={() => setSelectedBranch({ type: "main" })}
+          >
+            {selectedBranch.type === "branch" && (
+              <>
+                <ChevronLeftIcon size={12} className="inline" />
+                Main
+              </>
+            )}
+          </div>
+          <div className="flex-grow flex justify-center items-center px-2 py-1">
+            <div className="font-bold">
+              {selectedBranch.type === "main" && (
+                <div className="flex items-center gap-2">
+                  <CrownIcon className="inline" size={12} />
+                  Main
+                </div>
+              )}
+              {selectedBranch.type === "branch" && (
+                <div className="flex items-center gap-2">
+                  <GitBranchIcon className="inline" size={12} />
+                  {selectedBranchLink?.name}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="w-12 flex-shrink-0"></div>
+        </div>
+
+        {selection && (
+          <div className="flex gap-2 px-2 pb-1">
+            <div className="text-blue-600 font-medium">
+              Showing {selection.to.index - selection.from.index + 1} change
+              {selection.to.index === selection.from.index ? "" : "s"}
+            </div>
+            <div
+              className="cursor-pointer text-gray-500 font-semibold underline"
+              onClick={clearSelection}
+            >
+              Reset to now
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* The timeline */}
+      <div
+        className="timeline overflow-y-auto flex-1 flex flex-col"
+        ref={scrollerRef}
+      >
+        {/* Show a toggle for hidden items */}
+
+        <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
+          <div className="pl-6 text-xs  text-gray-500">
+            {!showHiddenItems && hiddenItemBoundary > 0 && (
+              <div className="flex gap-2">
+                <div>{hiddenItemBoundary + 1} items before branch creation</div>
+                <div
+                  className="font-semibold cursor-pointer underline"
+                  onClick={() => setShowHiddenItems(true)}
+                >
+                  show
+                </div>
+              </div>
+            )}
+          </div>
+
+          {visibleItems.map((item, index) => {
+            const selected =
+              selection &&
+              index >= selection.from.index &&
+              index <= selection.to.index;
+
+            const dateChangedFromPrevItem =
+              new Date(changelogItems[index - 1]?.time).toDateString() !==
+              new Date(item.time).toDateString();
+
+            return (
+              <>
+                {dateChangedFromPrevItem && (
+                  <div className="text-xs text-gray-400">
+                    <DateHeader date={new Date(item.time)} />
+                  </div>
+                )}
+                <div
+                  key={item.id}
+                  data-item-id={item.id}
+                  className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
+                    selected ? "bg-blue-100 bg-opacity-20" : ""
+                  }`}
+                  onClick={(e) =>
+                    handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
+                  }
+                >
+                  {(() => {
+                    switch (item.type) {
+                      case "changeGroup":
+                        return (
+                          <ChangeGroupItem
+                            group={item.changeGroup}
+                            doc={doc}
+                            selected={selected}
+                          />
+                        );
+                      case "tag":
+                        return (
+                          <MilestoneItem
+                            milestone={item.tag}
+                            selected={selected}
+                          />
+                        );
+                      case "branchCreatedFromThisDoc":
+                        return (
+                          <BranchCreatedItem
+                            selectedBranch={selectedBranch}
+                            setSelectedBranch={setSelectedBranch}
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "discussionThread":
+                        return (
+                          <DiscussionThreadItem
+                            discussion={item.discussion}
+                            selected={selected}
+                          />
+                        );
+                      case "originOfThisBranch":
+                        return (
+                          <BranchOriginItem
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "otherBranchMergedIntoThisDoc":
+                        return (
+                          <BranchMergedItem
+                            branch={item.branch}
+                            selected={selected}
+                            changeGroups={item.changeGroups}
+                            doc={doc}
+                          />
+                        );
+                      default: {
+                        // Ensure we've handled all types
+                        const exhaustiveCheck: never = item;
+                        return exhaustiveCheck;
+                      }
+                    }
+                  })()}
+
+                  {/* User avatars associated with this item */}
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                    <div className="flex items-center space-x-[-4px]">
+                      {item.users.map((contactUrl) => (
+                        <div className="rounded-full">
+                          <InlineContactAvatar
+                            key={contactUrl}
+                            url={contactUrl}
+                            size="sm"
+                            showName={false}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Context menu for the item (TODO: how to populate actions for this?) */}
+                    <div className="">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <MoreHorizontal
+                            size={18}
+                            className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
+                          />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="mr-4">
+                          <DropdownMenuItem>
+                            Context actions go here
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })}
+
+          {/* Blue selection box overlay */}
+          {selection && (
+            <div
+              className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
+              style={{
+                top: selection.from.yPos,
+                height: selection.to.yPos - selection.from.yPos,
+              }}
+            ></div>
+          )}
+        </div>
+      </div>
+      <div className="bg-gray-50 z-10">
+        <DiscussionInput
+          doc={doc}
+          changeDoc={changeDoc}
+          changelogItems={changelogItems}
+          changelogSelection={selection}
+          handle={handle}
+          selectedBranch={selectedBranch}
+          setSelectedBranch={setSelectedBranch}
+          textSelection={textSelection}
+          onClearTextSelection={onClearTextSelection}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Manage the selection state for changelog items.
+// Supports multi-select interaction.
+// Returns pixel coordinates for the selection to help w/ drawing a selection box.
+const useChangelogSelection = ({
+  items,
+  setDiff,
+  setDocHeads,
+}: {
+  items: ChangelogItem[];
+  setDiff: (diff: DiffWithProvenance) => void;
+  setDocHeads: (heads: Heads) => void;
+}): {
+  // The current selection
+  selection: ChangelogSelection;
+  // Click handler for the items
+  handleClick: ({ itemId, shiftPressed }) => void;
+  // Ref for the container of the items
+  itemsContainerRef: React.RefObject<HTMLDivElement>;
+  // Callback to clear the selection
+  clearSelection: () => void;
+} => {
+  // Internally we track selection using item IDs.
+  // Once we return it out of the hook, we'll also tack on numbers, to help out in the view.
+  const [selection, setSelection] = useState<{ from: string; to: string }>(
+    undefined
+  );
 
   // sync the diff and docHeads up to the parent component when the selection changes
   useEffect(() => {
-    if (selection?.type === "changeGroups") {
-      const diff = {
-        fromHeads: selectedChangeGroups[0]?.diff.fromHeads,
-        toHeads:
-          selectedChangeGroups[selectedChangeGroups.length - 1]?.diff.toHeads,
-        patches: selectedChangeGroups.flatMap((cg) => cg.diff.patches),
-      };
-      setDiff(diff);
-      setDocHeads(docHeads);
-    } else if (selection?.type === "milestone") {
-      setDocHeads(selection.heads);
-      setDiff({
-        patches: [],
-        fromHeads: selection.heads,
-        toHeads: selection.heads,
-      });
-    } else {
-      setDocHeads(undefined);
+    if (!selection) {
       setDiff(undefined);
+      setDocHeads(undefined);
     }
-  }, [selectedChangeGroups, setDiff, setDocHeads, docHeads]);
 
-  const handleClickOnChangeGroup = (
-    e: React.MouseEvent,
-    changeGroup: ChangeGroup
-  ) => {
-    // For normal clicks without the shift key, we just select one change.
-    if (!e.shiftKey) {
-      setSelection({
-        type: "changeGroups",
-        from: changeGroup.id,
-        to: changeGroup.id,
-      });
+    const fromItem = items.find((item) => item.id === selection?.from);
+    const toItem = items.find((item) => item.id === selection?.to);
+    const fromIndex = items.findIndex((item) => item.id === selection?.from);
+    const toIndex = items.findIndex((item) => item.id === selection?.to);
+
+    if (!fromItem || !toItem) {
+      return;
+    }
+
+    setDocHeads(toItem.heads);
+
+    // The diff consists of diffs from any change groups in the selected items.
+    const selectedItems = items.slice(fromIndex, toIndex + 1);
+    const patches = selectedItems
+      .flatMap((item) => {
+        if (item.type === "changeGroup") {
+          return item.changeGroup.diff.patches;
+        } else if (item.type === "otherBranchMergedIntoThisDoc") {
+          return item.changeGroups.flatMap((group) => group.diff.patches);
+        }
+      })
+      .filter((patch) => patch !== undefined);
+    setDiff({ patches, fromHeads: fromItem.heads, toHeads: toItem.heads });
+  }, [selection, setDiff, setDocHeads, items]);
+
+  const itemsContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = ({ itemId, shiftPressed }) => {
+    if (!shiftPressed) {
+      setSelection({ from: itemId, to: itemId });
       return;
     }
 
     // If the shift key is pressed, we create a multi-change selection.
     // If there's no existing change group selected, just use the latest as the starting point for the selection.
-    if (!selection || selection.type === "milestone") {
-      setSelection({
-        type: "changeGroups",
-        from: changeGroup.id,
-        to: groupedChanges[groupedChanges.length - 1].id,
-      });
-      return;
-    }
-
-    // Extend the existing range selection appropriately
-
-    const indexOfSelectionFrom =
-      selection.type === "changeGroups"
-        ? groupedChanges.findIndex((c) => c.id === selection.from)
-        : -1;
-
-    const indexOfSelectionTo =
-      selection.type === "changeGroups"
-        ? groupedChanges.findIndex((c) => c.id === selection.to)
-        : -1;
-
-    const indexOfClickedChangeGroup = groupedChanges.findIndex(
-      (c) => c.id === changeGroup.id
-    );
-
-    if (indexOfClickedChangeGroup < indexOfSelectionFrom) {
-      setSelection({
-        type: "changeGroups",
-        from: changeGroup.id,
-        to: selection.to,
-      });
-      return;
-    }
-
-    if (indexOfClickedChangeGroup > indexOfSelectionTo) {
-      setSelection({
-        type: "changeGroups",
-        from: selection.from,
-        to: changeGroup.id,
-      });
-      return;
-    }
-
-    setSelection({
-      type: "changeGroups",
-      from: selection.from,
-      to: changeGroup.id,
-    });
-  };
-
-  // When the user selects a heads in the history,
-  // some change groups get "hiddden", meaning the contents of the group
-  // aren't visible in the displayed doc.
-  const headIsVisible = (head: string) => {
-    if (!selection) return true;
-    const lastVisibleChangeGroupId =
-      selection.type === "changeGroups"
-        ? selection.to
-        : groupedChanges.find((cg) => cg.to === selection.heads[0]).id;
-    return (
-      groupedChanges.map((c) => c.id).indexOf(lastVisibleChangeGroupId) >=
-      groupedChanges.map((c) => c.to).indexOf(head)
-    );
-  };
-
-  // There are 3 cases
-  // - a milestone is selected -> use the heads of the milestone
-  // - a change group (range) is selected -> use the heads of the changegroup
-  // - nothing is selected -> use the heads of the latest changegroup
-  //
-  // we use the current active heads to assign comments
-  const currentlyActiveHeads = useMemo<A.Heads>(() => {
     if (!selection) {
-      if (groupedChanges.length === 0) {
-        return null;
-      }
-
-      const latestChangeGroup = groupedChanges[groupedChanges.length - 1];
-      return A.getHeads(latestChangeGroup.docAtEndOfChangeGroup);
-    }
-
-    if (selection.type === "milestone") {
-      return selection.heads;
-    }
-
-    if (selection.type === "changeGroups") {
-      const selectedChangeGroup = groupedChanges.find(
-        (group) => group.id === selection.to
-      );
-      return A.getHeads(selectedChangeGroup.docAtEndOfChangeGroup);
-    }
-  }, [groupedChanges, selection]);
-
-  const createDiscussion = () => {
-    if (commentBoxContent === "") {
+      const to = items[items.length - 1].id;
+      setSelection({ from: itemId, to });
       return;
     }
 
-    /** migration for legacy docs */
+    // If there was already a selection, extend it.
+    const fromIndex = items.findIndex((item) => item.id === selection.from);
+    const clickedIndex = items.findIndex((item) => item.id === itemId);
 
-    const comment: DiscussionComment = {
-      id: uuid(),
-      content: commentBoxContent,
-      timestamp: Date.now(),
-      contactUrl: account?.contactHandle?.url,
+    if (clickedIndex < fromIndex) {
+      setSelection({ from: itemId, to: selection.to });
+      return;
+    } else {
+      setSelection({ from: selection.from, to: itemId });
+      return;
+    }
+  };
+
+  if (!selection || !itemsContainerRef.current) {
+    return {
+      selection: undefined,
+      handleClick,
+      itemsContainerRef,
+      clearSelection: () => setSelection(undefined),
     };
-    const discussionId = uuid();
+  }
 
-    changeDoc((doc) => {
-      if (!doc.discussions) {
-        doc.discussions = {};
-      }
+  const fromIndex = items.findIndex((item) => item.id === selection?.from);
+  const toIndex = items.findIndex((item) => item.id === selection?.to);
 
-      doc.discussions[discussionId] = {
-        id: discussionId,
-        heads: currentlyActiveHeads,
-        resolved: false,
-        comments: [comment],
-      };
-    });
+  const containerTop = itemsContainerRef.current.getBoundingClientRect().top;
+  const fromPos =
+    [...itemsContainerRef.current.children]
+      .find((div) => div.attributes["data-item-id"]?.value === selection.from)
+      ?.getBoundingClientRect().top - containerTop;
 
-    onClearTextSelection();
-    setCommentBoxContent("");
+  const toPos =
+    [...(itemsContainerRef.current?.children ?? [])]
+      .find((div) => div.attributes["data-item-id"]?.value === selection.to)
+      ?.getBoundingClientRect().bottom - containerTop;
+
+  return {
+    selection: {
+      from: {
+        itemId: selection.from,
+        index: fromIndex,
+        yPos: fromPos,
+      },
+      to: {
+        itemId: selection.to,
+        index: toIndex,
+        yPos: toPos,
+      },
+    },
+    handleClick,
+    itemsContainerRef,
+    clearSelection: () => setSelection(undefined),
   };
+};
 
-  const createMilestone = ({
-    name,
-    heads,
-  }: {
-    name: string;
-    heads: A.Heads;
-  }) => {
-    changeDoc((doc) => {
-      if (!doc.tags) {
-        doc.tags = [];
-      }
-      doc.tags.push({
-        name,
-        heads,
-        createdAt: Date.now(),
-        createdBy: account?.contactHandle?.url,
-      });
-    });
-  };
-
-  const onSubmit = () => {
-    if (parsedCommentBoxContent.type === "comment") {
-      createDiscussion();
-    }
-    if (parsedCommentBoxContent.type === "branch") {
-      const newBranch = createBranch({
-        repo,
-        handle,
-        name: parsedCommentBoxContent.name,
-        heads: currentlyActiveHeads,
-        createdBy: account?.contactHandle?.url,
-      });
-      setSelectedBranch({ type: "branch", url: newBranch.url });
-      setCommentBoxContent("");
-    }
-    if (parsedCommentBoxContent.type === "milestone") {
-      createMilestone({
-        name: parsedCommentBoxContent.name || new Date().toLocaleDateString(),
-        heads: currentlyActiveHeads,
-      });
-      setCommentBoxContent("");
-    }
-  };
-
-  // @ts-expect-error temporary thing to populate change summaries
-  window.populateChangeSummaries = () =>
-    populateChangeGroupSummaries({
-      groups: groupedChanges,
-      handle,
-    });
-
+const ChangeGroupItem: React.FC<{
+  group: ChangeGroup;
+  doc: MarkdownDoc;
+  selected: boolean;
+}> = ({ group, doc }) => {
   return (
-    <div className="history h-full w-full flex flex-col text-xs text-gray-600">
-      <div className="overflow-y-scroll flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="mt-auto">
-          {lastHiddenChangeGroupIndex >= 0 && !showHiddenChangeGroups && (
-            <div className="text-xs text-gray-500 pl-2 mb-2">
-              {lastHiddenChangeGroupIndex + 1} changes hidden
-              <span
-                className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
-                onClick={() => setShowHiddenChangeGroups(true)}
-              >
-                Show
-              </span>
-            </div>
-          )}
-          {groupedChanges.map((changeGroup, index) => {
-            // GL note 2/13
-            // The logic here is a bit weird because of how we associate markers and change groups.
-            // Mostly, hiding groups is straightforward. We just don't show groups before the hidden index.
-            // But at the boundary things get odd.
-            // A marker is associated with the change group before it.
-            // When we hide changes, we want to show the marker after the last hidden group, but we don't want to show the last hidden group.
-            // This means that for the last hidden group, we hide the contents but show the marker.
-            // It's possible that markers should live more on their own in the grouping list, or maybe even be associated with the group after them..?
-            // But neither of those are obviously better than associating a marker with a group before, so we're sticking with this for now.
+    <div className="pl-[7px] pr-1 flex w-full">
+      <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
+      <ChangeGroupDescription changeGroup={group} doc={doc} />
+    </div>
+  );
+};
 
-            const hideGroupEntirely =
-              index < lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
-
-            const hideGroupButShowMarkers =
-              index === lastHiddenChangeGroupIndex && !showHiddenChangeGroups;
-
-            if (hideGroupEntirely) {
-              return null;
-            }
-
-            const isABranchMergeGroup = changeGroup.markers.some(
-              (m) => m.type === "otherBranchMergedIntoThisDoc"
-            );
-
-            const selected = selectedChangeGroups.includes(changeGroup);
-
-            return (
-              <div key={changeGroup.id}>
-                <div className="relative">
-                  {new Date(changeGroup.time).toDateString() !==
-                    new Date(
-                      groupedChanges[index - 1]?.time
-                    ).toDateString() && (
-                    <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
-                      <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
-                      <div>
-                        {changeGroup.time &&
-                          new Date(changeGroup.time).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            weekday: "short",
-                          })}
-                        {!changeGroup.time && "Unknown time"}
-                      </div>
-                    </div>
-                  )}
-                  {lastHiddenChangeGroupIndex === index &&
-                    showHiddenChangeGroups && (
-                      <div className="text-xs text-gray-500 pl-2 my-2">
-                        <span
-                          className="text-gray-500 hover:text-gray-700 underline cursor-pointer ml-2"
-                          onClick={() => setShowHiddenChangeGroups(false)}
-                        >
-                          Hide changes before this
-                        </span>
-                      </div>
-                    )}
-                  {!hideGroupButShowMarkers && !isABranchMergeGroup && (
-                    <div
-                      className={`relative group px-1 pt-3 w-full overflow-y-hidden cursor-default border-l-4 border-l-transparent select-none `}
-                      data-id={changeGroup.id}
-                      key={changeGroup.id}
-                      onClick={(e) => {
-                        handleClickOnChangeGroup(e, changeGroup);
-                      }}
-                    >
-                      {selection?.type === "changeGroups" &&
-                        selection.to === changeGroup.id &&
-                        changeGroup.markers.filter((m) => m.type === "tag")
-                          .length === 0 &&
-                        index !== 0 && (
-                          <div
-                            className="absolute top-0 right-2 bg-white border border-gray-300 px-1 cursor-pointer hover:bg-gray-50 text-xs"
-                            onClick={() => {
-                              createMilestone({
-                                name: window.prompt("Tag name:"),
-                                heads: [changeGroup.to],
-                              });
-                            }}
-                          >
-                            <MilestoneIcon
-                              size={12}
-                              className="inline-block mr-1"
-                            />
-                            Save milestone
-                          </div>
-                        )}
-
-                      <div className="flex ml-[7px]">
-                        <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-                        <div className="flex-grow">
-                          <EditSummary
-                            changeGroup={changeGroup}
-                            selected={selected}
-                            summary={
-                              doc.changeGroupSummaries
-                                ? doc.changeGroupSummaries[changeGroup.id]
-                                    ?.title
-                                : `${changeGroup.diff.patches.length} edits`
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {changeGroup.markers.map((marker) => (
-                    <div
-                      key={marker.heads[0]}
-                      className={`text-xs text-gray-500 p-2  select-none  ${
-                        headIsVisible(marker.heads[0]) ? "" : "opacity-50"
-                      }`}
-                      // todo: we should generalize selection to any kind of marker
-                      onClick={() => {
-                        setSelection({
-                          type: "milestone",
-                          heads: marker.heads,
-                        });
-                      }}
-                    >
-                      {marker.type === "discussionThread" &&
-                        /* todo: support multiple comments */
-                        marker.discussion.comments.map((comment) => {
-                          return (
-                            <ItemView selected={selected} key={comment.id}>
-                              <ItemIcon>
-                                <MessageSquare
-                                  className="h-[10px] w-[10px] text-white"
-                                  strokeWidth={2}
-                                />
-                              </ItemIcon>
-                              <ItemContent>
-                                <div className="text-sm">
-                                  <div className=" text-gray-600 inline">
-                                    <InlineContactAvatar
-                                      url={comment.contactUrl}
-                                      size="sm"
-                                    />
-                                  </div>
-                                  {marker.discussion.target &&
-                                    marker.discussion.target.type ===
-                                      "editRange" && (
-                                      <HighlightSnippetView
-                                        text={
-                                          changeGroup.docAtEndOfChangeGroup
-                                            .content
-                                        }
-                                        from={A.getCursorPosition(
-                                          changeGroup.docAtEndOfChangeGroup,
-                                          ["content"],
-                                          marker.discussion.target.value
-                                            .fromCursor
-                                        )}
-                                        to={A.getCursorPosition(
-                                          changeGroup.docAtEndOfChangeGroup,
-                                          ["content"],
-                                          marker.discussion.target.value
-                                            .toCursor
-                                        )}
-                                      />
-                                    )}
-
-                                  <div className="font-normal pl-3 text-gray-800">
-                                    {/* We use a readonly Codemirror to show markdown preview for comments
-                                        using the same style that was used for entering the comment */}
-                                    <CodeMirror
-                                      value={comment.content.trim()}
-                                      readOnly
-                                      editable={false}
-                                      basicSetup={{
-                                        foldGutter: false,
-                                        highlightActiveLine: false,
-                                        lineNumbers: false,
-                                      }}
-                                      extensions={[
-                                        markdown({
-                                          base: markdownLanguage,
-                                          codeLanguages: languages,
-                                        }),
-                                        EditorView.lineWrapping,
-                                      ]}
-                                      theme={EditorView.theme({
-                                        "&.cm-editor": {
-                                          height: "100%",
-                                        },
-                                        "&.cm-focused": {
-                                          outline: "none",
-                                        },
-                                        ".cm-scroller": {
-                                          height: "100%",
-                                        },
-                                        ".cm-content": {
-                                          height: "100%",
-                                          fontSize: "14px",
-                                          fontFamily:
-                                            "ui-sans-serif, system-ui, sans-serif",
-                                          fontWeight: "normal",
-                                        },
-                                      })}
-                                    />
-                                  </div>
-                                </div>
-                              </ItemContent>
-                            </ItemView>
-                          );
-                        })}
-
-                      {marker.type === "tag" && (
-                        <div
-                          className={`history-item outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
-                            selection?.type === "milestone" &&
-                            selection?.heads === marker.heads
-                              ? "bg-gray-200"
-                              : "bg-gray-100"
-                          }`}
-                        >
-                          <div className="flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
-                            <MilestoneIcon className="h-[12px] w-[12px] text-white" />
-                          </div>
-
-                          <div className="flex-1 p-1 text-sm flex">
-                            <div className="font-semibold">
-                              {marker.tag.name}
-                            </div>
-                            {marker.tag.createdBy && (
-                              <div className=" text-gray-600 ml-auto">
-                                <InlineContactAvatar
-                                  key={marker.tag.createdBy}
-                                  url={marker.tag.createdBy}
-                                  size="sm"
-                                  showName={false}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {marker.type === "originOfThisBranch" && (
-                        <ItemView selected={selected}>
-                          <ItemIcon>
-                            <GitBranchPlusIcon
-                              className="h-[10px] w-[10px] text-white"
-                              strokeWidth={2}
-                            />
-                          </ItemIcon>
-
-                          <ItemContent>
-                            <div className="text-sm flex select-none">
-                              <div>
-                                <div className="inline font-normal">
-                                  This branch created:
-                                </div>{" "}
-                                <div className="inline font-semibold">
-                                  {marker.branch.name}
-                                </div>{" "}
-                              </div>
-                              <div className="ml-auto">
-                                {marker.branch.createdBy && (
-                                  <div className=" text-gray-600 inline">
-                                    <InlineContactAvatar
-                                      key={marker.branch.createdBy}
-                                      url={marker.branch.createdBy}
-                                      size="sm"
-                                      showName={false}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </ItemContent>
-                        </ItemView>
-
-                        // <div>
-                        //   <div className="text-sm">
-                        //     {marker.branch.createdBy && (
-                        //       <div className=" text-gray-600 inline">
-                        //         <InlineContactAvatar
-                        //           key={marker.branch.createdBy}
-                        //           url={marker.branch.createdBy}
-                        //           size="sm"
-                        //         />
-                        //       </div>
-                        //     )}{" "}
-                        //     <div className="inline font-normal">
-                        //       started this branch:
-                        //     </div>{" "}
-                        //     <div className="inline font-semibold">
-                        //       {marker.branch.name}
-                        //     </div>
-                        //   </div>
-                        // </div>
-                      )}
-                      {/* we only show new branches off of main for now;
-                          because we're optimizing for branching off main, not branches-off-branches */}
-                      {selectedBranch.type === "main" &&
-                        marker.type === "branchCreatedFromThisDoc" && (
-                          <ItemView selected={selected}>
-                            <ItemIcon>
-                              <GitBranchPlusIcon
-                                className="h-[10px] w-[10px] text-white"
-                                strokeWidth={2}
-                              />
-                            </ItemIcon>
-
-                            <ItemContent>
-                              <div className="text-sm flex select-none">
-                                <div>
-                                  <div className="inline font-normal">
-                                    New branch:
-                                  </div>{" "}
-                                  <div className="inline font-semibold">
-                                    {marker.branch.name}
-                                  </div>{" "}
-                                </div>
-                                <div className="ml-auto">
-                                  {marker.branch.createdBy && (
-                                    <div className=" text-gray-600 inline">
-                                      <InlineContactAvatar
-                                        key={marker.branch.createdBy}
-                                        url={marker.branch.createdBy}
-                                        size="sm"
-                                        showName={false}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              {!isEqual(selectedBranch, {
-                                type: "branch",
-                                url: marker.branch.url,
-                              }) && (
-                                <div
-                                  className="underline"
-                                  onClick={() =>
-                                    setSelectedBranch({
-                                      type: "branch",
-                                      url: marker.branch.url,
-                                    })
-                                  }
-                                >
-                                  View Branch
-                                </div>
-                              )}
-                            </ItemContent>
-                          </ItemView>
-                        )}
-                    </div>
-                  ))}
-                  {isABranchMergeGroup && (
-                    <MergedBranchView
-                      changeGroup={changeGroup}
-                      summary={
-                        doc.changeGroupSummaries
-                          ? doc.changeGroupSummaries[changeGroup.id]?.title
-                          : `${changeGroup.diff.patches.length} edits`
-                      }
-                      selected={selected}
-                      setSelection={setSelection}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div
-          className={`history-item flex cursor-pointer items-center text-gray-400 font-semibold mt-1.5  ${
-            docHeads.length > 0 ? "opacity-50" : ""
-          }`}
-          onClick={() => setSelection(null)}
-        >
-          <div className="ml-[8px] bg-gray-300 outline outline-2 outline-gray-50 rounded-full h-[16px] w-[16px]"></div>
-          <div className="ml-2">Now</div>
-        </div>
+const DateHeader: React.FC<{ date: Date }> = ({ date }) => {
+  return (
+    <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
+      <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
+      <div>
+        {date.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          weekday: "short",
+        })}
       </div>
+    </div>
+  );
+};
 
-      <div className="pt-2 px-2 bg-gray-50 z-10">
-        {textSelection && textSelection.from !== textSelection.to && doc && (
-          <HighlightSnippetView
-            from={textSelection.from}
-            to={textSelection.to}
-            text={doc.content}
+// Summary of a change group: textual + avatars
+const ChangeGroupDescription = ({
+  changeGroup,
+  doc,
+}: {
+  changeGroup: ChangeGroup;
+  doc: MarkdownDoc;
+}) => {
+  let summary;
+  if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
+    // TODO: filter these patches to only include the ones that are relevant to the markdown doc
+    summary = `${changeGroup.diff.patches.length} edits`;
+  } else {
+    summary = doc.changeGroupSummaries[changeGroup.id].title;
+  }
+  return (
+    <div className={`group  p-1 rounded-full font-medium text-xs flex`}>
+      <div className="mr-2 text-gray-500">{summary}</div>
+    </div>
+  );
+};
+
+const BranchMergedItem: React.FC<{
+  branch: Branch;
+  changeGroups: ChangeGroup[];
+  selected: boolean;
+  doc: MarkdownDoc;
+}> = ({ branch, changeGroups, selected, doc }) => {
+  return (
+    <div>
+      <ItemView selected={selected} color="purple">
+        <ItemIcon>
+          <GitBranchPlusIcon
+            className="h-[10px] w-[10px] text-white"
+            strokeWidth={2}
           />
-        )}
+        </ItemIcon>
 
+        <ItemContent>
+          <div className="text-sm flex select-none">
+            <div>
+              <div className="inline font-normal">Branch merged:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
+          </div>
+        </ItemContent>
+      </ItemView>
+      {changeGroups.map((group) => (
+        <div className="pl-6 flex">
+          <ChangeGroupItem group={group} selected={selected} doc={doc} />
+          <div className="flex items-center space-x-[-4px]">
+            {group.authorUrls.map((contactUrl) => (
+              <div className="rounded-full">
+                <InlineContactAvatar
+                  key={contactUrl}
+                  url={contactUrl}
+                  size="sm"
+                  showName={false}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const MilestoneItem = ({
+  milestone,
+  selected,
+}: {
+  milestone: Tag;
+  selected: boolean;
+}) => {
+  return (
+    <ItemView selected={selected} color="green">
+      <ItemIcon>
+        <MilestoneIcon className="h-[10px] w-[10px] text-white" />
+      </ItemIcon>
+      <ItemContent>
+        <div className="text-sm flex select-none">
+          <div>
+            <div className="inline font-normal">Milestone:</div>{" "}
+            <div className="inline font-semibold">{milestone.name}</div>{" "}
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+const BranchCreatedItem = ({
+  branch,
+  selected,
+}: {
+  branch: Branch;
+  selected: boolean;
+  selectedBranch: SelectedBranch;
+  setSelectedBranch: (branch: SelectedBranch) => void;
+}) => {
+  return (
+    <ItemView selected={selected} color="neutral">
+      <ItemIcon>
+        <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
+      </ItemIcon>
+      <ItemContent>
         <div>
-          <div className="rounded bg-white shadow">
+          <div className="text-sm flex select-none items-center">
+            <div className="mb-1">
+              <div className="inline font-normal">Branch created:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+const BranchOriginItem = ({
+  branch,
+  selected,
+}: {
+  branch: Branch;
+  selected: boolean;
+}) => {
+  return (
+    <ItemView selected={selected} color="neutral">
+      <ItemIcon>
+        <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
+      </ItemIcon>
+      <ItemContent>
+        <div>
+          <div className="text-sm flex select-none items-center">
+            <div className="mb-1">
+              <div className="inline font-normal">This branch started:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+// Show a discussion thread about the document.
+// We only show discussions about the whole doc in this timeline view,
+// not discussions about specific parts of the doc.
+// We only show the first comment in the thread (replying isn't supported yet)
+const DiscussionThreadItem = ({
+  discussion,
+  selected,
+}: {
+  discussion: Discussion;
+  selected: boolean;
+}) => {
+  const comment = discussion.comments[0];
+  return (
+    <ItemView selected={selected} color="orange">
+      <ItemIcon>
+        <MessageSquare className="h-[10px] w-[10px] text-white" />
+      </ItemIcon>
+      <ItemContent>
+        <div className="text-sm flex select-none">
+          <div className="font-normal text-gray-800 -ml-1 -my-1">
+            {/* We use a readonly Codemirror to show markdown preview for comments
+                                        using the same style that was used for entering the comment */}
             <CodeMirror
+              value={comment.content.trim()}
+              readOnly
+              editable={false}
               basicSetup={{
                 foldGutter: false,
                 highlightActiveLine: false,
                 lineNumbers: false,
               }}
-              className="p-1 min-h-12 max-h-24 overflow-y-auto"
               extensions={[
-                markdown({ base: markdownLanguage, codeLanguages: languages }),
-                slashCommands(completions),
+                markdown({
+                  base: markdownLanguage,
+                  codeLanguages: languages,
+                }),
                 EditorView.lineWrapping,
               ]}
-              onChange={(value) => setCommentBoxContent(value)}
-              onKeyDown={(e) => {
-                if (e.metaKey && e.key === "Enter") {
-                  onSubmit();
-                  e.stopPropagation();
-                }
-              }}
-              value={commentBoxContent}
               theme={EditorView.theme({
                 "&.cm-editor": {
                   height: "100%",
@@ -864,217 +716,10 @@ export const ReviewSidebar: React.FC<{
                 },
               })}
             />
-
-            <div className="flex justify-end mt-2 text-sm">
-              <div className="flex items-center">
-                {parsedCommentBoxContent.type === "comment" && (
-                  <Button variant="ghost" onClick={onSubmit}>
-                    <SendHorizontalIcon size={14} className="mr-1" />
-                    Comment
-                    <span className="text-gray-400 text-xs ml-2">
-                      (⌘+enter)
-                    </span>
-                  </Button>
-                )}
-                {parsedCommentBoxContent.type === "branch" && (
-                  <Button variant="ghost" onClick={onSubmit}>
-                    <GitBranchIcon size={14} className="mr-1" />
-                    Create branch
-                    <span className="text-gray-400 text-xs ml-2">
-                      (⌘+enter)
-                    </span>
-                  </Button>
-                )}
-                {parsedCommentBoxContent.type === "milestone" && (
-                  <Button variant="ghost" onClick={onSubmit}>
-                    <MilestoneIcon size={14} className="mr-1" />
-                    Save milestone
-                    <span className="text-gray-400 text-xs ml-2">
-                      (⌘+enter)
-                    </span>
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const EditSummary = ({
-  summary,
-  changeGroup,
-  selected,
-}: {
-  summary: string | undefined;
-  changeGroup: ChangeGroup;
-  selected: boolean;
-}) => {
-  return (
-    <div
-      className={`group cursor-pointer  p-1 rounded-full font-medium text-xs flex ${
-        selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
-      } `}
-    >
-      <div className="mr-2 text-gray-500">{summary}</div>
-
-      <div className="ml-auto flex-shrink-0">
-        {changeGroup.authorUrls.length > 0 && (
-          <div className=" text-gray-600 inline">
-            {changeGroup.authorUrls.map((contactUrl) => (
-              <div className="inline">
-                <InlineContactAvatar
-                  key={contactUrl}
-                  url={contactUrl}
-                  size="sm"
-                  showName={false}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const MergedBranchView: React.FC<{
-  changeGroup: ChangeGroup;
-  summary: string | undefined;
-  selected: boolean;
-  setSelection: (s: Selection) => void;
-}> = ({ changeGroup, selected, setSelection, summary }) => {
-  const branch = changeGroup.markers.find(
-    (m) => m.type === "otherBranchMergedIntoThisDoc"
-    // @ts-expect-error -- this should be fine, why does TS not get it?
-  ).branch;
-  return (
-    <div
-      className="ml-[8px]"
-      onClick={() =>
-        setSelection({
-          type: "changeGroups",
-          from: changeGroup.id,
-          to: changeGroup.id,
-        })
-      }
-    >
-      <ItemView selected={selected}>
-        <ItemIcon>
-          <MergeIcon className="h-[10px] w-[10px] text-white" strokeWidth={2} />
-        </ItemIcon>
-
-        <ItemContent>
-          <div className="text-sm flex select-none">
-            <div>
-              <div className="inline font-semibold">{branch.name}</div>{" "}
-              <div className="inline font-normal">was merged</div>
-            </div>
-            <div className="ml-auto">
-              {branch.mergeMetadata!.mergedBy && (
-                <div className=" text-gray-600 inline">
-                  <InlineContactAvatar
-                    key={branch.mergeMetadata!.mergedBy}
-                    url={branch.mergeMetadata!.mergedBy}
-                    size="sm"
-                    showName={false}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </ItemContent>
-      </ItemView>
-      <div className="mt-1 flex gap-1">
-        {/* This is a curved line showing the connection between the branch and the edits*/}
-        <div className="ml-8 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-
-        <EditSummary
-          changeGroup={changeGroup}
-          selected={selected}
-          summary={summary}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface HighlightSnippetViewProps {
-  from: number;
-  to: number;
-  text: string;
-}
-
-const SNIPPET_CUTOFF = 75;
-
-const STOP_CHARACTER = [".", "!", "?", "\n"];
-
-export const HighlightSnippetView = ({
-  from,
-  to,
-  text,
-}: HighlightSnippetViewProps) => {
-  if (from >= text.length || to >= text.length) {
-    return null;
-  }
-
-  let start = from;
-  let startWithEllipsis = true;
-  while (start > 0) {
-    if (STOP_CHARACTER.includes(text.charAt(start - 1))) {
-      startWithEllipsis = false;
-      break;
-    }
-
-    // make sure we don't cut in the middle of a word
-    if (from - start - 1 === SNIPPET_CUTOFF) {
-      while (text.charAt(start) !== " ") {
-        start++;
-      }
-      break;
-    }
-
-    start--;
-  }
-
-  let end = from;
-  let endWithEllipsis = true;
-  while (end < text.length) {
-    if (STOP_CHARACTER.includes(text.charAt(end))) {
-      endWithEllipsis = false;
-      break;
-    }
-
-    // make sure we don't cut in the middle of a word
-    if (end - to + 1 === SNIPPET_CUTOFF) {
-      while (text.charAt(end) !== " ") {
-        end--;
-      }
-      break;
-    }
-
-    end++;
-  }
-
-  const before = startWithEllipsis
-    ? `...${text.slice(start, from)}`
-    : text.slice(start, from).trimStart();
-  const highlight = text.slice(from, to);
-  const after = endWithEllipsis
-    ? `${text.slice(to, end)}...`
-    : text.slice(to, end).trimEnd();
-
-  return (
-    <div
-      className="border-l-2 border-gray-200 p-2 m-2 whitespace-pre-wrap cm-line font-normal"
-      style={{ fontFamily: "Merriweather, serif" }}
-    >
-      {before}
-      <span style={{ background: "rgb(255 249 194)" }}>{highlight}</span>
-      {after}
-    </div>
+      </ItemContent>
+    </ItemView>
   );
 };
 
@@ -1082,30 +727,35 @@ const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
 const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 const ItemView = ({
-  selected,
   children,
+  color = "neutral",
 }: {
   selected: boolean;
   children: ReactNode | ReactNode[];
+  color: string;
 }) => {
   const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
+
+  const tailwindColor =
+    {
+      purple: "bg-purple-600",
+      green: "bg-green-600",
+      neutral: "bg-neutral-300",
+      orange: "bg-amber-600",
+    }[color] ?? "bg-neutral-600";
 
   return (
     <div className="items-top flex gap-1">
       {slots.icon && (
-        <div className="mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full bg-purple-600 outline outline-2 outline-gray-100">
+        <div
+          className={`${tailwindColor} mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full  outline outline-2 outline-gray-100`}
+        >
           {slots.icon}
         </div>
       )}
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
-      <div
-        className={`cursor-pointer flex-1 rounded p-1 shadow ${
-          selected ? "bg-blue-100" : "bg-white"
-        }`}
-      >
-        {slots.content}
-      </div>
+      <div className={`flex-1 rounded py-1 px-2 shadow`}>{slots.content}</div>
     </div>
   );
 };
