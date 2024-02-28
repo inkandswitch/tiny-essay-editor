@@ -215,7 +215,7 @@ export const getMarkersForDoc = <
       .find<Branchable>(doc.branchMetadata.source.url)
       .docSync()
       .branchMetadata.branches.find((b) => b.url === handle.url);
-    if (branchMetadataAtSource) {
+    if (branchMetadataAtSource && doc.branchMetadata.source.branchHeads) {
       markers.push({
         heads: doc.branchMetadata.source.branchHeads,
         type: "originOfThisBranch",
@@ -228,11 +228,13 @@ export const getMarkersForDoc = <
 
   /** Mark new branches off this one */
   markers = markers.concat(
-    doc.branchMetadata.branches.map((branch) => ({
-      heads: branch.branchHeads,
-      type: "branchCreatedFromThisDoc",
-      branch,
-    }))
+    doc.branchMetadata.branches
+      .filter((branch) => branch.branchHeads !== undefined)
+      .map((branch) => ({
+        heads: branch.branchHeads,
+        type: "branchCreatedFromThisDoc",
+        branch,
+      }))
   );
 
   return markers;
@@ -316,7 +318,7 @@ export const getGroupedChanges = (
     };
   } = {};
   for (const branch of doc.branchMetadata.branches) {
-    if (branch.mergeMetadata) {
+    if (branch.mergeMetadata && branch.branchHeads) {
       branchChangeGroups[branch.url] = {
         changeGroup: {
           id: `${branch.branchHeads[0]}-${branch.mergeMetadata.mergeHeads[0]}`,
@@ -445,9 +447,9 @@ export const getGroupedChanges = (
       // This ensures we have a group boundary corresponding to the tag in the changelog.
       // TODO: The comparison here seems a little iffy; we're comparing heads to a single change hash...
       // how should this actually work?
-      const matchingMarkers = markers.filter(
-        (marker) => marker.heads[0] === decodedChange.hash
-      );
+      const matchingMarkers = markers.filter((marker) => {
+        return marker.heads[0] === decodedChange.hash;
+      });
       if (matchingMarkers.length > 0) {
         currentGroup.markers = matchingMarkers;
         pushGroup(currentGroup);
