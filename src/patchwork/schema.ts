@@ -108,3 +108,10 @@ export type HasChangeGroupSummaries = {
     };
   };
 };
+
+export type HasPatchworkMetadata = HasChangeGroupSummaries &
+  Branchable &
+  Taggable &
+  Diffable &
+  Discussable &
+  SpatialBranchable;
