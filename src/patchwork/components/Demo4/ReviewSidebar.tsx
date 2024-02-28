@@ -59,8 +59,19 @@ const useScrollToBottom = () => {
   return scrollerRef;
 };
 
+/** A position for one side of a changelog selection */
+type ChangelogSelectionAnchor = {
+  /* The itemId of the anchor */
+  itemId: string;
+
+  /* The index of the anchor */
+  index: number;
+
+  /* The pixel position of the anchor */
+  yPos: number;
+};
 type ChangelogSelection =
-  | { from: { id: string; index: number }; to: { id: string; index: number } }
+  | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
   | undefined;
 
 export const ReviewSidebar: React.FC<{
@@ -91,12 +102,29 @@ export const ReviewSidebar: React.FC<{
     });
   }, [doc, markers]);
 
-  const { selection, handleClick } = useChangelogSelection(changelogItems);
+  const { selection, handleClick, clearSelection, itemsContainerRef } =
+    useChangelogSelection(changelogItems);
 
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
+      <div className="h-8 bg-gray-50 p-2">
+        {selection && (
+          <div className="flex gap-2">
+            <div className="text-blue-600 font-medium">
+              Showing {selection.to.index - selection.from.index + 1} change
+              {selection.to.index === selection.from.index ? "" : "s"}
+            </div>
+            <div
+              className="cursor-pointer text-gray-500 font-semibold underline"
+              onClick={clearSelection}
+            >
+              Reset to now
+            </div>
+          </div>
+        )}
+      </div>
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="mt-auto flex flex-col">
+        <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
           {changelogItems.map((item, index) => {
             const selected =
               selection &&
@@ -106,7 +134,7 @@ export const ReviewSidebar: React.FC<{
               <div
                 key={item.id}
                 className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
-                  selected ? "bg-blue-100" : ""
+                  selected ? "bg-blue-100 bg-opacity-20" : ""
                 }`}
                 onClick={(e) =>
                   handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
@@ -198,6 +226,15 @@ export const ReviewSidebar: React.FC<{
               </div>
             );
           })}
+          {selection && (
+            <div
+              className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
+              style={{
+                top: selection.from.yPos,
+                height: selection.to.yPos - selection.from.yPos,
+              }}
+            ></div>
+          )}
         </div>
       </div>
       <div className="bg-gray-50 z-10">
@@ -211,17 +248,23 @@ const CommentBox = () => {
   return <div className="h-16 bg-red-100 p-5">Comment box</div>;
 };
 
+// Manage the selection state for changelog items.
+// Supports multi-select interaction and returning pixel coordinates for the selection to help w/ drawing a selection box.
 const useChangelogSelection = (
   items: ChangelogItem[]
 ): {
   selection: ChangelogSelection;
   handleClick: ({ itemId, shiftPressed }) => void;
+  itemsContainerRef: React.RefObject<HTMLDivElement>;
+  clearSelection: () => void;
 } => {
   // Internally we track selection using item IDs.
   // Once we return it out of the hook, we'll also tack on numbers, to help out in the view.
   const [selection, setSelection] = useState<{ from: string; to: string }>(
     undefined
   );
+
+  const itemsContainerRef = useRef<HTMLDivElement>(null);
 
   const handleClick = ({ itemId, shiftPressed }) => {
     if (!shiftPressed) {
@@ -250,28 +293,42 @@ const useChangelogSelection = (
     }
   };
 
-  if (!selection) {
+  if (!selection || !itemsContainerRef.current) {
     return {
       selection: undefined,
       handleClick,
+      itemsContainerRef,
+      clearSelection: () => setSelection(undefined),
     };
   }
 
   const fromIndex = items.findIndex((item) => item.id === selection?.from);
   const toIndex = items.findIndex((item) => item.id === selection?.to);
 
+  const containerTop = itemsContainerRef.current.getBoundingClientRect().top;
+  const fromPos =
+    itemsContainerRef.current.children[fromIndex]?.getBoundingClientRect().top -
+    containerTop;
+  const toPos =
+    itemsContainerRef.current.children[toIndex]?.getBoundingClientRect()
+      .bottom - containerTop;
+
   return {
     selection: {
       from: {
-        id: selection.from,
+        itemId: selection.from,
         index: fromIndex,
+        yPos: fromPos,
       },
       to: {
-        id: selection.to,
+        itemId: selection.to,
         index: toIndex,
+        yPos: toPos,
       },
     },
     handleClick,
+    itemsContainerRef,
+    clearSelection: () => setSelection(undefined),
   };
 };
 
@@ -310,11 +367,7 @@ const ChangeGroupDescription = ({
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   }
   return (
-    <div
-      className={`w-full group  p-1 rounded-full font-medium text-xs flex ${
-        selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
-      } `}
-    >
+    <div className={`w-full group  p-1 rounded-full font-medium text-xs flex`}>
       <div className="mr-2 text-gray-500">{summary}</div>
     </div>
   );
@@ -538,13 +591,7 @@ const ItemView = ({
       )}
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
-      <div
-        className={`flex-1 rounded py-1 px-2 shadow ${
-          selected ? "bg-blue-100" : "bg-white"
-        }`}
-      >
-        {slots.content}
-      </div>
+      <div className={`flex-1 rounded py-1 px-2 shadow`}>{slots.content}</div>
     </div>
   );
 };
