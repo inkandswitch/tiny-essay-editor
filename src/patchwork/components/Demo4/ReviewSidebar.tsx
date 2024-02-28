@@ -109,7 +109,7 @@ export const ReviewSidebar: React.FC<{
 
   const { selection, handleClick, clearSelection, itemsContainerRef } =
     useChangelogSelection({
-      items: changelogItems,
+      items: changelogItems ?? [],
       setDiff,
       setDocHeads,
     });
@@ -228,6 +228,8 @@ export const ReviewSidebar: React.FC<{
                         <BranchMergedItem
                           branch={item.branch}
                           selected={selected}
+                          changeGroups={item.changeGroups}
+                          doc={doc}
                         />
                       );
                     default: {
@@ -330,7 +332,32 @@ const useChangelogSelection = ({
       setDiff(undefined);
       setDocHeads(undefined);
     }
-  }, [selection, setDiff, setDocHeads]);
+
+    const fromItem = items.find((item) => item.id === selection?.from);
+    const toItem = items.find((item) => item.id === selection?.to);
+    const fromIndex = items.findIndex((item) => item.id === selection?.from);
+    const toIndex = items.findIndex((item) => item.id === selection?.to);
+
+    if (!fromItem || !toItem) {
+      return;
+    }
+
+    setDocHeads(toItem.heads);
+
+    // The diff consists of diffs from any change groups in the selected items.
+    const selectedItems = items.slice(fromIndex, toIndex + 1);
+    const patches = selectedItems
+      .flatMap((item) => {
+        if (item.type === "changeGroup") {
+          return item.changeGroup.diff.patches;
+        } else if (item.type === "otherBranchMergedIntoThisDoc") {
+          return item.changeGroups.flatMap((group) => group.diff.patches);
+        }
+      })
+      .filter((patch) => patch !== undefined);
+    console.log(patches);
+    setDiff({ patches, fromHeads: fromItem.heads, toHeads: toItem.heads });
+  }, [selection, setDiff, setDocHeads, items]);
 
   const itemsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -441,28 +468,38 @@ const ChangeGroupDescription = ({
   );
 };
 
-const BranchMergedItem: React.FC<{ branch: Branch; selected: boolean }> = ({
-  branch,
-  selected,
-}) => {
+const BranchMergedItem: React.FC<{
+  branch: Branch;
+  changeGroups: ChangeGroup[];
+  selected: boolean;
+  doc: MarkdownDoc;
+}> = ({ branch, changeGroups, selected, doc }) => {
+  console.log("merged change groups", changeGroups);
   return (
-    <ItemView selected={selected} color="purple">
-      <ItemIcon>
-        <GitBranchPlusIcon
-          className="h-[10px] w-[10px] text-white"
-          strokeWidth={2}
-        />
-      </ItemIcon>
+    <div>
+      <ItemView selected={selected} color="purple">
+        <ItemIcon>
+          <GitBranchPlusIcon
+            className="h-[10px] w-[10px] text-white"
+            strokeWidth={2}
+          />
+        </ItemIcon>
 
-      <ItemContent>
-        <div className="text-sm flex select-none">
-          <div>
-            <div className="inline font-normal">Branch merged:</div>{" "}
-            <div className="inline font-semibold">{branch.name}</div>{" "}
+        <ItemContent>
+          <div className="text-sm flex select-none">
+            <div>
+              <div className="inline font-normal">Branch merged:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
           </div>
+        </ItemContent>
+      </ItemView>
+      {changeGroups.map((group) => (
+        <div className="pl-6">
+          <ChangeGroupItem group={group} selected={selected} doc={doc} />
         </div>
-      </ItemContent>
-    </ItemView>
+      ))}
+    </div>
   );
 };
 

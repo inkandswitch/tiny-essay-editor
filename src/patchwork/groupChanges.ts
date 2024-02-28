@@ -57,7 +57,11 @@ export type HeadsMarker = {
   hideHistoryBeforeThis?: boolean;
 } & (
   | { type: "tag"; tag: Tag }
-  | { type: "otherBranchMergedIntoThisDoc"; branch: Branch }
+  | {
+      type: "otherBranchMergedIntoThisDoc";
+      branch: Branch;
+      changeGroups: ChangeGroup[];
+    }
   | { type: "branchCreatedFromThisDoc"; branch: Branch }
   | {
       type: "originOfThisBranch";
@@ -229,6 +233,7 @@ export const getMarkersForDoc = <
           ? [branch.mergeMetadata!.mergedBy]
           : [],
         branch,
+        changeGroups: [],
       }))
   );
 
@@ -317,6 +322,16 @@ export const getChangelogItems = (
 
   const changelogItems: ChangelogItem[] = [];
   for (const changeGroup of changeGroups) {
+    // If this is a branch merge, we don't directly put the change group in --
+    // instead we put the changes inside of a branch merged item.
+    const mergeMarker = changeGroup.markers.find(
+      (m) => m.type === "otherBranchMergedIntoThisDoc"
+    );
+    if (mergeMarker) {
+      changelogItems.push(mergeMarker);
+      continue;
+    }
+
     changelogItems.push({
       id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
       type: "changeGroup",
@@ -470,7 +485,11 @@ export const getGroupedChanges = (
               ) && marker.type === "otherBranchMergedIntoThisDoc"
           );
           if (mergeMarker) {
-            branchChangeGroup.changeGroup.markers.push(mergeMarker);
+            branchChangeGroup.changeGroup.markers.push({
+              ...mergeMarker,
+              // @ts-expect-error this is fine; we know we're adding to a merge marker
+              changeGroups: [branchChangeGroup.changeGroup],
+            });
           }
 
           // todo: what other finalizing do we need to do here..? any?
