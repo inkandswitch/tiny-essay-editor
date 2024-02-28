@@ -277,8 +277,6 @@ export const getMarkersForDoc = <
       }))
   );
 
-  console.log("markers", markers);
-
   return markers;
 };
 
@@ -331,7 +329,6 @@ export const getChangelogItems = (
   const changelogItems: ChangelogItem[] = [];
   for (const changeGroup of changeGroups) {
     if (changeGroup.markers.find((m) => m.type === "originOfThisBranch")) {
-      console.log("EYOOO");
     }
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
