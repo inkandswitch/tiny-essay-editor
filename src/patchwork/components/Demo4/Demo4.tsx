@@ -980,10 +980,8 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   const pathDataLine = `M ${x2} ${y2} L ${x3} ${y3}`;
 
   // Control points for the Bezier curve from point 3 to point 4 that bends outwards
-  const offsetX = Math.abs(x4 - x3) / 2; // Adjust the outward bend here
-  const offsetY = Math.abs(y4 - y3) / 2; // Adjust the outward bend here
-  const controlPoint3 = { x: x3 + offsetX, y: y3 - offsetY }; // Control point for bending outwards
-  const controlPoint4 = { x: x4 - offsetX, y: y4 - offsetY }; // Control point for bending outwards
+  const controlPoint3 = { x: x4, y: y3 };
+  const controlPoint4 = { x: x4, y: y3 };
 
   // Path data for the Bezier curve from point 3 to point 4
   const pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
