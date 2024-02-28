@@ -13,9 +13,11 @@ import React, {
   useRef,
   ReactNode,
   useCallback,
+  useState,
 } from "react";
 import {
   ChangeGroup,
+  ChangelogItem,
   getChangelogItems,
   getMarkersForDoc,
 } from "../../groupChanges";
@@ -57,27 +59,18 @@ const useScrollToBottom = () => {
   return scrollerRef;
 };
 
+type ChangelogSelection =
+  | { from: { id: string; index: number }; to: { id: string; index: number } }
+  | undefined;
+
 export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
-  setDocHeads: (heads: Heads) => void;
-  setDiff: (diff: DiffWithProvenance) => void;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-  textSelection: TextSelection;
-  onClearTextSelection: () => void;
-}> = ({
-  docUrl,
-  setDocHeads,
-  setDiff,
-  selectedBranch,
-  setSelectedBranch,
-  textSelection,
-  onClearTextSelection,
-}) => {
+}> = ({ docUrl, selectedBranch, setSelectedBranch }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
-  const account = useCurrentAccount();
   const scrollerRef = useScrollToBottom();
 
   // TODO: technically this should also update when the "source doc" for this branch updates
@@ -98,95 +91,113 @@ export const ReviewSidebar: React.FC<{
     });
   }, [doc, markers]);
 
+  const { selection, handleClick } = useChangelogSelection(changelogItems);
+
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="mt-auto flex flex-col gap-4">
-          {changelogItems.map((item) => (
-            <div key={item.id} className="px-2 w-full flex items-start gap-2">
-              {(() => {
-                const selected = false;
-                switch (item.type) {
-                  case "changeGroup":
-                    return (
-                      <ChangeGroupItem
-                        group={item.changeGroup}
-                        doc={doc}
-                        selected={selected}
-                      />
-                    );
-                  case "tag":
-                    return (
-                      <MilestoneItem milestone={item.tag} selected={selected} />
-                    );
-                  case "branchCreatedFromThisDoc":
-                    return (
-                      <BranchCreatedItem
-                        selectedBranch={selectedBranch}
-                        setSelectedBranch={setSelectedBranch}
-                        branch={item.branch}
-                        selected={selected}
-                      />
-                    );
-                  case "discussionThread":
-                    return (
-                      <DiscussionThreadItem
-                        discussion={item.discussion}
-                        selected={selected}
-                      />
-                    );
-                  case "originOfThisBranch":
-                    return (
-                      <BranchOriginItem
-                        branch={item.branch}
-                        selected={selected}
-                      />
-                    );
-                  case "otherBranchMergedIntoThisDoc":
-                    return (
-                      <BranchMergedItem
-                        branch={item.branch}
-                        selected={selected}
-                      />
-                    );
-                  default: {
-                    // Ensure we've handled all types
-                    const exhaustiveCheck: never = item;
-                    return exhaustiveCheck;
-                  }
+        <div className="mt-auto flex flex-col">
+          {changelogItems.map((item, index) => {
+            const selected =
+              selection &&
+              index >= selection.from.index &&
+              index <= selection.to.index;
+            return (
+              <div
+                key={item.id}
+                className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
+                  selected ? "bg-blue-100" : ""
+                }`}
+                onClick={(e) =>
+                  handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
                 }
-              })()}
-              <div className="ml-auto flex-shrink-0 flex items-center gap-2">
-                <div className="flex items-center space-x-[-4px]">
-                  {item.users.map((contactUrl) => (
-                    <div className="rounded-full">
-                      <InlineContactAvatar
-                        key={contactUrl}
-                        url={contactUrl}
-                        size="sm"
-                        showName={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <MoreHorizontal
-                        size={18}
-                        className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="mr-4">
-                      <DropdownMenuItem>
-                        Context actions go here
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              >
+                {(() => {
+                  switch (item.type) {
+                    case "changeGroup":
+                      return (
+                        <ChangeGroupItem
+                          group={item.changeGroup}
+                          doc={doc}
+                          selected={selected}
+                        />
+                      );
+                    case "tag":
+                      return (
+                        <MilestoneItem
+                          milestone={item.tag}
+                          selected={selected}
+                        />
+                      );
+                    case "branchCreatedFromThisDoc":
+                      return (
+                        <BranchCreatedItem
+                          selectedBranch={selectedBranch}
+                          setSelectedBranch={setSelectedBranch}
+                          branch={item.branch}
+                          selected={selected}
+                        />
+                      );
+                    case "discussionThread":
+                      return (
+                        <DiscussionThreadItem
+                          discussion={item.discussion}
+                          selected={selected}
+                        />
+                      );
+                    case "originOfThisBranch":
+                      return (
+                        <BranchOriginItem
+                          branch={item.branch}
+                          selected={selected}
+                        />
+                      );
+                    case "otherBranchMergedIntoThisDoc":
+                      return (
+                        <BranchMergedItem
+                          branch={item.branch}
+                          selected={selected}
+                        />
+                      );
+                    default: {
+                      // Ensure we've handled all types
+                      const exhaustiveCheck: never = item;
+                      return exhaustiveCheck;
+                    }
+                  }
+                })()}
+                <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                  <div className="flex items-center space-x-[-4px]">
+                    {item.users.map((contactUrl) => (
+                      <div className="rounded-full">
+                        <InlineContactAvatar
+                          key={contactUrl}
+                          url={contactUrl}
+                          size="sm"
+                          showName={false}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <MoreHorizontal
+                          size={18}
+                          className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
+                        />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="mr-4">
+                        <DropdownMenuItem>
+                          Context actions go here
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <div className="bg-gray-50 z-10">
@@ -198,6 +209,70 @@ export const ReviewSidebar: React.FC<{
 
 const CommentBox = () => {
   return <div className="h-16 bg-red-100 p-5">Comment box</div>;
+};
+
+const useChangelogSelection = (
+  items: ChangelogItem[]
+): {
+  selection: ChangelogSelection;
+  handleClick: ({ itemId, shiftPressed }) => void;
+} => {
+  // Internally we track selection using item IDs.
+  // Once we return it out of the hook, we'll also tack on numbers, to help out in the view.
+  const [selection, setSelection] = useState<{ from: string; to: string }>(
+    undefined
+  );
+
+  const handleClick = ({ itemId, shiftPressed }) => {
+    if (!shiftPressed) {
+      setSelection({ from: itemId, to: itemId });
+      return;
+    }
+
+    // If the shift key is pressed, we create a multi-change selection.
+    // If there's no existing change group selected, just use the latest as the starting point for the selection.
+    if (!selection) {
+      const to = items[items.length - 1].id;
+      setSelection({ from: itemId, to });
+      return;
+    }
+
+    // If there was already a selection, extend it.
+    const fromIndex = items.findIndex((item) => item.id === selection.from);
+    const clickedIndex = items.findIndex((item) => item.id === itemId);
+
+    if (clickedIndex < fromIndex) {
+      setSelection({ from: itemId, to: selection.to });
+      return;
+    } else {
+      setSelection({ from: selection.from, to: itemId });
+      return;
+    }
+  };
+
+  if (!selection) {
+    return {
+      selection: undefined,
+      handleClick,
+    };
+  }
+
+  const fromIndex = items.findIndex((item) => item.id === selection?.from);
+  const toIndex = items.findIndex((item) => item.id === selection?.to);
+
+  return {
+    selection: {
+      from: {
+        id: selection.from,
+        index: fromIndex,
+      },
+      to: {
+        id: selection.to,
+        index: toIndex,
+      },
+    },
+    handleClick,
+  };
 };
 
 const ChangeGroupItem: React.FC<{
@@ -236,7 +311,7 @@ const ChangeGroupDescription = ({
   }
   return (
     <div
-      className={`w-full group cursor-pointer  p-1 rounded-full font-medium text-xs flex ${
+      className={`w-full group  p-1 rounded-full font-medium text-xs flex ${
         selected ? "bg-blue-100 bg-opacity-50" : "bg-transparent"
       } `}
     >
@@ -464,7 +539,7 @@ const ItemView = ({
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
       <div
-        className={`cursor-pointer flex-1 rounded py-1 px-2 shadow ${
+        className={`flex-1 rounded py-1 px-2 shadow ${
           selected ? "bg-blue-100" : "bg-white"
         }`}
       >
