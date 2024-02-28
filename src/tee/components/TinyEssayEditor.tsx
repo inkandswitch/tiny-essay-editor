@@ -55,12 +55,14 @@ export const TinyEssayEditor = ({
   overlayContainer,
   setEditorContainerElement,
   currentlyActiveHeads,
+  activeDiscussionIds,
   onUpdateDiscussionTargetPositions,
 }: {
   docUrl: AutomergeUrl;
   mainDocHandle?: DocHandle<MarkdownDoc>;
   branchDocHandle?: DocHandle<MarkdownDoc>;
   docHeads?: Heads;
+  activeDiscussionIds?: string[];
   diff?: DiffWithProvenance;
   readOnly?: boolean;
   diffStyle?: DiffStyle;
@@ -243,7 +245,7 @@ export const TinyEssayEditor = ({
               ["content"],
               discussion.target.value.toCursor
             ),
-            active: false, // todo: provide active state
+            active: activeDiscussionIds.includes(discussion.id),
             id: discussion.id,
           },
         ];
@@ -251,7 +253,7 @@ export const TinyEssayEditor = ({
         return [];
       }
     });
-  }, [doc?.discussions, doc?.content]);
+  }, [doc?.discussions, doc?.content, activeDiscussionIds]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {

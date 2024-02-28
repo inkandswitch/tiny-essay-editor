@@ -29,6 +29,9 @@ interface SpatialCommentsListProps {
   overlayContainer: OverlayContainer;
   changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
+  setSelectedDiscussionId: (id: string) => void;
+  setHoveredDiscussionId: (id: string) => void;
+  activeDiscussionIds: string[];
 }
 
 const DEBUG_HIGHLIGHT = false;
@@ -40,6 +43,9 @@ export const SpatialCommentsList = React.memo(
     overlayContainer,
     changeDoc,
     onChangeCommentPositionMap,
+    activeDiscussionIds,
+    setSelectedDiscussionId,
+    setHoveredDiscussionId,
   }: SpatialCommentsListProps) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const scrollContainerRectRef = useRef<DOMRect>();
@@ -120,13 +126,24 @@ export const SpatialCommentsList = React.memo(
           discussions.map((discussion) => {
             return (
               <div
+                onMouseEnter={() => setHoveredDiscussionId(discussion.id)}
+                onMouseLeave={() => {
+                  setHoveredDiscussionId(undefined);
+                }}
+                onClick={() => setSelectedDiscussionId(discussion.id)}
                 key={discussion.id}
-                className={`select-none mr-2 px-2 py-1 border border-gray-200 rounded-sm ${
+                className={`select-none mr-2 px-2 py-1 border rounded-sm hover:bg-gray-50  hover:border-gray-400              
+                ${
                   topComment &&
                   topComment.discussion.id === discussion.id &&
                   DEBUG_HIGHLIGHT
                     ? "bg-yellow-100"
                     : "bg-white"
+                }
+                ${
+                  activeDiscussionIds.includes(discussion.id)
+                    ? "border-gray-400"
+                    : "border-gray-200 "
                 }`}
                 ref={(element) => {
                   if (!element) {

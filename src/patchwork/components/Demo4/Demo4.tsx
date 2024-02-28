@@ -300,11 +300,27 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("comments");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
   >([]);
+  const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
+  const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
+
+  const activeDiscussionIds = useMemo(() => {
+    const ids = [];
+
+    if (selectedDiscussionId) {
+      ids.push(selectedDiscussionId);
+    }
+
+    if (hoveredDiscussionId) {
+      ids.push(hoveredDiscussionId);
+    }
+
+    return ids;
+  }, [selectedDiscussionId, hoveredDiscussionId]);
 
   const overlayContainer = useMemo<OverlayContainer>(() => {
     if (!bezierCurveLayerRect || reviewMode !== "comments") {
@@ -774,6 +790,7 @@ export const Demo4: React.FC<{
                       }
                       overlayContainer={overlayContainer}
                       setEditorContainerElement={setEditorContainerElement}
+                      activeDiscussionIds={activeDiscussionIds}
                     />
                   </div>
                 </div>
@@ -828,6 +845,9 @@ export const Demo4: React.FC<{
                     }
                     onChangeCommentPositionMap={setCommentPositionMap}
                     overlayContainer={overlayContainer}
+                    activeDiscussionIds={activeDiscussionIds}
+                    setSelectedDiscussionId={setSelectedDiscussionId}
+                    setHoveredDiscussionId={setHoveredDiscussionId}
                   />
                 )}
               </div>
