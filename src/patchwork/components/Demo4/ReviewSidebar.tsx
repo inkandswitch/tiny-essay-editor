@@ -98,8 +98,6 @@ export const ReviewSidebar: React.FC<{
     });
   }, [doc, markers]);
 
-  useAutoPopulateChangeGroupSummaries({ handle, changelogItems });
-
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
@@ -430,29 +428,6 @@ const DiscussionThreadItem = ({
       </ItemContent>
     </ItemView>
   );
-};
-
-const useAutoPopulateChangeGroupSummaries = ({ handle, changelogItems }) => {
-  const debouncedPopulate = useCallback(
-    debounce(({ groups, handle, force }) => {
-      populateChangeGroupSummaries({ groups, handle, force });
-    }, 15000),
-    []
-  );
-
-  useEffect(() => {
-    debouncedPopulate({
-      groups: changelogItems.flatMap((item) =>
-        item.type === "changeGroup" ? item.changeGroup : []
-      ),
-      handle,
-    });
-
-    // Cleanup function to cancel the debounce if the component unmounts
-    return () => {
-      debouncedPopulate.cancel();
-    };
-  }, [changelogItems, handle, debouncedPopulate]);
 };
 
 const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
