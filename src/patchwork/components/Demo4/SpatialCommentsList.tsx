@@ -129,6 +129,47 @@ export const SpatialCommentsList = React.memo(
       });
     }, [topDiscussion, scrollContainer]);
 
+    // handle navigation shortcuts
+    useEffect(() => {
+      if (!selectedDiscussionId) {
+        return;
+      }
+
+      const onKeydown = (evt: KeyboardEvent) => {
+        console.log(evt);
+
+        const currentIndex = discussions.findIndex(
+          (discussion) => discussion.id === selectedDiscussionId
+        );
+
+        if (evt.key === "k" || (evt.key === "p" && evt.ctrlKey)) {
+          if (currentIndex > 0) {
+            setSelectedDiscussionId(discussions[currentIndex - 1].id);
+            evt.preventDefault();
+            evt.stopPropagation();
+          }
+
+          return;
+        }
+
+        if (evt.key === "j" || (evt.key === "n" && evt.ctrlKey)) {
+          if (currentIndex < discussions.length - 1) {
+            setSelectedDiscussionId(discussions[currentIndex + 1].id);
+            evt.preventDefault();
+            evt.stopPropagation();
+          }
+
+          return;
+        }
+      };
+
+      window.addEventListener("keydown", onKeydown);
+
+      return () => {
+        window.removeEventListener("keydown", onKeydown);
+      };
+    }, [selectedDiscussionId]);
+
     return (
       <div
         onScroll={(evt) =>
