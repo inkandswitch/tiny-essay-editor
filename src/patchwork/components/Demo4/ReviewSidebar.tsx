@@ -28,6 +28,8 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   MoreHorizontal,
+  CrownIcon,
+  ChevronLeftIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
@@ -41,7 +43,7 @@ import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
-import { debounce, isEqual } from "lodash";
+import { debounce, isEqual, truncate } from "lodash";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,8 +80,11 @@ export const ReviewSidebar: React.FC<{
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-}> = ({ docUrl, selectedBranch, setSelectedBranch }) => {
+  setDocHeads: (heads: Heads) => void;
+  setDiff: (diff: DiffWithProvenance) => void;
+}> = ({ docUrl, selectedBranch, setSelectedBranch, setDocHeads, setDiff }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
+  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata.source.url);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom();
@@ -103,25 +108,64 @@ export const ReviewSidebar: React.FC<{
   }, [doc, markers]);
 
   const { selection, handleClick, clearSelection, itemsContainerRef } =
-    useChangelogSelection(changelogItems);
+    useChangelogSelection({
+      items: changelogItems,
+      setDiff,
+      setDocHeads,
+    });
+
+  if (!doc) return null;
+
+  const selectedBranchLink =
+    selectedBranch.type === "branch"
+      ? mainDoc?.branchMetadata.branches.find(
+          (b) => b.url === selectedBranch.url
+        )
+      : undefined;
 
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
-      <div className="h-8 bg-gray-50 p-2">
-        {selection && (
-          <div className="flex gap-2">
-            <div className="text-blue-600 font-medium">
-              Showing {selection.to.index - selection.from.index + 1} change
-              {selection.to.index === selection.from.index ? "" : "s"}
-            </div>
-            <div
-              className="cursor-pointer text-gray-500 font-semibold underline"
-              onClick={clearSelection}
-            >
-              Reset to now
-            </div>
+      {/* Show which branch we're on  */}
+      <div className=" bg-gray-50 p-2 border-gray-200 border-b">
+        <div className="flex items-center pb-1 ">
+          <div className=" font-bold">
+            {selectedBranch.type === "main" && (
+              <div className="flex items-center gap-2">
+                <CrownIcon className="inline" size={12} />
+                Main
+              </div>
+            )}
+            {selectedBranch.type === "branch" && (
+              <div className="flex items-center gap-2">
+                <GitBranchIcon className="inline" size={12} />
+                {selectedBranchLink?.name}
+                <div
+                  className="cursor-pointer text-gray-500 font-semibold underline"
+                  onClick={() => setSelectedBranch({ type: "main" })}
+                >
+                  <ChevronLeftIcon size={12} className="inline" />
+                  Back to main
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+        <div className="h-4">
+          {selection && (
+            <div className="flex gap-2">
+              <div className="text-blue-600 font-medium">
+                Showing {selection.to.index - selection.from.index + 1} change
+                {selection.to.index === selection.from.index ? "" : "s"}
+              </div>
+              <div
+                className="cursor-pointer text-gray-500 font-semibold underline"
+                onClick={clearSelection}
+              >
+                Reset to now
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
@@ -194,6 +238,8 @@ export const ReviewSidebar: React.FC<{
                     }
                   }
                 })()}
+
+                {/* User avatars associated with this item */}
                 <div className="ml-auto flex-shrink-0 flex items-center gap-2">
                   <div className="flex items-center space-x-[-4px]">
                     {item.users.map((contactUrl) => (
@@ -207,6 +253,8 @@ export const ReviewSidebar: React.FC<{
                       </div>
                     ))}
                   </div>
+
+                  {/* Context menu for the item (TODO: how to populate actions for this?) */}
                   <div className="">
                     <DropdownMenu>
                       <DropdownMenuTrigger>
@@ -226,6 +274,8 @@ export const ReviewSidebar: React.FC<{
               </div>
             );
           })}
+
+          {/* Blue selection box overlay */}
           {selection && (
             <div
               className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
@@ -249,13 +299,24 @@ const CommentBox = () => {
 };
 
 // Manage the selection state for changelog items.
-// Supports multi-select interaction and returning pixel coordinates for the selection to help w/ drawing a selection box.
-const useChangelogSelection = (
-  items: ChangelogItem[]
-): {
+// Supports multi-select interaction.
+// Returns pixel coordinates for the selection to help w/ drawing a selection box.
+const useChangelogSelection = ({
+  items,
+  setDiff,
+  setDocHeads,
+}: {
+  items: ChangelogItem[];
+  setDiff: (diff: DiffWithProvenance) => void;
+  setDocHeads: (heads: Heads) => void;
+}): {
+  // The current selection
   selection: ChangelogSelection;
+  // Click handler for the items
   handleClick: ({ itemId, shiftPressed }) => void;
+  // Ref for the container of the items
   itemsContainerRef: React.RefObject<HTMLDivElement>;
+  // Callback to clear the selection
   clearSelection: () => void;
 } => {
   // Internally we track selection using item IDs.
@@ -263,6 +324,14 @@ const useChangelogSelection = (
   const [selection, setSelection] = useState<{ from: string; to: string }>(
     undefined
   );
+
+  // sync the diff and docHeads up to the parent component when the selection changes
+  useEffect(() => {
+    if (!selection) {
+      setDiff(undefined);
+      setDocHeads(undefined);
+    }
+  }, [selection, setDiff, setDocHeads]);
 
   const itemsContainerRef = useRef<HTMLDivElement>(null);
 
