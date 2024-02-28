@@ -88,8 +88,15 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
   };
 
   const currentlyActiveHeads = changelogSelection
-    ? changelogItems.find((i) => i.id === changelogSelection.to.itemId)?.heads
-    : A.getHeads(doc);
+    ? JSON.parse(
+        JSON.stringify(
+          changelogItems.find((i) => i.id === changelogSelection.to.itemId)
+            ?.heads
+        )
+      )
+    : JSON.parse(
+        JSON.stringify(changelogItems[changelogItems.length - 1]?.heads)
+      );
 
   const createDiscussion = () => {
     if (commentBoxContent === "") {

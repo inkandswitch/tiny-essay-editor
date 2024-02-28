@@ -43,7 +43,7 @@ import {
   statsForChangeGroup,
 } from "@/tee/statsForChangeGroup";
 import { getChangesFromMergedBranch } from "./branches";
-import { isEqual } from "lodash";
+import { isEqual, sortBy } from "lodash";
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
@@ -208,20 +208,30 @@ export const getMarkersForDoc = <
     users: tag.createdBy ? [tag.createdBy] : [],
   }));
 
-  /** Mark discussion threads */
-  markers = markers.concat(
-    // default value is there for compat with old docs
-    Object.values(doc.discussions ?? {}).map((discussion) => ({
+  const discussions = Object.values(doc.discussions ?? {}).map(
+    (discussion) => ({
+      type: "discussionThread" as const,
       id: `discussion-${discussion.id}`,
       heads: discussion.heads,
-      type: "discussionThread",
       users: discussion.comments
         .map((comment) => comment.contactUrl)
         .filter(Boolean),
       discussion,
-      time: discussion.comments[0].timestamp,
-    }))
+    })
   );
+
+  // Sorting by timestamp is a bit bad and not-local-firsty...
+  // The problem is that we don't currently store an ordering on
+  // discussions, and so we have on way to order discussions at
+  // the same heads other than a timestamp.
+  // A better solution would be to store an array in Automerge.
+  const sortedDiscussions = sortBy(
+    discussions,
+    (d) => d.discussion.comments[0].timestamp ?? 0
+  );
+
+  /** Mark discussion threads */
+  markers = markers.concat(sortedDiscussions);
 
   /** Mark branch merge points */
   markers = markers.concat(

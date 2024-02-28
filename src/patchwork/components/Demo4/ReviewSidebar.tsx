@@ -317,9 +317,19 @@ export const ReviewSidebar: React.FC<{
                           />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mr-4">
-                          <DropdownMenuItem>
-                            Context actions go here
-                          </DropdownMenuItem>
+                          {(item.type === "otherBranchMergedIntoThisDoc" ||
+                            item.type === "branchCreatedFromThisDoc") && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setSelectedBranch({
+                                  type: "branch",
+                                  url: item.branch.url,
+                                })
+                              }
+                            >
+                              Go to branch
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
