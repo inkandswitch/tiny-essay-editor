@@ -991,10 +991,7 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   // Combine all path datas
   const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
 
-  return <path d={combinedPathData}
-               stroke="#aaa"
-               fill="none"
-               strokeWidth="1"
-               strokeDasharray="3"
-  />;
+  return (
+    <path d={combinedPathData} stroke="#d1d5db" fill="none" strokeWidth="1" />
+  );
 };
