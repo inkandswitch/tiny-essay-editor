@@ -148,7 +148,7 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
   };
 
   return (
-    <div className="pt-2 px-2 bg-gray-50 z-10">
+    <div className="border-t border-gray-200 pt-2 px-2 bg-gray-50 z-10">
       {textSelection && textSelection.from !== textSelection.to && doc && (
         <HighlightSnippetView
           from={textSelection.from}

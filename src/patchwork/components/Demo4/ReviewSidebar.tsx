@@ -134,7 +134,7 @@ export const ReviewSidebar: React.FC<{
       : undefined;
 
   return (
-    <div className="h-full w-full flex flex-col gap-2 text-xs text-gray-600">
+    <div className="h-full w-full flex flex-col text-xs text-gray-600">
       {/* Show which branch we're on  */}
       <div className="bg-gray-50 border-gray-200 border-b">
         <div className="flex items-center px-2 py-1">
