@@ -53,6 +53,7 @@ export const TinyEssayEditor = ({
   showBranchLayers,
   selectMainBranch,
   overlayContainer,
+  setEditorContainerElement,
   currentlyActiveHeads,
   onUpdateDiscussionTargetPositions,
 }: {
@@ -73,6 +74,7 @@ export const TinyEssayEditor = ({
   selectMainBranch?: () => void;
   overlayContainer?: OverlayContainer;
   currentlyActiveHeads?: A.Heads;
+  setEditorContainerElement?: (container: HTMLDivElement) => void;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
@@ -295,6 +297,7 @@ export const TinyEssayEditor = ({
               debugHighlights={debugHighlights}
               discussionAnnotations={discussionAnnotations}
               overlayContainer={overlayContainer}
+              setEditorContainerElement={setEditorContainerElement}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
               }

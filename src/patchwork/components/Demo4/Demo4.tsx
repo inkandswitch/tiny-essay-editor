@@ -6,7 +6,13 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
 import { isEqual, truncate, sortBy } from "lodash";
@@ -69,6 +75,7 @@ import {
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
+import { c } from "vitest/dist/reporters-5f784f42.js";
 
 interface MakeBranchOptions {
   name?: string;
@@ -287,6 +294,9 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
+  const [editorContainerElement, setEditorContainerElement] =
+    useState<HTMLDivElement>(null);
+  const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
@@ -316,24 +326,26 @@ export const Demo4: React.FC<{
     useState<HTMLDivElement>();
 
   useEffect(() => {
-    if (!bezierCurveLayerElement) {
+    if (!bezierCurveLayerElement || !editorContainerElement) {
       return;
     }
 
     // Step 2: Set up the ResizeObserver
     const observer = new ResizeObserver(() => {
       setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
+      setEditorContainerRect(editorContainerElement.getBoundingClientRect());
     });
 
     setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
 
     observer.observe(bezierCurveLayerElement);
+    observer.observe(editorContainerElement);
 
     // Step 3: Clean up
     return () => {
       observer.disconnect();
     };
-  }, [bezierCurveLayerElement]);
+  }, [bezierCurveLayerElement, editorContainerElement]);
 
   const activeDoc = branchDoc ?? doc;
 
@@ -697,8 +709,16 @@ export const Demo4: React.FC<{
                               key={position.discussion.id}
                               x1={bezierCurveLayerRect.width}
                               y1={commentPositionMap[position.discussion.id]}
-                              x2={position.x}
-                              y2={position.y + bezierCurveLayerRect.top}
+                              x2={
+                                editorContainerRect.right -
+                                bezierCurveLayerRect.left +
+                                30
+                              }
+                              y2={position.y + bezierCurveLayerRect.top - 4}
+                              x3={position.x + 12}
+                              y3={position.y + bezierCurveLayerRect.top - 5}
+                              x4={position.x}
+                              y4={position.y + bezierCurveLayerRect.top}
                             />
                           );
                         })}
@@ -753,6 +773,7 @@ export const Demo4: React.FC<{
                         onUpdateDiscussionTargetPositions
                       }
                       overlayContainer={overlayContainer}
+                      setEditorContainerElement={setEditorContainerElement}
                     />
                   </div>
                 </div>
@@ -932,23 +953,48 @@ interface BezierCurveProps {
   y1: number;
   x2: number;
   y2: number;
+  x3: number;
+  y3: number;
+  x4: number; // New point 4 X coordinate
+  y4: number; // New point 4 Y coordinate
 }
 
-const BezierCurve: React.FC<BezierCurveProps> = ({ x1, y1, x2, y2 }) => {
-  // You might want to calculate control points based on start and end, or pass them as props.
-  // This is a simple example; adjust control points as needed.
+const BezierCurve: React.FC<BezierCurveProps> = ({
+  x1,
+  y1,
+  x2,
+  y2,
+  x3,
+  y3,
+  x4,
+  y4,
+}) => {
+  // Control points for the Bezier curve from point 1 to point 2
   const controlPoint1 = { x: x1 + (x2 - x1) / 3, y: y1 };
-  const controlPoint2 = { x: x1 + (2 * (x2 - x1)) / 3, y: y2 };
+  const controlPoint2 = { x: x2 - (x2 - x1) / 3, y: y2 };
 
-  const pathData = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
+  // Path data for the Bezier curve from point 1 to point 2
+  const pathDataBezier1 = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
 
-  return (
-    <path
-      d={pathData}
-      stroke="#aaa"
-      fill="none"
-      strokeWidth="1"
-      strokeDasharray="3"
-    />
-  );
+  // Path data for the straight line from point 2 to point 3
+  const pathDataLine = `M ${x2} ${y2} L ${x3} ${y3}`;
+
+  // Control points for the Bezier curve from point 3 to point 4 that bends outwards
+  const offsetX = Math.abs(x4 - x3) / 2; // Adjust the outward bend here
+  const offsetY = Math.abs(y4 - y3) / 2; // Adjust the outward bend here
+  const controlPoint3 = { x: x3 + offsetX, y: y3 - offsetY }; // Control point for bending outwards
+  const controlPoint4 = { x: x4 - offsetX, y: y4 - offsetY }; // Control point for bending outwards
+
+  // Path data for the Bezier curve from point 3 to point 4
+  const pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
+
+  // Combine all path datas
+  const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
+
+  return <path d={combinedPathData}
+               stroke="#aaa"
+               fill="none"
+               strokeWidth="1"
+               strokeDasharray="3"
+  />;
 };

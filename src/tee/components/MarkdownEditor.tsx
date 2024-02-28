@@ -90,6 +90,7 @@ export type EditorProps = {
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
   overlayContainer?: OverlayContainer;
+  setEditorContainerElement?: (container: HTMLDivElement) => void;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
@@ -111,6 +112,7 @@ export function MarkdownEditor({
   foldRanges,
   discussionAnnotations,
   overlayContainer,
+  setEditorContainerElement,
   onUpdateDiscussionTargetPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
@@ -311,6 +313,10 @@ export function MarkdownEditor({
     });
 
     editorRoot.current = view;
+
+    if (setEditorContainerElement) {
+      setEditorContainerElement(containerRef.current);
+    }
 
     // pass the view up to the parent so it can use it too
     setView(view);

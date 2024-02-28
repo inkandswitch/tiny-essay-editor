@@ -6,6 +6,7 @@ import { Discussion } from "@/patchwork/schema";
 export interface DiscussionTargetPosition {
   x: number;
   y: number;
+
   discussion: Discussion;
 }
 
@@ -72,15 +73,27 @@ export const discussionTargetPositionListener = (
           onUpdate(
             annotations.flatMap((annotation) => {
               if ("type" in annotation && annotation.type === "discussion") {
-                const pos = view.coordsAtPos(annotation.to);
-                if (!pos) {
+                const firstLineBreakIndex = view.state
+                  .sliceDoc(annotation.from, annotation.to)
+                  .indexOf("\n");
+                const fromIndex = annotation.from;
+                const toIndex =
+                  firstLineBreakIndex === -1
+                    ? annotation.to
+                    : firstLineBreakIndex + annotation.from;
+
+                const fromCoords = view.coordsAtPos(fromIndex);
+                const toCoords = view.coordsAtPos(toIndex);
+                if (!fromCoords || !toCoords) {
                   return [];
                 }
                 return [
                   {
                     discussion: (annotation as any).discussion, // todo: fix types
-                    x: pos.right - overlayContainer.left,
-                    y: (pos.top + pos.bottom) / 2 - overlayContainer.top * 2,
+                    x:
+                      (fromCoords.left + toCoords.right) / 2 -
+                      overlayContainer.left,
+                    y: toCoords.top - overlayContainer.top * 2,
                   },
                 ];
               }
