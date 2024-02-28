@@ -77,6 +77,7 @@ export type ChangelogItem = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
+  time: number;
 } & ({ type: "changeGroup"; changeGroup: ChangeGroup } | HeadsMarker);
 
 /** Change group attributes that could work for any document */
@@ -328,7 +329,7 @@ export const getChangelogItems = (
       (m) => m.type === "otherBranchMergedIntoThisDoc"
     );
     if (mergeMarker) {
-      changelogItems.push(mergeMarker);
+      changelogItems.push({ ...mergeMarker, time: changeGroup.time });
       continue;
     }
 
@@ -338,9 +339,10 @@ export const getChangelogItems = (
       changeGroup,
       users: changeGroup.authorUrls,
       heads: [changeGroup.to],
+      time: changeGroup.time,
     });
     for (const marker of changeGroup.markers) {
-      changelogItems.push(marker);
+      changelogItems.push({ ...marker, time: changeGroup.time });
     }
   }
   return changelogItems;

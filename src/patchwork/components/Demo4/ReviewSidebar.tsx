@@ -188,106 +188,119 @@ export const ReviewSidebar: React.FC<{
               selection &&
               index >= selection.from.index &&
               index <= selection.to.index;
+
+            const dateChangedFromPrevItem =
+              new Date(changelogItems[index - 1]?.time).toDateString() !==
+              new Date(item.time).toDateString();
+
             return (
-              <div
-                key={item.id}
-                className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
-                  selected ? "bg-blue-100 bg-opacity-20" : ""
-                }`}
-                onClick={(e) =>
-                  handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
-                }
-              >
-                {(() => {
-                  switch (item.type) {
-                    case "changeGroup":
-                      return (
-                        <ChangeGroupItem
-                          group={item.changeGroup}
-                          doc={doc}
-                          selected={selected}
-                        />
-                      );
-                    case "tag":
-                      return (
-                        <MilestoneItem
-                          milestone={item.tag}
-                          selected={selected}
-                        />
-                      );
-                    case "branchCreatedFromThisDoc":
-                      return (
-                        <BranchCreatedItem
-                          selectedBranch={selectedBranch}
-                          setSelectedBranch={setSelectedBranch}
-                          branch={item.branch}
-                          selected={selected}
-                        />
-                      );
-                    case "discussionThread":
-                      return (
-                        <DiscussionThreadItem
-                          discussion={item.discussion}
-                          selected={selected}
-                        />
-                      );
-                    case "originOfThisBranch":
-                      return (
-                        <BranchOriginItem
-                          branch={item.branch}
-                          selected={selected}
-                        />
-                      );
-                    case "otherBranchMergedIntoThisDoc":
-                      return (
-                        <BranchMergedItem
-                          branch={item.branch}
-                          selected={selected}
-                          changeGroups={item.changeGroups}
-                          doc={doc}
-                        />
-                      );
-                    default: {
-                      // Ensure we've handled all types
-                      const exhaustiveCheck: never = item;
-                      return exhaustiveCheck;
-                    }
-                  }
-                })()}
-
-                {/* User avatars associated with this item */}
-                <div className="ml-auto flex-shrink-0 flex items-center gap-2">
-                  <div className="flex items-center space-x-[-4px]">
-                    {item.users.map((contactUrl) => (
-                      <div className="rounded-full">
-                        <InlineContactAvatar
-                          key={contactUrl}
-                          url={contactUrl}
-                          size="sm"
-                          showName={false}
-                        />
-                      </div>
-                    ))}
+              <>
+                {dateChangedFromPrevItem && (
+                  <div className="text-xs text-gray-400">
+                    <DateHeader date={new Date(item.time)} />
                   </div>
+                )}
+                <div
+                  key={item.id}
+                  data-item-id={item.id}
+                  className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
+                    selected ? "bg-blue-100 bg-opacity-20" : ""
+                  }`}
+                  onClick={(e) =>
+                    handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
+                  }
+                >
+                  {(() => {
+                    switch (item.type) {
+                      case "changeGroup":
+                        return (
+                          <ChangeGroupItem
+                            group={item.changeGroup}
+                            doc={doc}
+                            selected={selected}
+                          />
+                        );
+                      case "tag":
+                        return (
+                          <MilestoneItem
+                            milestone={item.tag}
+                            selected={selected}
+                          />
+                        );
+                      case "branchCreatedFromThisDoc":
+                        return (
+                          <BranchCreatedItem
+                            selectedBranch={selectedBranch}
+                            setSelectedBranch={setSelectedBranch}
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "discussionThread":
+                        return (
+                          <DiscussionThreadItem
+                            discussion={item.discussion}
+                            selected={selected}
+                          />
+                        );
+                      case "originOfThisBranch":
+                        return (
+                          <BranchOriginItem
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "otherBranchMergedIntoThisDoc":
+                        return (
+                          <BranchMergedItem
+                            branch={item.branch}
+                            selected={selected}
+                            changeGroups={item.changeGroups}
+                            doc={doc}
+                          />
+                        );
+                      default: {
+                        // Ensure we've handled all types
+                        const exhaustiveCheck: never = item;
+                        return exhaustiveCheck;
+                      }
+                    }
+                  })()}
 
-                  {/* Context menu for the item (TODO: how to populate actions for this?) */}
-                  <div className="">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <MoreHorizontal
-                          size={18}
-                          className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
-                        />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="mr-4">
-                        <DropdownMenuItem>
-                          Context actions go here
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  {/* User avatars associated with this item */}
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                    <div className="flex items-center space-x-[-4px]">
+                      {item.users.map((contactUrl) => (
+                        <div className="rounded-full">
+                          <InlineContactAvatar
+                            key={contactUrl}
+                            url={contactUrl}
+                            size="sm"
+                            showName={false}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Context menu for the item (TODO: how to populate actions for this?) */}
+                    <div className="">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <MoreHorizontal
+                            size={18}
+                            className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
+                          />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="mr-4">
+                          <DropdownMenuItem>
+                            Context actions go here
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             );
           })}
 
@@ -423,11 +436,18 @@ const useChangelogSelection = ({
 
   const containerTop = itemsContainerRef.current.getBoundingClientRect().top;
   const fromPos =
-    itemsContainerRef.current.children[fromIndex]?.getBoundingClientRect().top -
-    containerTop;
+    [...itemsContainerRef.current.children]
+      .find((div) => div.attributes["data-item-id"]?.value === selection.from)
+      ?.getBoundingClientRect().top - containerTop;
+  console.log(
+    [...(itemsContainerRef.current?.children ?? [])].map(
+      (div) => div.attributes["data-item-id"]?.value
+    )
+  );
   const toPos =
-    itemsContainerRef.current.children[toIndex]?.getBoundingClientRect()
-      .bottom - containerTop;
+    [...(itemsContainerRef.current?.children ?? [])]
+      .find((div) => div.attributes["data-item-id"]?.value === selection.to)
+      ?.getBoundingClientRect().bottom - containerTop;
 
   return {
     selection: {
@@ -452,15 +472,26 @@ const ChangeGroupItem: React.FC<{
   group: ChangeGroup;
   doc: MarkdownDoc;
   selected: boolean;
-}> = ({ group, selected, doc }) => {
+}> = ({ group, doc }) => {
   return (
     <div className="pl-[7px] pr-1 flex w-full">
       <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-      <ChangeGroupDescription
-        changeGroup={group}
-        selected={selected}
-        doc={doc}
-      />
+      <ChangeGroupDescription changeGroup={group} doc={doc} />
+    </div>
+  );
+};
+
+const DateHeader: React.FC<{ date: Date }> = ({ date }) => {
+  return (
+    <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
+      <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
+      <div>
+        {date.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          weekday: "short",
+        })}
+      </div>
     </div>
   );
 };
@@ -468,11 +499,9 @@ const ChangeGroupItem: React.FC<{
 // Summary of a change group: textual + avatars
 const ChangeGroupDescription = ({
   changeGroup,
-  selected,
   doc,
 }: {
   changeGroup: ChangeGroup;
-  selected: boolean;
   doc: MarkdownDoc;
 }) => {
   let summary;
