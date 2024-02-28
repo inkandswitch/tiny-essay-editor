@@ -126,8 +126,8 @@ export const ReviewSidebar: React.FC<{
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
       {/* Show which branch we're on  */}
-      <div className=" bg-gray-50 p-2 border-gray-200 border-b">
-        <div className="flex items-center pb-1 ">
+      <div className=" bg-gray-50 border-gray-200 border-b">
+        <div className="flex items-center px-2 py-1">
           <div className=" font-bold">
             {selectedBranch.type === "main" && (
               <div className="flex items-center gap-2">
@@ -150,22 +150,21 @@ export const ReviewSidebar: React.FC<{
             )}
           </div>
         </div>
-        <div className="h-4">
-          {selection && (
-            <div className="flex gap-2">
-              <div className="text-blue-600 font-medium">
-                Showing {selection.to.index - selection.from.index + 1} change
-                {selection.to.index === selection.from.index ? "" : "s"}
-              </div>
-              <div
-                className="cursor-pointer text-gray-500 font-semibold underline"
-                onClick={clearSelection}
-              >
-                Reset to now
-              </div>
+
+        {selection && (
+          <div className="flex gap-2 px-2 pb-1">
+            <div className="text-blue-600 font-medium">
+              Showing {selection.to.index - selection.from.index + 1} change
+              {selection.to.index === selection.from.index ? "" : "s"}
             </div>
-          )}
-        </div>
+            <div
+              className="cursor-pointer text-gray-500 font-semibold underline"
+              onClick={clearSelection}
+            >
+              Reset to now
+            </div>
+          </div>
+        )}
       </div>
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
