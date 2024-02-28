@@ -34,7 +34,13 @@ import {
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { Branch, DiffWithProvenance, DiscussionComment } from "../../schema";
+import {
+  Branch,
+  DiffWithProvenance,
+  Discussion,
+  DiscussionComment,
+  Tag,
+} from "../../schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@automerge/automerge";
@@ -129,7 +135,7 @@ export const ReviewSidebar: React.FC<{
   return (
     <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-4">
           {changelogItems.map((item) => (
             <div key={item.id} className="px-2 w-full flex items-center">
               {(() => {
@@ -143,11 +149,25 @@ export const ReviewSidebar: React.FC<{
                       />
                     );
                   case "tag":
-                    return <div>Milestone</div>;
+                    return (
+                      <MilestoneItem milestone={item.tag} selected={false} />
+                    );
                   case "branchCreatedFromThisDoc":
-                    return <div>Branch Created</div>;
+                    return (
+                      <BranchCreatedItem
+                        selectedBranch={selectedBranch}
+                        setSelectedBranch={setSelectedBranch}
+                        branch={item.branch}
+                        selected={false}
+                      />
+                    );
                   case "discussionThread":
-                    return <div>Discussion thread</div>;
+                    return (
+                      <DiscussionThreadItem
+                        discussion={item.discussion}
+                        selected={false}
+                      />
+                    );
                   case "originOfThisBranch":
                     return <div>Origin of this branch</div>;
                   case "otherBranchMergedIntoThisDoc":
@@ -164,7 +184,7 @@ export const ReviewSidebar: React.FC<{
               <div className="ml-auto flex-shrink-0 flex items-center gap-2">
                 <div className="flex items-center">
                   {item.users.map((contactUrl) => (
-                    <div className="-ml-2 shadow rounded-full">
+                    <div className="-ml-2 rounded-full">
                       <InlineContactAvatar
                         key={contactUrl}
                         url={contactUrl}
@@ -255,7 +275,7 @@ const BranchMergedItem: React.FC<{ branch: Branch; selected: boolean }> = ({
   selected,
 }) => {
   return (
-    <ItemView selected={selected} color="purple-600">
+    <ItemView selected={selected} color="purple">
       <ItemIcon>
         <GitBranchPlusIcon
           className="h-[10px] w-[10px] text-white"
@@ -268,6 +288,140 @@ const BranchMergedItem: React.FC<{ branch: Branch; selected: boolean }> = ({
           <div>
             <div className="inline font-normal">Branch merged:</div>{" "}
             <div className="inline font-semibold">{branch.name}</div>{" "}
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+const MilestoneItem = ({
+  milestone,
+  selected,
+}: {
+  milestone: Tag;
+  selected: boolean;
+}) => {
+  return (
+    <ItemView selected={selected} color="green">
+      <ItemIcon>
+        <MilestoneIcon className="h-[10px] w-[10px] text-white" />
+      </ItemIcon>
+      <ItemContent>
+        <div className="text-sm flex select-none">
+          <div>
+            <div className="inline font-normal">Milestone:</div>{" "}
+            <div className="inline font-semibold">{milestone.name}</div>{" "}
+          </div>
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+const BranchCreatedItem = ({
+  branch,
+  selected,
+  selectedBranch,
+  setSelectedBranch,
+}: {
+  branch: Branch;
+  selected: boolean;
+  selectedBranch: SelectedBranch;
+  setSelectedBranch: (branch: SelectedBranch) => void;
+}) => {
+  return (
+    <ItemView selected={selected} color="neutral">
+      <ItemIcon>
+        <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
+      </ItemIcon>
+      <ItemContent>
+        <div>
+          <div className="text-sm flex select-none items-center">
+            <div className="mb-1">
+              <div className="inline font-normal">Branch created:</div>{" "}
+              <div className="inline font-semibold">{branch.name}</div>{" "}
+            </div>
+          </div>
+
+          {!isEqual(selectedBranch, {
+            type: "branch",
+            url: branch.url,
+          }) && (
+            <div
+              className="text-xs text-gray-400 hover:text-gray-600 font-semibold cursor-pointer select-none flex-shrink-0"
+              onClick={() =>
+                setSelectedBranch({
+                  type: "branch",
+                  url: branch.url,
+                })
+              }
+            >
+              View branch {">"}
+            </div>
+          )}
+        </div>
+      </ItemContent>
+    </ItemView>
+  );
+};
+
+// Show a discussion thread about the document.
+// We only show discussions about the whole doc in this timeline view,
+// not discussions about specific parts of the doc.
+// We only show the first comment in the thread (replying isn't supported yet)
+const DiscussionThreadItem = ({
+  discussion,
+  selected,
+}: {
+  discussion: Discussion;
+  selected: boolean;
+}) => {
+  const comment = discussion.comments[0];
+  return (
+    <ItemView selected={selected} color="orange">
+      <ItemIcon>
+        <MessageSquare className="h-[10px] w-[10px] text-white" />
+      </ItemIcon>
+      <ItemContent>
+        <div className="text-sm flex select-none">
+          <div className="font-normal text-gray-800 -ml-1 -my-1">
+            {/* We use a readonly Codemirror to show markdown preview for comments
+                                        using the same style that was used for entering the comment */}
+            <CodeMirror
+              value={comment.content.trim()}
+              readOnly
+              editable={false}
+              basicSetup={{
+                foldGutter: false,
+                highlightActiveLine: false,
+                lineNumbers: false,
+              }}
+              extensions={[
+                markdown({
+                  base: markdownLanguage,
+                  codeLanguages: languages,
+                }),
+                EditorView.lineWrapping,
+              ]}
+              theme={EditorView.theme({
+                "&.cm-editor": {
+                  height: "100%",
+                },
+                "&.cm-focused": {
+                  outline: "none",
+                },
+                ".cm-scroller": {
+                  height: "100%",
+                },
+                ".cm-content": {
+                  height: "100%",
+                  fontSize: "14px",
+                  fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                  fontWeight: "normal",
+                },
+              })}
+            />
           </div>
         </div>
       </ItemContent>
@@ -304,7 +458,7 @@ const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
 const ItemView = ({
   selected,
   children,
-  color = "purple-600",
+  color = "neutral",
 }: {
   selected: boolean;
   children: ReactNode | ReactNode[];
@@ -312,11 +466,19 @@ const ItemView = ({
 }) => {
   const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
 
+  const tailwindColor =
+    {
+      purple: "bg-purple-600",
+      green: "bg-green-600",
+      neutral: "bg-neutral-300",
+      orange: "bg-amber-600",
+    }[color] ?? "bg-neutral-600";
+
   return (
     <div className="items-top flex gap-1">
       {slots.icon && (
         <div
-          className={`bg-${color} mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full  outline outline-2 outline-gray-100`}
+          className={`${tailwindColor} mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full  outline outline-2 outline-gray-100`}
         >
           {slots.icon}
         </div>
@@ -324,7 +486,7 @@ const ItemView = ({
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
       <div
-        className={`cursor-pointer flex-1 rounded p-1 shadow ${
+        className={`cursor-pointer flex-1 rounded py-1 px-2 shadow ${
           selected ? "bg-blue-100" : "bg-white"
         }`}
       >

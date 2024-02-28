@@ -46,7 +46,7 @@ export const InlineContactAvatar = ({
           <AvatarImage
             src={avatarUrl}
             alt={name}
-            className="inline h-5 w-5  align-top rounded-full border-[0.5px] border-neutral-400"
+            className="inline h-4 w-4 align-top rounded-full border-[0.5px] border-neutral-800"
           />
         )}
         <AvatarFallback className="inline h-4 w-4 align-top mt-[1px] mr-1 rounded-full">
