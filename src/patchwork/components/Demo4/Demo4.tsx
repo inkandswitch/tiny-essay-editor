@@ -879,8 +879,8 @@ export const Demo4: React.FC<{
                   onValueChange={(value) => setReviewMode(value as ReviewMode)}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="comments">Comments</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="comments">Comments</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
