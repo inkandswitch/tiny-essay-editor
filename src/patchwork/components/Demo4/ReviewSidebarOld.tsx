@@ -678,7 +678,7 @@ export const ReviewSidebar: React.FC<{
 
                       {marker.type === "tag" && (
                         <div
-                          className={`history-item outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
+                          className={`timeline-item outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
                             selection?.type === "milestone" &&
                             selection?.heads === marker.heads
                               ? "bg-gray-200"

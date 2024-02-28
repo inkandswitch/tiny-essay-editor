@@ -124,11 +124,11 @@ export const ReviewSidebar: React.FC<{
       : undefined;
 
   return (
-    <div className="history h-full w-full flex flex-col gap-2 text-xs text-gray-600">
+    <div className="h-full w-full flex flex-col gap-2 text-xs text-gray-600">
       {/* Show which branch we're on  */}
-      <div className=" bg-gray-50 border-gray-200 border-b">
+      <div className="bg-gray-50 border-gray-200 border-b">
         <div className="flex items-center px-2 py-1">
-          <div className=" font-bold">
+          <div className="font-bold">
             {selectedBranch.type === "main" && (
               <div className="flex items-center gap-2">
                 <CrownIcon className="inline" size={12} />
@@ -166,7 +166,12 @@ export const ReviewSidebar: React.FC<{
           </div>
         )}
       </div>
-      <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
+
+      {/* The timeline */}
+      <div
+        className="timeline overflow-y-auto flex-1 flex flex-col"
+        ref={scrollerRef}
+      >
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
           {changelogItems.map((item, index) => {
             const selected =
