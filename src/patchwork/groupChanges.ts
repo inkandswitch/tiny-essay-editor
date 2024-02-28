@@ -328,8 +328,6 @@ export const getChangelogItems = (
 
   const changelogItems: ChangelogItem[] = [];
   for (const changeGroup of changeGroups) {
-    if (changeGroup.markers.find((m) => m.type === "originOfThisBranch")) {
-    }
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
     // we nest it inside the merge marker.

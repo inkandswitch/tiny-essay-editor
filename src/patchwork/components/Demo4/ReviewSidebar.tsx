@@ -149,7 +149,7 @@ export const ReviewSidebar: React.FC<{
               </>
             )}
           </div>
-          <div className="flex-grow flex justify-center items-center px-2 py-1">
+          <div className="flex-grow flex justify-center items-center px-2 py-1 text-sm">
             <div className="font-bold">
               {selectedBranch.type === "main" && (
                 <div className="flex items-center gap-2">
@@ -168,20 +168,22 @@ export const ReviewSidebar: React.FC<{
           <div className="w-12 flex-shrink-0"></div>
         </div>
 
-        {selection && (
-          <div className="flex gap-2 px-2 pb-1">
-            <div className="text-blue-600 font-medium">
-              Showing {selection.to.index - selection.from.index + 1} change
-              {selection.to.index === selection.from.index ? "" : "s"}
+        <div className="h-6">
+          {selection && (
+            <div className="flex gap-2 px-2 pb-1">
+              <div className="text-blue-600 font-medium">
+                Showing {selection.to.index - selection.from.index + 1} change
+                {selection.to.index === selection.from.index ? "" : "s"}
+              </div>
+              <div
+                className="cursor-pointer text-gray-500 font-semibold underline"
+                onClick={clearSelection}
+              >
+                Reset to now
+              </div>
             </div>
-            <div
-              className="cursor-pointer text-gray-500 font-semibold underline"
-              onClick={clearSelection}
-            >
-              Reset to now
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* The timeline */}
