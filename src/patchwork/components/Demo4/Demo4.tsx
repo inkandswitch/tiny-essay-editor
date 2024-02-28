@@ -75,7 +75,8 @@ import {
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
-import { c } from "vitest/dist/reporters-5f784f42.js";
+
+const COMMENT_ANCHOR_OFFSET = 20;
 
 interface MakeBranchOptions {
   name?: string;
@@ -748,9 +749,20 @@ export const Demo4: React.FC<{
 
                           return (
                             <BezierCurve
+                              color={
+                                activeDiscussionIds.length === 0 ||
+                                activeDiscussionIds.includes(
+                                  position.discussion.id
+                                )
+                                  ? "#d1d5db"
+                                  : "#eee"
+                              }
                               key={position.discussion.id}
                               x1={bezierCurveLayerRect.width}
-                              y1={commentPositionMap[position.discussion.id]}
+                              y1={
+                                commentPositionMap[position.discussion.id].top +
+                                COMMENT_ANCHOR_OFFSET
+                              }
                               x2={
                                 editorContainerRect.right -
                                 bezierCurveLayerRect.left +
@@ -871,9 +883,10 @@ export const Demo4: React.FC<{
                     }
                     onChangeCommentPositionMap={setCommentPositionMap}
                     overlayContainer={overlayContainer}
-                    activeDiscussionIds={activeDiscussionIds}
                     setSelectedDiscussionId={setSelectedDiscussionId}
+                    selectedDiscussionId={selectedDiscussionId}
                     setHoveredDiscussionId={setHoveredDiscussionId}
+                    hoveredDiscussionId={hoveredDiscussionId}
                   />
                 )}
               </div>
@@ -1001,8 +1014,9 @@ interface BezierCurveProps {
   y2: number;
   x3: number;
   y3: number;
-  x4: number; // New point 4 X coordinate
-  y4: number; // New point 4 Y coordinate
+  x4: number;
+  y4: number;
+  color: string;
 }
 
 const BezierCurve: React.FC<BezierCurveProps> = ({
@@ -1014,6 +1028,7 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   y3,
   x4,
   y4,
+  color,
 }) => {
   // Control points for the Bezier curve from point 1 to point 2
   const controlPoint1 = { x: x1 + (x2 - x1) / 3, y: y1 };
@@ -1036,6 +1051,6 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
 
   return (
-    <path d={combinedPathData} stroke="#d1d5db" fill="none" strokeWidth="1" />
+    <path d={combinedPathData} stroke={color} fill="none" strokeWidth="1" />
   );
 };

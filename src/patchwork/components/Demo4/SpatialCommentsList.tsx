@@ -21,7 +21,7 @@ import { Check, Reply } from "lucide-react";
 import { MarkdownDoc } from "@/tee/schema";
 import { uuid } from "@automerge/automerge";
 
-type CommentPositionMap = Record<string, number>;
+type CommentPositionMap = Record<string, { top: number; bottom: number }>;
 
 interface SpatialCommentsListProps {
   discussions: Discussion[];
@@ -31,10 +31,12 @@ interface SpatialCommentsListProps {
   onChangeCommentPositionMap: (map: CommentPositionMap) => void;
   setSelectedDiscussionId: (id: string) => void;
   setHoveredDiscussionId: (id: string) => void;
-  activeDiscussionIds: string[];
+  selectedDiscussionId: string;
+  hoveredDiscussionId: string;
 }
 
 const DEBUG_HIGHLIGHT = false;
+const ANCHOR_OFFSET = 20;
 
 export const SpatialCommentsList = React.memo(
   ({
@@ -43,9 +45,10 @@ export const SpatialCommentsList = React.memo(
     overlayContainer,
     changeDoc,
     onChangeCommentPositionMap,
-    activeDiscussionIds,
     setSelectedDiscussionId,
+    selectedDiscussionId,
     setHoveredDiscussionId,
+    hoveredDiscussionId,
   }: SpatialCommentsListProps) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const scrollContainerRectRef = useRef<DOMRect>();
@@ -55,7 +58,7 @@ export const SpatialCommentsList = React.memo(
     const [activeReplyThreadId, setActiveReplyThreadId] = useState<string>();
     const account = useCurrentAccount();
 
-    const topComment = overlayContainer
+    const topDiscussion = overlayContainer
       ? activeDiscussionTargetPositions.find(
           ({ y }) => y + overlayContainer.top > 0
         )
@@ -67,7 +70,10 @@ export const SpatialCommentsList = React.memo(
       for (const [id, position] of Object.entries(
         commentPositionMapRef.current
       )) {
-        commentPositionMapWithScrollOffset[id] = position - scrollOffset + 20;
+        commentPositionMapWithScrollOffset[id] = {
+          top: position.top - scrollOffset,
+          bottom: position.bottom - scrollOffset,
+        };
       }
 
       onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
@@ -95,17 +101,33 @@ export const SpatialCommentsList = React.memo(
       triggerChangeCommentPositionMap();
     }, [scrollOffset]);
 
-    // scroll to the current top comment
+    // sync scrollPosition
     useEffect(() => {
-      if (!scrollContainer || !topComment) {
+      if (!scrollContainer || !topDiscussion) {
+        return;
+      }
+
+      if (selectedDiscussionId) {
+        const position = commentPositionMapRef.current[selectedDiscussionId];
+
+        if (
+          position.top - scrollOffset < 0 ||
+          position.bottom - scrollOffset > scrollContainerRectRef.current.height
+        ) {
+          scrollContainer.scrollTo({
+            top: position.top,
+            behavior: "smooth",
+          });
+        }
+
         return;
       }
 
       scrollContainer.scrollTo({
-        top: commentPositionMapRef.current[topComment.discussion.id],
+        top: commentPositionMapRef.current[topDiscussion.discussion.id].top,
         behavior: "smooth",
       });
-    }, [topComment, scrollContainer]);
+    }, [, topDiscussion, scrollContainer]);
 
     return (
       <div
@@ -134,14 +156,15 @@ export const SpatialCommentsList = React.memo(
                 key={discussion.id}
                 className={`select-none mr-2 px-2 py-1 border rounded-sm hover:bg-gray-50  hover:border-gray-400              
                 ${
-                  topComment &&
-                  topComment.discussion.id === discussion.id &&
+                  topDiscussion &&
+                  topDiscussion.discussion.id === discussion.id &&
                   DEBUG_HIGHLIGHT
                     ? "bg-yellow-100"
                     : "bg-white"
                 }
                 ${
-                  activeDiscussionIds.includes(discussion.id)
+                  discussion.id === hoveredDiscussionId ||
+                  discussion.id === selectedDiscussionId
                     ? "border-gray-400"
                     : "border-gray-200 "
                 }`}
@@ -150,8 +173,10 @@ export const SpatialCommentsList = React.memo(
                     delete commentPositionMapRef.current[discussion.id];
                   } else {
                     const rect = element.getBoundingClientRect();
-                    commentPositionMapRef.current[discussion.id] =
-                      rect.top - overlayContainer.top + scrollOffset;
+                    commentPositionMapRef.current[discussion.id] = {
+                      top: rect.top - overlayContainer.top + scrollOffset,
+                      bottom: rect.bottom - overlayContainer.top + scrollOffset,
+                    };
                   }
 
                   // triggerChangeCommentPositionMap();
