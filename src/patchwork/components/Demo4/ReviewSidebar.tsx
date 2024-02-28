@@ -42,7 +42,6 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 import { debounce, isEqual, truncate } from "lodash";
 import {
   DropdownMenu,
@@ -50,6 +49,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DiscussionInput } from "./DiscussionInput";
 
 const useScrollToBottom = () => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ type ChangelogSelectionAnchor = {
   /* The pixel position of the anchor */
   yPos: number;
 };
-type ChangelogSelection =
+export type ChangelogSelection =
   | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
   | undefined;
 
@@ -82,7 +82,17 @@ export const ReviewSidebar: React.FC<{
   setSelectedBranch: (branch: SelectedBranch) => void;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-}> = ({ docUrl, selectedBranch, setSelectedBranch, setDocHeads, setDiff }) => {
+  textSelection: TextSelection;
+  onClearTextSelection: () => void;
+}> = ({
+  docUrl,
+  selectedBranch,
+  setSelectedBranch,
+  setDocHeads,
+  setDiff,
+  textSelection,
+  onClearTextSelection,
+}) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata.source.url);
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -294,14 +304,20 @@ export const ReviewSidebar: React.FC<{
         </div>
       </div>
       <div className="bg-gray-50 z-10">
-        <CommentBox />
+        <DiscussionInput
+          doc={doc}
+          changeDoc={changeDoc}
+          changelogItems={changelogItems}
+          changelogSelection={selection}
+          handle={handle}
+          selectedBranch={selectedBranch}
+          setSelectedBranch={setSelectedBranch}
+          textSelection={textSelection}
+          onClearTextSelection={onClearTextSelection}
+        />
       </div>
     </div>
   );
-};
-
-const CommentBox = () => {
-  return <div className="h-16 bg-red-100 p-5">Comment box</div>;
 };
 
 // Manage the selection state for changelog items.
