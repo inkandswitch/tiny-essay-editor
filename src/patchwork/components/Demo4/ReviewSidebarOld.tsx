@@ -47,7 +47,6 @@ import { createBranch } from "@/patchwork/branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 import { debounce, isEqual } from "lodash";
-import { patchIsUserFacing } from "@/tee/changeGroupAnnotations";
 
 export type HistoryZoomLevel = 1 | 2 | 3;
 
@@ -942,9 +941,10 @@ const EditSummary = ({
   let summary;
   if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
     summary = `${
-      changeGroup.diff.patches.filter((patch) =>
-        patchIsUserFacing(patch as A.Patch)
-      ).length
+      // changeGroup.diff.patches.filter((patch) =>
+      //   patchIsUserFacing(patch as A.Patch)
+      // ).length
+      changeGroup.diff.patches.length
     } edits`;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;

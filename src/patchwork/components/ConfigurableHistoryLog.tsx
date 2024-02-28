@@ -105,6 +105,8 @@ export const ConfigurableHistoryLog: React.FC<{
       algorithm: activeGroupingAlgorithm,
       numericParameter: groupingNumericParameter,
       markers: (doc.tags ?? []).map((tag) => ({
+        id: `tag-${tag.heads[0]}-${tag.name}`,
+        users: tag.createdBy ? [tag.createdBy] : [],
         heads: tag.heads,
         type: "tag",
         tag,
