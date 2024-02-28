@@ -301,7 +301,7 @@ export const Demo4: React.FC<{
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [historyZoomLevel, setHistoryZoomLevel] = useState<HistoryZoomLevel>(2);
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("comments");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
@@ -453,7 +453,7 @@ export const Demo4: React.FC<{
     let focusedDiscussion: Discussion;
 
     if (textSelection && textSelection.from === textSelection.to) {
-      focusedDiscussion = discussions.find((discussion) => {
+      focusedDiscussion = (discussions ?? []).find((discussion) => {
         if (!discussion.target || discussion.target.type !== "editRange") {
           return false;
         }
