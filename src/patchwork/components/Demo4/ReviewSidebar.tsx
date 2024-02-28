@@ -84,7 +84,7 @@ export const ReviewSidebar: React.FC<{
   onClearTextSelection,
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
-  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata.source.url);
+  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata?.source?.url);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom();

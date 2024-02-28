@@ -277,6 +277,8 @@ export const getMarkersForDoc = <
       }))
   );
 
+  console.log("markers", markers);
+
   return markers;
 };
 
