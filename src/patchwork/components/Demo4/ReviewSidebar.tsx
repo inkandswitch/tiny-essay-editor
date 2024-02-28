@@ -103,7 +103,7 @@ export const ReviewSidebar: React.FC<{
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
         <div className="mt-auto flex flex-col gap-4">
           {changelogItems.map((item) => (
-            <div key={item.id} className="px-2 w-full flex items-center">
+            <div key={item.id} className="px-2 w-full flex items-start gap-2">
               {(() => {
                 const selected = false;
                 switch (item.type) {
@@ -157,9 +157,9 @@ export const ReviewSidebar: React.FC<{
                 }
               })()}
               <div className="ml-auto flex-shrink-0 flex items-center gap-2">
-                <div className="flex items-center">
+                <div className="flex items-center space-x-[-4px]">
                   {item.users.map((contactUrl) => (
-                    <div className="-ml-2 rounded-full">
+                    <div className="rounded-full">
                       <InlineContactAvatar
                         key={contactUrl}
                         url={contactUrl}
