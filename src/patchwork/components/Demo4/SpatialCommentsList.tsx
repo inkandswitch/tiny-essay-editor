@@ -219,7 +219,7 @@ export const SpatialCommentsList = React.memo(
         onScroll={(evt) =>
           setScrollOffset((evt.target as HTMLDivElement).scrollTop)
         }
-        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2 overflow-auto"
+        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2 z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
         ref={(element) => {
           if (!element) {
             return;
@@ -239,7 +239,7 @@ export const SpatialCommentsList = React.memo(
                 }}
                 onClick={() => setSelectedDiscussionId(discussion.id)}
                 key={discussion.id}
-                className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400              
+                className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400
                 ${
                   topDiscussion &&
                   topDiscussion.discussion.id === discussion.id &&
@@ -250,7 +250,7 @@ export const SpatialCommentsList = React.memo(
                 ${
                   discussion.id === hoveredDiscussionId ||
                   discussion.id === selectedDiscussionId
-                    ? "border-gray-400"
+                    ? "border-gray-400 shadow-xl"
                     : "border-gray-200 "
                 }`}
                 ref={(element) => {
@@ -281,65 +281,67 @@ export const SpatialCommentsList = React.memo(
                     </div>
                   ))}
                 </div>
-                {selectedDiscussionId === discussion.id && (
-                  <div className=" border-t border-gray-200 pt-2">
-                    <Popover
-                      open={activeReplyThreadId === discussion.id}
-                      onOpenChange={(open) => {
-                        open
-                          ? setActiveReplyThreadId(discussion.id)
-                          : setActiveReplyThreadId(null);
-                      }}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button className="mr-2 px-2 h-8" variant="ghost">
-                          <Reply className="mr-2" /> Reply
+                <div
+                  className={`overflow-hidden transition-all ${
+                    selectedDiscussionId === discussion.id
+                      ? "h-[50px] border-t border-gray-200 pt-2"
+                      : "h-[0px]"
+                  }`}
+                >
+                  <Popover
+                    open={activeReplyThreadId === discussion.id}
+                    onOpenChange={(open) => {
+                      open
+                        ? setActiveReplyThreadId(discussion.id)
+                        : setActiveReplyThreadId(null);
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button className="mr-2 px-2 h-8" variant="ghost">
+                        <Reply className="mr-2" /> Reply
+                        <span className="text-gray-400 ml-2 text-xs">
+                          (⌘ + ⏎)
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <Textarea
+                        className="mb-4"
+                        value={pendingCommentText}
+                        onChange={(event) =>
+                          setPendingCommentText(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && event.metaKey) {
+                            replyToDiscussion(discussion);
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }
+                        }}
+                      />
+
+                      <PopoverClose>
+                        <Button
+                          variant="outline"
+                          onClick={() => replyToDiscussion(discussion)}
+                        >
+                          Comment
                           <span className="text-gray-400 ml-2 text-xs">
                             (⌘ + ⏎)
                           </span>
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent>
-                        <Textarea
-                          className="mb-4"
-                          value={pendingCommentText}
-                          onChange={(event) =>
-                            setPendingCommentText(event.target.value)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" && event.metaKey) {
-                              replyToDiscussion(discussion);
-                              event.preventDefault();
-                              event.stopPropagation();
-                            }
-                          }}
-                        />
-
-                        <PopoverClose>
-                          <Button
-                            variant="outline"
-                            onClick={() => replyToDiscussion(discussion)}
-                          >
-                            Comment
-                            <span className="text-gray-400 ml-2 text-xs">
-                              (⌘ + ⏎)
-                            </span>
-                          </Button>
-                        </PopoverClose>
-                      </PopoverContent>
-                    </Popover>
-                    <Button
-                      variant="ghost"
-                      className="select-none h-8 px-2 "
-                      onClick={() => resolveDiscussion(discussion)}
-                    >
-                      <Check className="mr-2" /> Resolve
-                      <span className="text-gray-400 ml-2 text-xs">
-                        (⌘ + Y)
-                      </span>
-                    </Button>
-                  </div>
-                )}
+                      </PopoverClose>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="ghost"
+                    className="select-none h-8 px-2 "
+                    onClick={() => resolveDiscussion(discussion)}
+                  >
+                    <Check className="mr-2" /> Resolve
+                    <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
+                  </Button>
+                </div>
               </div>
             );
           })}

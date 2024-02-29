@@ -765,7 +765,11 @@ export const Demo4: React.FC<{
                         width={bezierCurveLayerRect.width}
                         height={bezierCurveLayerRect.height}
                       >
-                        {activeDiscussionTargetPositions.map((position) => {
+                        {sortBy(activeDiscussionTargetPositions, (pos) =>
+                          activeDiscussionIds.includes(pos.discussion.id)
+                            ? 1
+                            : 0
+                        ).map((position) => {
                           const commentPosition =
                             commentPositionMap[position.discussion.id];
 
@@ -776,12 +780,11 @@ export const Demo4: React.FC<{
                           return (
                             <BezierCurve
                               color={
-                                activeDiscussionIds.length === 0 ||
                                 activeDiscussionIds.includes(
                                   position.discussion.id
                                 )
-                                  ? "#d1d5db"
-                                  : "#eee"
+                                  ? "#facc15"
+                                  : "#d1d5db"
                               }
                               key={position.discussion.id}
                               x1={bezierCurveLayerRect.width}
