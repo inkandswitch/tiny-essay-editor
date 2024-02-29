@@ -190,8 +190,6 @@ export const SpatialCommentsList = React.memo(
       }
 
       const onKeydown = (evt: KeyboardEvent) => {
-        console.log(evt);
-
         const currentIndex = discussions.findIndex(
           (discussion) => discussion.id === selectedDiscussionId
         );
