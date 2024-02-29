@@ -73,27 +73,25 @@ export const discussionTargetPositionListener = (
           onUpdate(
             annotations.flatMap((annotation) => {
               if ("type" in annotation && annotation.type === "discussion") {
-                const firstLineBreakIndex = view.state
+                const lastLineBreakIndex = view.state
                   .sliceDoc(annotation.from, annotation.to)
-                  .indexOf("\n");
-                const fromIndex = annotation.from;
-                const toIndex =
-                  firstLineBreakIndex === -1
-                    ? annotation.to
-                    : firstLineBreakIndex + annotation.from;
+                  .trimEnd() // trim to ignore line breaks at the end of the string
+                  .lastIndexOf("\n");
+                const fromIndex =
+                  lastLineBreakIndex === -1
+                    ? annotation.from
+                    : annotation.from + lastLineBreakIndex + 1;
 
                 const fromCoords = view.coordsAtPos(fromIndex);
-                const toCoords = view.coordsAtPos(toIndex);
-                if (!fromCoords || !toCoords) {
+
+                if (!fromCoords) {
                   return [];
                 }
                 return [
                   {
                     discussion: (annotation as any).discussion, // todo: fix types
-                    x:
-                      (fromCoords.left + toCoords.right) / 2 -
-                      overlayContainer.left,
-                    y: toCoords.top - overlayContainer.top * 2,
+                    x: fromCoords.left - overlayContainer.left,
+                    y: fromCoords.bottom - overlayContainer.top * 2,
                   },
                 ];
               }

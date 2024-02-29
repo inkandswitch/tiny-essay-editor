@@ -299,7 +299,8 @@ export const Demo4: React.FC<{
   const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
+  // sorry geoffrey, if I forget to revert this. It's just a convenience for developing not my opinion that the default should be comments
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("comments");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
@@ -797,11 +798,9 @@ export const Demo4: React.FC<{
                                 bezierCurveLayerRect.left +
                                 30
                               }
-                              y2={position.y + bezierCurveLayerRect.top - 4}
-                              x3={position.x + 12}
-                              y3={position.y + bezierCurveLayerRect.top - 5}
-                              x4={position.x}
-                              y4={position.y + bezierCurveLayerRect.top}
+                              y2={position.y + bezierCurveLayerRect.top}
+                              x3={position.x}
+                              y3={position.y + bezierCurveLayerRect.top}
                             />
                           );
                         })}
@@ -1042,8 +1041,8 @@ interface BezierCurveProps {
   y2: number;
   x3: number;
   y3: number;
-  x4: number;
-  y4: number;
+  x4?: number;
+  y4?: number;
   color: string;
 }
 
@@ -1068,12 +1067,16 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   // Path data for the straight line from point 2 to point 3
   const pathDataLine = `M ${x2} ${y2} L ${x3} ${y3}`;
 
-  // Control points for the Bezier curve from point 3 to point 4 that bends outwards
-  const controlPoint3 = { x: x4, y: y3 };
-  const controlPoint4 = { x: x4, y: y3 };
+  let pathDataBezier2 = "";
 
-  // Path data for the Bezier curve from point 3 to point 4
-  const pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
+  if (x4 !== undefined && y4 !== undefined) {
+    // Control points for the Bezier curve from point 3 to point 4 that bends outwards
+    const controlPoint3 = { x: x4, y: y3 };
+    const controlPoint4 = { x: x4, y: y3 };
+
+    // Path data for the Bezier curve from point 3 to point 4
+    pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
+  }
 
   // Combine all path datas
   const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
