@@ -380,11 +380,6 @@ export const Demo4: React.FC<{
 
       const targetPos = target.y + scrollOffset;
 
-      console.log({
-        target: target.y,
-        max: scrollContainer.clientHeight - 100,
-      });
-
       if (target.y < 0 || target.y >= scrollContainer.clientHeight - 150) {
         // unsure why I need to subtract something here otherwise it doesn't scroll all the way to the bottom
         scrollContainer.scrollTo({

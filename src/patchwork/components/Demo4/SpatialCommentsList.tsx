@@ -106,7 +106,7 @@ export const SpatialCommentsList = React.memo(
 
     useEffect(() => {
       triggerChangeCommentPositionMap();
-    }, [scrollOffset]);
+    }, [scrollOffset, scrollContainer]);
 
     // sync scrollPosition
     useEffect(() => {
@@ -118,8 +118,10 @@ export const SpatialCommentsList = React.memo(
         const position = commentPositionMapRef.current[selectedDiscussionId];
 
         if (
-          position.top - scrollOffset < 0 ||
-          position.bottom - scrollOffset > scrollContainerRectRef.current.height
+          position &&
+          (position.top - scrollOffset < 0 ||
+            position.bottom - scrollOffset >
+              scrollContainerRectRef.current.height)
         ) {
           scrollTo(position.top - SIZE_INCREASE_ON_SELECT); // TODO: find a proper solution
         }
@@ -287,7 +289,7 @@ export const SpatialCommentsList = React.memo(
                     : "border-gray-200 "
                 }`}
                 ref={(element) => {
-                  if (!element) {
+                  if (!element || !scrollContainer) {
                     delete commentPositionMapRef.current[discussion.id];
                   } else {
                     const rect = element.getBoundingClientRect();
