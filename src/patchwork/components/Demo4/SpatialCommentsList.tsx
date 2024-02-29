@@ -35,8 +35,8 @@ interface SpatialCommentsListProps {
   hoveredDiscussionId: string;
 }
 
-const DEBUG_HIGHLIGHT = false;
-const ANCHOR_OFFSET = 20;
+// todo: actually listen for size change when animation is running
+const SIZE_INCREASE_ON_SELECT = 43;
 
 export const SpatialCommentsList = React.memo(
   ({
@@ -57,6 +57,7 @@ export const SpatialCommentsList = React.memo(
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyThreadId, setActiveReplyThreadId] = useState<string>();
     const account = useCurrentAccount();
+    const previousSelectedDiscussionId = usePrevious(selectedDiscussionId);
 
     const topDiscussion = overlayContainer
       ? activeDiscussionTargetPositions.find(
@@ -121,8 +122,15 @@ export const SpatialCommentsList = React.memo(
           position.top - scrollOffset < 0 ||
           position.bottom - scrollOffset > scrollContainerRectRef.current.height
         ) {
-          scrollTo(position.top);
+          scrollTo(
+            position.top > scrollContainer.scrollTop &&
+              previousSelectedDiscussionId !== undefined
+              ? position.top - SIZE_INCREASE_ON_SELECT
+              : position.top
+          );
         }
+
+        console.log(selectedDiscussionId, previousSelectedDiscussionId);
 
         return;
       }
@@ -275,21 +283,14 @@ export const SpatialCommentsList = React.memo(
             return (
               <div
                 onMouseEnter={() => {
-                  /*setHoveredDiscussionId(discussion.id) */
+                  setHoveredDiscussionId(discussion.id);
                 }}
                 onMouseLeave={() => {
-                  /*setHoveredDiscussionId(undefined);*/
+                  setHoveredDiscussionId(undefined);
                 }}
                 onClick={() => setSelectedDiscussionId(discussion.id)}
                 key={discussion.id}
-                className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400
-                ${
-                  topDiscussion &&
-                  topDiscussion.discussion.id === discussion.id &&
-                  DEBUG_HIGHLIGHT
-                    ? "bg-yellow-100"
-                    : "bg-white"
-                }
+                className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
                 ${
                   discussion.id === hoveredDiscussionId ||
                   discussion.id === selectedDiscussionId
@@ -332,7 +333,7 @@ export const SpatialCommentsList = React.memo(
                 </div>
                 <div
                   className={`overflow-hidden transition-all ${
-                    selectedDiscussionId === discussion.id && false
+                    selectedDiscussionId === discussion.id
                       ? "h-[43px] border-t border-gray-200 pt-2"
                       : "h-[0px]"
                   }`}
@@ -417,4 +418,16 @@ function DiscusssionCommentView({ comment }: { comment: DiscussionComment }) {
       </div>
     </div>
   );
+}
+
+function usePrevious<T>(value: T) {
+  const prevRef = useRef<T>();
+  const currentRef = useRef<T>();
+
+  useEffect(() => {
+    prevRef.current = currentRef.current;
+    currentRef.current = value;
+  }, [value]);
+
+  return prevRef.current;
 }
