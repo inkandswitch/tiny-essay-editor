@@ -165,7 +165,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
         break;
       }
       case "mergeBranch": {
-        console.log("try");
         const docHandle = repo.find<Branchable>(doc.branchMetadata.source.url);
         if (!docHandle) return;
         mergeBranch({
