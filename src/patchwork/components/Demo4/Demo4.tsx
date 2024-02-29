@@ -643,33 +643,6 @@ export const Demo4: React.FC<{
                 />
               )}
 
-              {docHeads && diffForEditor.patches.length === 0 && (
-                <div className="text-gray-500 flex gap-1">
-                  as of{" "}
-                  {activeMilestone ? (
-                    <div className="inline">
-                      <MilestoneIcon className="inline mr-1" size={12} />
-                      {activeMilestone.name}
-                    </div>
-                  ) : (
-                    docHeads[0]?.slice(0, 6)
-                  )}
-                </div>
-              )}
-
-              {docHeads && diffForEditor.patches.length > 0 && (
-                <div className="text-gray-500 flex gap-1">
-                  <div>comparing from</div>
-                  {diffForEditor.fromHeads.length > 0 ? (
-                    <Hash hash={diffForEditor.fromHeads[0]} />
-                  ) : (
-                    "beginning"
-                  )}
-                  <div>to</div>
-                  <Hash hash={diffForEditor.toHeads[0] ?? ""} />
-                </div>
-              )}
-
               <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
                 {selectedBranch.type === "branch" && (
                   <div className="mr-2">
