@@ -121,20 +121,62 @@ export const SpatialCommentsList = React.memo(
           position.top - scrollOffset < 0 ||
           position.bottom - scrollOffset > scrollContainerRectRef.current.height
         ) {
-          scrollContainer.scrollTo({
-            top: position.top,
-            behavior: "smooth",
-          });
+          scrollTo(position.top);
         }
 
         return;
       }
 
-      scrollContainer.scrollTo({
-        top: commentPositionMapRef.current[topDiscussion.discussion.id].top,
-        behavior: "smooth",
-      });
+      scrollTo(commentPositionMapRef.current[topDiscussion.discussion.id].top);
     }, [topDiscussion, scrollContainer]);
+
+    const targetScrollPositionRef = useRef<number>();
+    const currentScrollPositionRef = useRef<number>();
+
+    const scrollTo = (pos: number) => {
+      const prevTarget = targetScrollPositionRef.current;
+      const maxScrollPos =
+        scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+      targetScrollPositionRef.current = Math.min(pos, maxScrollPos);
+
+      if (!prevTarget) {
+        console.log("trigger scroll");
+        triggerScrollPositionUpdate();
+      }
+    };
+
+    const triggerScrollPositionUpdate = () => {
+      const targetPos = targetScrollPositionRef.current;
+      const currentPos =
+        currentScrollPositionRef.current ?? scrollContainer.scrollTop;
+
+      if (Math.abs(scrollContainer.scrollTop - targetPos) < 1) {
+        currentScrollPositionRef.current = undefined;
+        targetScrollPositionRef.current = undefined;
+        return;
+      }
+
+      // todo: maybe we don't even need this logic
+      // the scroll position has been shifted manually, abort automatic scroll
+      /*if (
+        currentPos !== undefined
+      ) {
+        console.log("abort", currentPos, scrollContainer.scrollTop);
+        scrollTargetPositionRef.current = undefined;
+        currentScrollPositionRef.current = undefined;
+        return;
+      }*/
+
+      const nextPosition = (currentPos * 9 + targetPos) / 10;
+
+      scrollContainer.scrollTo({
+        top: nextPosition,
+      });
+
+      currentScrollPositionRef.current = nextPosition;
+      requestAnimationFrame(triggerScrollPositionUpdate);
+    };
 
     // handle keyboard shortcuts
     /*
@@ -207,7 +249,6 @@ export const SpatialCommentsList = React.memo(
     // hack to unblur button
     useEffect(() => {
       if (!activeReplyThreadId) {
-        console.log("blur");
         setTimeout(() => {
           (document.activeElement as HTMLElement).blur();
         }, 200);
@@ -233,9 +274,11 @@ export const SpatialCommentsList = React.memo(
           discussions.map((discussion) => {
             return (
               <div
-                onMouseEnter={() => setHoveredDiscussionId(discussion.id)}
+                onMouseEnter={() => {
+                  /*setHoveredDiscussionId(discussion.id) */
+                }}
                 onMouseLeave={() => {
-                  setHoveredDiscussionId(undefined);
+                  /*setHoveredDiscussionId(undefined);*/
                 }}
                 onClick={() => setSelectedDiscussionId(discussion.id)}
                 key={discussion.id}
@@ -283,8 +326,8 @@ export const SpatialCommentsList = React.memo(
                 </div>
                 <div
                   className={`overflow-hidden transition-all ${
-                    selectedDiscussionId === discussion.id
-                      ? "h-[50px] border-t border-gray-200 pt-2"
+                    selectedDiscussionId === discussion.id && false
+                      ? "h-[43px] border-t border-gray-200 pt-2"
                       : "h-[0px]"
                   }`}
                 >

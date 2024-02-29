@@ -299,8 +299,7 @@ export const Demo4: React.FC<{
   const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
-  // sorry geoffrey, if I forget to revert this. It's just a convenience for developing not my opinion that the default should be comments
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("comments");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
