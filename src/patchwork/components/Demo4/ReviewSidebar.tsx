@@ -199,171 +199,164 @@ export const ReviewSidebar: React.FC<{
 
       {/* The timeline */}
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="timeline">
+        <div className="absolute timeline-line"></div>
+        <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
           {/* Show a toggle for hidden items */}
-
-          <div
-            className="relative mt-auto flex flex-col"
-            ref={itemsContainerRef}
-          >
-            <div className="pl-6 text-xs  text-gray-500">
-              {!showHiddenItems && hiddenItemBoundary > 0 && (
-                <div className="flex gap-2">
-                  <div>
-                    {hiddenItemBoundary + 1} items before branch creation
-                  </div>
-                  <div
-                    className="font-semibold cursor-pointer underline"
-                    onClick={() => setShowHiddenItems(true)}
-                  >
-                    show
-                  </div>
+          <div className="pl-6 text-xs  text-gray-500">
+            {!showHiddenItems && hiddenItemBoundary > 0 && (
+              <div className="flex gap-2">
+                <div>{hiddenItemBoundary + 1} items before branch creation</div>
+                <div
+                  className="font-semibold cursor-pointer underline"
+                  onClick={() => setShowHiddenItems(true)}
+                >
+                  show
                 </div>
-              )}
-            </div>
-
-            {visibleItems.map((item, index) => {
-              const selected =
-                selection &&
-                index >= selection.from.index &&
-                index <= selection.to.index;
-
-              const dateChangedFromPrevItem =
-                new Date(changelogItems[index - 1]?.time).toDateString() !==
-                new Date(item.time).toDateString();
-
-              return (
-                <>
-                  {dateChangedFromPrevItem && (
-                    <div className="text-xs text-gray-400">
-                      <DateHeader date={new Date(item.time)} />
-                    </div>
-                  )}
-                  <div
-                    key={item.id}
-                    data-item-id={item.id}
-                    className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
-                      selected ? "bg-blue-100 bg-opacity-20" : ""
-                    }`}
-                    onClick={(e) =>
-                      handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
-                    }
-                  >
-                    {(() => {
-                      switch (item.type) {
-                        case "changeGroup":
-                          return (
-                            <ChangeGroupItem
-                              group={item.changeGroup}
-                              doc={doc}
-                              selected={selected}
-                            />
-                          );
-                        case "tag":
-                          return (
-                            <MilestoneItem
-                              milestone={item.tag}
-                              selected={selected}
-                            />
-                          );
-                        case "branchCreatedFromThisDoc":
-                          return (
-                            <BranchCreatedItem
-                              selectedBranch={selectedBranch}
-                              setSelectedBranch={setSelectedBranch}
-                              branch={item.branch}
-                              selected={selected}
-                            />
-                          );
-                        case "discussionThread":
-                          return (
-                            <DiscussionThreadItem
-                              discussion={item.discussion}
-                              selected={selected}
-                            />
-                          );
-                        case "originOfThisBranch":
-                          return (
-                            <BranchOriginItem
-                              branch={item.branch}
-                              selected={selected}
-                            />
-                          );
-                        case "otherBranchMergedIntoThisDoc":
-                          return (
-                            <BranchMergedItem
-                              branch={item.branch}
-                              selected={selected}
-                              changeGroups={item.changeGroups}
-                              doc={doc}
-                            />
-                          );
-                        default: {
-                          // Ensure we've handled all types
-                          const exhaustiveCheck: never = item;
-                          return exhaustiveCheck;
-                        }
-                      }
-                    })()}
-
-                    {/* User avatars associated with this item */}
-                    <div className="ml-auto flex-shrink-0 flex items-center gap-2">
-                      <div className="flex items-center space-x-[-4px]">
-                        {item.users.map((contactUrl) => (
-                          <div className="rounded-full">
-                            <InlineContactAvatar
-                              key={contactUrl}
-                              url={contactUrl}
-                              size="sm"
-                              showName={false}
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Context menu for the item (TODO: how to populate actions for this?) */}
-                      <div className="">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger>
-                            <MoreHorizontal
-                              size={18}
-                              className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
-                            />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="mr-4">
-                            {(item.type === "otherBranchMergedIntoThisDoc" ||
-                              item.type === "branchCreatedFromThisDoc") && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setSelectedBranch({
-                                    type: "branch",
-                                    url: item.branch.url,
-                                  })
-                                }
-                              >
-                                Go to branch
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              );
-            })}
-
-            {/* Blue selection box overlay */}
-            {selection && (
-              <div
-                className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
-                style={{
-                  top: selection.from.yPos,
-                  height: selection.to.yPos - selection.from.yPos,
-                }}
-              ></div>
+              </div>
             )}
           </div>
+
+          {visibleItems.map((item, index) => {
+            const selected =
+              selection &&
+              index >= selection.from.index &&
+              index <= selection.to.index;
+
+            const dateChangedFromPrevItem =
+              new Date(changelogItems[index - 1]?.time).toDateString() !==
+              new Date(item.time).toDateString();
+
+            return (
+              <>
+                {dateChangedFromPrevItem && (
+                  <div className="text-xs text-gray-400">
+                    <DateHeader date={new Date(item.time)} />
+                  </div>
+                )}
+                <div
+                  key={item.id}
+                  data-item-id={item.id}
+                  className={`p-2 cursor-default select-none w-full flex items-start gap-2 ${
+                    selected ? "bg-blue-100 bg-opacity-20" : ""
+                  }`}
+                  onClick={(e) =>
+                    handleClick({ itemId: item.id, shiftPressed: e.shiftKey })
+                  }
+                >
+                  {(() => {
+                    switch (item.type) {
+                      case "changeGroup":
+                        return (
+                          <ChangeGroupItem
+                            group={item.changeGroup}
+                            doc={doc}
+                            selected={selected}
+                          />
+                        );
+                      case "tag":
+                        return (
+                          <MilestoneItem
+                            milestone={item.tag}
+                            selected={selected}
+                          />
+                        );
+                      case "branchCreatedFromThisDoc":
+                        return (
+                          <BranchCreatedItem
+                            selectedBranch={selectedBranch}
+                            setSelectedBranch={setSelectedBranch}
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "discussionThread":
+                        return (
+                          <DiscussionThreadItem
+                            discussion={item.discussion}
+                            selected={selected}
+                          />
+                        );
+                      case "originOfThisBranch":
+                        return (
+                          <BranchOriginItem
+                            branch={item.branch}
+                            selected={selected}
+                          />
+                        );
+                      case "otherBranchMergedIntoThisDoc":
+                        return (
+                          <BranchMergedItem
+                            branch={item.branch}
+                            selected={selected}
+                            changeGroups={item.changeGroups}
+                            doc={doc}
+                          />
+                        );
+                      default: {
+                        // Ensure we've handled all types
+                        const exhaustiveCheck: never = item;
+                        return exhaustiveCheck;
+                      }
+                    }
+                  })()}
+
+                  {/* User avatars associated with this item */}
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                    <div className="flex items-center space-x-[-4px]">
+                      {item.users.map((contactUrl) => (
+                        <div className="rounded-full">
+                          <InlineContactAvatar
+                            key={contactUrl}
+                            url={contactUrl}
+                            size="sm"
+                            showName={false}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Context menu for the item (TODO: how to populate actions for this?) */}
+                    <div className="">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <MoreHorizontal
+                            size={18}
+                            className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
+                          />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="mr-4">
+                          {(item.type === "otherBranchMergedIntoThisDoc" ||
+                            item.type === "branchCreatedFromThisDoc") && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setSelectedBranch({
+                                  type: "branch",
+                                  url: item.branch.url,
+                                })
+                              }
+                            >
+                              Go to branch
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })}
+
+          {/* Blue selection box overlay */}
+          {selection && (
+            <div
+              className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
+              style={{
+                top: selection.from.yPos,
+                height: selection.to.yPos - selection.from.yPos,
+              }}
+            ></div>
+          )}
         </div>
       </div>
       <div className="bg-gray-50 z-10">

@@ -162,11 +162,14 @@
   font-display: swap
 }
 
-.timeline {
-  @apply relative;
+/* draw a vertical line for the timeline */
+.timeline-line {
+  @apply absolute;
+  @apply w-full;
+  @apply h-full;
 }
 
-.timeline::before {
+.timeline-line::before {
   @apply bg-neutral-300;
   @apply absolute;
   border-radius: 3px;
