@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DiscussionInput } from "./DiscussionInput";
+import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 
 const useScrollToBottom = () => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -132,6 +133,15 @@ export const ReviewSidebar: React.FC<{
           (b) => b.url === selectedBranch.url
         )
       : undefined;
+
+  // @ts-expect-error window global
+  window.populateChangeSummaries = () =>
+    populateChangeGroupSummaries({
+      groups: changelogItems.flatMap((item) =>
+        item.type === "changeGroup" ? [item.changeGroup] : []
+      ),
+      handle,
+    });
 
   return (
     <div className="h-full w-full flex flex-col text-xs text-gray-600">
