@@ -282,7 +282,7 @@ function useHighlights(
 
         return [
           {
-            class: "text-[#D59C1E]",
+            class: "bg-yellow-50",
             from,
             to,
           },
