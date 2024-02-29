@@ -17,7 +17,12 @@ import { EditorView } from "@codemirror/view";
 import { Branchable, DiscussionComment } from "@/patchwork/schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
-import { GitBranchIcon, MilestoneIcon, SendHorizontalIcon } from "lucide-react";
+import {
+  GitBranchIcon,
+  MergeIcon,
+  MilestoneIcon,
+  SendHorizontalIcon,
+} from "lucide-react";
 import { DocHandle } from "@automerge/automerge-repo";
 import { uuid } from "@automerge/automerge";
 import { createBranch, mergeBranch } from "@/patchwork/branches";
@@ -271,6 +276,13 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
                 <Button variant="ghost" onClick={handleSubmitDiscussion}>
                   <MilestoneIcon size={14} className="mr-1" />
                   Save milestone
+                  <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
+                </Button>
+              )}
+              {parsedCommentBoxContent.type === "mergeBranch" && (
+                <Button variant="ghost" onClick={handleSubmitDiscussion}>
+                  <MergeIcon size={14} className="mr-1" />
+                  Merge branch
                   <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
                 </Button>
               )}

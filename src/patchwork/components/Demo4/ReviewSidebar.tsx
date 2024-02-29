@@ -121,10 +121,23 @@ export const ReviewSidebar: React.FC<{
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
   );
 
-  const visibleItems =
-    hiddenItemBoundary > 0 && !showHiddenItems
-      ? changelogItems.slice(hiddenItemBoundary)
-      : changelogItems;
+  let visibleItems = changelogItems;
+  if (hiddenItemBoundary > 0 && !showHiddenItems) {
+    visibleItems = visibleItems.slice(hiddenItemBoundary);
+  }
+
+  // Within a branch, don't show new branches created after this branch started
+  if (selectedBranch.type === "branch") {
+    const originIndex = visibleItems.findIndex(
+      (item) => item.type === "originOfThisBranch"
+    );
+    visibleItems = visibleItems.filter((item, index) => {
+      if (item.type === "branchCreatedFromThisDoc" && index > originIndex) {
+        return false;
+      }
+      return true;
+    });
+  }
 
   const { selection, handleClick, clearSelection, itemsContainerRef } =
     useChangelogSelection({
@@ -667,10 +680,10 @@ const BranchOriginItem = ({
   selected: boolean;
 }) => {
   return (
-    <ItemView selected={selected} color="neutral">
+    <ItemView selected={selected} color="green">
       <ItemActionMessage>this branch started</ItemActionMessage>
       <ItemIcon>
-        <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
+        <GitBranchIcon className="h-[10px] w-[10px] text-white" />
       </ItemIcon>
       <ItemContent>
         <div>
@@ -697,14 +710,8 @@ const DiscussionThreadItem = ({
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];
-  const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
-  const authorName =
-    contactDoc?.type === "registered" ? contactDoc.name : undefined;
   return (
     <ItemView selected={selected} color="orange">
-      <ItemActionMessage>
-        comment {authorName && `by ${authorName}`}:
-      </ItemActionMessage>
       <ItemIcon>
         <MessageSquare className="h-[10px] w-[10px] text-white" />
       </ItemIcon>

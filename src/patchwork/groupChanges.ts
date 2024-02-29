@@ -348,10 +348,10 @@ export const getChangelogItems = (
       const otherMarkersForThisGroup = changeGroup.markers.filter(
         (m) => m !== mergeMarker
       );
+      changelogItems.push({ ...mergeMarker, time: changeGroup.time });
       for (const marker of otherMarkersForThisGroup) {
         changelogItems.push({ ...marker, time: changeGroup.time });
       }
-      changelogItems.push({ ...mergeMarker, time: changeGroup.time });
     } else {
       // for normal change groups, push the group and then any markers
       changelogItems.push({
@@ -501,12 +501,11 @@ export const getGroupedChanges = (
             decodedChange.hash
           )
         ) {
-          const mergeMarker = markers.find(
-            (marker) =>
-              isEqual(
-                marker.heads,
-                branchChangeGroup.mergeMetadata.mergeHeads
-              ) && marker.type === "otherBranchMergedIntoThisDoc"
+          const markersForGroup = markers.filter((marker) =>
+            isEqual(marker.heads, branchChangeGroup.mergeMetadata.mergeHeads)
+          );
+          const mergeMarker = markersForGroup.find(
+            (m) => m.type === "otherBranchMergedIntoThisDoc"
           );
           if (mergeMarker) {
             branchChangeGroup.changeGroup.markers.push({
@@ -514,6 +513,12 @@ export const getGroupedChanges = (
               // @ts-expect-error this is fine; we know we're adding to a merge marker
               changeGroups: [branchChangeGroup.changeGroup],
             });
+            const otherMarkersForThisGroup = markersForGroup.filter(
+              (m) => m !== mergeMarker
+            );
+            for (const marker of otherMarkersForThisGroup) {
+              branchChangeGroup.changeGroup.markers.push(marker);
+            }
           }
 
           // todo: what other finalizing do we need to do here..? any?
