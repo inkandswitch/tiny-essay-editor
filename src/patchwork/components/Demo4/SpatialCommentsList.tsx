@@ -302,8 +302,14 @@ export const SpatialCommentsList = React.memo(
                   } else {
                     const rect = element.getBoundingClientRect();
                     commentPositionMapRef.current[discussion.id] = {
-                      top: rect.top - overlayContainer.top + scrollOffset,
-                      bottom: rect.bottom - overlayContainer.top + scrollOffset,
+                      top:
+                        rect.top -
+                        overlayContainer.top +
+                        scrollContainer.scrollTop,
+                      bottom:
+                        rect.bottom -
+                        overlayContainer.top +
+                        scrollContainer.scrollTop,
                     };
                   }
 
