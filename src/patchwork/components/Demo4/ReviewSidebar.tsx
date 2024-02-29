@@ -199,7 +199,7 @@ export const ReviewSidebar: React.FC<{
 
       {/* The timeline */}
       <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
-        <div className="absolute timeline-line"></div>
+        <div className="timeline-line"></div>
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
           {/* Show a toggle for hidden items */}
           <div className="pl-6 text-xs  text-gray-500">
