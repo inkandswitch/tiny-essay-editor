@@ -1,8 +1,10 @@
 import { GenericChangeGroup } from "@/patchwork/groupChanges";
 
 import { TextPatch } from "@/patchwork/utils";
-import { Patch } from "@automerge/automerge-wasm";
+import { DecodedChange, Patch } from "@automerge/automerge-wasm";
 import { MarkdownDoc } from "./schema";
+
+import * as A from "@automerge/automerge/next";
 
 export type MarkdownDocChangeGroup = {
   /* number of distinct edit ranges */
@@ -20,8 +22,28 @@ export type Heading = {
   patches: Patch[];
 };
 
-// Compute stats for a change group on a MarkdownDoc
+// Given a change, should it be shown to the user in the log?
+export const includeChange = ({
+  doc,
+  decodedChange,
+}: {
+  doc: MarkdownDoc;
+  decodedChange: DecodedChange;
+}) => {
+  const contentObjID = A.getObjectId(doc, "content");
+  const commentsObjID = A.getObjectId(doc, "commentThreads");
 
+  return decodedChange.ops.some(
+    (op) => op.obj === contentObjID || op.obj === commentsObjID
+  );
+};
+
+// Given a patch, should it be shown to the user in the log?
+export const includePatch = (patch: Patch) => {
+  return patch.path[0] === "content" || patch.path[0] === "commentThreads";
+};
+
+// Compute stats for a change group on a MarkdownDoc
 export const statsForChangeGroup = (
   changeGroup: GenericChangeGroup
 ): MarkdownDocChangeGroup => {

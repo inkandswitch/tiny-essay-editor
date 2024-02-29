@@ -3,7 +3,8 @@ import { ChangeGroup } from "./groupChanges";
 import { DiffWithProvenance, HasChangeGroupSummaries } from "./schema";
 import { Doc } from "@automerge/automerge";
 import { getStringCompletion } from "@/llm";
-import { pick } from "lodash";
+import { debounce, pick } from "lodash";
+import { useCallback, useEffect } from "react";
 
 export const populateChangeGroupSummaries = async ({
   groups,
@@ -24,19 +25,34 @@ export const populateChangeGroupSummaries = async ({
     if (!force && handle.docSync().changeGroupSummaries[group.id]) {
       continue;
     }
-    const docBefore = groups[index - 1]?.docAtEndOfChangeGroup ?? {};
-    const docAfter = group.docAtEndOfChangeGroup;
-    const summary = await autoSummarizeGroup({
-      docBefore,
-      docAfter,
-      diff: group.diff,
-    });
-    handle.change((doc) => {
-      doc.changeGroupSummaries[group.id] = {
-        title: summary,
-      };
+    await populateGroupSummary({
+      group,
+      docBefore: groups[index - 1]?.docAtEndOfChangeGroup ?? {},
+      handle,
     });
   }
+};
+
+const populateGroupSummary = async ({
+  group,
+  docBefore,
+  handle,
+}: {
+  group: ChangeGroup;
+  docBefore: any;
+  handle: DocHandle<HasChangeGroupSummaries>;
+}) => {
+  const docAfter = group.docAtEndOfChangeGroup;
+  const summary = await autoSummarizeGroup({
+    docBefore,
+    docAfter,
+    diff: group.diff,
+  });
+  handle.change((doc) => {
+    doc.changeGroupSummaries[group.id] = {
+      title: summary,
+    };
+  });
 };
 
 // TODO: This thing hardcodes logic specific to TEE docs;
@@ -87,4 +103,33 @@ ${JSON.stringify(
 `;
 
   return getStringCompletion(prompt);
+};
+
+export const useAutoPopulateChangeGroupSummaries = ({
+  changeGroups,
+  handle,
+  msBetween = 15000,
+}: {
+  changeGroups: ChangeGroup[];
+  handle: DocHandle<HasChangeGroupSummaries>;
+  msBetween?: number;
+}) => {
+  const debouncedPopulate = useCallback(
+    debounce(({ groups, handle, force }) => {
+      populateChangeGroupSummaries({ groups, handle, force });
+    }, msBetween),
+    []
+  );
+
+  useEffect(() => {
+    debouncedPopulate({
+      groups: changeGroups,
+      handle,
+    });
+
+    // Cleanup function to cancel the debounce if the component unmounts
+    return () => {
+      debouncedPopulate.cancel();
+    };
+  }, [changeGroups, handle, debouncedPopulate]);
 };

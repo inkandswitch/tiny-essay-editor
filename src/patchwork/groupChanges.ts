@@ -39,6 +39,7 @@ import {
 import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import {
   MarkdownDocChangeGroup,
+  includeChange,
   showChangeGroupInLog,
   statsForChangeGroup,
 } from "@/tee/statsForChangeGroup";
@@ -454,8 +455,18 @@ export const getGroupedChanges = (
   }
 
   // Now we loop over the changes and make our groups.
+
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
+
+    const skipChange =
+      // See if the datatype wants this change to appear in the log
+      !includeChange({ doc, decodedChange }) &&
+      // If a marker is present for this change, we have to include it so that the marker works.
+      !markers.find((marker) => marker.heads.includes(decodedChange.hash));
+    if (skipChange) {
+      continue;
+    }
 
     // If the change came from a merged branch, add it to the group for that branch,
     // don't include it in our raw grouping.

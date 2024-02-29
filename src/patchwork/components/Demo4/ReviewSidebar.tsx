@@ -29,8 +29,9 @@ import {
   MoreHorizontal,
   CrownIcon,
   ChevronLeftIcon,
+  PencilIcon,
 } from "lucide-react";
-import { Heads } from "@automerge/automerge/next";
+import { Heads, Patch } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
 import { useSlots } from "@/patchwork/utils";
@@ -47,8 +48,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DiscussionInput } from "./DiscussionInput";
-import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
+import {
+  populateChangeGroupSummaries,
+  useAutoPopulateChangeGroupSummaries,
+} from "@/patchwork/changeGroupSummaries";
 import { ContactDoc } from "@/DocExplorer/account";
+import { includePatch } from "@/tee/statsForChangeGroup";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -145,6 +150,23 @@ export const ReviewSidebar: React.FC<{
       setDiff,
       setDocHeads,
     });
+
+  const changeGroups = useMemo(() => {
+    return changelogItems.flatMap((item) => {
+      if (item.type === "changeGroup") {
+        return [item.changeGroup];
+      } else if (item.type === "otherBranchMergedIntoThisDoc") {
+        return item.changeGroups;
+      } else {
+        return [];
+      }
+    });
+  }, [changelogItems]);
+
+  useAutoPopulateChangeGroupSummaries({
+    changeGroups,
+    handle,
+  });
 
   if (!doc) return null;
 
@@ -358,6 +380,26 @@ export const ReviewSidebar: React.FC<{
                               Go to branch
                             </DropdownMenuItem>
                           )}
+
+                          {item.type === "changeGroup" && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                const summary = window.prompt("New summary:");
+                                if (summary) {
+                                  handle.change((doc) => {
+                                    doc.changeGroupSummaries[
+                                      item.changeGroup.id
+                                    ] = {
+                                      title: summary,
+                                    };
+                                  });
+                                }
+                              }}
+                            >
+                              <PencilIcon size={12} className="mr-1 inline" />
+                              Edit summary
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -564,8 +606,11 @@ const ChangeGroupDescription = ({
 }) => {
   let summary;
   if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-    // TODO: filter these patches to only include the ones that are relevant to the markdown doc
-    summary = `${changeGroup.diff.patches.length} edits`;
+    const patchesCount = changeGroup.diff.patches.filter((p) =>
+      includePatch(p as Patch)
+    ).length;
+
+    summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   }
