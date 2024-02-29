@@ -6,7 +6,14 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  ReactNode,
+  useState,
+  useLayoutEffect,
+} from "react";
 import {
   ChangeGroup,
   ChangelogItem,
@@ -43,13 +50,13 @@ import { DiscussionInput } from "./DiscussionInput";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
 import { ContactDoc } from "@/DocExplorer/account";
 
-const useScrollToBottom = () => {
+const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (scrollerRef.current) {
       scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
     }
-  }, [scrollerRef.current]);
+  }, [scrollerRef.current, doc]);
   return scrollerRef;
 };
 
@@ -89,7 +96,7 @@ export const ReviewSidebar: React.FC<{
   const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata?.source?.url);
   const handle = useHandle<MarkdownDoc>(docUrl);
   const repo = useRepo();
-  const scrollerRef = useScrollToBottom();
+  const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
 
   // TODO: technically this should also update when the "source doc" for this branch updates
@@ -563,42 +570,40 @@ const BranchMergedItem: React.FC<{
   doc: MarkdownDoc;
 }> = ({ branch, changeGroups, selected, doc }) => {
   return (
-    <div>
-      <ItemView selected={selected} color="purple">
-        <ItemActionMessage>branch merged</ItemActionMessage>
-        <ItemIcon>
-          <GitBranchPlusIcon
-            className="h-[10px] w-[10px] text-white"
-            strokeWidth={2}
-          />
-        </ItemIcon>
+    <ItemView selected={selected} color="purple">
+      <ItemActionMessage>branch merged</ItemActionMessage>
+      <ItemIcon>
+        <GitBranchPlusIcon
+          className="h-[10px] w-[10px] text-white"
+          strokeWidth={2}
+        />
+      </ItemIcon>
 
-        <ItemContent>
-          <div className="text-sm flex flex-col gap-1 select-none">
-            <div>
-              <div className="inline font-semibold">{branch.name}</div>{" "}
-            </div>
-            {changeGroups.map((group) => (
-              <div className="flex">
-                <ChangeGroupDescription changeGroup={group} doc={doc} />
-                <div className="flex flex-shrink-0 items-center space-x-[-4px]">
-                  {group.authorUrls.map((contactUrl) => (
-                    <div className="rounded-full">
-                      <InlineContactAvatar
-                        key={contactUrl}
-                        url={contactUrl}
-                        size="sm"
-                        showName={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+      <ItemContent>
+        <div className="text-sm flex flex-col gap-1 select-none">
+          <div>
+            <div className="inline font-semibold">{branch.name}</div>{" "}
           </div>
-        </ItemContent>
-      </ItemView>
-    </div>
+          {changeGroups.map((group) => (
+            <div className="flex">
+              <ChangeGroupDescription changeGroup={group} doc={doc} />
+              <div className="flex flex-shrink-0 items-center space-x-[-4px]">
+                {group.authorUrls.map((contactUrl) => (
+                  <div className="rounded-full">
+                    <InlineContactAvatar
+                      key={contactUrl}
+                      url={contactUrl}
+                      size="sm"
+                      showName={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ItemContent>
+    </ItemView>
   );
 };
 
@@ -618,7 +623,6 @@ const MilestoneItem = ({
       <ItemContent>
         <div className="text-sm flex select-none">
           <div>
-            <div className="inline font-normal">Milestone:</div>{" "}
             <div className="inline font-semibold">{milestone.name}</div>{" "}
           </div>
         </div>
@@ -779,7 +783,7 @@ const ItemView = ({
     }[color] ?? "bg-neutral-600";
 
   return (
-    <div className="items-top flex gap-1">
+    <div className="items-top flex gap-1 w-full pr-4">
       {slots.icon && (
         <div
           className={`${tailwindColor} mt-1.5 flex h-[16px] w-[16px] items-center justify-center rounded-full  outline outline-2 outline-gray-100`}
@@ -789,9 +793,9 @@ const ItemView = ({
       )}
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
-      <div className="flex-1 px-1 flex flex-col gap-1">
+      <div className="flex-1 flex-grow px-1">
         {slots.actionMessage && (
-          <div className="mt-1 font-medium text-gray-500">
+          <div className="my-1 font-medium text-gray-500">
             {slots.actionMessage}
           </div>
         )}

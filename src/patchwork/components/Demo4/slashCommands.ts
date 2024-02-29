@@ -5,28 +5,16 @@ import {
   Completion,
 } from "@codemirror/autocomplete";
 
-const createMentionCompletion = (name: string) => ({
+export const createMentionCompletion = (name: string) => ({
   label: `@${name}`,
   apply: createApplyWithSpaceAfterCompletion(`@${name}`),
 });
 
-const createSlashCommandCompletion = (name: string, info?: string) => ({
+export const createSlashCommandCompletion = (name: string, info?: string) => ({
   label: `/${name}`,
   info,
   apply: createApplyWithSpaceAfterCompletion(`/${name}`),
 });
-
-export const completions: Completion[] = [
-  createMentionCompletion("adam"),
-  createMentionCompletion("geoffrey"),
-  createMentionCompletion("max"),
-  createMentionCompletion("paul"),
-  createSlashCommandCompletion("branch", "Create a new branch"),
-  createSlashCommandCompletion(
-    "milestone",
-    "Mark a milestone at the current point"
-  ),
-];
 
 export function createApplyWithSpaceAfterCompletion(label: string) {
   return function (view, completion, from, to) {

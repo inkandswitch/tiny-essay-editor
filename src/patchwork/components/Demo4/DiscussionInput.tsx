@@ -6,25 +6,32 @@ import * as A from "@automerge/automerge/next";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
+import { Completion } from "@codemirror/autocomplete";
 
-import { completions, slashCommands } from "./slashCommands";
+import {
+  createMentionCompletion,
+  createSlashCommandCompletion,
+  slashCommands,
+} from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { DiscussionComment } from "@/patchwork/schema";
+import { Branchable, DiscussionComment } from "@/patchwork/schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import { GitBranchIcon, MilestoneIcon, SendHorizontalIcon } from "lucide-react";
 import { DocHandle } from "@automerge/automerge-repo";
 import { uuid } from "@automerge/automerge";
-import { createBranch } from "@/patchwork/branches";
+import { createBranch, mergeBranch } from "@/patchwork/branches";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { ChangelogSelection } from "./ReviewSidebar";
 import { ChangelogItem } from "@/patchwork/groupChanges";
+import { toast } from "sonner";
 
 type CommentBoxAction =
   | { type: "comment"; value: string }
   | { type: "branch"; name?: string }
-  | { type: "milestone"; name?: string };
+  | { type: "milestone"; name?: string }
+  | { type: "mergeBranch" };
 
 const parseCommentBoxContent = (content: string): CommentBoxAction => {
   if (content.startsWith("/branch")) {
@@ -33,6 +40,8 @@ const parseCommentBoxContent = (content: string): CommentBoxAction => {
   } else if (content.startsWith("/milestone")) {
     const name = content.replace("/milestone", "").trim();
     return { type: "milestone", name: name || undefined };
+  } else if (content.startsWith("/merge")) {
+    return { type: "mergeBranch" };
   } else {
     return { type: "comment", value: content };
   }
@@ -129,30 +138,69 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
     onClearTextSelection();
     setCommentBoxContent("");
   };
-
   const handleSubmitDiscussion = () => {
-    if (parsedCommentBoxContent.type === "comment") {
-      createDiscussion();
-    }
-    if (parsedCommentBoxContent.type === "branch") {
-      const newBranch = createBranch({
-        repo,
-        handle,
-        name: parsedCommentBoxContent.name,
-        heads: currentlyActiveHeads,
-        createdBy: account?.contactHandle?.url,
-      });
-      setSelectedBranch({ type: "branch", url: newBranch.url });
-      setCommentBoxContent("");
-    }
-    if (parsedCommentBoxContent.type === "milestone") {
-      createMilestone({
-        name: parsedCommentBoxContent.name || new Date().toLocaleDateString(),
-        heads: currentlyActiveHeads,
-      });
-      setCommentBoxContent("");
+    switch (parsedCommentBoxContent.type) {
+      case "comment": {
+        createDiscussion();
+        break;
+      }
+      case "branch": {
+        const newBranch = createBranch({
+          repo,
+          handle,
+          name: parsedCommentBoxContent.name,
+          heads: currentlyActiveHeads,
+          createdBy: account?.contactHandle?.url,
+        });
+        setSelectedBranch({ type: "branch", url: newBranch.url });
+        setCommentBoxContent("");
+        break;
+      }
+      case "milestone": {
+        createMilestone({
+          name: parsedCommentBoxContent.name || new Date().toLocaleDateString(),
+          heads: currentlyActiveHeads,
+        });
+        setCommentBoxContent("");
+        break;
+      }
+      case "mergeBranch": {
+        console.log("try");
+        const docHandle = repo.find<Branchable>(doc.branchMetadata.source.url);
+        if (!docHandle) return;
+        mergeBranch({
+          branchHandle: handle,
+          docHandle,
+          mergedBy: account?.contactHandle?.url,
+        });
+        setCommentBoxContent("");
+        setSelectedBranch({ type: "main" });
+        toast.success("Branch merged to main");
+        break;
+      }
+      default: {
+        // This ensures we handle all possible types of parsedCommentBoxContent
+        const exhaustiveCheck: never = parsedCommentBoxContent;
+        return exhaustiveCheck;
+      }
     }
   };
+  const completions: Completion[] = [
+    createMentionCompletion("adam"),
+    createMentionCompletion("geoffrey"),
+    createMentionCompletion("max"),
+    createMentionCompletion("paul"),
+    createSlashCommandCompletion("branch", "Create a new branch"),
+    createSlashCommandCompletion(
+      "milestone",
+      "Mark a milestone at the current point"
+    ),
+    selectedBranch.type === "branch"
+      ? createSlashCommandCompletion("merge", "Merge this branch")
+      : undefined,
+  ]
+    .map((c) => c)
+    .filter((c) => c) as Completion[];
 
   return (
     <div className="border-t border-gray-200 pt-2 px-2 bg-gray-50 z-10">
