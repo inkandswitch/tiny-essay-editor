@@ -57,7 +57,6 @@ export const SpatialCommentsList = React.memo(
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyThreadId, setActiveReplyThreadId] = useState<string>();
     const account = useCurrentAccount();
-    const previousSelectedDiscussionId = usePrevious(selectedDiscussionId);
 
     const topDiscussion = overlayContainer
       ? activeDiscussionTargetPositions.find(
@@ -122,21 +121,14 @@ export const SpatialCommentsList = React.memo(
           position.top - scrollOffset < 0 ||
           position.bottom - scrollOffset > scrollContainerRectRef.current.height
         ) {
-          scrollTo(
-            position.top > scrollContainer.scrollTop &&
-              previousSelectedDiscussionId !== undefined
-              ? position.top - SIZE_INCREASE_ON_SELECT
-              : position.top
-          );
+          scrollTo(position.top - SIZE_INCREASE_ON_SELECT); // TODO: find a proper solution
         }
-
-        console.log(selectedDiscussionId, previousSelectedDiscussionId);
 
         return;
       }
 
       scrollTo(commentPositionMapRef.current[topDiscussion.discussion.id].top);
-    }, [topDiscussion, scrollContainer]);
+    }, [JSON.stringify(topDiscussion), selectedDiscussionId, scrollContainer]);
 
     const targetScrollPositionRef = useRef<number>();
     const currentScrollPositionRef = useRef<number>();
@@ -149,7 +141,6 @@ export const SpatialCommentsList = React.memo(
       targetScrollPositionRef.current = Math.min(pos, maxScrollPos);
 
       if (!prevTarget) {
-        console.log("trigger scroll");
         triggerScrollPositionUpdate();
       }
     };
@@ -418,16 +409,4 @@ function DiscusssionCommentView({ comment }: { comment: DiscussionComment }) {
       </div>
     </div>
   );
-}
-
-function usePrevious<T>(value: T) {
-  const prevRef = useRef<T>();
-  const currentRef = useRef<T>();
-
-  useEffect(() => {
-    prevRef.current = currentRef.current;
-    currentRef.current = value;
-  }, [value]);
-
-  return prevRef.current;
 }
