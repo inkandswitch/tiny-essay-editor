@@ -103,7 +103,7 @@ export const DocExplorer: React.FC = () => {
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
 
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [showToolPicker, setShowToolPicker] = useState(false);
 
   const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({

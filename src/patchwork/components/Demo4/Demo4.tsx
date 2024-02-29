@@ -115,7 +115,7 @@ export const Demo4: React.FC<{
   }, [selectedBranch]);
 
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(true);
+    useState<boolean>(false);
 
   useEffect(() => {
     if (!isHistorySidebarOpen) {
@@ -495,15 +495,7 @@ export const Demo4: React.FC<{
     selectedBranch.type === "branch" &&
     branches.find((b) => selectedBranch.url === b.url);
 
-  // The selected draft doesn't have the latest from the main document
-  // if the copy head stored on it don't match the latest heads of the main doc.
-  const selectedBranchNeedsRebase =
-    branchDoc &&
-    !isEqual(A.getHeads(doc), branchDoc.branchMetadata.source.branchHeads);
-
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
-
-  const activeMilestone = doc?.tags?.find((t) => isEqual(t.heads, docHeads));
 
   return (
     <div className="flex overflow-hidden h-full ">
