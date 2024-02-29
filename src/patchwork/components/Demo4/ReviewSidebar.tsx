@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DiscussionInput } from "./DiscussionInput";
 import { populateChangeGroupSummaries } from "@/patchwork/changeGroupSummaries";
+import { ContactDoc } from "@/DocExplorer/account";
 
 const useScrollToBottom = () => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -571,6 +572,7 @@ const BranchMergedItem: React.FC<{
   return (
     <div>
       <ItemView selected={selected} color="purple">
+        <ItemActionMessage>branch merged</ItemActionMessage>
         <ItemIcon>
           <GitBranchPlusIcon
             className="h-[10px] w-[10px] text-white"
@@ -579,31 +581,30 @@ const BranchMergedItem: React.FC<{
         </ItemIcon>
 
         <ItemContent>
-          <div className="text-sm flex select-none">
+          <div className="text-sm flex flex-col gap-1 select-none">
             <div>
-              <div className="inline font-normal">Branch merged:</div>{" "}
               <div className="inline font-semibold">{branch.name}</div>{" "}
             </div>
-          </div>
-        </ItemContent>
-      </ItemView>
-      {changeGroups.map((group) => (
-        <div className="pl-6 flex">
-          <ChangeGroupItem group={group} selected={selected} doc={doc} />
-          <div className="flex items-center space-x-[-4px]">
-            {group.authorUrls.map((contactUrl) => (
-              <div className="rounded-full">
-                <InlineContactAvatar
-                  key={contactUrl}
-                  url={contactUrl}
-                  size="sm"
-                  showName={false}
-                />
+            {changeGroups.map((group) => (
+              <div className="flex">
+                <ChangeGroupDescription changeGroup={group} doc={doc} />
+                <div className="flex flex-shrink-0 items-center space-x-[-4px]">
+                  {group.authorUrls.map((contactUrl) => (
+                    <div className="rounded-full">
+                      <InlineContactAvatar
+                        key={contactUrl}
+                        url={contactUrl}
+                        size="sm"
+                        showName={false}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      ))}
+        </ItemContent>
+      </ItemView>
     </div>
   );
 };
@@ -617,6 +618,7 @@ const MilestoneItem = ({
 }) => {
   return (
     <ItemView selected={selected} color="green">
+      <ItemActionMessage>milestone</ItemActionMessage>
       <ItemIcon>
         <MilestoneIcon className="h-[10px] w-[10px] text-white" />
       </ItemIcon>
@@ -643,6 +645,7 @@ const BranchCreatedItem = ({
 }) => {
   return (
     <ItemView selected={selected} color="neutral">
+      <ItemActionMessage>branch created</ItemActionMessage>
       <ItemIcon>
         <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
       </ItemIcon>
@@ -650,7 +653,6 @@ const BranchCreatedItem = ({
         <div>
           <div className="text-sm flex select-none items-center">
             <div className="mb-1">
-              <div className="inline font-normal">Branch created:</div>{" "}
               <div className="inline font-semibold">{branch.name}</div>{" "}
             </div>
           </div>
@@ -669,6 +671,7 @@ const BranchOriginItem = ({
 }) => {
   return (
     <ItemView selected={selected} color="neutral">
+      <ItemActionMessage>this branch started</ItemActionMessage>
       <ItemIcon>
         <GitBranchIcon className="h-[10px] w-[10px] text-neutral-600" />
       </ItemIcon>
@@ -676,7 +679,6 @@ const BranchOriginItem = ({
         <div>
           <div className="text-sm flex select-none items-center">
             <div className="mb-1">
-              <div className="inline font-normal">This branch started:</div>{" "}
               <div className="inline font-semibold">{branch.name}</div>{" "}
             </div>
           </div>
@@ -698,8 +700,14 @@ const DiscussionThreadItem = ({
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];
+  const [contactDoc] = useDocument<ContactDoc>(comment.contactUrl);
+  const authorName =
+    contactDoc?.type === "registered" ? contactDoc.name : undefined;
   return (
     <ItemView selected={selected} color="orange">
+      <ItemActionMessage>
+        comment {authorName && `by ${authorName}`}:
+      </ItemActionMessage>
       <ItemIcon>
         <MessageSquare className="h-[10px] w-[10px] text-white" />
       </ItemIcon>
@@ -751,6 +759,9 @@ const DiscussionThreadItem = ({
 
 const ItemIcon = ({ children }: { children: ReactNode }) => <>{children}</>;
 const ItemContent = ({ children }: { children: ReactNode }) => <>{children}</>;
+const ItemActionMessage = ({ children }: { children: ReactNode }) => (
+  <>{children}</>
+);
 
 const ItemView = ({
   children,
@@ -760,7 +771,11 @@ const ItemView = ({
   children: ReactNode | ReactNode[];
   color: string;
 }) => {
-  const [slots] = useSlots(children, { icon: ItemIcon, content: ItemContent });
+  const [slots] = useSlots(children, {
+    icon: ItemIcon,
+    content: ItemContent,
+    actionMessage: ItemActionMessage,
+  });
 
   const tailwindColor =
     {
@@ -781,7 +796,14 @@ const ItemView = ({
       )}
 
       {!slots.icon && <div className="w-[16px] h-[16px] mt-1.5" />}
-      <div className={`flex-1 rounded py-1 px-2 shadow`}>{slots.content}</div>
+      <div className="flex-1 px-1 flex flex-col gap-1">
+        {slots.actionMessage && (
+          <div className="mt-1 font-medium text-gray-500">
+            {slots.actionMessage}
+          </div>
+        )}
+        <div className={`flex-1 rounded py-1 px-2 shadow`}>{slots.content}</div>
+      </div>
     </div>
   );
 };
