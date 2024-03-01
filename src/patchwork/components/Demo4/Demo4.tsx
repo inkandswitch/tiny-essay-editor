@@ -502,7 +502,7 @@ export const Demo4: React.FC<{
       <div className="flex-grow overflow-hidden">
         <div className="flex h-full">
           <div className="flex-grow">
-            <div className="bg-gray-100 pl-4 pt-6 pb-1 flex gap-2 items-center">
+            <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
               <Select
                 value={JSON.stringify(selectedBranch)}
                 onValueChange={(value) => {
