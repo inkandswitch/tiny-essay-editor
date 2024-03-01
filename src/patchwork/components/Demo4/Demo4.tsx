@@ -747,6 +747,19 @@ export const Demo4: React.FC<{
                             return;
                           }
 
+                          /* filter out lines to comments that are out of view
+                          if (
+                            commentPositionMap[position.discussion.id].top -
+                              commentsScrollOffset >
+                              bezierCurveLayerRect.height ||
+                            commentPositionMap[position.discussion.id].bottom -
+                              commentsScrollOffset <
+                              0
+                          ) {
+                            return;
+                          }
+                          */
+
                           return (
                             <BezierCurve
                               color={

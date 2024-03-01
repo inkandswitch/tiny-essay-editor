@@ -12,7 +12,7 @@ import {
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { getRelativeTimeString } from "@/tee/utils";
+import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import {
   Popover,
@@ -58,28 +58,6 @@ export const SpatialCommentsList = React.memo(
       useState<string>();
     const account = useCurrentAccount();
 
-    const { registerDiscussionElement, discussionsPositionMap } =
-      useDiscussionsPositionMap({
-        discussions,
-        onChangeCommentPositionMap,
-        topOffset: 8,
-      });
-
-    /*    useEffect(() => {
-      sortBy(
-        Object.entries(discussionsPositionMap),
-        ([, { top }]) => top
-      ).forEach(([id, { top, bottom }]) => {
-        console.log(id, top, bottom);
-      });
-    }, [discussionsPositionMap]); */
-
-    const topDiscussion = overlayContainer
-      ? activeDiscussionTargetPositions.find(
-          ({ y }) => y + overlayContainer.top > 0
-        )
-      : undefined;
-
     const replyToDiscussion = (discussion: Discussion, content: string) => {
       setActiveReplyDiscussionId(null);
 
@@ -104,76 +82,49 @@ export const SpatialCommentsList = React.memo(
       });
     };
 
+    const { registerDiscussionElement, discussionsPositionMap } =
+      useDiscussionsPositionMap({
+        discussions,
+        onChangeCommentPositionMap,
+        topOffset: 8,
+      });
+
+    const topDiscussion = overlayContainer
+      ? activeDiscussionTargetPositions.find(
+          ({ y }) => y + overlayContainer.top > 0
+        )
+      : undefined;
+
+    const setScrollTarget = useSetScrollTarget(
+      discussionsPositionMap,
+      scrollContainer
+    );
+
     // sync scrollPosition
     useEffect(() => {
       if (!scrollContainer || !topDiscussion) {
         return;
       }
 
+      // if there is a new selectedDiscussionId ...
       if (selectedDiscussionId) {
         const position = discussionsPositionMap[selectedDiscussionId];
         const scrollOffset = scrollContainer.scrollTop;
 
+        // scroll into view if it's not vissible
         if (
           position &&
           (position.top - scrollOffset < 0 ||
             position.bottom - scrollOffset > scrollContainer.clientHeight)
         ) {
-          scrollTo(position.top);
+          setScrollTarget(selectedDiscussionId);
         }
 
         return;
       }
 
-      scrollTo(discussionsPositionMap[topDiscussion.discussion.id].top);
+      setScrollTarget(topDiscussion.discussion.id);
     }, [JSON.stringify(topDiscussion), selectedDiscussionId, scrollContainer]);
-
-    const targetScrollPositionRef = useRef<number>();
-    const currentScrollPositionRef = useRef<number>();
-
-    const scrollTo = (pos: number) => {
-      const prevTarget = targetScrollPositionRef.current;
-      const maxScrollPos =
-        scrollContainer.scrollHeight - scrollContainer.clientHeight;
-
-      targetScrollPositionRef.current = Math.min(pos, maxScrollPos);
-
-      if (!prevTarget) {
-        triggerScrollPositionUpdate();
-      }
-    };
-
-    const triggerScrollPositionUpdate = () => {
-      const targetPos = targetScrollPositionRef.current;
-      const currentPos =
-        currentScrollPositionRef.current ?? scrollContainer.scrollTop;
-
-      if (Math.abs(scrollContainer.scrollTop - targetPos) < 1) {
-        currentScrollPositionRef.current = undefined;
-        targetScrollPositionRef.current = undefined;
-        return;
-      }
-
-      // todo: maybe we don't even need this logic
-      // the scroll position has been shifted manually, abort automatic scroll
-      /*if (
-        currentPos !== undefined
-      ) {
-        console.log("abort", currentPos, scrollContainer.scrollTop);
-        scrollTargetPositionRef.current = undefined;
-        currentScrollPositionRef.current = undefined;
-        return;
-      }*/
-
-      const nextPosition = (currentPos * 9 + targetPos) / 10;
-
-      scrollContainer.scrollTo({
-        top: nextPosition,
-      });
-
-      currentScrollPositionRef.current = nextPosition;
-      requestAnimationFrame(triggerScrollPositionUpdate);
-    };
 
     // handle keyboard shortcuts
     /*
@@ -485,13 +436,9 @@ const useDiscussionsPositionMap = ({
     let currentPos = topOffset;
     const positionMap = {};
 
-    console.clear();
-
     for (const discussion of discussions) {
       const top = currentPos;
       const bottom = top + elementSizes.current[discussion.id];
-
-      console.log(elementSizes.current[discussion.id]);
 
       positionMap[discussion.id] = { top, bottom };
       currentPos = bottom;
@@ -504,4 +451,56 @@ const useDiscussionsPositionMap = ({
   }, [discussions, forceChangeDependency, topOffset]);
 
   return { registerDiscussionElement, discussionsPositionMap };
+};
+
+const useSetScrollTarget = (
+  discussionsPositionMap: DiscussionsPositionMap,
+  scrollContainer: HTMLDivElement
+) => {
+  const targetDiscussionIdRef = useRef<string>();
+
+  const triggerScrollPositionUpdate = useStaticCallback(() => {
+    const maxScrollPos =
+      scrollContainer.scrollHeight - scrollContainer.clientHeight;
+    const discussionPos =
+      discussionsPositionMap[targetDiscussionIdRef.current].top;
+    const targetPos = Math.min(maxScrollPos, discussionPos);
+
+    // hack: for some reason the scrolling get's stuck when it's close to the target but not quite
+    // haven't figured out yet why this is happening
+    if (Math.abs(scrollContainer.scrollTop - targetPos) < 5) {
+      scrollContainer.scrollTo({
+        top: targetPos,
+        behavior: "instant",
+      });
+      targetDiscussionIdRef.current = undefined;
+      return;
+    }
+
+    // incrementally converge towards targetPosition
+    const nextPosition = (scrollContainer.scrollTop * 9 + targetPos) / 10;
+
+    scrollContainer.scrollTo({
+      top: nextPosition,
+      behavior: "instant",
+    });
+
+    requestAnimationFrame(triggerScrollPositionUpdate);
+  });
+
+  useEffect(() => {
+    if (scrollContainer && targetDiscussionIdRef.current !== undefined) {
+      triggerScrollPositionUpdate();
+    }
+  }, [scrollContainer]);
+
+  return (discussionId: string) => {
+    const prevTarget = targetDiscussionIdRef.current;
+
+    targetDiscussionIdRef.current = discussionId;
+
+    if (!prevTarget && scrollContainer) {
+      triggerScrollPositionUpdate();
+    }
+  };
 };
