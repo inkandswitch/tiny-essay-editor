@@ -273,9 +273,10 @@ export function MarkdownEditor({
         }),
         ...(onUpdateDiscussionTargetPositions
           ? [
-              discussionTargetPositionListener(
-                onUpdateDiscussionTargetPositions
-              ),
+              discussionTargetPositionListener({
+                onUpdate: onUpdateDiscussionTargetPositions,
+                estimatedLineHeight: 24,
+              }),
             ]
           : []),
       ],

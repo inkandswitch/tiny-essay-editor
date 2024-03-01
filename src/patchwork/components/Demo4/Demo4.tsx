@@ -338,7 +338,6 @@ export const Demo4: React.FC<{
   }, [bezierCurveLayerRect, scrollOffset, reviewMode]);
 
   const [commentPositionMap, setCommentPositionMap] = useState({});
-
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
     useState<HTMLDivElement>();
 
@@ -374,16 +373,10 @@ export const Demo4: React.FC<{
         ({ discussion }) => discussion.id === selectedDiscussionId
       );
 
-      if (!target) {
-        // todo: handle targets out of current view
-        console.log("not implemtned");
-        return;
-      }
-
       const targetPos = target.y + scrollOffset;
 
+      // unsure why I need to subtract something here otherwise it doesn't scroll all the way to the bottom
       if (target.y < 0 || target.y >= scrollContainer.clientHeight - 150) {
-        // unsure why I need to subtract something here otherwise it doesn't scroll all the way to the bottom
         scrollContainer.scrollTo({
           top: targetPos,
           behavior: "smooth",

@@ -36,9 +36,15 @@ export const overlayContainerField = StateField.define<OverlayContainer | null>(
   }
 );
 
-export const discussionTargetPositionListener = (
-  onUpdate: (discussionTargetPositions: DiscussionTargetPosition[]) => void
-) => {
+interface DiscussionTargetPositionListenerConfig {
+  onUpdate: (discussionTargetPositions: DiscussionTargetPosition[]) => void;
+  estimatedLineHeight: number;
+}
+
+export const discussionTargetPositionListener = ({
+  onUpdate,
+  estimatedLineHeight,
+}: DiscussionTargetPositionListenerConfig) => {
   return ViewPlugin.fromClass(
     class {
       constructor(view: EditorView) {
@@ -48,6 +54,7 @@ export const discussionTargetPositionListener = (
       update(update: ViewUpdate) {
         if (
           update.docChanged ||
+          update.viewportChanged ||
           update.transactions.some((tr) =>
             tr.effects.some(
               (e) =>
@@ -70,34 +77,47 @@ export const discussionTargetPositionListener = (
         // todo: there is probably a better way to do this
         // the problem here is that during update we can't read the positions
         requestAnimationFrame(() => {
-          onUpdate(
-            annotations.flatMap((annotation) => {
-              if ("type" in annotation && annotation.type === "discussion") {
-                const lastLineBreakIndex = view.state
-                  .sliceDoc(annotation.from, annotation.to)
-                  .trimEnd() // trim to ignore line breaks at the end of the string
-                  .lastIndexOf("\n");
-                const fromIndex =
-                  lastLineBreakIndex === -1
-                    ? annotation.from
-                    : annotation.from + lastLineBreakIndex + 1;
+          const discussionTargetPostions = annotations.flatMap((annotation) => {
+            if ("type" in annotation && annotation.type === "discussion") {
+              const lastLineBreakIndex = view.state
+                .sliceDoc(annotation.from, annotation.to)
+                .trimEnd() // trim to ignore line breaks at the end of the string
+                .lastIndexOf("\n");
+              const fromIndex =
+                lastLineBreakIndex === -1
+                  ? annotation.from
+                  : annotation.from + lastLineBreakIndex + 1;
 
-                const fromCoords = view.coordsAtPos(fromIndex);
+              const fromCoords = view.coordsAtPos(fromIndex);
+              const discussion = (annotation as any).discussion; // todo: fix types
 
-                if (!fromCoords) {
-                  return [];
-                }
+              if (fromCoords) {
                 return [
                   {
-                    discussion: (annotation as any).discussion, // todo: fix types
+                    discussion,
                     x: fromCoords.left - overlayContainer.left,
                     y: fromCoords.bottom - overlayContainer.top * 2,
                   },
                 ];
               }
-              return [];
-            })
-          );
+
+              // fallback: estimate position based on line number
+              const lineNumber = view.state.doc.lineAt(fromIndex).number;
+
+              return [
+                {
+                  discussion,
+                  x: overlayContainer.left,
+                  y:
+                    lineNumber * estimatedLineHeight -
+                    overlayContainer.scrollOffset,
+                },
+              ];
+            }
+            return [];
+          });
+
+          onUpdate(discussionTargetPostions);
         });
       }
     }
