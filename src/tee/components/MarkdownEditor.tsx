@@ -90,6 +90,7 @@ export type EditorProps = {
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
   overlayContainer?: OverlayContainer;
+  isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
@@ -113,6 +114,7 @@ export function MarkdownEditor({
   discussionAnnotations,
   overlayContainer,
   setEditorContainerElement,
+  isCommentBoxOpen,
   onUpdateDiscussionTargetPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
@@ -159,34 +161,47 @@ export function MarkdownEditor({
 
   // Propagate comments and edit group annotations into the codemirror
   useEffect(() => {
+    const annotations = annotationsWithPositions
+      .flatMap((annotation) => {
+        switch (annotation.type) {
+          case "thread": {
+            return annotation;
+          }
+          case "patch": {
+            return annotation;
+          }
+          case "draft": {
+            return annotation.editRangesWithComments.map((range) => ({
+              id: annotation.id,
+              from: range.editRange.from,
+              to: range.editRange.to,
+              active: annotation.active,
+            }));
+          }
+          default: {
+            return [];
+          }
+        }
+      })
+      .concat(discussionAnnotations);
+
+    // create fake comment annotation on current selection while comment box is open
+    if (isCommentBoxOpen) {
+      const selection = editorRoot.current.state.selection.main;
+      annotations.push({
+        //@ts-ignore
+        type: "discussion",
+        id: "PENDING_COMMENT",
+        from: selection.from,
+        to: selection.to,
+        active: true,
+      });
+    }
+
     editorRoot.current?.dispatch({
-      effects: setAnnotationsEffect.of(
-        annotationsWithPositions
-          .flatMap((annotation) => {
-            switch (annotation.type) {
-              case "thread": {
-                return annotation;
-              }
-              case "patch": {
-                return annotation;
-              }
-              case "draft": {
-                return annotation.editRangesWithComments.map((range) => ({
-                  id: annotation.id,
-                  from: range.editRange.from,
-                  to: range.editRange.to,
-                  active: annotation.active,
-                }));
-              }
-              default: {
-                return [];
-              }
-            }
-          })
-          .concat(discussionAnnotations)
-      ),
+      effects: setAnnotationsEffect.of(annotations),
     });
-  }, [annotationsWithPositions, discussionAnnotations]);
+  }, [annotationsWithPositions, discussionAnnotations, isCommentBoxOpen]);
 
   useEffect(() => {
     if (!handleReady) {

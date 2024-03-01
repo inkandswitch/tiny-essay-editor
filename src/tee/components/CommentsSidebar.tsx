@@ -77,6 +77,8 @@ export const CommentsSidebar = ({
   reviewStateFilter,
   setReviewStateFilter,
   authors,
+  setIsCommentBoxOpen,
+  isCommentBoxOpen,
   diffBase,
 }: {
   doc: MarkdownDoc;
@@ -94,11 +96,12 @@ export const CommentsSidebar = ({
   reviewStateFilter: ReviewStateFilter;
   setReviewStateFilter: (filter: ReviewStateFilter) => void;
   authors: AutomergeUrl[];
+  setIsCommentBoxOpen: (isOpen: boolean) => void;
+  isCommentBoxOpen: boolean;
   diffBase?: A.Heads;
 }) => {
   const account = useCurrentAccount();
   const [pendingCommentText, setPendingCommentText] = useState("");
-  const [commentBoxOpen, setCommentBoxOpen] = useState(false);
   const [activeReplyThreadId, setActiveReplyThreadId] = useState<
     string | null
   >();
@@ -695,10 +698,7 @@ export const CommentsSidebar = ({
         );
       })}
 
-      <Popover
-        open={commentBoxOpen}
-        onOpenChange={() => setCommentBoxOpen((prev) => !prev)}
-      >
+      <Popover open={isCommentBoxOpen} onOpenChange={setIsCommentBoxOpen}>
         <PopoverTrigger asChild>
           {showCommentButton && (
             <Button
@@ -725,7 +725,7 @@ export const CommentsSidebar = ({
               if (event.key === "Enter" && event.metaKey) {
                 startDiscusssionAtSelection(pendingCommentText);
                 setSuppressButton(true);
-                setCommentBoxOpen(false);
+                setIsCommentBoxOpen(false);
                 event.preventDefault();
               }
             }}

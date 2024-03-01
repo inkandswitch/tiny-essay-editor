@@ -89,6 +89,7 @@ export const TinyEssayEditor = ({
     []
   );
   const [editorView, setEditorView] = useState<EditorView>();
+  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
@@ -303,6 +304,7 @@ export const TinyEssayEditor = ({
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
               }
+              isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>
           <div className="ml-2 w-0">
@@ -323,6 +325,8 @@ export const TinyEssayEditor = ({
               visibleAuthorsForEdits={visibleAuthorsForEdits}
               setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
               authors={authors}
+              isCommentBoxOpen={isCommentBoxOpen}
+              setIsCommentBoxOpen={setIsCommentBoxOpen}
             />
           </div>
         </div>

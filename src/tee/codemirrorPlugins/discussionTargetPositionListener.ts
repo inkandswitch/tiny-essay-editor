@@ -91,6 +91,10 @@ export const discussionTargetPositionListener = ({
               const fromCoords = view.coordsAtPos(fromIndex);
               const discussion = (annotation as any).discussion; // todo: fix types
 
+              if (!discussion) {
+                return [];
+              }
+
               if (fromCoords) {
                 return [
                   {
