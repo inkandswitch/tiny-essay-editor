@@ -32,7 +32,7 @@ interface SpatialCommentsListProps {
   activeDiscussionTargetPositions: DiscussionTargetPosition[];
   overlayContainer: OverlayContainer;
   changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
-  onChangeCommentPositionMap: (map: DiscussionsPositionMap) => void;
+  onChangeCommentPositionMap: (map: PositionMap) => void;
   onChangeScrollOffset: (offset: number) => void;
   setSelectedDiscussionId: (id: string) => void;
   setHoveredDiscussionId: (id: string) => void;
@@ -259,7 +259,7 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
     const [pendingCommentText, setPendingCommentText] = useState("");
 
     return (
-      <div ref={ref} className="py-1">
+      <div ref={ref} className="pt-2">
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -366,19 +366,19 @@ const DiscusssionCommentView = ({
   );
 };
 
-type DiscussionsPositionMap = Record<string, { top: number; bottom: number }>;
+type PositionMap = Record<string, { top: number; bottom: number }>;
 
 interface UseDiscussionsPositionMapResult {
   registerDiscussionElement: (
     discussionId: string,
     element: HTMLDivElement
   ) => void;
-  discussionsPositionMap: DiscussionsPositionMap;
+  discussionsPositionMap: PositionMap;
 }
 
 interface UseDiscussionPositionOptions {
   discussions: Discussion[];
-  onChangeCommentPositionMap?: (map: DiscussionsPositionMap) => void;
+  onChangeCommentPositionMap?: (map: PositionMap) => void;
   topOffset?: number;
 }
 
@@ -453,32 +453,31 @@ const useDiscussionsPositionMap = ({
   return { registerDiscussionElement, discussionsPositionMap };
 };
 
-const useSetScrollTarget = (
-  discussionsPositionMap: DiscussionsPositionMap,
+export const useSetScrollTarget = (
+  positionMap: PositionMap,
   scrollContainer: HTMLDivElement
 ) => {
-  const targetDiscussionIdRef = useRef<string>();
+  const targetIdRef = useRef<string>();
 
   const triggerScrollPositionUpdate = useStaticCallback(() => {
     const maxScrollPos =
       scrollContainer.scrollHeight - scrollContainer.clientHeight;
-    const discussionPos =
-      discussionsPositionMap[targetDiscussionIdRef.current].top;
-    const targetPos = Math.min(maxScrollPos, discussionPos);
+    const targetPos = positionMap[targetIdRef.current].top;
+    const scrollToPos = Math.min(maxScrollPos, targetPos);
 
     // hack: for some reason the scrolling get's stuck when it's close to the target but not quite
     // haven't figured out yet why this is happening
-    if (Math.abs(scrollContainer.scrollTop - targetPos) < 5) {
+    if (Math.abs(scrollContainer.scrollTop - scrollToPos) < 5) {
       scrollContainer.scrollTo({
-        top: targetPos,
+        top: scrollToPos,
         behavior: "instant",
       });
-      targetDiscussionIdRef.current = undefined;
+      targetIdRef.current = undefined;
       return;
     }
 
-    // incrementally converge towards targetPosition
-    const nextPosition = (scrollContainer.scrollTop * 9 + targetPos) / 10;
+    // incrementally converge towards scrollToPos
+    const nextPosition = (scrollContainer.scrollTop * 9 + scrollToPos) / 10;
 
     scrollContainer.scrollTo({
       top: nextPosition,
@@ -489,15 +488,15 @@ const useSetScrollTarget = (
   });
 
   useEffect(() => {
-    if (scrollContainer && targetDiscussionIdRef.current !== undefined) {
+    if (scrollContainer && targetIdRef.current !== undefined) {
       triggerScrollPositionUpdate();
     }
   }, [scrollContainer]);
 
   return (discussionId: string) => {
-    const prevTarget = targetDiscussionIdRef.current;
+    const prevTarget = targetIdRef.current;
 
-    targetDiscussionIdRef.current = discussionId;
+    targetIdRef.current = discussionId;
 
     if (!prevTarget && scrollContainer) {
       triggerScrollPositionUpdate();
