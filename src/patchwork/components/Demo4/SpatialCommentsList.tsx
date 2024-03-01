@@ -230,7 +230,7 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
     const onStartResolve = () => {
       setHeight(localRef.current.clientHeight);
       // delay, so height is set first for transition
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         setIsBeingResolved(true);
       });
     };
@@ -288,7 +288,9 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
     return (
       <div
         ref={setRef}
-        className={`pt-2 transition-all overflow-hidden`}
+        className={`pt-2 transition-all ${
+          isBeingResolved ? "overflow-hidden" : ""
+        }`}
         style={
           height !== undefined
             ? {
