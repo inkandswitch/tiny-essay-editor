@@ -200,14 +200,7 @@ export const getMarkersForDoc = <
 ): HeadsMarker[] => {
   const doc = handle.docSync();
   if (!doc) return [];
-  /** Mark tags aka milestones */
-  let markers: HeadsMarker[] = (doc.tags ?? []).map((tag: Tag) => ({
-    id: `tag-${tag.heads[0]}-${tag.name}`,
-    heads: tag.heads,
-    type: "tag" as const,
-    tag,
-    users: tag.createdBy ? [tag.createdBy] : [],
-  }));
+  let markers: HeadsMarker[] = [];
 
   const discussions = Object.values(doc.discussions ?? {}).map(
     (discussion) => ({
@@ -286,6 +279,17 @@ export const getMarkersForDoc = <
         type: "branchCreatedFromThisDoc",
         branch,
       }))
+  );
+
+  /** Mark tags aka milestones */
+  markers = markers.concat(
+    (doc.tags ?? []).map((tag: Tag) => ({
+      id: `tag-${tag.heads[0]}-${tag.name}`,
+      heads: tag.heads,
+      type: "tag" as const,
+      tag,
+      users: tag.createdBy ? [tag.createdBy] : [],
+    }))
   );
 
   return markers;
