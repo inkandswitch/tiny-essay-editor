@@ -108,7 +108,7 @@ ${JSON.stringify(
 export const useAutoPopulateChangeGroupSummaries = ({
   changeGroups,
   handle,
-  msBetween = 15000,
+  msBetween = 10000,
 }: {
   changeGroups: ChangeGroup[];
   handle: DocHandle<HasChangeGroupSummaries>;
