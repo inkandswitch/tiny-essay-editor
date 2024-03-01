@@ -262,7 +262,7 @@ export const TinyEssayEditor = ({
 
   return (
     <div className="h-full overflow-auto min-h-0 w-full" ref={editorRef}>
-      <div className="@container flex bg-gray-50 justify-center">
+      <div className="@container flex bg-gray-100 justify-center">
         {/* This has some subtle behavior for responsiveness.
             - We use container queries to adjust the width of the editor based on the size of our container.
             - We get the right line width by hardcoding a max-width and x-padding

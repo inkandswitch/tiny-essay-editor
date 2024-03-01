@@ -6,14 +6,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  ReactNode,
-  useState,
-  useLayoutEffect,
-} from "react";
+import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ChangeGroup,
   ChangelogItem,
@@ -22,14 +15,13 @@ import {
 } from "../../groupChanges";
 
 import {
-  MessageSquare,
   MilestoneIcon,
   GitBranchIcon,
   GitBranchPlusIcon,
-  MoreHorizontal,
   CrownIcon,
   ChevronLeftIcon,
   PencilIcon,
+  MoreVerticalIcon,
 } from "lucide-react";
 import { Heads, Patch } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
@@ -203,7 +195,7 @@ export const ReviewSidebar: React.FC<{
             )}
           </div>
           <div className="flex-grow flex justify-center items-center px-2 py-1 text-sm">
-            <div className="font-bold">
+            <div className="font-medium text-gray-800">
               {selectedBranch.type === "main" && (
                 <div className="flex items-center gap-2">
                   <CrownIcon className="inline" size={12} />
@@ -220,27 +212,27 @@ export const ReviewSidebar: React.FC<{
           </div>
           <div className="w-12 flex-shrink-0"></div>
         </div>
-
-        <div className="h-6">
-          {selection && (
-            <div className="flex gap-2 px-2 pb-1">
-              <div className="text-blue-600 font-medium">
-                Showing {selection.to.index - selection.from.index + 1} change
-                {selection.to.index === selection.from.index ? "" : "s"}
-              </div>
-              <div
-                className="cursor-pointer text-gray-500 font-semibold underline"
-                onClick={clearSelection}
-              >
-                Reset to now
-              </div>
+        {selection && (
+          <div className="absolute flex gap-2 p-2 bg-gray-100 z-10 w-full border-b border-t border-gray-300">
+            <div className="text-blue-600 font-medium">
+              Showing {selection.to.index - selection.from.index + 1} change
+              {selection.to.index === selection.from.index ? "" : "s"}
             </div>
-          )}
-        </div>
+            <div
+              className="cursor-pointer text-gray-500 font-semibold underline"
+              onClick={clearSelection}
+            >
+              Reset to now
+            </div>
+          </div>
+        )}
       </div>
 
       {/* The timeline */}
-      <div className="overflow-y-auto flex-1 flex flex-col" ref={scrollerRef}>
+      <div
+        className="bg-gray-100 overflow-y-auto flex-1 flex flex-col pb-4"
+        ref={scrollerRef}
+      >
         <div className="timeline-line"></div>
         <div className="relative mt-auto flex flex-col" ref={itemsContainerRef}>
           {/* Show a toggle for hidden items */}
@@ -343,67 +335,74 @@ export const ReviewSidebar: React.FC<{
                   })()}
 
                   {/* User avatars associated with this item */}
-                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
-                    <div className="flex items-center space-x-[-4px]">
-                      {item.users.map((contactUrl) => (
-                        <div className="rounded-full">
-                          <InlineContactAvatar
-                            key={contactUrl}
-                            url={contactUrl}
-                            size="sm"
-                            showName={false}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                  {item.type !== "discussionThread" && (
+                    <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                      <div className="flex items-center space-x-[-4px]">
+                        {item.users.map((contactUrl) => (
+                          <div className="rounded-full">
+                            <InlineContactAvatar
+                              key={contactUrl}
+                              url={contactUrl}
+                              size="sm"
+                              showName={false}
+                            />
+                          </div>
+                        ))}
+                      </div>
 
-                    {/* Context menu for the item (TODO: how to populate actions for this?) */}
-                    <div className="">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <MoreHorizontal
-                            size={18}
-                            className="mt-1 mr-21 text-gray-300 hover:text-gray-800"
-                          />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="mr-4">
-                          {(item.type === "otherBranchMergedIntoThisDoc" ||
-                            item.type === "branchCreatedFromThisDoc") && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                setSelectedBranch({
-                                  type: "branch",
-                                  url: item.branch.url,
-                                })
-                              }
-                            >
-                              Go to branch
-                            </DropdownMenuItem>
-                          )}
+                      {/* Context menu for the item (TODO: how to populate actions for this?) */}
+                      <div className="mt-1 -mx-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <MoreVerticalIcon
+                              size={18}
+                              className="text-gray-300 hover:text-gray-800"
+                            />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="mr-4">
+                            {(item.type === "otherBranchMergedIntoThisDoc" ||
+                              item.type === "branchCreatedFromThisDoc") && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setSelectedBranch({
+                                    type: "branch",
+                                    url: item.branch.url,
+                                  })
+                                }
+                              >
+                                Go to branch
+                              </DropdownMenuItem>
+                            )}
 
-                          {item.type === "changeGroup" && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                const summary = window.prompt("New summary:");
-                                if (summary) {
-                                  handle.change((doc) => {
+                            {item.type === "changeGroup" && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const summary = window.prompt(
+                                    "New summary:",
                                     doc.changeGroupSummaries[
                                       item.changeGroup.id
-                                    ] = {
-                                      title: summary,
-                                    };
-                                  });
-                                }
-                              }}
-                            >
-                              <PencilIcon size={12} className="mr-1 inline" />
-                              Edit summary
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                                    ].title ?? ""
+                                  );
+                                  if (summary) {
+                                    handle.change((doc) => {
+                                      doc.changeGroupSummaries[
+                                        item.changeGroup.id
+                                      ] = {
+                                        title: summary,
+                                      };
+                                    });
+                                  }
+                                }}
+                              >
+                                <PencilIcon size={12} className="mr-1 inline" />
+                                Edit summary
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </>
             );
@@ -421,6 +420,7 @@ export const ReviewSidebar: React.FC<{
           )}
         </div>
       </div>
+
       <div className="bg-gray-50 z-10">
         <DiscussionInput
           doc={doc}
@@ -575,7 +575,7 @@ const ChangeGroupItem: React.FC<{
 }> = ({ group, doc }) => {
   return (
     <div className="pl-[7px] pr-1 flex w-full">
-      <div className="w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
+      <div className="flex-shrink-0 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
       <ChangeGroupDescription changeGroup={group} doc={doc} />
     </div>
   );
@@ -583,13 +583,13 @@ const ChangeGroupItem: React.FC<{
 
 const DateHeader: React.FC<{ date: Date }> = ({ date }) => {
   return (
-    <div className="text-sm font-medium text-gray-400 px-4 flex items-center justify-between p-1 w-full">
+    <div className="text-sm font-normal text-gray-300 px-4 flex items-center justify-between p-1 w-full">
       <hr className="flex-grow border-t border-gray-200 mr-2 ml-4" />
       <div>
         {date.toLocaleString("en-US", {
           month: "short",
           day: "numeric",
-          weekday: "short",
+          weekday: "long",
         })}
       </div>
     </div>
@@ -645,7 +645,7 @@ const BranchMergedItem: React.FC<{
           {changeGroups.map((group) => (
             <div className="flex">
               <ChangeGroupDescription changeGroup={group} doc={doc} />
-              <div className="flex flex-shrink-0 items-center space-x-[-4px]">
+              <div className="flex flex-shrink-0 items-start space-x-[-4px]">
                 {group.authorUrls.map((contactUrl) => (
                   <div className="rounded-full">
                     <InlineContactAvatar
@@ -673,19 +673,19 @@ const MilestoneItem = ({
   selected: boolean;
 }) => {
   return (
-    <ItemView selected={selected} color="green">
-      <ItemActionMessage>milestone</ItemActionMessage>
-      <ItemIcon>
-        <MilestoneIcon className="h-[10px] w-[10px] text-white" />
-      </ItemIcon>
-      <ItemContent>
-        <div className="text-sm flex select-none">
-          <div>
-            <div className="inline font-semibold">{milestone.name}</div>{" "}
-          </div>
-        </div>
-      </ItemContent>
-    </ItemView>
+    <div
+      className={`timeline-item w-full outline outline-2 outline-gray-50 cursor-pointer items-center flex gap-1 rounded-full -ml-1 pl-1 border-1.5 border-gray-300 shadow-sm ${
+        selected ? "bg-gray-200" : "bg-gray-100"
+      }`}
+    >
+      <div className="flex h-[16px] w-[16px] items-center justify-center rounded-full bg-orange-500 outline outline-2 outline-gray-100">
+        <MilestoneIcon className="h-[12px] w-[12px] text-white" />
+      </div>
+
+      <div className="flex-1 p-1 text-sm ">
+        <div className="font-semibold">{milestone.name}</div>
+      </div>
+    </div>
   );
 };
 
@@ -749,60 +749,59 @@ const BranchOriginItem = ({
 // We only show the first comment in the thread (replying isn't supported yet)
 const DiscussionThreadItem = ({
   discussion,
-  selected,
 }: {
   discussion: Discussion;
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];
   return (
-    <ItemView selected={selected} color="orange">
-      <ItemIcon>
-        <MessageSquare className="h-[10px] w-[10px] text-white" />
-      </ItemIcon>
-      <ItemContent>
-        <div className="text-sm flex select-none">
-          <div className="font-normal text-gray-800 -ml-1 -my-1">
-            {/* We use a readonly Codemirror to show markdown preview for comments
+    <div className="ml-6 mr-16 my-0 w-full min-h-12 flex gap-1 bg-yellow-50 border-yellow-100 text-xs p-2 shadow-md select-none">
+      <div className="flex-shrink-0">
+        <InlineContactAvatar
+          size="default"
+          url={comment.contactUrl}
+          showName={false}
+        />
+      </div>
+      <div className="font-normal text-gray-800 -ml-1 -my-1">
+        {/* We use a readonly Codemirror to show markdown preview for comments
                                         using the same style that was used for entering the comment */}
-            <CodeMirror
-              value={comment.content.trim()}
-              readOnly
-              editable={false}
-              basicSetup={{
-                foldGutter: false,
-                highlightActiveLine: false,
-                lineNumbers: false,
-              }}
-              extensions={[
-                markdown({
-                  base: markdownLanguage,
-                  codeLanguages: languages,
-                }),
-                EditorView.lineWrapping,
-              ]}
-              theme={EditorView.theme({
-                "&.cm-editor": {
-                  height: "100%",
-                },
-                "&.cm-focused": {
-                  outline: "none",
-                },
-                ".cm-scroller": {
-                  height: "100%",
-                },
-                ".cm-content": {
-                  height: "100%",
-                  fontSize: "14px",
-                  fontFamily: "ui-sans-serif, system-ui, sans-serif",
-                  fontWeight: "normal",
-                },
-              })}
-            />
-          </div>
-        </div>
-      </ItemContent>
-    </ItemView>
+        <CodeMirror
+          value={comment.content.trim()}
+          readOnly
+          editable={false}
+          basicSetup={{
+            foldGutter: false,
+            highlightActiveLine: false,
+            lineNumbers: false,
+          }}
+          extensions={[
+            markdown({
+              base: markdownLanguage,
+              codeLanguages: languages,
+            }),
+            EditorView.lineWrapping,
+          ]}
+          theme={EditorView.theme({
+            "&.cm-editor": {
+              height: "100%",
+            },
+            "&.cm-focused": {
+              outline: "none",
+            },
+            ".cm-scroller": {
+              height: "100%",
+            },
+            ".cm-content": {
+              height: "100%",
+              fontSize: "12px",
+              fontFamily: "monospace",
+              fontWeight: "normal",
+            },
+          })}
+        />
+      </div>
+    </div>
   );
 };
 
@@ -851,7 +850,9 @@ const ItemView = ({
             {slots.actionMessage}
           </div>
         )}
-        <div className={`flex-1 rounded py-1 px-2 shadow`}>{slots.content}</div>
+        <div className={`bg-white flex-1 rounded py-1 px-2 shadow`}>
+          {slots.content}
+        </div>
       </div>
     </div>
   );

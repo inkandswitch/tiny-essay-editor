@@ -249,8 +249,8 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
               },
               ".cm-content": {
                 height: "100%",
-                fontSize: "14px",
-                fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                fontSize: "12px",
+                fontFamily: "monospace",
                 fontWeight: "normal",
               },
             })}
@@ -261,7 +261,7 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
               {parsedCommentBoxContent.type === "comment" && (
                 <Button variant="ghost" onClick={handleSubmitDiscussion}>
                   <SendHorizontalIcon size={14} className="mr-1" />
-                  Comment
+                  Write a note
                   <span className="text-gray-400 text-xs ml-2">(⌘+enter)</span>
                 </Button>
               )}
