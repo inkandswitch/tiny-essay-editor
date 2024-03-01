@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { Discussion, DiscussionComment } from "@/patchwork/schema";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import {
@@ -54,8 +54,8 @@ export const SpatialCommentsList = React.memo(
     const scrollContainerRectRef = useRef<DOMRect>();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
     const commentPositionMapRef = useRef<CommentPositionMap>({});
-    const [pendingCommentText, setPendingCommentText] = useState("");
-    const [activeReplyThreadId, setActiveReplyThreadId] = useState<string>();
+    const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
+      useState<string>();
     const account = useCurrentAccount();
 
     const topDiscussion = overlayContainer
@@ -79,14 +79,13 @@ export const SpatialCommentsList = React.memo(
       onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
     };
 
-    const replyToDiscussion = (discussion: Discussion) => {
-      setActiveReplyThreadId(null);
-      setPendingCommentText("");
+    const replyToDiscussion = (discussion: Discussion, content: string) => {
+      setActiveReplyDiscussionId(null);
 
       changeDoc((doc) => {
         doc.discussions[discussion.id].comments.push({
           id: uuid(),
-          content: pendingCommentText,
+          content,
           contactUrl: account.contactHandle.url,
           timestamp: Date.now(),
         });
@@ -230,9 +229,9 @@ export const SpatialCommentsList = React.memo(
         if (
           evt.key === "Enter" &&
           isMetaOrControlPressed &&
-          !activeReplyThreadId
+          !activeReplyDiscussionId
         ) {
-          setActiveReplyThreadId(selectedDiscussionId);
+          setActiveReplyDiscussionId(selectedDiscussionId);
           evt.preventDefault();
           evt.stopPropagation();
         }
@@ -244,15 +243,6 @@ export const SpatialCommentsList = React.memo(
         window.removeEventListener("keydown", onKeydown);
       };
     }, [selectedDiscussionId]);
-
-    // hack to unblur button
-    useEffect(() => {
-      if (!activeReplyThreadId) {
-        setTimeout(() => {
-          (document.activeElement as HTMLElement).blur();
-        }, 200);
-      }
-    }, [activeReplyThreadId]);
 
     return (
       <div
@@ -270,128 +260,164 @@ export const SpatialCommentsList = React.memo(
       >
         {discussions &&
           overlayContainer &&
-          discussions.map((discussion) => {
-            return (
-              <div
-                onMouseEnter={() => {
-                  setHoveredDiscussionId(discussion.id);
-                }}
-                onMouseLeave={() => {
-                  setHoveredDiscussionId(undefined);
-                }}
-                onClick={() => setSelectedDiscussionId(discussion.id)}
-                key={discussion.id}
-                className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
-                ${
-                  discussion.id === hoveredDiscussionId ||
-                  discussion.id === selectedDiscussionId
-                    ? "border-gray-400 shadow-xl"
-                    : "border-gray-200 "
-                }`}
-                ref={(element) => {
-                  if (!element || !scrollContainer) {
-                    delete commentPositionMapRef.current[discussion.id];
-                  } else {
-                    const rect = element.getBoundingClientRect();
-                    commentPositionMapRef.current[discussion.id] = {
-                      top:
-                        rect.top -
-                        overlayContainer.top +
-                        scrollContainer.scrollTop,
-                      bottom:
-                        rect.bottom -
-                        overlayContainer.top +
-                        scrollContainer.scrollTop,
-                    };
-                  }
+          discussions.map((discussion) => (
+            <DiscussionView
+              discussion={discussion}
+              isReplyBoxOpen={activeReplyDiscussionId === discussion.id}
+              setIsReplyBoxOpen={() =>
+                setActiveReplyDiscussionId(discussion.id)
+              }
+              onResolve={() => resolveDiscussion(discussion)}
+              onReply={(content) => replyToDiscussion(discussion, content)}
+              isHovered={hoveredDiscussionId === discussion.id}
+              setIsHovered={(isHovered) =>
+                setHoveredDiscussionId(isHovered ? discussion.id : undefined)
+              }
+              isSelected={selectedDiscussionId === discussion.id}
+              setIsSelected={(isSelected) =>
+                setSelectedDiscussionId(isSelected ? discussion.id : undefined)
+              }
+              ref={(element) => {
+                if (!element || !scrollContainer) {
+                  delete commentPositionMapRef.current[discussion.id];
+                } else {
+                  const rect = element.getBoundingClientRect();
+                  commentPositionMapRef.current[discussion.id] = {
+                    top:
+                      rect.top -
+                      overlayContainer.top +
+                      scrollContainer.scrollTop,
+                    bottom:
+                      rect.bottom -
+                      overlayContainer.top +
+                      scrollContainer.scrollTop,
+                  };
+                }
 
-                  // triggerChangeCommentPositionMap();
-                }}
-              >
-                <div>
-                  {discussion.comments.map((comment, index) => (
-                    <div
-                      key={comment.id}
-                      className={
-                        index !== discussion.comments.length - 1
-                          ? "border-b border-gray-200"
-                          : ""
-                      }
-                    >
-                      <DiscusssionCommentView comment={comment} />
-                    </div>
-                  ))}
-                </div>
-                <div
-                  className={`overflow-hidden transition-all ${
-                    selectedDiscussionId === discussion.id
-                      ? "h-[43px] border-t border-gray-200 pt-2"
-                      : "h-[0px]"
-                  }`}
-                >
-                  <Popover
-                    open={activeReplyThreadId === discussion.id}
-                    onOpenChange={(open) => {
-                      open
-                        ? setActiveReplyThreadId(discussion.id)
-                        : setActiveReplyThreadId(null);
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button className="mr-2 px-2 h-8" variant="ghost">
-                        <Reply className="mr-2" /> Reply
-                        <span className="text-gray-400 ml-2 text-xs">
-                          (⌘ + ⏎)
-                        </span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <Textarea
-                        className="mb-4"
-                        value={pendingCommentText}
-                        onChange={(event) =>
-                          setPendingCommentText(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" && event.metaKey) {
-                            replyToDiscussion(discussion);
-                            event.preventDefault();
-                            event.stopPropagation();
-                          }
-                        }}
-                      />
-
-                      <PopoverClose>
-                        <Button
-                          variant="outline"
-                          onClick={() => replyToDiscussion(discussion)}
-                        >
-                          Comment
-                          <span className="text-gray-400 ml-2 text-xs">
-                            (⌘ + ⏎)
-                          </span>
-                        </Button>
-                      </PopoverClose>
-                    </PopoverContent>
-                  </Popover>
-                  <Button
-                    variant="ghost"
-                    className="select-none h-8 px-2 "
-                    onClick={() => resolveDiscussion(discussion)}
-                  >
-                    <Check className="mr-2" /> Resolve
-                    <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+                // triggerChangeCommentPositionMap();
+              }}
+            />
+          ))}
       </div>
     );
   }
 );
 
-function DiscusssionCommentView({ comment }: { comment: DiscussionComment }) {
+interface DiscussionViewProps {
+  discussion: Discussion;
+  isReplyBoxOpen: boolean;
+  setIsReplyBoxOpen: () => void;
+  onResolve: () => void;
+  onReply: (content: string) => void;
+  isHovered: boolean;
+  setIsHovered: (isHovered: boolean) => void;
+  isSelected: boolean;
+  setIsSelected: (isSelected: boolean) => void;
+}
+
+const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
+  (
+    {
+      discussion,
+      isReplyBoxOpen,
+      setIsReplyBoxOpen,
+      onResolve,
+      onReply,
+      isHovered,
+      setIsHovered,
+      isSelected,
+      setIsSelected,
+    }: DiscussionViewProps,
+    ref
+  ) => {
+    const [pendingCommentText, setPendingCommentText] = useState("");
+
+    return (
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => setIsSelected(true)}
+        key={discussion.id}
+        className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
+    ${
+      isSelected || isHovered ? "border-gray-400 shadow-xl" : "border-gray-200 "
+    }`}
+        ref={ref}
+      >
+        <div>
+          {discussion.comments.map((comment, index) => (
+            <div
+              key={comment.id}
+              className={
+                index !== discussion.comments.length - 1
+                  ? "border-b border-gray-200"
+                  : ""
+              }
+            >
+              <DiscusssionCommentView comment={comment} />
+            </div>
+          ))}
+        </div>
+        <div
+          className={`overflow-hidden transition-all ${
+            isSelected ? "h-[43px] border-t border-gray-200 pt-2" : "h-[0px]"
+          }`}
+        >
+          <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>
+            <PopoverTrigger asChild>
+              <Button className="mr-2 px-2 h-8" variant="ghost">
+                <Reply className="mr-2" /> Reply
+                <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Textarea
+                className="mb-4"
+                value={pendingCommentText}
+                onChange={(event) => setPendingCommentText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.metaKey) {
+                    onReply(pendingCommentText);
+                    setPendingCommentText("");
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }}
+              />
+
+              <PopoverClose>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    onReply(pendingCommentText);
+                    setPendingCommentText("");
+                  }}
+                >
+                  Comment
+                  <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
+                </Button>
+              </PopoverClose>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="ghost"
+            className="select-none h-8 px-2 "
+            onClick={() => onResolve()}
+          >
+            <Check className="mr-2" /> Resolve
+            <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+);
+
+const DiscusssionCommentView = ({
+  comment,
+}: {
+  comment: DiscussionComment;
+}) => {
   return (
     <div>
       <div className="flex items-center justify-between p-1.5 text-sm">
@@ -409,4 +435,4 @@ function DiscusssionCommentView({ comment }: { comment: DiscussionComment }) {
       </div>
     </div>
   );
-}
+};
