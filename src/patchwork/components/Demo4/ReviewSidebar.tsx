@@ -339,7 +339,7 @@ export const ReviewSidebar: React.FC<{
                     <div className="ml-auto flex-shrink-0 flex items-center gap-2">
                       <div className="flex items-center space-x-[-4px]">
                         {item.users.map((contactUrl) => (
-                          <div className="rounded-full">
+                          <div className="rounded-full" key={contactUrl}>
                             <InlineContactAvatar
                               key={contactUrl}
                               url={contactUrl}
@@ -381,7 +381,7 @@ export const ReviewSidebar: React.FC<{
                                     "New summary:",
                                     doc.changeGroupSummaries[
                                       item.changeGroup.id
-                                    ].title ?? ""
+                                    ]?.title ?? ""
                                   );
                                   if (summary) {
                                     handle.change((doc) => {
@@ -643,11 +643,11 @@ const BranchMergedItem: React.FC<{
             <div className="inline font-semibold">{branch.name}</div>{" "}
           </div>
           {changeGroups.map((group) => (
-            <div className="flex">
+            <div className="flex" key={group.id}>
               <ChangeGroupDescription changeGroup={group} doc={doc} />
               <div className="flex flex-shrink-0 items-start space-x-[-4px]">
                 {group.authorUrls.map((contactUrl) => (
-                  <div className="rounded-full">
+                  <div className="rounded-full" key={contactUrl}>
                     <InlineContactAvatar
                       key={contactUrl}
                       url={contactUrl}
