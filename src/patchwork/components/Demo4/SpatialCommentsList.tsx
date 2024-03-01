@@ -73,9 +73,14 @@ export const SpatialCommentsList = React.memo(
 
     const resolveDiscussion = (discussion: Discussion) => {
       const index = discussions.findIndex((d) => d.id === discussion.id);
-      const nextDiscussion = discussion[index + 1];
+      const nextDiscussion = discussions[index + 1];
 
-      setSelectedDiscussionId(nextDiscussion ? nextDiscussion.id : undefined);
+      if (nextDiscussion) {
+        setSelectedDiscussionId(nextDiscussion?.id);
+      } else {
+        const prevDiscussion = discussions[index - 1];
+        setSelectedDiscussionId(prevDiscussion?.id);
+      }
 
       changeDoc((doc) => {
         doc.discussions[discussion.id].resolved = true;
@@ -126,72 +131,6 @@ export const SpatialCommentsList = React.memo(
       setScrollTarget(topDiscussion.discussion.id);
     }, [JSON.stringify(topDiscussion), selectedDiscussionId, scrollContainer]);
 
-    // handle keyboard shortcuts
-    /*
-     * k / ctrl + p / cmd + p : select previous discussion
-     * j / ctrl + n / cmd + n: select next discussion
-     * cmd + y / ctrl + y: resolve discussion
-     * cmd + enter / ctrl + enter : reply
-     */
-    useEffect(() => {
-      if (!selectedDiscussionId) {
-        return;
-      }
-
-      const onKeydown = (evt: KeyboardEvent) => {
-        const currentIndex = discussions.findIndex(
-          (discussion) => discussion.id === selectedDiscussionId
-        );
-        const currentDiscussion = discussions[currentIndex];
-
-        const isMetaOrControlPressed = evt.ctrlKey || evt.metaKey;
-
-        // select previous discussion
-        if (evt.key === "k" || (evt.key === "p" && isMetaOrControlPressed)) {
-          if (currentIndex > 0) {
-            setSelectedDiscussionId(discussions[currentIndex - 1].id);
-            evt.preventDefault();
-            evt.stopPropagation();
-          }
-
-          return;
-        }
-
-        // select next discussion
-        if (evt.key === "j" || evt.key === "n") {
-          if (currentIndex < discussions.length - 1) {
-            setSelectedDiscussionId(discussions[currentIndex + 1].id);
-            evt.preventDefault();
-            evt.stopPropagation();
-          }
-
-          return;
-        }
-
-        if (evt.key === "y" && isMetaOrControlPressed) {
-          resolveDiscussion(currentDiscussion);
-          evt.preventDefault();
-          evt.stopPropagation();
-        }
-
-        if (
-          evt.key === "Enter" &&
-          isMetaOrControlPressed &&
-          !activeReplyDiscussionId
-        ) {
-          setActiveReplyDiscussionId(selectedDiscussionId);
-          evt.preventDefault();
-          evt.stopPropagation();
-        }
-      };
-
-      window.addEventListener("keydown", onKeydown);
-
-      return () => {
-        window.removeEventListener("keydown", onKeydown);
-      };
-    }, [selectedDiscussionId]);
-
     return (
       <div
         onScroll={(evt) =>
@@ -202,12 +141,13 @@ export const SpatialCommentsList = React.memo(
       >
         {discussions &&
           overlayContainer &&
-          discussions.map((discussion) => (
+          discussions.map((discussion, index) => (
             <DiscussionView
+              key={discussion.id}
               discussion={discussion}
               isReplyBoxOpen={activeReplyDiscussionId === discussion.id}
-              setIsReplyBoxOpen={() =>
-                setActiveReplyDiscussionId(discussion.id)
+              setIsReplyBoxOpen={(isOpen) =>
+                setActiveReplyDiscussionId(isOpen ? discussion.id : undefined)
               }
               onResolve={() => resolveDiscussion(discussion)}
               onReply={(content) => replyToDiscussion(discussion, content)}
@@ -222,6 +162,18 @@ export const SpatialCommentsList = React.memo(
               ref={(element) =>
                 registerDiscussionElement(discussion.id, element)
               }
+              onSelectNext={() => {
+                const nextDiscussion = discussions[index + 1];
+                if (nextDiscussion) {
+                  setSelectedDiscussionId(nextDiscussion.id);
+                }
+              }}
+              onSelectPrev={() => {
+                const prevDiscussion = discussions[index - 1];
+                if (prevDiscussion) {
+                  setSelectedDiscussionId(prevDiscussion.id);
+                }
+              }}
             />
           ))}
       </div>
@@ -232,9 +184,11 @@ export const SpatialCommentsList = React.memo(
 interface DiscussionViewProps {
   discussion: Discussion;
   isReplyBoxOpen: boolean;
-  setIsReplyBoxOpen: () => void;
+  setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolve: () => void;
   onReply: (content: string) => void;
+  onSelectNext: () => void;
+  onSelectPrev: () => void;
   isHovered: boolean;
   setIsHovered: (isHovered: boolean) => void;
   isSelected: boolean;
@@ -253,13 +207,101 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
       setIsHovered,
       isSelected,
       setIsSelected,
+      onSelectNext,
+      onSelectPrev,
     }: DiscussionViewProps,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
+    const [height, setHeight] = useState();
+    const [isBeingResolved, setIsBeingResolved] = useState(false);
+    const localRef = useRef(null); // Use useRef to create a local ref
+
+    const setRef = (element: HTMLDivElement) => {
+      localRef.current = element; // Assign the element to the local ref
+      // Forward the ref to the parent
+      if (typeof ref === "function") {
+        ref(element);
+      } else if (ref) {
+        ref.current = element;
+      }
+    };
+
+    const onStartResolve = () => {
+      setHeight(localRef.current.clientHeight);
+      // delay, so height is set first for transition
+      setTimeout(() => {
+        setIsBeingResolved(true);
+      });
+    };
+
+    // handle keyboard shortcuts
+    /*
+     * k / ctrl + p / cmd + p : select previous discussion
+     * j / ctrl + n / cmd + n: select next discussion
+     * cmd + x / ctrl + x : resolve
+     * cmd + enter / ctrl + enter : reply
+     */
+    useEffect(() => {
+      if (!isSelected) {
+        return;
+      }
+
+      const onKeydown = (evt: KeyboardEvent) => {
+        const isMetaOrControlPressed = evt.ctrlKey || evt.metaKey;
+
+        // select previous discussion
+        if (evt.key === "k" || (evt.key === "p" && isMetaOrControlPressed)) {
+          onSelectPrev();
+          evt.preventDefault();
+          evt.stopPropagation();
+
+          return;
+        }
+
+        // select next discussion
+        if (evt.key === "j" || evt.key === "n") {
+          onSelectNext();
+          return;
+        }
+
+        if (evt.key === "x" && isMetaOrControlPressed) {
+          onStartResolve();
+          evt.preventDefault();
+          evt.stopPropagation();
+        }
+
+        if (evt.key === "Enter" && isMetaOrControlPressed) {
+          setIsReplyBoxOpen(true);
+          evt.preventDefault();
+          evt.stopPropagation();
+        }
+      };
+
+      window.addEventListener("keydown", onKeydown);
+
+      return () => {
+        window.removeEventListener("keydown", onKeydown);
+      };
+    }, [isSelected]);
 
     return (
-      <div ref={ref} className="pt-2">
+      <div
+        ref={setRef}
+        className={`pt-2 transition-all overflow-hidden`}
+        style={
+          height !== undefined
+            ? {
+                height: isBeingResolved ? "0" : `${height}px`,
+              }
+            : undefined
+        }
+        onTransitionEnd={() => {
+          if (isBeingResolved) {
+            onResolve();
+          }
+        }}
+      >
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -304,11 +346,11 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
                     setPendingCommentText(event.target.value)
                   }
                   onKeyDown={(event) => {
+                    event.stopPropagation();
                     if (event.key === "Enter" && event.metaKey) {
                       onReply(pendingCommentText);
                       setPendingCommentText("");
                       event.preventDefault();
-                      event.stopPropagation();
                     }
                   }}
                 />
@@ -330,10 +372,10 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
             <Button
               variant="ghost"
               className="select-none h-8 px-2 "
-              onClick={() => onResolve()}
+              onClick={() => onStartResolve()}
             >
               <Check className="mr-2" /> Resolve
-              <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
+              <span className="text-gray-400 ml-2 text-xs">(⌘ + X)</span>
             </Button>
           </div>
         </div>
@@ -462,7 +504,13 @@ export const useSetScrollTarget = (
   const triggerScrollPositionUpdate = useStaticCallback(() => {
     const maxScrollPos =
       scrollContainer.scrollHeight - scrollContainer.clientHeight;
-    const targetPos = positionMap[targetIdRef.current].top;
+    const targetPos = positionMap[targetIdRef.current]?.top;
+
+    // abort, if target no longer exists
+    if (targetPos === undefined) {
+      return;
+    }
+
     const scrollToPos = Math.min(maxScrollPos, targetPos);
 
     // hack: for some reason the scrolling get's stuck when it's close to the target but not quite
