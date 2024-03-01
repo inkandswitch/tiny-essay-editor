@@ -108,17 +108,14 @@ export const DocExplorer: React.FC = () => {
 
   const {
     selectedDoc,
-    selectDoc,
     selectedDocUrl,
     selectedBranch,
+    selectDoc,
     selectBranch,
   } = useSelectedDoc({
     rootFolderDoc,
     changeRootFolderDoc,
   });
-
-  console.log("selected doc url", selectedDocUrl);
-  console.log("selected branch", selectedBranch);
 
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -380,6 +377,8 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     return null;
   }
 
+  // NOTE: the URL may contain a branchUrl, which we need to turn into a SelectedBranch value
+  // If it's missing, the selected branch is main.
   const selectedBranch: SelectedBranch =
     branchUrl && typeof branchUrl === "string" && isValidAutomergeUrl(branchUrl)
       ? { type: "branch", url: branchUrl }
@@ -392,9 +391,15 @@ const parseCurrentUrlHash = (): UrlHashParams => {
   };
 };
 
-// Drive the currently selected doc using the URL hash
-// (We encapsulate the selection state in a hook so that the only
-// API for changing the selection is properly thru the URL)
+// Drive the currently selected doc using the URL hash.
+// The philosophy here is that any changes to the selected doc or branch
+// flow through the URL hash. This ensures that copying the current URL
+// will always correctly point to the right doc + branch.
+// To support this, we expose functions for selecting a doc or a branch,
+// which route through the URL hash, and then we expose the currently
+// selected doc + branch as data values as well.
+// The React state for the selection is privately encapsulated and
+// is not meant to be directly accessed.
 const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
   const selectedDocHandle = useHandle(selectedDocUrl);
@@ -439,7 +444,6 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
       docType: DocType;
       branch?: SelectedBranch;
     }) => {
-      console.log("openDocFromUrl", docUrl, docType, branch);
       if (!rootFolderDoc) {
         return;
       }
@@ -489,9 +493,9 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
   return {
     selectedDocUrl,
     selectedDoc,
+    selectedBranch,
     selectDoc,
     openDocFromUrl,
-    selectedBranch,
     selectBranch,
   };
 };

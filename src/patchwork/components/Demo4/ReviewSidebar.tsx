@@ -381,7 +381,7 @@ export const ReviewSidebar: React.FC<{
                                     "New summary:",
                                     doc.changeGroupSummaries[
                                       item.changeGroup.id
-                                    ].title ?? ""
+                                    ]?.title ?? ""
                                   );
                                   if (summary) {
                                     handle.change((doc) => {
