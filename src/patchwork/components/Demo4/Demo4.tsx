@@ -307,6 +307,7 @@ export const Demo4: React.FC<{
   >([]);
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
   const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
+  const [commentsScrollOffset, setCommentsScrollOffset] = useState(0);
 
   const activeDiscussionIds = useMemo(() => {
     const ids = [];
@@ -758,7 +759,8 @@ export const Demo4: React.FC<{
                               key={position.discussion.id}
                               x1={bezierCurveLayerRect.width}
                               y1={
-                                commentPositionMap[position.discussion.id].top +
+                                commentPositionMap[position.discussion.id].top -
+                                commentsScrollOffset +
                                 COMMENT_ANCHOR_OFFSET
                               }
                               x2={
@@ -876,6 +878,7 @@ export const Demo4: React.FC<{
                     activeDiscussionTargetPositions={
                       activeDiscussionTargetPositions
                     }
+                    onChangeScrollOffset={setCommentsScrollOffset}
                     onChangeCommentPositionMap={setCommentPositionMap}
                     overlayContainer={overlayContainer}
                     setSelectedDiscussionId={setSelectedDiscussionId}

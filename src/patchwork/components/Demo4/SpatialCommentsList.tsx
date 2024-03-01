@@ -1,14 +1,19 @@
-import React, { forwardRef, useEffect, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useReducer,
+} from "react";
 import { Discussion, DiscussionComment } from "@/patchwork/schema";
-import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import {
   DiscussionTargetPosition,
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
-import { useDocument } from "@/useDocumentVendored";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/tee/utils";
-import { ContactDoc, useCurrentAccount } from "@/DocExplorer/account";
+import { useCurrentAccount } from "@/DocExplorer/account";
 import {
   Popover,
   PopoverContent,
@@ -20,23 +25,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, Reply } from "lucide-react";
 import { MarkdownDoc } from "@/tee/schema";
 import { uuid } from "@automerge/automerge";
-
-type CommentPositionMap = Record<string, { top: number; bottom: number }>;
+import { sortBy } from "lodash";
 
 interface SpatialCommentsListProps {
   discussions: Discussion[];
   activeDiscussionTargetPositions: DiscussionTargetPosition[];
   overlayContainer: OverlayContainer;
   changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
-  onChangeCommentPositionMap: (map: CommentPositionMap) => void;
+  onChangeCommentPositionMap: (map: DiscussionsPositionMap) => void;
+  onChangeScrollOffset: (offset: number) => void;
   setSelectedDiscussionId: (id: string) => void;
   setHoveredDiscussionId: (id: string) => void;
   selectedDiscussionId: string;
   hoveredDiscussionId: string;
 }
-
-// todo: actually listen for size change when animation is running
-const SIZE_INCREASE_ON_SELECT = 43;
 
 export const SpatialCommentsList = React.memo(
   ({
@@ -45,39 +47,38 @@ export const SpatialCommentsList = React.memo(
     overlayContainer,
     changeDoc,
     onChangeCommentPositionMap,
+    onChangeScrollOffset,
     setSelectedDiscussionId,
     selectedDiscussionId,
     setHoveredDiscussionId,
     hoveredDiscussionId,
   }: SpatialCommentsListProps) => {
-    const [scrollOffset, setScrollOffset] = useState(0);
-    const scrollContainerRectRef = useRef<DOMRect>();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
-    const commentPositionMapRef = useRef<CommentPositionMap>({});
     const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
       useState<string>();
     const account = useCurrentAccount();
+
+    const { registerDiscussionElement, discussionsPositionMap } =
+      useDiscussionsPositionMap({
+        discussions,
+        onChangeCommentPositionMap,
+        topOffset: 8,
+      });
+
+    /*    useEffect(() => {
+      sortBy(
+        Object.entries(discussionsPositionMap),
+        ([, { top }]) => top
+      ).forEach(([id, { top, bottom }]) => {
+        console.log(id, top, bottom);
+      });
+    }, [discussionsPositionMap]); */
 
     const topDiscussion = overlayContainer
       ? activeDiscussionTargetPositions.find(
           ({ y }) => y + overlayContainer.top > 0
         )
       : undefined;
-
-    const triggerChangeCommentPositionMap = () => {
-      const commentPositionMapWithScrollOffset = {};
-
-      for (const [id, position] of Object.entries(
-        commentPositionMapRef.current
-      )) {
-        commentPositionMapWithScrollOffset[id] = {
-          top: position.top - scrollOffset,
-          bottom: position.bottom - scrollOffset,
-        };
-      }
-
-      onChangeCommentPositionMap(commentPositionMapWithScrollOffset);
-    };
 
     const replyToDiscussion = (discussion: Discussion, content: string) => {
       setActiveReplyDiscussionId(null);
@@ -103,10 +104,6 @@ export const SpatialCommentsList = React.memo(
       });
     };
 
-    useEffect(() => {
-      triggerChangeCommentPositionMap();
-    }, [scrollOffset, scrollContainer]);
-
     // sync scrollPosition
     useEffect(() => {
       if (!scrollContainer || !topDiscussion) {
@@ -114,21 +111,21 @@ export const SpatialCommentsList = React.memo(
       }
 
       if (selectedDiscussionId) {
-        const position = commentPositionMapRef.current[selectedDiscussionId];
+        const position = discussionsPositionMap[selectedDiscussionId];
+        const scrollOffset = scrollContainer.scrollTop;
 
         if (
           position &&
           (position.top - scrollOffset < 0 ||
-            position.bottom - scrollOffset >
-              scrollContainerRectRef.current.height)
+            position.bottom - scrollOffset > scrollContainer.clientHeight)
         ) {
-          scrollTo(position.top - SIZE_INCREASE_ON_SELECT); // TODO: find a proper solution
+          scrollTo(position.top);
         }
 
         return;
       }
 
-      scrollTo(commentPositionMapRef.current[topDiscussion.discussion.id].top);
+      scrollTo(discussionsPositionMap[topDiscussion.discussion.id].top);
     }, [JSON.stringify(topDiscussion), selectedDiscussionId, scrollContainer]);
 
     const targetScrollPositionRef = useRef<number>();
@@ -247,16 +244,10 @@ export const SpatialCommentsList = React.memo(
     return (
       <div
         onScroll={(evt) =>
-          setScrollOffset((evt.target as HTMLDivElement).scrollTop)
+          onChangeScrollOffset((evt.target as HTMLDivElement).scrollTop)
         }
-        className="bg-gray-50 flex- h-full p-2 flex flex-col gap-2 z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
-        ref={(element) => {
-          if (!element) {
-            return;
-          }
-          setScrollContainer(element);
-          scrollContainerRectRef.current = element.getBoundingClientRect();
-        }}
+        className="bg-gray-50 flex- h-full p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
+        ref={setScrollContainer}
       >
         {discussions &&
           overlayContainer &&
@@ -277,25 +268,9 @@ export const SpatialCommentsList = React.memo(
               setIsSelected={(isSelected) =>
                 setSelectedDiscussionId(isSelected ? discussion.id : undefined)
               }
-              ref={(element) => {
-                if (!element || !scrollContainer) {
-                  delete commentPositionMapRef.current[discussion.id];
-                } else {
-                  const rect = element.getBoundingClientRect();
-                  commentPositionMapRef.current[discussion.id] = {
-                    top:
-                      rect.top -
-                      overlayContainer.top +
-                      scrollContainer.scrollTop,
-                    bottom:
-                      rect.bottom -
-                      overlayContainer.top +
-                      scrollContainer.scrollTop,
-                  };
-                }
-
-                // triggerChangeCommentPositionMap();
-              }}
+              ref={(element) =>
+                registerDiscussionElement(discussion.id, element)
+              }
             />
           ))}
       </div>
@@ -333,80 +308,83 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
     const [pendingCommentText, setPendingCommentText] = useState("");
 
     return (
-      <div
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={() => setIsSelected(true)}
-        key={discussion.id}
-        className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
+      <div ref={ref} className="py-1">
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={() => setIsSelected(true)}
+          key={discussion.id}
+          className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
     ${
       isSelected || isHovered ? "border-gray-400 shadow-xl" : "border-gray-200 "
     }`}
-        ref={ref}
-      >
-        <div>
-          {discussion.comments.map((comment, index) => (
-            <div
-              key={comment.id}
-              className={
-                index !== discussion.comments.length - 1
-                  ? "border-b border-gray-200"
-                  : ""
-              }
-            >
-              <DiscusssionCommentView comment={comment} />
-            </div>
-          ))}
-        </div>
-        <div
-          className={`overflow-hidden transition-all ${
-            isSelected ? "h-[43px] border-t border-gray-200 pt-2" : "h-[0px]"
-          }`}
         >
-          <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>
-            <PopoverTrigger asChild>
-              <Button className="mr-2 px-2 h-8" variant="ghost">
-                <Reply className="mr-2" /> Reply
-                <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent>
-              <Textarea
-                className="mb-4"
-                value={pendingCommentText}
-                onChange={(event) => setPendingCommentText(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && event.metaKey) {
-                    onReply(pendingCommentText);
-                    setPendingCommentText("");
-                    event.preventDefault();
-                    event.stopPropagation();
-                  }
-                }}
-              />
-
-              <PopoverClose>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    onReply(pendingCommentText);
-                    setPendingCommentText("");
-                  }}
-                >
-                  Comment
+          <div>
+            {discussion.comments.map((comment, index) => (
+              <div
+                key={comment.id}
+                className={
+                  index !== discussion.comments.length - 1
+                    ? "border-b border-gray-200"
+                    : ""
+                }
+              >
+                <DiscusssionCommentView comment={comment} />
+              </div>
+            ))}
+          </div>
+          <div
+            className={`overflow-hidden transition-all ${
+              isSelected ? "h-[43px] border-t border-gray-200 pt-2" : "h-[0px]"
+            }`}
+          >
+            <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>
+              <PopoverTrigger asChild>
+                <Button className="mr-2 px-2 h-8" variant="ghost">
+                  <Reply className="mr-2" /> Reply
                   <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
                 </Button>
-              </PopoverClose>
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="ghost"
-            className="select-none h-8 px-2 "
-            onClick={() => onResolve()}
-          >
-            <Check className="mr-2" /> Resolve
-            <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
-          </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Textarea
+                  className="mb-4"
+                  value={pendingCommentText}
+                  onChange={(event) =>
+                    setPendingCommentText(event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && event.metaKey) {
+                      onReply(pendingCommentText);
+                      setPendingCommentText("");
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }
+                  }}
+                />
+
+                <PopoverClose>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onReply(pendingCommentText);
+                      setPendingCommentText("");
+                    }}
+                  >
+                    Comment
+                    <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
+                  </Button>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              className="select-none h-8 px-2 "
+              onClick={() => onResolve()}
+            >
+              <Check className="mr-2" /> Resolve
+              <span className="text-gray-400 ml-2 text-xs">(⌘ + Y)</span>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -435,4 +413,95 @@ const DiscusssionCommentView = ({
       </div>
     </div>
   );
+};
+
+type DiscussionsPositionMap = Record<string, { top: number; bottom: number }>;
+
+interface UseDiscussionsPositionMapResult {
+  registerDiscussionElement: (
+    discussionId: string,
+    element: HTMLDivElement
+  ) => void;
+  discussionsPositionMap: DiscussionsPositionMap;
+}
+
+interface UseDiscussionPositionOptions {
+  discussions: Discussion[];
+  onChangeCommentPositionMap?: (map: DiscussionsPositionMap) => void;
+  topOffset?: number;
+}
+
+const useDiscussionsPositionMap = ({
+  discussions,
+  onChangeCommentPositionMap,
+  topOffset = 0,
+}: UseDiscussionPositionOptions): UseDiscussionsPositionMapResult => {
+  const elementByDiscussionId = useRef(new Map<HTMLDivElement, string>());
+  const discussionIdByElement = useRef(new Map<HTMLDivElement, string>());
+  const elementSizes = useRef<Record<string, number>>({});
+  // create an artificial dependency that triggeres a re-eval of effects / memos
+  // that depend on it when forceChange is called
+  const [forceChangeDependency, forceChange] = useReducer(() => ({}), {});
+  const [resizeObserver] = useState(
+    () =>
+      new ResizeObserver((events) => {
+        for (const event of events) {
+          const discussionId = discussionIdByElement.current.get(
+            event.target as HTMLDivElement
+          );
+          elementSizes.current[discussionId] = event.borderBoxSize[0].blockSize;
+        }
+
+        forceChange();
+      })
+  );
+
+  // cleanup resize observer
+  useEffect(() => {
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  const registerDiscussionElement = (
+    discussionId: string,
+    element?: HTMLDivElement
+  ) => {
+    const prevElement = elementByDiscussionId.current[discussionId];
+    if (prevElement) {
+      resizeObserver.unobserve(prevElement);
+      discussionIdByElement.current.delete(prevElement);
+      delete elementByDiscussionId.current[discussionId];
+    }
+
+    if (element) {
+      resizeObserver.observe(element);
+      elementByDiscussionId.current[discussionId];
+      discussionIdByElement.current.set(element, discussionId);
+    }
+  };
+
+  const discussionsPositionMap = useMemo(() => {
+    let currentPos = topOffset;
+    const positionMap = {};
+
+    console.clear();
+
+    for (const discussion of discussions) {
+      const top = currentPos;
+      const bottom = top + elementSizes.current[discussion.id];
+
+      console.log(elementSizes.current[discussion.id]);
+
+      positionMap[discussion.id] = { top, bottom };
+      currentPos = bottom;
+    }
+
+    if (onChangeCommentPositionMap) {
+      onChangeCommentPositionMap(positionMap);
+    }
+    return positionMap;
+  }, [discussions, forceChangeDependency, topOffset]);
+
+  return { registerDiscussionElement, discussionsPositionMap };
 };
