@@ -373,6 +373,10 @@ export const Demo4: React.FC<{
         ({ discussion }) => discussion.id === selectedDiscussionId
       );
 
+      if (!target) {
+        return;
+      }
+
       const targetPos = target.y + scrollOffset;
 
       // unsure why I need to subtract something here otherwise it doesn't scroll all the way to the bottom

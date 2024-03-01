@@ -208,13 +208,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
 
   return (
     <div className="border-t border-gray-200 pt-2 px-2 bg-gray-50 z-10">
-      {textSelection && textSelection.from !== textSelection.to && doc && (
-        <HighlightSnippetView
-          from={textSelection.from}
-          to={textSelection.to}
-          text={doc.content}
-        />
-      )}
       <div>
         <div className="rounded bg-white shadow">
           <CodeMirror
@@ -290,83 +283,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
           </div>
         </div>
       </div>{" "}
-    </div>
-  );
-};
-
-interface HighlightSnippetViewProps {
-  from: number;
-  to: number;
-  text: string;
-}
-
-const SNIPPET_CUTOFF = 75;
-
-const STOP_CHARACTER = [".", "!", "?", "\n"];
-
-export const HighlightSnippetView = ({
-  from,
-  to,
-  text,
-}: HighlightSnippetViewProps) => {
-  if (from >= text.length || to >= text.length) {
-    return null;
-  }
-
-  let start = from;
-  let startWithEllipsis = true;
-  while (start > 0) {
-    if (STOP_CHARACTER.includes(text.charAt(start - 1))) {
-      startWithEllipsis = false;
-      break;
-    }
-
-    // make sure we don't cut in the middle of a word
-    if (from - start - 1 === SNIPPET_CUTOFF) {
-      while (text.charAt(start) !== " ") {
-        start++;
-      }
-      break;
-    }
-
-    start--;
-  }
-
-  let end = from;
-  let endWithEllipsis = true;
-  while (end < text.length) {
-    if (STOP_CHARACTER.includes(text.charAt(end))) {
-      endWithEllipsis = false;
-      break;
-    }
-
-    // make sure we don't cut in the middle of a word
-    if (end - to + 1 === SNIPPET_CUTOFF) {
-      while (text.charAt(end) !== " ") {
-        end--;
-      }
-      break;
-    }
-
-    end++;
-  }
-
-  const before = startWithEllipsis
-    ? `...${text.slice(start, from)}`
-    : text.slice(start, from).trimStart();
-  const highlight = text.slice(from, to);
-  const after = endWithEllipsis
-    ? `${text.slice(to, end)}...`
-    : text.slice(to, end).trimEnd();
-
-  return (
-    <div
-      className="border-l-2 border-gray-200 p-2 m-2 whitespace-pre-wrap cm-line font-normal"
-      style={{ fontFamily: "Merriweather, serif" }}
-    >
-      {before}
-      <span style={{ background: "rgb(255 249 194)" }}>{highlight}</span>
-      {after}
     </div>
   );
 };
