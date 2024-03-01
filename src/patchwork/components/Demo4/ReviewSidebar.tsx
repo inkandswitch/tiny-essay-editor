@@ -411,7 +411,7 @@ export const ReviewSidebar: React.FC<{
           {/* Blue selection box overlay */}
           {selection && (
             <div
-              className="absolute w-full border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
+              className="absolute left-6 right-6 border-2 border-blue-600 rounded-lg transition-all duration-200 pointer-events-none"
               style={{
                 top: selection.from.yPos,
                 height: selection.to.yPos - selection.from.yPos,
