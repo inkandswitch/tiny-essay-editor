@@ -110,7 +110,7 @@ export const Demo4: React.FC<{
   const [textSelection, setTextSelection] = useState<TextSelection>();
   const supportsBranches = docType === "essay"; // todo: remove this flag, branches shouldn't require any special implementation from the data type
   const supportsComments = docType === "essay";
-  const supportsHistory = docType === "essay";
+  const supportsHistory = docType === "essay" || docType === "tldraw";
 
   // Reset compare view settings every time you switch branches
   useEffect(() => {
@@ -506,263 +506,250 @@ export const Demo4: React.FC<{
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
   return (
-    <div className="flex overflow-hidden h-full ">
-      <div className="flex-grow overflow-hidden">
-        <div className="flex h-full">
-          <div className="flex-grow">
-            <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
-              {supportsBranches && (
-                <>
-                  <Select
-                    value={JSON.stringify(selectedBranch)}
-                    onValueChange={(value) => {
-                      if (value === "__newDraft") {
-                        handleCreateBranch();
-                      } else if (value === "__moveChangesToBranch") {
-                        moveCurrentChangesToBranch();
-                      } else {
-                        const selection = JSON.parse(
-                          value as string
-                        ) as SelectedBranch;
-                        setSelectedBranch(selection);
-                        if (selection.type === "branch") {
-                          const newBranchName =
-                            doc.branchMetadata.branches.find(
-                              (b) => b.url === selection.url
-                            )?.name;
-                          toast(`Switched to branch: ${newBranchName}`);
-                        } else if (selection.type === "main") {
-                          toast("Switched to Main");
-                        }
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 text-sm w-[18rem] font-medium">
-                      <SelectValue placeholder="Select Draft">
-                        {selectedBranch.type === "main" && (
-                          <div className="flex items-center gap-2">
-                            <CrownIcon className="inline" size={12} />
-                            Main
-                          </div>
-                        )}
-                        {selectedBranch.type === "branch" && (
-                          <div className="flex items-center gap-2">
-                            <GitBranchIcon className="inline" size={12} />
-                            {truncate(selectedBranchLink?.name, { length: 30 })}
-                          </div>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="w-72">
-                      <SelectItem
-                        value={JSON.stringify({ type: "main" })}
-                        className={
-                          selectedBranch.type === "main" ? "font-medium" : ""
-                        }
-                      >
-                        <CrownIcon className="inline mr-1" size={12} />
+    <div className="flex h-full">
+      <div className="flex flex-col flex-1">
+        <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
+          {supportsBranches && (
+            <>
+              <Select
+                value={JSON.stringify(selectedBranch)}
+                onValueChange={(value) => {
+                  if (value === "__newDraft") {
+                    handleCreateBranch();
+                  } else if (value === "__moveChangesToBranch") {
+                    moveCurrentChangesToBranch();
+                  } else {
+                    const selection = JSON.parse(
+                      value as string
+                    ) as SelectedBranch;
+                    setSelectedBranch(selection);
+                    if (selection.type === "branch") {
+                      const newBranchName = doc.branchMetadata.branches.find(
+                        (b) => b.url === selection.url
+                      )?.name;
+                      toast(`Switched to branch: ${newBranchName}`);
+                    } else if (selection.type === "main") {
+                      toast("Switched to Main");
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm w-[18rem] font-medium">
+                  <SelectValue placeholder="Select Draft">
+                    {selectedBranch.type === "main" && (
+                      <div className="flex items-center gap-2">
+                        <CrownIcon className="inline" size={12} />
                         Main
-                      </SelectItem>
-                      <SelectGroup>
-                        <SelectLabel className="-ml-5">
-                          <GitBranchIcon className="inline mr-1" size={12} />
-                          Branches
-                        </SelectLabel>
+                      </div>
+                    )}
+                    {selectedBranch.type === "branch" && (
+                      <div className="flex items-center gap-2">
+                        <GitBranchIcon className="inline" size={12} />
+                        {truncate(selectedBranchLink?.name, { length: 30 })}
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-72">
+                  <SelectItem
+                    value={JSON.stringify({ type: "main" })}
+                    className={
+                      selectedBranch.type === "main" ? "font-medium" : ""
+                    }
+                  >
+                    <CrownIcon className="inline mr-1" size={12} />
+                    Main
+                  </SelectItem>
+                  <SelectGroup>
+                    <SelectLabel className="-ml-5">
+                      <GitBranchIcon className="inline mr-1" size={12} />
+                      Branches
+                    </SelectLabel>
 
-                        {/* for now only show open branches here; maybe in future show a list of merged branches */}
-                        {branches
-                          .filter(
-                            (branch) => branch.mergeMetadata === undefined
-                          )
-                          .map((branch) => (
-                            <SelectItem
-                              key={branch.url}
-                              className={`${
-                                selectedBranchLink?.url === branch.url
-                                  ? "font-medium"
-                                  : ""
-                              }`}
-                              value={JSON.stringify({
-                                type: "branch",
-                                url: branch.url,
-                              })}
-                            >
-                              <div>{branch.name}</div>
-                              <div className="ml-auto text-xs text-gray-600 flex gap-1">
-                                {branch.createdAt && (
-                                  <div>
-                                    {getRelativeTimeString(branch.createdAt)}
-                                  </div>
-                                )}
-                                <span>by</span>
-                                {branch.createdBy && (
-                                  <ContactAvatar
-                                    url={branch.createdBy}
-                                    size="sm"
-                                    showName
-                                    showImage={false}
-                                  />
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
+                    {/* for now only show open branches here; maybe in future show a list of merged branches */}
+                    {branches
+                      .filter((branch) => branch.mergeMetadata === undefined)
+                      .map((branch) => (
                         <SelectItem
-                          value={"__newDraft"}
-                          key={"__newDraft"}
-                          className="font-regular"
+                          key={branch.url}
+                          className={`${
+                            selectedBranchLink?.url === branch.url
+                              ? "font-medium"
+                              : ""
+                          }`}
+                          value={JSON.stringify({
+                            type: "branch",
+                            url: branch.url,
+                          })}
                         >
-                          <PlusIcon className="inline mr-1" size={12} />
-                          Create new branch
+                          <div>{branch.name}</div>
+                          <div className="ml-auto text-xs text-gray-600 flex gap-1">
+                            {branch.createdAt && (
+                              <div>
+                                {getRelativeTimeString(branch.createdAt)}
+                              </div>
+                            )}
+                            <span>by</span>
+                            {branch.createdBy && (
+                              <ContactAvatar
+                                url={branch.createdBy}
+                                size="sm"
+                                showName
+                                showImage={false}
+                              />
+                            )}
+                          </div>
                         </SelectItem>
-                        {selectedBranch.type === "main" &&
-                          currentEditSessionDiff &&
-                          currentEditSessionDiff.patches.length > 0 && (
-                            <SelectItem
-                              value={"__moveChangesToBranch"}
-                              key={"__moveChangesToBranch"}
-                              className="font-regular"
-                              onMouseEnter={() =>
-                                setIsHoveringYankToBranchOption(true)
-                              }
-                              onMouseLeave={() =>
-                                setIsHoveringYankToBranchOption(false)
-                              }
-                            >
-                              <SplitIcon className="inline mr-1" size={12} />
-                              Move my changes (
-                              {currentEditSessionDiff?.patches.length}) to new
-                              Branch
-                            </SelectItem>
-                          )}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-
-                  {selectedBranch.type === "branch" &&
-                    selectedBranchLink?.url && (
-                      <BranchActions
-                        doc={doc}
-                        branchDoc={branchDoc}
-                        branchUrl={selectedBranchLink.url}
-                        handleDeleteBranch={handleDeleteBranch}
-                        handleRenameBranch={renameBranch}
-                        handleRebaseBranch={rebaseBranch}
-                        handleMergeBranch={handleMergeBranch}
-                      />
-                    )}
-
-                  <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
-                    {selectedBranch.type === "branch" && (
-                      <div className="mr-2">
-                        <Button
-                          onClick={(e) => {
-                            handleMergeBranch(selectedBranchLink.url);
-                            e.stopPropagation();
-                          }}
-                          variant="outline"
-                          className="h-6"
+                      ))}
+                    <SelectItem
+                      value={"__newDraft"}
+                      key={"__newDraft"}
+                      className="font-regular"
+                    >
+                      <PlusIcon className="inline mr-1" size={12} />
+                      Create new branch
+                    </SelectItem>
+                    {selectedBranch.type === "main" &&
+                      currentEditSessionDiff &&
+                      currentEditSessionDiff.patches.length > 0 && (
+                        <SelectItem
+                          value={"__moveChangesToBranch"}
+                          key={"__moveChangesToBranch"}
+                          className="font-regular"
+                          onMouseEnter={() =>
+                            setIsHoveringYankToBranchOption(true)
+                          }
+                          onMouseLeave={() =>
+                            setIsHoveringYankToBranchOption(false)
+                          }
                         >
-                          <MergeIcon className="mr-2" size={12} />
-                          Merge
-                        </Button>
-                      </div>
-                    )}
-                    {selectedBranch.type === "branch" && (
-                      <div className="flex items-center mr-1">
-                        <Checkbox
-                          id="diff-overlay-checkbox"
-                          className="mr-1"
-                          checked={showChangesFlag}
-                          onClick={(e) => e.stopPropagation()}
-                          onCheckedChange={() =>
-                            setShowChangesFlag(!showChangesFlag)
-                          }
-                        />
-                        <label htmlFor="diff-overlay-checkbox">
-                          Highlight changes
-                        </label>
-                      </div>
-                    )}
+                          <SplitIcon className="inline mr-1" size={12} />
+                          Move my changes (
+                          {currentEditSessionDiff?.patches.length}) to new
+                          Branch
+                        </SelectItem>
+                      )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
-                    {selectedBranch.type === "branch" && (
-                      <div className="flex items-center">
-                        <Checkbox
-                          id="side-by-side"
-                          className="mr-1"
-                          checked={compareWithMainFlag}
-                          onClick={(e) => e.stopPropagation()}
-                          onCheckedChange={() =>
-                            setCompareWithMainFlag(!compareWithMainFlag)
-                          }
-                        />
-                        <label htmlFor="side-by-side">Show next to main</label>
-                      </div>
-                    )}
-                  </div>
-                </>
+              {selectedBranch.type === "branch" && selectedBranchLink?.url && (
+                <BranchActions
+                  doc={doc}
+                  branchDoc={branchDoc}
+                  branchUrl={selectedBranchLink.url}
+                  handleDeleteBranch={handleDeleteBranch}
+                  handleRenameBranch={renameBranch}
+                  handleRebaseBranch={rebaseBranch}
+                  handleMergeBranch={handleMergeBranch}
+                />
               )}
 
-              {!isHistorySidebarOpen && supportsHistory && (
-                <div
-                  className={` ml-auto ${
-                    isHistorySidebarOpen ? "mr-96" : "mr-4"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                {selectedBranch.type === "branch" && (
+                  <div className="mr-2">
                     <Button
-                      onClick={() =>
-                        setIsHistorySidebarOpen(!isHistorySidebarOpen)
-                      }
+                      onClick={(e) => {
+                        handleMergeBranch(selectedBranchLink.url);
+                        e.stopPropagation();
+                      }}
                       variant="outline"
-                      className="h-8 text-x"
+                      className="h-6"
                     >
-                      <MessageSquareIcon size={20} />
+                      <MergeIcon className="mr-2" size={12} />
+                      Merge
                     </Button>
                   </div>
-                </div>
-              )}
+                )}
+                {selectedBranch.type === "branch" && (
+                  <div className="flex items-center mr-1">
+                    <Checkbox
+                      id="diff-overlay-checkbox"
+                      className="mr-1"
+                      checked={showChangesFlag}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setShowChangesFlag(!showChangesFlag)
+                      }
+                    />
+                    <label htmlFor="diff-overlay-checkbox">
+                      Highlight changes
+                    </label>
+                  </div>
+                )}
+
+                {selectedBranch.type === "branch" && (
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="side-by-side"
+                      className="mr-1"
+                      checked={compareWithMainFlag}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        setCompareWithMainFlag(!compareWithMainFlag)
+                      }
+                    />
+                    <label htmlFor="side-by-side">Show next to main</label>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {!isHistorySidebarOpen && supportsHistory && (
+            <div
+              className={` ml-auto ${isHistorySidebarOpen ? "mr-96" : "mr-4"}`}
+            >
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+                  variant="outline"
+                  className="h-8 text-x"
+                >
+                  <MessageSquareIcon size={20} />
+                </Button>
+              </div>
             </div>
-            <div className="h-full items-stretch justify-stretch relative flex flex-col">
-              {compareWithMainFlag && selectedBranchLink?.name && (
-                <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
-                  <div className="flex-1 pl-4">
-                    <div className="inline-flex items-center gap-1">
-                      <CrownIcon className="inline mr-1" size={12} /> Main
-                    </div>
-                  </div>
-                  <div className="flex-1 pl-4">
-                    {" "}
-                    <GitBranchIcon className="inline mr-1" size={12} />
-                    {selectedBranchLink.name}
-                  </div>
+          )}
+        </div>
+        <div className="h-full items-stretch justify-stretch relative flex flex-col">
+          {compareWithMainFlag && selectedBranchLink?.name && (
+            <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
+              <div className="flex-1 pl-4">
+                <div className="inline-flex items-center gap-1">
+                  <CrownIcon className="inline mr-1" size={12} /> Main
                 </div>
-              )}
-              <div className="flex-1 min-h-0 relative">
-                {reviewMode === "comments" && isHistorySidebarOpen && (
-                  <div
-                    ref={setBezierCurveLayerElement}
-                    className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
-                      true ? "pointer-events-none" : ""
-                    }`}
+              </div>
+              <div className="flex-1 pl-4">
+                {" "}
+                <GitBranchIcon className="inline mr-1" size={12} />
+                {selectedBranchLink.name}
+              </div>
+            </div>
+          )}
+          <div className="flex-1 min-h-0 relative">
+            {reviewMode === "comments" && isHistorySidebarOpen && (
+              <div
+                ref={setBezierCurveLayerElement}
+                className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
+                  true ? "pointer-events-none" : ""
+                }`}
+              >
+                {bezierCurveLayerRect && (
+                  <svg
+                    width={bezierCurveLayerRect.width}
+                    height={bezierCurveLayerRect.height}
                   >
-                    {bezierCurveLayerRect && (
-                      <svg
-                        width={bezierCurveLayerRect.width}
-                        height={bezierCurveLayerRect.height}
-                      >
-                        {sortBy(activeDiscussionTargetPositions, (pos) =>
-                          activeDiscussionIds.includes(pos.discussion.id)
-                            ? 1
-                            : 0
-                        ).map((position) => {
-                          const commentPosition =
-                            commentPositionMap[position.discussion.id];
+                    {sortBy(activeDiscussionTargetPositions, (pos) =>
+                      activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0
+                    ).map((position) => {
+                      const commentPosition =
+                        commentPositionMap[position.discussion.id];
 
-                          if (!commentPosition) {
-                            return;
-                          }
+                      if (!commentPosition) {
+                        return;
+                      }
 
-                          /* filter out lines to comments that are out of view
+                      /* filter out lines to comments that are out of view
                           if (
                             commentPositionMap[position.discussion.id].top -
                               commentsScrollOffset >
@@ -775,157 +762,142 @@ export const Demo4: React.FC<{
                           }
                           */
 
-                          return (
-                            <BezierCurve
-                              color={
-                                activeDiscussionIds.includes(
-                                  position.discussion.id
-                                )
-                                  ? "#facc15"
-                                  : "#d1d5db"
-                              }
-                              key={position.discussion.id}
-                              x1={bezierCurveLayerRect.width}
-                              y1={
-                                commentPositionMap[position.discussion.id].top -
-                                commentsScrollOffset +
-                                COMMENT_ANCHOR_OFFSET
-                              }
-                              x2={
-                                editorContainerRect.right -
-                                bezierCurveLayerRect.left +
-                                30
-                              }
-                              y2={position.y + bezierCurveLayerRect.top}
-                              x3={position.x}
-                              y3={position.y + bezierCurveLayerRect.top}
-                            />
-                          );
-                        })}
-                      </svg>
-                    )}
-                  </div>
-                )}
-                <div
-                  className="h-full overflow-auto"
-                  ref={setScrollContainer}
-                  onScroll={(event) => {
-                    setScrollOffset((event.target as HTMLDivElement).scrollTop);
-                  }}
-                >
-                  <div
-                    className={
-                      `flex ${
-                        docType !== "essay" ? "h-full" : ""
-                      }` /* todo: remove this hack, somehow if h-full is set the comment scrolling doesn't work */
-                    }
-                  >
-                    {selectedBranch.type === "branch" &&
-                      compareWithMainFlag && (
-                        <DocEditor
-                          docType={docType}
-                          docUrl={docUrl}
-                          branchDocHandle={branchDocHandle}
-                          key={`compare-${docUrl}`}
-                          diff={showDiff ? currentEditSessionDiff : undefined}
-                          diffBase={
-                            showDiff
-                              ? currentEditSessionDiff?.fromHeads
-                              : undefined
+                      return (
+                        <BezierCurve
+                          color={
+                            activeDiscussionIds.includes(position.discussion.id)
+                              ? "#facc15"
+                              : "#d1d5db"
                           }
-                          actorIdToAuthor={actorIdToAuthor}
+                          key={position.discussion.id}
+                          x1={bezierCurveLayerRect.width}
+                          y1={
+                            commentPositionMap[position.discussion.id].top -
+                            commentsScrollOffset +
+                            COMMENT_ANCHOR_OFFSET
+                          }
+                          x2={
+                            editorContainerRect.right -
+                            bezierCurveLayerRect.left +
+                            30
+                          }
+                          y2={position.y + bezierCurveLayerRect.top}
+                          x3={position.x}
+                          y3={position.y + bezierCurveLayerRect.top}
                         />
-                      )}
-                    <DocEditor
-                      docType={docType}
-                      docUrl={selectedBranchLink?.url ?? docUrl}
-                      mainDocHandle={compareWithMainFlag ? handle : undefined}
-                      docHeads={docHeads}
-                      readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
-                      key={`main-${docUrl}`}
-                      diff={diffForEditor}
-                      diffBase={diffBase}
-                      actorIdToAuthor={actorIdToAuthor}
-                      showBranchLayers={
-                        selectedBranch.type === "branch" && !compareWithMainFlag
-                      }
-                      selectMainBranch={() =>
-                        setSelectedBranch({ type: "main" })
-                      }
-                      onChangeSelection={(selection) => {
-                        setTextSelection(selection);
-                      }}
-                      onUpdateDiscussionTargetPositions={
-                        onUpdateDiscussionTargetPositions
-                      }
-                      overlayContainer={overlayContainer}
-                      setEditorContainerElement={setEditorContainerElement}
-                      activeDiscussionIds={activeDiscussionIds}
-                    />
-                  </div>
-                </div>
+                      );
+                    })}
+                  </svg>
+                )}
+              </div>
+            )}
+            <div
+              className="h-full overflow-auto"
+              ref={setScrollContainer}
+              onScroll={(event) => {
+                setScrollOffset((event.target as HTMLDivElement).scrollTop);
+              }}
+            >
+              <div className="flex h-full">
+                {selectedBranch.type === "branch" && compareWithMainFlag && (
+                  <DocEditor
+                    docType={docType}
+                    docUrl={docUrl}
+                    branchDocHandle={branchDocHandle}
+                    key={`compare-${docUrl}`}
+                    diff={showDiff ? currentEditSessionDiff : undefined}
+                    diffBase={
+                      showDiff ? currentEditSessionDiff?.fromHeads : undefined
+                    }
+                    actorIdToAuthor={actorIdToAuthor}
+                  />
+                )}
+                <DocEditor
+                  docType={docType}
+                  docUrl={selectedBranchLink?.url ?? docUrl}
+                  mainDocHandle={compareWithMainFlag ? handle : undefined}
+                  docHeads={docHeads}
+                  readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
+                  key={`main-${docUrl}`}
+                  diff={diffForEditor}
+                  diffBase={diffBase}
+                  actorIdToAuthor={actorIdToAuthor}
+                  showBranchLayers={
+                    selectedBranch.type === "branch" && !compareWithMainFlag
+                  }
+                  selectMainBranch={() => setSelectedBranch({ type: "main" })}
+                  onChangeSelection={(selection) => {
+                    setTextSelection(selection);
+                  }}
+                  onUpdateDiscussionTargetPositions={
+                    onUpdateDiscussionTargetPositions
+                  }
+                  overlayContainer={overlayContainer}
+                  setEditorContainerElement={setEditorContainerElement}
+                  activeDiscussionIds={activeDiscussionIds}
+                />
               </div>
             </div>
           </div>
-
-          {isHistorySidebarOpen && (
-            <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
-              <div
-                className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-                onClick={() => setIsHistorySidebarOpen(false)}
-              >
-                <ChevronsRight size={16} />
-              </div>
-
-              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
-                <Tabs
-                  value={reviewMode}
-                  onValueChange={(value) => setReviewMode(value as ReviewMode)}
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                    <TabsTrigger value="comments">Comments</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              <div className="min-h-0 flex-grow w-96">
-                {reviewMode === "timeline" && (
-                  <ReviewSidebar
-                    // set key to trigger re-mount on branch change
-                    key={selectedBranchLink?.url ?? docUrl}
-                    docUrl={selectedBranchLink?.url ?? docUrl}
-                    setDocHeads={setDocHeadsFromHistorySidebar}
-                    setDiff={setDiffFromHistorySidebar}
-                    textSelection={textSelection}
-                    onClearTextSelection={() => {
-                      setTextSelection({ from: 0, to: 0, yCoord: 0 });
-                    }}
-                    selectedBranch={selectedBranch}
-                    setSelectedBranch={setSelectedBranch}
-                  />
-                )}
-                {reviewMode === "comments" && (
-                  <SpatialCommentsList
-                    changeDoc={changeDoc}
-                    discussions={discussions}
-                    activeDiscussionTargetPositions={
-                      activeDiscussionTargetPositions
-                    }
-                    onChangeScrollOffset={setCommentsScrollOffset}
-                    onChangeCommentPositionMap={setCommentPositionMap}
-                    overlayContainer={overlayContainer}
-                    setSelectedDiscussionId={setSelectedDiscussionId}
-                    selectedDiscussionId={selectedDiscussionId}
-                    setHoveredDiscussionId={setHoveredDiscussionId}
-                    hoveredDiscussionId={hoveredDiscussionId}
-                  />
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {isHistorySidebarOpen && (
+        <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
+          <div
+            className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
+            onClick={() => setIsHistorySidebarOpen(false)}
+          >
+            <ChevronsRight size={16} />
+          </div>
+
+          <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
+            <Tabs
+              value={reviewMode}
+              onValueChange={(value) => setReviewMode(value as ReviewMode)}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="min-h-0 flex-grow w-96">
+            {reviewMode === "timeline" && (
+              <ReviewSidebar
+                // set key to trigger re-mount on branch change
+                key={selectedBranchLink?.url ?? docUrl}
+                docUrl={selectedBranchLink?.url ?? docUrl}
+                setDocHeads={setDocHeadsFromHistorySidebar}
+                setDiff={setDiffFromHistorySidebar}
+                textSelection={textSelection}
+                onClearTextSelection={() => {
+                  setTextSelection({ from: 0, to: 0, yCoord: 0 });
+                }}
+                selectedBranch={selectedBranch}
+                setSelectedBranch={setSelectedBranch}
+              />
+            )}
+            {reviewMode === "comments" && (
+              <SpatialCommentsList
+                changeDoc={changeDoc}
+                discussions={discussions}
+                activeDiscussionTargetPositions={
+                  activeDiscussionTargetPositions
+                }
+                onChangeScrollOffset={setCommentsScrollOffset}
+                onChangeCommentPositionMap={setCommentPositionMap}
+                overlayContainer={overlayContainer}
+                setSelectedDiscussionId={setSelectedDiscussionId}
+                selectedDiscussionId={selectedDiscussionId}
+                setHoveredDiscussionId={setHoveredDiscussionId}
+                hoveredDiscussionId={hoveredDiscussionId}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -994,7 +966,7 @@ const DocEditor = ({
       );
     case "tldraw":
       return (
-        <div className="flex-1 h-full">
+        <div className="h-full w-full">
           <TLDraw docUrl={docUrl} />
         </div>
       );
