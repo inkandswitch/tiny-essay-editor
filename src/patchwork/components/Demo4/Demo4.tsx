@@ -80,6 +80,7 @@ import { DiffStyle } from "@/tee/components/MarkdownEditor";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { BotEditor } from "@/bots/BotEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
+import { DataGrid } from "@/datagrid/components/DataGrid";
 
 const COMMENT_ANCHOR_OFFSET = 20;
 
@@ -965,6 +966,12 @@ const DocEditor = ({
       return (
         <div className="h-full w-full">
           <TLDraw docUrl={docUrl} />
+        </div>
+      );
+    case "datagrid":
+      return (
+        <div className="h-full w-full">
+          <DataGrid docUrl={docUrl} />
         </div>
       );
   }

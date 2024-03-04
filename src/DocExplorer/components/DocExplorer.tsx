@@ -94,6 +94,13 @@ const TOOLS = {
       component: Demo4,
     },
   ],
+  datagrid: [
+    {
+      id: "demo4",
+      name: "Demo 4",
+      component: Demo4,
+    },
+  ],
   bot: [{ id: "demo4", name: "Demo 4", component: Demo4 }],
 };
 

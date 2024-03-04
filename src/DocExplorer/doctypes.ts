@@ -1,4 +1,5 @@
 import { TLDrawDatatype } from "@/tldraw/datatype";
+import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
 import { Repo } from "@automerge/automerge-repo";
@@ -15,6 +16,7 @@ export interface DataType {
 export const docTypes = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
+  datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
 } as const;
 
