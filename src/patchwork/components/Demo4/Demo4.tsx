@@ -33,7 +33,11 @@ import {
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../../utils";
+import {
+  diffWithProvenance,
+  getCursorPositionSafely,
+  useActorIdToAuthorMap,
+} from "../../utils";
 import {
   Select,
   SelectTrigger,
@@ -458,18 +462,23 @@ export const Demo4: React.FC<{
           return false;
         }
 
-        const from = A.getCursorPosition(
+        const from = getCursorPositionSafely(
           doc,
           ["content"],
           discussion.target.value.fromCursor
         );
-        const to = A.getCursorPosition(
+        const to = getCursorPositionSafely(
           doc,
           ["content"],
           discussion.target.value.toCursor
         );
 
-        return from <= textSelection.from && textSelection.from <= to;
+        return (
+          from !== null &&
+          to !== null &&
+          from <= textSelection.from &&
+          textSelection.from <= to
+        );
       });
     }
 
