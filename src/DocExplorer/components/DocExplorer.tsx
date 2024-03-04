@@ -89,12 +89,12 @@ const TOOLS = {
   ],
   tldraw: [
     {
-      id: "tldraw",
-      name: "Drawing",
-      component: TLDraw,
+      id: "demo4",
+      name: "Demo 4",
+      component: Demo4,
     },
   ],
-  bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
+  bot: [{ id: "demo4", name: "Demo 4", component: Demo4 }],
 };
 
 export const DocExplorer: React.FC = () => {
@@ -303,9 +303,10 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
                 <ToolComponent
+                  // @ts-expect-error
+                  docType={selectedDocLink.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
-                  // @ts-expect-error not all tools understand branching yet... but they probably will eventually..?
                   selectedBranch={selectedBranch}
                   setSelectedBranch={selectBranch}
                 />
