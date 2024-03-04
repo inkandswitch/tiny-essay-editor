@@ -1,4 +1,4 @@
-import { GenericChangeGroup } from "@/patchwork/groupChanges";
+import { ChangeGroup } from "@/patchwork/groupChanges";
 
 import { TextPatch } from "@/patchwork/utils";
 import { DecodedChange, Patch } from "@automerge/automerge-wasm";
@@ -6,7 +6,7 @@ import { MarkdownDoc } from "./schema";
 
 import * as A from "@automerge/automerge/next";
 
-export type MarkdownDocChangeGroup = {
+export type MarkdownDocChangeGroupStats = {
   /* number of distinct edit ranges */
   editCount: number;
 
@@ -45,8 +45,8 @@ export const includePatch = (patch: Patch) => {
 
 // Compute stats for a change group on a MarkdownDoc
 export const statsForChangeGroup = (
-  changeGroup: GenericChangeGroup
-): MarkdownDocChangeGroup => {
+  changeGroup: ChangeGroup<MarkdownDoc, MarkdownDocChangeGroupStats>
+): MarkdownDocChangeGroupStats => {
   const charsAdded = changeGroup.diff.patches.reduce((total, patch) => {
     if (patch.path[0] !== "content") {
       return total;
@@ -83,7 +83,7 @@ export const statsForChangeGroup = (
   }, 0);
 
   const headings = extractHeadings(
-    changeGroup.docAtEndOfChangeGroup as MarkdownDoc,
+    changeGroup.docAtEndOfChangeGroup,
     changeGroup.diff.patches
   );
   const editCount = changeGroup.diff.patches.filter(
@@ -102,12 +102,12 @@ export const statsForChangeGroup = (
 // This is a MarkdownDoc-specific function that determines whether a change group
 // should be shown in the log.
 export const showChangeGroupInLog = (
-  changeGroup: MarkdownDocChangeGroup & GenericChangeGroup
+  changeGroup: ChangeGroup<MarkdownDoc, MarkdownDocChangeGroupStats>
 ) => {
   if (
-    changeGroup.charsAdded === 0 &&
-    changeGroup.charsDeleted === 0 &&
-    changeGroup.commentsAdded === 0
+    changeGroup.stats.charsAdded === 0 &&
+    changeGroup.stats.charsDeleted === 0 &&
+    changeGroup.stats.commentsAdded === 0
   ) {
     return false;
   } else {

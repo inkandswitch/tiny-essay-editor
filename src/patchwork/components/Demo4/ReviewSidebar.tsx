@@ -10,6 +10,8 @@ import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ChangeGroup,
   ChangelogItem,
+  GROUPINGS,
+  GenericChangeGroup,
   getChangelogItems,
   getMarkersForDoc,
 } from "../../groupChanges";
@@ -25,7 +27,13 @@ import {
 } from "lucide-react";
 import { Heads, Patch } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
+import {
+  Branch,
+  Branchable,
+  DiffWithProvenance,
+  Discussion,
+  Tag,
+} from "../../schema";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
@@ -44,8 +52,14 @@ import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
 } from "@/patchwork/changeGroupSummaries";
-import { ContactDoc } from "@/DocExplorer/account";
-import { includePatch } from "@/tee/statsForChangeGroup";
+import {
+  includeChange,
+  includePatch,
+  statsForChangeGroup,
+  showChangeGroupInLog,
+} from "@/tee/statsForChangeGroup";
+import { DocType } from "@/DocExplorer/doctypes";
+import { ChangeGroupingOptions } from "../../groupChanges";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -73,21 +87,19 @@ export type ChangelogSelection =
   | undefined;
 
 export const ReviewSidebar: React.FC<{
+  docType: DocType;
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-  textSelection: TextSelection;
-  onClearTextSelection: () => void;
 }> = ({
+  docType,
   docUrl,
   selectedBranch,
   setSelectedBranch,
   setDocHeads,
   setDiff,
-  textSelection,
-  onClearTextSelection,
 }) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata?.source?.url);
@@ -103,16 +115,38 @@ export const ReviewSidebar: React.FC<{
     [doc, handle, repo, mainDoc]
   );
 
+  // todo: extract this as an interface that different doc types can implement
+  const changeGroupingOptions = useMemo<
+    ChangeGroupingOptions<Branchable, unknown>
+  >(() => {
+    switch (docType) {
+      case "essay":
+        return {
+          grouping: GROUPINGS.ByAuthorOrTime,
+          numericParameter: 60,
+          markers,
+        };
+
+      default:
+        return {
+          grouping: GROUPINGS.ByAuthorOrTime,
+          numericParameter: 60,
+          markers,
+          changeFilter: includeChange,
+          changeGroupStats: statsForChangeGroup,
+          changeGroupFilter: showChangeGroupInLog,
+        };
+    }
+  }, [docType, markers]);
+
   // The grouping function returns change groups starting from the latest change.
   const changelogItems = useMemo(() => {
     if (!doc) return [];
 
-    return getChangelogItems(doc, {
-      algorithm: "ByAuthorOrTime",
-      numericParameter: 60,
-      markers,
-    });
-  }, [doc, markers]);
+    return getChangelogItems(doc, changeGroupingOptions);
+  }, [doc, markers, changeGroupingOptions]);
+
+  console.log({ changelogItems });
 
   const hiddenItemBoundary = changelogItems.findIndex(
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
@@ -323,7 +357,6 @@ export const ReviewSidebar: React.FC<{
                             branch={item.branch}
                             selected={selected}
                             changeGroups={item.changeGroups}
-                            doc={doc}
                           />
                         );
                       default: {
@@ -422,17 +455,17 @@ export const ReviewSidebar: React.FC<{
       </div>
 
       <div className="bg-gray-50 z-10">
-        <DiscussionInput
-          doc={doc}
-          changeDoc={changeDoc}
-          changelogItems={changelogItems}
-          changelogSelection={selection}
-          handle={handle}
-          selectedBranch={selectedBranch}
-          setSelectedBranch={setSelectedBranch}
-          textSelection={textSelection}
-          onClearTextSelection={onClearTextSelection}
-        />
+        {false && (
+          <DiscussionInput
+            doc={doc}
+            changeDoc={changeDoc}
+            changelogItems={changelogItems}
+            changelogSelection={selection}
+            handle={handle}
+            selectedBranch={selectedBranch}
+            setSelectedBranch={setSelectedBranch}
+          />
+        )}
       </div>
     </div>
   );
@@ -446,7 +479,7 @@ const useChangelogSelection = ({
   setDiff,
   setDocHeads,
 }: {
-  items: ChangelogItem[];
+  items: ChangelogItem<unknown, unknown>[];
   setDiff: (diff: DiffWithProvenance) => void;
   setDocHeads: (heads: Heads) => void;
 }): {
@@ -569,14 +602,14 @@ const useChangelogSelection = ({
 };
 
 const ChangeGroupItem: React.FC<{
-  group: ChangeGroup;
+  group: GenericChangeGroup;
   doc: MarkdownDoc;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (
     <div className="pl-[7px] pr-1 flex w-full">
       <div className="flex-shrink-0 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-      <ChangeGroupDescription changeGroup={group} doc={doc} />
+      <ChangeGroupDescription changeGroup={group} />
     </div>
   );
 };
@@ -599,21 +632,21 @@ const DateHeader: React.FC<{ date: Date }> = ({ date }) => {
 // Summary of a change group: textual + avatars
 const ChangeGroupDescription = ({
   changeGroup,
-  doc,
-}: {
-  changeGroup: ChangeGroup;
-  doc: MarkdownDoc;
+}: //  doc
+{
+  changeGroup: GenericChangeGroup;
+  //  doc: MarkdownDoc;
 }) => {
   let summary;
-  if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-    const patchesCount = changeGroup.diff.patches.filter((p) =>
-      includePatch(p as Patch)
-    ).length;
+  // if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
+  const patchesCount = changeGroup.diff.patches.filter((p) =>
+    includePatch(p as Patch)
+  ).length;
 
-    summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
+  /*   summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
-  }
+  } */
   return (
     <div className={`group  p-1 rounded-full font-medium text-xs flex`}>
       <div className="mr-2 text-gray-500">{summary}</div>
@@ -623,10 +656,9 @@ const ChangeGroupDescription = ({
 
 const BranchMergedItem: React.FC<{
   branch: Branch;
-  changeGroups: ChangeGroup[];
+  changeGroups: GenericChangeGroup[];
   selected: boolean;
-  doc: MarkdownDoc;
-}> = ({ branch, changeGroups, selected, doc }) => {
+}> = ({ branch, changeGroups, selected }) => {
   return (
     <ItemView selected={selected} color="purple">
       <ItemActionMessage>branch merged</ItemActionMessage>
@@ -644,7 +676,7 @@ const BranchMergedItem: React.FC<{
           </div>
           {changeGroups.map((group) => (
             <div className="flex" key={group.id}>
-              <ChangeGroupDescription changeGroup={group} doc={doc} />
+              <ChangeGroupDescription changeGroup={group} />
               <div className="flex flex-shrink-0 items-start space-x-[-4px]">
                 {group.authorUrls.map((contactUrl) => (
                   <div className="rounded-full" key={contactUrl}>

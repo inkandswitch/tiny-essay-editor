@@ -868,13 +868,10 @@ export const Demo4: React.FC<{
               <ReviewSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranchLink?.url ?? docUrl}
+                docType={docType}
                 docUrl={selectedBranchLink?.url ?? docUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
-                textSelection={textSelection}
-                onClearTextSelection={() => {
-                  setTextSelection({ from: 0, to: 0, yCoord: 0 });
-                }}
                 selectedBranch={selectedBranch}
                 setSelectedBranch={setSelectedBranch}
               />

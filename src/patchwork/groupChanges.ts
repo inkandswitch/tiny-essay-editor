@@ -36,9 +36,8 @@ import {
   ChangeMetadata,
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
-import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Change, Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import {
-  MarkdownDocChangeGroup,
   includeChange,
   showChangeGroupInLog,
   statsForChangeGroup,
@@ -51,7 +50,7 @@ interface DecodedChangeWithMetadata extends DecodedChange {
 }
 
 /** A marker of a moment in the doc history associated w/ some heads */
-export type HeadsMarker = {
+export type HeadsMarker<DocType, Stats> = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
@@ -61,7 +60,7 @@ export type HeadsMarker = {
   | {
       type: "otherBranchMergedIntoThisDoc";
       branch: Branch;
-      changeGroups: ChangeGroup[];
+      changeGroups: ChangeGroup<DocType, Stats>[];
     }
   | { type: "branchCreatedFromThisDoc"; branch: Branch }
   | {
@@ -74,15 +73,18 @@ export type HeadsMarker = {
 
 // All ChangelogItems have a unique id, a heads, and some users asociated.
 // Then, each type of item has its own unique data associated too.
-export type ChangelogItem = {
+export type ChangelogItem<DocType, Stats> = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
   time: number;
-} & ({ type: "changeGroup"; changeGroup: ChangeGroup } | HeadsMarker);
+} & (
+  | { type: "changeGroup"; changeGroup: ChangeGroup<DocType, Stats> }
+  | HeadsMarker<DocType, Stats>
+);
 
 /** Change group attributes that could work for any document */
-export type GenericChangeGroup = {
+export type ChangeGroup<DocType, Stats> = {
   // Uniquely IDs the changes in this group.
   // (Concretely, we make IDs from heads + to heads, which I think does stably ID changes?)
   id: string;
@@ -91,26 +93,26 @@ export type GenericChangeGroup = {
   changes: DecodedChangeWithMetadata[];
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
-  // TODO make this a generic type --
-  // making it Doc<unknown> highlights the places where we currently expect
-  // this to be a MarkdownDoc that need to be generalized more.
-  docAtEndOfChangeGroup: Doc<MarkdownDoc>;
+  docAtEndOfChangeGroup: Doc<DocType>;
   diff: DiffWithProvenance;
-  markers: HeadsMarker[];
+  markers: HeadsMarker<DocType, Stats>[];
   time?: number;
+  stats?: Stats;
 };
 
-export type ChangeGroup = GenericChangeGroup & MarkdownDocChangeGroup;
+export type GenericChangeGroup = ChangeGroup<unknown, unknown>;
 
-type GroupingAlgorithm = (
-  currentGroup: ChangeGroup,
+type GroupingAlgorithm<DocType, Stats> = (
+  currentGroup: ChangeGroup<DocType, Stats>,
   newChange: DecodedChangeWithMetadata,
   numericParameter: number
 ) => boolean;
 
 // A grouping algorithm returns a boolean denoting whether the new change should be added to the current group.
 // Some of these algorithms rely on MarkdownDoc-specific stats; need to generalize that further.
-export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
+export const GROUPINGS: {
+  [key in string]: GroupingAlgorithm<unknown, unknown>;
+} = {
   ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
       currentGroup.actorIds[0] === newChange.actor &&
@@ -128,20 +130,18 @@ export const GROUPINGS: { [key in string]: GroupingAlgorithm } = {
       newChange.metadata?.author as AutomergeUrl
     );
   },
-  ByNumberOfChanges: (
-    currentGroup: ChangeGroup,
-    newChange: DecodedChangeWithMetadata,
-    batchSize: number
-  ) => {
+  ByNumberOfChanges: (currentGroup, newChange, batchSize: number) => {
     return currentGroup.changes.length < batchSize;
   },
-  ByCharCount: (
+
+  // todo: add back, it's the only grouping algorithm that's not generic
+  /* ByCharCount: (
     currentGroup: ChangeGroup,
     newChange: DecodedChangeWithMetadata,
     batchSize: number
   ) => {
     return currentGroup.charsAdded + currentGroup.charsDeleted < batchSize;
-  },
+  }, */
 
   // This always combines everything into one group,
   // so we only end up splitting when there's a manual tag
@@ -193,14 +193,15 @@ export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
 ];
 
 export const getMarkersForDoc = <
-  DocType extends Branchable & Taggable & Discussable
+  DocType extends Branchable & Taggable & Discussable,
+  Stats
 >(
   handle: DocHandle<DocType>,
   repo: Repo
-): HeadsMarker[] => {
+): HeadsMarker<DocType, Stats>[] => {
   const doc = handle.docSync();
   if (!doc) return [];
-  let markers: HeadsMarker[] = [];
+  let markers: HeadsMarker<DocType, Stats>[] = [];
 
   const discussions = Object.values(doc.discussions ?? {}).map(
     (discussion) => ({
@@ -311,9 +312,9 @@ const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
   });
 };
 
-type ChangeGroupingOptions = {
+export type ChangeGroupingOptions<DocType, Stats> = {
   /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
-  algorithm: keyof typeof GROUPINGS;
+  grouping: GroupingAlgorithm<DocType, Stats>;
 
   /** A numeric parameter used by some grouping algorithms for things like batch size.
    *  TODO: this should probably be more specifically named per grouping algo?
@@ -321,27 +322,50 @@ type ChangeGroupingOptions = {
   numericParameter: number;
 
   /** Markers to display at certain heads in the history */
-  markers: HeadsMarker[];
+  markers: HeadsMarker<DocType, Stats>[];
+
+  /** Conditon to keep only certain changes */
+  changeFilter?: ({
+    doc,
+    decodedChange,
+  }: {
+    doc: DocType;
+    decodedChange: DecodedChange;
+  }) => boolean;
+
+  changeGroupStats?: (changeGroup: ChangeGroup<DocType, Stats>) => Stats;
+
+  changeGroupFilter?: (changeGroup: ChangeGroup<DocType, Stats>) => boolean;
 };
 
 /** Returns a flat list of changelog items for display in the UI,
  *  based on a list of change groups.
  */
-export const getChangelogItems = (
-  doc: Doc<MarkdownDoc>,
-  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
-    algorithm: "ByActorAndNumChanges",
+export const getChangelogItems = <DocType extends Branchable, Stats>(
+  doc: Doc<DocType>,
+  {
+    grouping,
+    numericParameter,
+    markers,
+    changeFilter,
+    changeGroupStats,
+    changeGroupFilter,
+  }: ChangeGroupingOptions<DocType, Stats> = {
+    grouping: GROUPINGS.ByActorAndNumChanges,
     numericParameter: 100,
     markers: [],
   }
 ) => {
   const { changeGroups } = getGroupedChanges(doc, {
-    algorithm,
+    grouping,
     numericParameter,
     markers,
+    changeFilter,
+    changeGroupStats,
+    changeGroupFilter,
   });
 
-  const changelogItems: ChangelogItem[] = [];
+  const changelogItems: ChangelogItem<DocType, Stats>[] = [];
   for (const changeGroup of changeGroups) {
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
@@ -382,10 +406,17 @@ export const getChangelogItems = (
  *  with markers attached; if you want a flat list of changelog items
  *  for display, use getChangelogItems.
  */
-export const getGroupedChanges = (
-  doc: Doc<MarkdownDoc>,
-  { algorithm, numericParameter, markers }: ChangeGroupingOptions = {
-    algorithm: "ByActorAndNumChanges",
+export const getGroupedChanges = <DocType extends Branchable, Stats>(
+  doc: Doc<DocType>,
+  {
+    grouping,
+    numericParameter,
+    markers,
+    changeFilter,
+    changeGroupFilter,
+    changeGroupStats,
+  }: ChangeGroupingOptions<DocType, Stats> = {
+    grouping: GROUPINGS.ByActorAndNumChanges,
     /** Some algorithms have a numeric parameter like batch size that the user can control */
     numericParameter: 100,
     markers: [],
@@ -393,12 +424,12 @@ export const getGroupedChanges = (
 ) => {
   // TODO: we should sort this list in a stable way across devices.
   const changes = getAllChangesWithMetadata(doc);
-  const changeGroups: ChangeGroup[] = [];
+  const changeGroups: ChangeGroup<DocType, Stats>[] = [];
 
-  let currentGroup: ChangeGroup | null = null;
+  let currentGroup: ChangeGroup<DocType, Stats> | null = null;
 
   // define a helper for pushing a new group onto the list
-  const pushGroup = (group: ChangeGroup) => {
+  const pushGroup = (group: ChangeGroup<DocType, Stats>) => {
     group.id = `${group.from}-${group.to}`;
 
     const diffHeads =
@@ -406,13 +437,14 @@ export const getGroupedChanges = (
     group.diff = diffWithProvenance(doc, diffHeads, [group.to]);
     group.docAtEndOfChangeGroup = view(doc, [group.to]);
 
-    const TEEChangeGroup = statsForChangeGroup(group);
-    const groupWithStats = { ...group, ...TEEChangeGroup };
+    if (changeGroupStats) {
+      group.stats = changeGroupStats(group);
+    }
 
-    if (!showChangeGroupInLog(groupWithStats)) {
+    if (changeGroupFilter && !changeGroupFilter(group)) {
       return;
     }
-    changeGroups.push(groupWithStats);
+    changeGroups.push(group);
   };
 
   // for each merged branch in the doc, we need to start a change group for that branch.
@@ -422,7 +454,7 @@ export const getGroupedChanges = (
 
   const branchChangeGroups: {
     [key: string]: {
-      changeGroup: ChangeGroup;
+      changeGroup: ChangeGroup<DocType, Stats>;
       changeHashes: Set<Hash>;
       mergeMetadata: Branch["mergeMetadata"];
     };
@@ -441,11 +473,6 @@ export const getGroupedChanges = (
           diff: { patches: [], fromHeads: [], toHeads: [] },
           markers: [],
           time: undefined,
-          charsAdded: 0,
-          charsDeleted: 0,
-          commentsAdded: 0,
-          editCount: 0,
-          headings: [],
         },
         changeHashes: getChangesFromMergedBranch({
           decodedChangesForDoc: changes,
@@ -465,9 +492,11 @@ export const getGroupedChanges = (
 
     const skipChange =
       // See if the datatype wants this change to appear in the log
-      !includeChange({ doc, decodedChange }) &&
+      changeFilter &&
+      !changeFilter({ doc, decodedChange }) &&
       // If a marker is present for this change, we have to include it so that the marker works.
       !markers.find((marker) => marker.heads.includes(decodedChange.hash));
+
     if (skipChange) {
       continue;
     }
@@ -551,7 +580,7 @@ export const getGroupedChanges = (
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
     if (
       currentGroup &&
-      GROUPINGS[algorithm](currentGroup, decodedChange, numericParameter)
+      grouping(currentGroup, decodedChange, numericParameter)
     ) {
       currentGroup.changes.push(decodedChange);
       currentGroup.to = decodedChange.hash;
@@ -598,9 +627,6 @@ export const getGroupedChanges = (
         to: decodedChange.hash,
         changes: [decodedChange],
         actorIds: [decodedChange.actor],
-        charsAdded: 0,
-        charsDeleted: 0,
-        commentsAdded: 0,
         diff: { patches: [], fromHeads: [], toHeads: [] },
         markers: [],
         time:
@@ -611,8 +637,6 @@ export const getGroupedChanges = (
           ? [decodedChange.metadata.author as AutomergeUrl]
           : [],
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
-        headings: [],
-        editCount: 0,
       };
     }
   }

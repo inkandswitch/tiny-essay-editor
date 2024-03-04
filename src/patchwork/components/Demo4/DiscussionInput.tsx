@@ -56,11 +56,9 @@ type DiscussionInputProps = {
   doc: MarkdownDoc;
   changeDoc: (fn: (doc: MarkdownDoc) => void) => void;
   handle: DocHandle<MarkdownDoc>;
-  textSelection: TextSelection;
-  onClearTextSelection: () => void;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-  changelogItems: ChangelogItem[];
+  changelogItems: ChangelogItem<CHa>[];
   changelogSelection: ChangelogSelection;
 };
 
@@ -68,8 +66,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
   doc,
   changeDoc,
   handle,
-  textSelection,
-  onClearTextSelection,
   selectedBranch,
   setSelectedBranch,
   changelogItems,
@@ -140,7 +136,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
       };
     });
 
-    onClearTextSelection();
     setCommentBoxContent("");
   };
   const handleSubmitDiscussion = () => {
