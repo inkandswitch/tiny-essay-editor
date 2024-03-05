@@ -130,9 +130,9 @@ export const ReviewSidebar: React.FC<{
 
       default:
         return {
-          grouping: GROUPINGS.ByAuthorOrTime,
+          grouping: GROUPINGS.ByNumberOfChanges,
           numericParameter: 60,
-          changeFilter: includeChange,
+          changeFilter: () => true,
           markers,
         };
     }
@@ -453,17 +453,15 @@ export const ReviewSidebar: React.FC<{
       </div>
 
       <div className="bg-gray-50 z-10">
-        {false && (
-          <DiscussionInput
-            doc={doc}
-            changeDoc={changeDoc}
-            changelogItems={changelogItems}
-            changelogSelection={selection}
-            handle={handle}
-            selectedBranch={selectedBranch}
-            setSelectedBranch={setSelectedBranch}
-          />
-        )}
+        <DiscussionInput
+          doc={doc}
+          changeDoc={changeDoc}
+          changelogItems={changelogItems}
+          changelogSelection={selection}
+          handle={handle}
+          selectedBranch={selectedBranch}
+          setSelectedBranch={setSelectedBranch}
+        />
       </div>
     </div>
   );

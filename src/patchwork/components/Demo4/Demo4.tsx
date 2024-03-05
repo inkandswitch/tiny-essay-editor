@@ -109,7 +109,7 @@ export const Demo4: React.FC<{
     useState<boolean>(false);
 
   const [textSelection, setTextSelection] = useState<TextSelection>();
-  const supportsBranches = docType === "essay"; // todo: remove this flag, branches shouldn't require any special implementation from the data type
+  const supportsBranches = true; ///docType === "essay"; // todo: remove this flag, branches shouldn't require any special implementation from the data type
   const supportsComments = docType === "essay";
   const supportsHistory = docType === "essay" || docType === "tldraw";
 
@@ -750,19 +750,6 @@ export const Demo4: React.FC<{
                         return;
                       }
 
-                      /* filter out lines to comments that are out of view
-                          if (
-                            commentPositionMap[position.discussion.id].top -
-                              commentsScrollOffset >
-                              bezierCurveLayerRect.height ||
-                            commentPositionMap[position.discussion.id].bottom -
-                              commentsScrollOffset <
-                              0
-                          ) {
-                            return;
-                          }
-                          */
-
                       return (
                         <BezierCurve
                           color={
@@ -965,7 +952,7 @@ const DocEditor = ({
     case "tldraw":
       return (
         <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} heads={diffBase} />
+          <TLDraw docUrl={docUrl} heads={docHeads} />
         </div>
       );
     case "datagrid":
