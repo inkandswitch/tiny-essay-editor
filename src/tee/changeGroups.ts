@@ -39,11 +39,6 @@ export const includeChange = ({
   );
 };
 
-// Given a patch, should it be shown to the user in the log?
-export const includePatch = (patch: Patch) => {
-  return patch.path[0] === "content" || patch.path[0] === "commentThreads";
-};
-
 // Compute stats for a change group on a MarkdownDoc
 export const statsForChangeGroup = (
   changeGroup: ChangeGroup<MarkdownDoc, MarkdownDocChangeGroupStats>

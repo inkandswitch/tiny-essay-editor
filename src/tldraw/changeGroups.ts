@@ -15,7 +15,7 @@ export const changeFilter = ({
 };
 
 export const changeGroupingOptions: ChangeGroupingOptions<TLDrawDoc, never> = {
-  grouping: GROUPINGS.ByNumberOfChanges,
+  grouping: GROUPINGS.ByAuthorOrTime,
   numericParameter: 10,
   changeFilter,
   markers: [],

@@ -37,11 +37,6 @@ import {
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
 import { Change, Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
-import {
-  includeChange,
-  showChangeGroupInLog,
-  statsForChangeGroup,
-} from "@/tee/changeGroups";
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual, sortBy } from "lodash";
 
@@ -94,6 +89,7 @@ export type ChangeGroup<DocType, Stats> = {
   actorIds: ActorId[];
   authorUrls: AutomergeUrl[];
   docAtEndOfChangeGroup: Doc<DocType>;
+  numberOfEdits: number;
   diff: DiffWithProvenance;
   markers: HeadsMarker<DocType, Stats>[];
   time?: number;
@@ -437,13 +433,17 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
     group.diff = diffWithProvenance(doc, diffHeads, [group.to]);
     group.docAtEndOfChangeGroup = view(doc, [group.to]);
 
-    if (changeGroupStats) {
-      group.stats = changeGroupStats(group);
-    }
+    // todo: fix
+    group.numberOfEdits = group.diff.patches.filter((patch) =>
+      "content" in doc
+        ? patch.path[0] === "content" || patch.path[0] === "commentThreads"
+        : true
+    ).length;
 
-    if (changeGroupFilter && !changeGroupFilter(group)) {
+    if (group.numberOfEdits === 0) {
       return;
     }
+
     changeGroups.push(group);
   };
 
@@ -472,6 +472,7 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
           docAtEndOfChangeGroup: undefined,
           diff: { patches: [], fromHeads: [], toHeads: [] },
           markers: [],
+          numberOfEdits: 0,
           time: undefined,
         },
         changeHashes: getChangesFromMergedBranch({
@@ -636,6 +637,7 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
         authorUrls: decodedChange.metadata?.author
           ? [decodedChange.metadata.author as AutomergeUrl]
           : [],
+        numberOfEdits: 0,
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
       };
     }

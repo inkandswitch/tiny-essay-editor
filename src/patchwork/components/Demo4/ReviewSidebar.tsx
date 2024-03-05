@@ -54,12 +54,7 @@ import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
 } from "@/patchwork/changeGroupSummaries";
-import {
-  includeChange,
-  includePatch,
-  statsForChangeGroup,
-  showChangeGroupInLog,
-} from "@/tee/changeGroups";
+
 import { DocType } from "@/DocExplorer/doctypes";
 import { ChangeGroupingOptions } from "../../groupChanges";
 
@@ -635,11 +630,10 @@ const ChangeGroupDescription = ({
 }) => {
   let summary;
   // if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-  const patchesCount = changeGroup.diff.patches.filter((p) =>
-    includePatch(p as Patch)
-  ).length;
 
-  summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
+  const { numberOfEdits } = changeGroup;
+
+  summary = `${numberOfEdits} edit${numberOfEdits === 1 ? "" : "s"}`;
   /*} else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   } */
