@@ -34,6 +34,7 @@ import {
   Branchable,
   DiffWithProvenance,
   Discussion,
+  HasPatchworkMetadata,
   Tag,
 } from "../../schema";
 import { useSlots } from "@/patchwork/utils";
@@ -114,7 +115,7 @@ export const ReviewSidebar: React.FC<{
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
-    ChangeGroupingOptions<Branchable, unknown>
+    ChangeGroupingOptions<HasPatchworkMetadata>
   >(() => {
     switch (docType) {
       case "essay":
@@ -465,12 +466,12 @@ export const ReviewSidebar: React.FC<{
 // Manage the selection state for changelog items.
 // Supports multi-select interaction.
 // Returns pixel coordinates for the selection to help w/ drawing a selection box.
-const useChangelogSelection = ({
+const useChangelogSelection = function <T>({
   items,
   setDiff,
   setDocHeads,
 }: {
-  items: ChangelogItem<unknown, unknown>[];
+  items: ChangelogItem<T>[];
   setDiff: (diff: DiffWithProvenance) => void;
   setDocHeads: (heads: Heads) => void;
 }): {
@@ -482,7 +483,7 @@ const useChangelogSelection = ({
   itemsContainerRef: React.RefObject<HTMLDivElement>;
   // Callback to clear the selection
   clearSelection: () => void;
-} => {
+} {
   // Internally we track selection using item IDs.
   // Once we return it out of the hook, we'll also tack on numbers, to help out in the view.
   const [selection, setSelection] = useState<{ from: string; to: string }>(

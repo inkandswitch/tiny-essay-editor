@@ -4,8 +4,6 @@
 
 // It also calculates some stats for each group, both generic to all docs
 // as well as calling out to some datatype-specific summarization.
-// (For now, the datatype is fixed to MarkdownDoc, but there is a clear boundary;
-// the TEE code defines MarkdownDoc-specific stats.)
 
 // Known issues:
 // - getAllChanges returns different orders on different devices;
@@ -36,16 +34,35 @@ import {
   ChangeMetadata,
   DocHandle,
 } from "@automerge/automerge-repo/dist/DocHandle";
-import { Change, Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual, sortBy } from "lodash";
+
+/** Change group attributes that could work for any document */
+export type ChangeGroup<T> = {
+  // Uniquely IDs the changes in this group.
+  // (Concretely, we make IDs from heads + to heads, which I think does stably ID changes?)
+  id: string;
+  from: Hash;
+  to: Hash;
+  changes: DecodedChangeWithMetadata[];
+  actorIds: ActorId[];
+  authorUrls: AutomergeUrl[];
+  docAtEndOfChangeGroup: Doc<T>;
+  numberOfEdits: number;
+  diff: DiffWithProvenance;
+  markers: HeadsMarker<T>[];
+  time?: number;
+};
+
+export type GenericChangeGroup = ChangeGroup<unknown>;
 
 interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
 /** A marker of a moment in the doc history associated w/ some heads */
-export type HeadsMarker<DocType, Stats> = {
+export type HeadsMarker<T> = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
@@ -55,7 +72,7 @@ export type HeadsMarker<DocType, Stats> = {
   | {
       type: "otherBranchMergedIntoThisDoc";
       branch: Branch;
-      changeGroups: ChangeGroup<DocType, Stats>[];
+      changeGroups: ChangeGroup<T>[];
     }
   | { type: "branchCreatedFromThisDoc"; branch: Branch }
   | {
@@ -68,38 +85,15 @@ export type HeadsMarker<DocType, Stats> = {
 
 // All ChangelogItems have a unique id, a heads, and some users asociated.
 // Then, each type of item has its own unique data associated too.
-export type ChangelogItem<DocType, Stats> = {
+export type ChangelogItem<T> = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
   time: number;
-} & (
-  | { type: "changeGroup"; changeGroup: ChangeGroup<DocType, Stats> }
-  | HeadsMarker<DocType, Stats>
-);
+} & ({ type: "changeGroup"; changeGroup: ChangeGroup<T> } | HeadsMarker<T>);
 
-/** Change group attributes that could work for any document */
-export type ChangeGroup<DocType, Stats> = {
-  // Uniquely IDs the changes in this group.
-  // (Concretely, we make IDs from heads + to heads, which I think does stably ID changes?)
-  id: string;
-  from: Hash;
-  to: Hash;
-  changes: DecodedChangeWithMetadata[];
-  actorIds: ActorId[];
-  authorUrls: AutomergeUrl[];
-  docAtEndOfChangeGroup: Doc<DocType>;
-  numberOfEdits: number;
-  diff: DiffWithProvenance;
-  markers: HeadsMarker<DocType, Stats>[];
-  time?: number;
-  stats?: Stats;
-};
-
-export type GenericChangeGroup = ChangeGroup<unknown, unknown>;
-
-type GroupingAlgorithm<DocType, Stats> = (
-  currentGroup: ChangeGroup<DocType, Stats>,
+type GroupingAlgorithm<T> = (
+  currentGroup: ChangeGroup<T>,
   newChange: DecodedChangeWithMetadata,
   numericParameter: number
 ) => boolean;
@@ -107,7 +101,7 @@ type GroupingAlgorithm<DocType, Stats> = (
 // A grouping algorithm returns a boolean denoting whether the new change should be added to the current group.
 // Some of these algorithms rely on MarkdownDoc-specific stats; need to generalize that further.
 export const GROUPINGS: {
-  [key in string]: GroupingAlgorithm<unknown, unknown>;
+  [key in string]: GroupingAlgorithm<unknown>;
 } = {
   ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
     return (
@@ -188,16 +182,13 @@ export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
   "ByAuthorOrTime",
 ];
 
-export const getMarkersForDoc = <
-  DocType extends Branchable & Taggable & Discussable,
-  Stats
->(
-  handle: DocHandle<DocType>,
+export const getMarkersForDoc = <T extends Branchable & Taggable & Discussable>(
+  handle: DocHandle<T>,
   repo: Repo
-): HeadsMarker<DocType, Stats>[] => {
+): HeadsMarker<T>[] => {
   const doc = handle.docSync();
   if (!doc) return [];
-  let markers: HeadsMarker<DocType, Stats>[] = [];
+  let markers: HeadsMarker<T>[] = [];
 
   const discussions = Object.values(doc.discussions ?? {}).map(
     (discussion) => ({
@@ -308,9 +299,9 @@ const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
   });
 };
 
-export type ChangeGroupingOptions<DocType, Stats> = {
+export type ChangeGroupingOptions<T> = {
   /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
-  grouping: GroupingAlgorithm<DocType, Stats>;
+  grouping: GroupingAlgorithm<T>;
 
   /** A numeric parameter used by some grouping algorithms for things like batch size.
    *  TODO: this should probably be more specifically named per grouping algo?
@@ -318,27 +309,27 @@ export type ChangeGroupingOptions<DocType, Stats> = {
   numericParameter: number;
 
   /** Markers to display at certain heads in the history */
-  markers: HeadsMarker<DocType, Stats>[];
+  markers: HeadsMarker<T>[];
 
   /** Conditon to keep only certain changes */
   changeFilter?: ({
     doc,
     decodedChange,
   }: {
-    doc: DocType;
+    doc: T;
     decodedChange: DecodedChange;
   }) => boolean;
 
-  changeGroupStats?: (changeGroup: ChangeGroup<DocType, Stats>) => Stats;
+  changeGroupStats?: (changeGroup: ChangeGroup<T>) => T;
 
-  changeGroupFilter?: (changeGroup: ChangeGroup<DocType, Stats>) => boolean;
+  changeGroupFilter?: (changeGroup: ChangeGroup<T>) => boolean;
 };
 
 /** Returns a flat list of changelog items for display in the UI,
  *  based on a list of change groups.
  */
-export const getChangelogItems = <DocType extends Branchable, Stats>(
-  doc: Doc<DocType>,
+export const getChangelogItems = <T extends Branchable>(
+  doc: Doc<T>,
   {
     grouping,
     numericParameter,
@@ -346,7 +337,7 @@ export const getChangelogItems = <DocType extends Branchable, Stats>(
     changeFilter,
     changeGroupStats,
     changeGroupFilter,
-  }: ChangeGroupingOptions<DocType, Stats> = {
+  }: ChangeGroupingOptions<T> = {
     grouping: GROUPINGS.ByActorAndNumChanges,
     numericParameter: 100,
     markers: [],
@@ -361,7 +352,7 @@ export const getChangelogItems = <DocType extends Branchable, Stats>(
     changeGroupFilter,
   });
 
-  const changelogItems: ChangelogItem<DocType, Stats>[] = [];
+  const changelogItems: ChangelogItem<T>[] = [];
   for (const changeGroup of changeGroups) {
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
@@ -402,8 +393,8 @@ export const getChangelogItems = <DocType extends Branchable, Stats>(
  *  with markers attached; if you want a flat list of changelog items
  *  for display, use getChangelogItems.
  */
-export const getGroupedChanges = <DocType extends Branchable, Stats>(
-  doc: Doc<DocType>,
+export const getGroupedChanges = <T extends Branchable>(
+  doc: Doc<T>,
   {
     grouping,
     numericParameter,
@@ -411,7 +402,7 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
     changeFilter,
     changeGroupFilter,
     changeGroupStats,
-  }: ChangeGroupingOptions<DocType, Stats> = {
+  }: ChangeGroupingOptions<T> = {
     grouping: GROUPINGS.ByActorAndNumChanges,
     /** Some algorithms have a numeric parameter like batch size that the user can control */
     numericParameter: 100,
@@ -420,12 +411,12 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
 ) => {
   // TODO: we should sort this list in a stable way across devices.
   const changes = getAllChangesWithMetadata(doc);
-  const changeGroups: ChangeGroup<DocType, Stats>[] = [];
+  const changeGroups: ChangeGroup<T>[] = [];
 
-  let currentGroup: ChangeGroup<DocType, Stats> | null = null;
+  let currentGroup: ChangeGroup<T> | null = null;
 
   // define a helper for pushing a new group onto the list
-  const pushGroup = (group: ChangeGroup<DocType, Stats>) => {
+  const pushGroup = (group: ChangeGroup<T>) => {
     group.id = `${group.from}-${group.to}`;
 
     const diffHeads =
@@ -454,7 +445,7 @@ export const getGroupedChanges = <DocType extends Branchable, Stats>(
 
   const branchChangeGroups: {
     [key: string]: {
-      changeGroup: ChangeGroup<DocType, Stats>;
+      changeGroup: ChangeGroup<T>;
       changeHashes: Set<Hash>;
       mergeMetadata: Branch["mergeMetadata"];
     };

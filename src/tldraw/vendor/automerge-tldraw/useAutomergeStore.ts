@@ -154,6 +154,7 @@ export function useAutomergePresence({
     // put / remove the records in the store
     const toRemove = innerStore.query
       .records("instance_presence")
+      // @ts-expect-error
       .get()
       .sort(sortById)
       .map((record) => record.id)
@@ -188,6 +189,7 @@ export function useAutomergePresence({
     )(innerStore);
 
     return react("when presence changes", () => {
+      //@ts-expect-error
       const presence = presenceDerivation.get();
       requestAnimationFrame(() => {
         updateLocalState(presence);

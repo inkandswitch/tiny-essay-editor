@@ -6,12 +6,12 @@ import { getStringCompletion } from "@/llm";
 import { debounce, pick } from "lodash";
 import { useCallback, useEffect } from "react";
 
-export const populateChangeGroupSummaries = async ({
+export const populateChangeGroupSummaries = async <T>({
   groups,
   handle,
   force,
 }: {
-  groups: ChangeGroup[];
+  groups: ChangeGroup<T>[];
   handle: DocHandle<HasChangeGroupSummaries>;
   force?: boolean;
 }) => {
@@ -33,12 +33,12 @@ export const populateChangeGroupSummaries = async ({
   }
 };
 
-const populateGroupSummary = async ({
+const populateGroupSummary = async <T>({
   group,
   docBefore,
   handle,
 }: {
-  group: ChangeGroup;
+  group: ChangeGroup<T>;
   docBefore: any;
   handle: DocHandle<HasChangeGroupSummaries>;
 }) => {
@@ -105,12 +105,12 @@ ${JSON.stringify(
   return getStringCompletion(prompt);
 };
 
-export const useAutoPopulateChangeGroupSummaries = ({
+export const useAutoPopulateChangeGroupSummaries = <T>({
   changeGroups,
   handle,
   msBetween = 10000,
 }: {
-  changeGroups: ChangeGroup[];
+  changeGroups: ChangeGroup<T>[];
   handle: DocHandle<HasChangeGroupSummaries>;
   msBetween?: number;
 }) => {

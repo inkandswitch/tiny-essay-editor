@@ -17,13 +17,10 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { HistoryPlayground } from "@/patchwork/components/HistoryPlayground";
 import { DraftsPlayground } from "@/patchwork/components/Drafts";
-import { SpatialHistoryPlayground } from "@/patchwork/components/Spatial";
 import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
 import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
-import { Demo3 } from "@/patchwork/components/Demo3/Demo3";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { Toaster } from "@/components/ui/sonner";
@@ -47,11 +44,6 @@ const TOOLS = {
       component: Demo4,
     },
     {
-      id: "demo3",
-      name: "Demo 3",
-      component: Demo3,
-    },
-    {
       id: "editGroups",
       name: "Edit Groups",
       component: EditGroupsPlayground,
@@ -60,16 +52,6 @@ const TOOLS = {
       id: "tee",
       name: "Editor",
       component: TinyEssayEditor,
-    },
-    {
-      id: "history",
-      name: "🛠️ History",
-      component: HistoryPlayground,
-    },
-    {
-      id: "spatial",
-      name: "🛠️ Spatial",
-      component: SpatialHistoryPlayground,
     },
     {
       id: "drafts",
