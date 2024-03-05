@@ -1,4 +1,7 @@
 import { Sheet } from "lucide-react";
+import { DataGridDoc } from "./schema";
+import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
+import { next as A } from "@automerge/automerge";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -21,6 +24,21 @@ export const init = (doc: any) => {
   );
 };
 
+export const includeChangeInHistory = (
+  doc: DataGridDoc,
+  decodedChange: DecodedChangeWithMetadata
+) => {
+  const contentObjID = A.getObjectId(doc, "data");
+  const commentsObjID = A.getObjectId(doc, "commentThreads");
+
+  return decodedChange.ops.some(
+    (op) => op.obj === contentObjID || op.obj === commentsObjID
+  );
+};
+
+export const includePatchInChangeGroup = (patch: A.Patch) =>
+  patch.path[0] === "data" || patch.path[0] === "commentThreads";
+
 export const DataGridDatatype = {
   id: "datagrid",
   name: "DataGrid",
@@ -28,4 +46,7 @@ export const DataGridDatatype = {
   init,
   getTitle,
   markCopy, // TODO: this shouldn't be here
+
+  includeChangeInHistory,
+  includePatchInChangeGroup,
 };

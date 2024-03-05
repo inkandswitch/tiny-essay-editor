@@ -111,7 +111,8 @@ export const Demo4: React.FC<{
   const [textSelection, setTextSelection] = useState<TextSelection>();
   const supportsBranches = true; ///docType === "essay"; // todo: remove this flag, branches shouldn't require any special implementation from the data type
   const supportsComments = docType === "essay";
-  const supportsHistory = docType === "essay" || docType === "tldraw";
+  const supportsHistory =
+    docType === "essay" || docType === "tldraw" || docType == "datagrid";
 
   // Reset compare view settings every time you switch branches
   useEffect(() => {

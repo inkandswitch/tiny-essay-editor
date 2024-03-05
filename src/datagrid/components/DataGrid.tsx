@@ -7,11 +7,19 @@ import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "handsontable/dist/handsontable.full.min.css";
 import { useEffect, useRef } from "react";
+import { Heads } from "@automerge/automerge";
+import { next as Automerge } from "@automerge/automerge";
 
 // register Handsontable's modules
 registerAllModules();
 
-export const DataGrid = ({ docUrl }: { docUrl: AutomergeUrl }) => {
+export const DataGrid = ({
+  docUrl,
+  heads,
+}: {
+  docUrl: AutomergeUrl;
+  heads: Heads;
+}) => {
   useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
 
@@ -19,6 +27,9 @@ export const DataGrid = ({ docUrl }: { docUrl: AutomergeUrl }) => {
 
   useEffect(() => {
     const updateHotTable = ({ doc }) => {
+      if (heads) {
+        doc = Automerge.view(doc, heads);
+      }
       console.log("table changed", doc);
       // The Handsontable instance is stored under the `hotInstance` property of the wrapper component.
       if (doc.data) {
@@ -30,7 +41,7 @@ export const DataGrid = ({ docUrl }: { docUrl: AutomergeUrl }) => {
     return () => {
       handle.off("change", updateHotTable);
     };
-  }, [handle]);
+  }, [handle, heads]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
