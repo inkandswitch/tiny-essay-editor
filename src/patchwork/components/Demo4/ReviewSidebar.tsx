@@ -33,6 +33,7 @@ import {
   Branchable,
   DiffWithProvenance,
   Discussion,
+  HasChangeGroupSummaries,
   HasPatchworkMetadata,
   Tag,
 } from "../../schema";
@@ -114,22 +115,20 @@ export const ReviewSidebar: React.FC<{
     [doc, handle, repo, mainDoc]
   );
 
+  const { includeChangeInHistory, includePatchInChangeGroup, getLLMSummary } =
+    docTypes[docType] ?? {};
+
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
     ChangeGroupingOptions<HasPatchworkMetadata>
   >(() => {
-    const {
-      includeChangeInHistory,
-      includePatchInChangeGroup,
-    }: DataType<HasPatchworkMetadata> = docTypes[docType];
-
     return {
       grouping: ByAuthorOrTime(60),
       markers,
       changeFilter: includeChangeInHistory,
       patchFilter: includePatchInChangeGroup,
     };
-  }, [docType, markers]);
+  }, [docType, markers, includeChangeInHistory, includePatchInChangeGroup]);
 
   // The grouping function returns change groups starting from the latest change.
   const changelogItems = useMemo(() => {
@@ -179,11 +178,12 @@ export const ReviewSidebar: React.FC<{
     });
   }, [changelogItems]);
 
-  // todo: reenable
-  /*  useAutoPopulateChangeGroupSummaries({
+  useAutoPopulateChangeGroupSummaries({
     changeGroups,
     handle,
-  }); */
+    getLLMSummary,
+    patchFilter: includePatchInChangeGroup,
+  });
 
   if (!doc) return null;
 
@@ -200,6 +200,8 @@ export const ReviewSidebar: React.FC<{
       groups: changelogItems.flatMap((item) =>
         item.type === "changeGroup" ? [item.changeGroup] : []
       ),
+      getLLMSummary,
+      patchFilter: includePatchInChangeGroup,
       handle,
     });
 
@@ -345,6 +347,7 @@ export const ReviewSidebar: React.FC<{
                       case "otherBranchMergedIntoThisDoc":
                         return (
                           <BranchMergedItem
+                            doc={doc}
                             branch={item.branch}
                             selected={selected}
                             changeGroups={item.changeGroups}
@@ -598,7 +601,7 @@ const ChangeGroupItem: React.FC<{
   return (
     <div className="pl-[7px] pr-1 flex w-full">
       <div className="flex-shrink-0 w-3 h-3 border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-      <ChangeGroupDescription changeGroup={group} />
+      <ChangeGroupDescription changeGroup={group} doc={doc} />
     </div>
   );
 };
@@ -621,19 +624,18 @@ const DateHeader: React.FC<{ date: Date }> = ({ date }) => {
 // Summary of a change group: textual + avatars
 const ChangeGroupDescription = ({
   changeGroup,
-}: //  doc
-{
+  doc,
+}: {
   changeGroup: GenericChangeGroup;
+  doc: HasChangeGroupSummaries;
 }) => {
   let summary;
-  // if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-
-  const { numberOfEdits } = changeGroup;
-
-  summary = `${numberOfEdits} edit${numberOfEdits === 1 ? "" : "s"}`;
-  /*} else {
+  if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
+    const { numberOfEdits } = changeGroup;
+    summary = `${numberOfEdits} edit${numberOfEdits === 1 ? "" : "s"}`;
+  } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
-  } */
+  }
   return (
     <div className={`group  p-1 rounded-full font-medium text-xs flex`}>
       <div className="mr-2 text-gray-500">{summary}</div>
@@ -642,10 +644,11 @@ const ChangeGroupDescription = ({
 };
 
 const BranchMergedItem: React.FC<{
+  doc: HasChangeGroupSummaries;
   branch: Branch;
   changeGroups: GenericChangeGroup[];
   selected: boolean;
-}> = ({ branch, changeGroups, selected }) => {
+}> = ({ doc, branch, changeGroups, selected }) => {
   return (
     <ItemView selected={selected} color="purple">
       <ItemActionMessage>branch merged</ItemActionMessage>
@@ -663,7 +666,7 @@ const BranchMergedItem: React.FC<{
           </div>
           {changeGroups.map((group) => (
             <div className="flex" key={group.id}>
-              <ChangeGroupDescription changeGroup={group} />
+              <ChangeGroupDescription changeGroup={group} doc={doc} />
               <div className="flex flex-shrink-0 items-start space-x-[-4px]">
                 {group.authorUrls.map((contactUrl) => (
                   <div className="rounded-full" key={contactUrl}>

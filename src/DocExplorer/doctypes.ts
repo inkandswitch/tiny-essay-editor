@@ -22,6 +22,9 @@ export interface DataType<T> {
     change: DecodedChangeWithMetadata
   ) => boolean;
   includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
+
+  // a textual representation of the document that can be used in prompts
+  getLLMSummary?: (doc: T) => string;
 }
 
 export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {
