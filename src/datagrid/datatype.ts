@@ -13,11 +13,12 @@ const getTitle = (doc: any) => {
 
 export const init = (doc: any) => {
   doc.title = "A Data Grid";
-  doc.data = [
-    ["Hello", "", ""],
-    ["", "World", ""],
-    ["", "", "-pvh"],
-  ];
+  const rows = 20;
+  const cols = 10;
+  const defaultValue = "";
+  doc.data = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => defaultValue)
+  );
 };
 
 export const DataGridDatatype = {
