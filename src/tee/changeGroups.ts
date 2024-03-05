@@ -1,8 +1,9 @@
-import { ChangeGroup } from "@/patchwork/groupChanges";
+import { ChangeGroup, ChangeGroupingOptions } from "@/patchwork/groupChanges";
 
 import { TextPatch } from "@/patchwork/utils";
 import { DecodedChange, Patch } from "@automerge/automerge-wasm";
 import { MarkdownDoc } from "./schema";
+import { GROUPINGS } from "@/patchwork/groupChanges";
 
 import * as A from "@automerge/automerge/next";
 
@@ -183,4 +184,16 @@ export const charsAddedAndDeletedByPatches = (
     },
     { charsAdded: 0, charsDeleted: 0 }
   );
+};
+
+export const changeGroupingOptions: ChangeGroupingOptions<
+  MarkdownDoc,
+  MarkdownDocChangeGroupStats
+> = {
+  grouping: GROUPINGS.ByAuthorOrTime,
+  numericParameter: 60,
+  changeFilter: includeChange,
+  changeGroupStats: statsForChangeGroup,
+  changeGroupFilter: showChangeGroupInLog,
+  markers: [],
 };

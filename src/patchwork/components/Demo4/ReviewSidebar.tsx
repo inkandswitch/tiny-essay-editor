@@ -15,6 +15,8 @@ import {
   getChangelogItems,
   getMarkersForDoc,
 } from "../../groupChanges";
+import { changeGroupingOptions as essayChangeGroupingOptions } from "@/tee/changeGroups";
+import { changeGroupingOptions as tldrawChangeGroupingOptions } from "@/tldraw/changeGroups";
 
 import {
   MilestoneIcon,
@@ -57,7 +59,7 @@ import {
   includePatch,
   statsForChangeGroup,
   showChangeGroupInLog,
-} from "@/tee/statsForChangeGroup";
+} from "@/tee/changeGroups";
 import { DocType } from "@/DocExplorer/doctypes";
 import { ChangeGroupingOptions } from "../../groupChanges";
 
@@ -121,20 +123,17 @@ export const ReviewSidebar: React.FC<{
   >(() => {
     switch (docType) {
       case "essay":
-        return {
-          grouping: GROUPINGS.ByAuthorOrTime,
-          numericParameter: 60,
-          markers,
-        };
+        return { ...essayChangeGroupingOptions, markers };
+
+      case "tldraw":
+        return { ...tldrawChangeGroupingOptions, markers };
 
       default:
         return {
           grouping: GROUPINGS.ByAuthorOrTime,
           numericParameter: 60,
-          markers,
           changeFilter: includeChange,
-          changeGroupStats: statsForChangeGroup,
-          changeGroupFilter: showChangeGroupInLog,
+          markers,
         };
     }
   }, [docType, markers]);
@@ -189,10 +188,11 @@ export const ReviewSidebar: React.FC<{
     });
   }, [changelogItems]);
 
-  useAutoPopulateChangeGroupSummaries({
+  // todo: reenable
+  /*  useAutoPopulateChangeGroupSummaries({
     changeGroups,
     handle,
-  });
+  }); */
 
   if (!doc) return null;
 
@@ -643,8 +643,8 @@ const ChangeGroupDescription = ({
     includePatch(p as Patch)
   ).length;
 
-  /*   summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
-  } else {
+  summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
+  /*} else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   } */
   return (

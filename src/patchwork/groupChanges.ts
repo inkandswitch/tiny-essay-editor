@@ -41,7 +41,7 @@ import {
   includeChange,
   showChangeGroupInLog,
   statsForChangeGroup,
-} from "@/tee/statsForChangeGroup";
+} from "@/tee/changeGroups";
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual, sortBy } from "lodash";
 
