@@ -145,8 +145,6 @@ export const ReviewSidebar: React.FC<{
     return getChangelogItems(doc, changeGroupingOptions);
   }, [doc, markers, changeGroupingOptions]);
 
-  console.log({ changelogItems });
-
   const hiddenItemBoundary = changelogItems.findIndex(
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
   );

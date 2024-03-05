@@ -965,7 +965,7 @@ const DocEditor = ({
     case "tldraw":
       return (
         <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} />
+          <TLDraw docUrl={docUrl} heads={diffBase} />
         </div>
       );
     case "datagrid":
