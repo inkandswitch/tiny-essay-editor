@@ -2,9 +2,12 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
+import { next as A } from "@automerge/automerge";
 import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
+import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
+import { DataType } from "@/DocExplorer/doctypes";
 
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
@@ -35,7 +38,7 @@ export const asMarkdownFile = (doc: MarkdownDoc): Blob => {
 // looks first for yaml frontmatter from the i&s essay format;
 // then looks for the first H1.
 
-export const getTitle = (doc: any) => {
+export const getTitle = async (doc: MarkdownDoc) => {
   const content = doc.content;
   const frontmatterRegex = /---\n([\s\S]+?)\n---/;
   const frontmatterMatch = content.match(frontmatterRegex);
@@ -60,11 +63,25 @@ export const getTitle = (doc: any) => {
   return `${title} ${subtitle && `: ${subtitle}`}`;
 };
 
-export const EssayDatatype = {
+export const includeChangeInHistory = (
+  doc: MarkdownDoc,
+  decodedChange: DecodedChangeWithMetadata
+) => {
+  const contentObjID = A.getObjectId(doc, "content");
+  const commentsObjID = A.getObjectId(doc, "commentThreads");
+
+  return decodedChange.ops.some(
+    (op) => op.obj === contentObjID || op.obj === commentsObjID
+  );
+};
+
+export const EssayDatatype: DataType<MarkdownDoc> = {
   id: "essay",
   name: "Essay",
   icon: Text,
   init,
   getTitle,
-  markCopy, // TODO: this shouldn't be here
+  markCopy,
+  includeChangeInHistory,
+  //includePatchInChangeGroup,
 };

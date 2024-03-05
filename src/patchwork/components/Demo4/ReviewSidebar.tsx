@@ -8,15 +8,14 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
+  ByAuthorOrTime,
   ChangeGroup,
   ChangelogItem,
-  GROUPINGS,
   GenericChangeGroup,
   getChangelogItems,
   getMarkersForDoc,
 } from "../../groupChanges";
-import { changeGroupingOptions as essayChangeGroupingOptions } from "@/tee/changeGroups";
-import { changeGroupingOptions as tldrawChangeGroupingOptions } from "@/tldraw/changeGroups";
+import { DataType, docTypes } from "@/DocExplorer/doctypes";
 
 import {
   MilestoneIcon,
@@ -99,9 +98,11 @@ export const ReviewSidebar: React.FC<{
   setDocHeads,
   setDiff,
 }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
-  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata?.source?.url);
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(docUrl);
+  const [mainDoc] = useDocument<HasPatchworkMetadata>(
+    doc?.branchMetadata?.source?.url
+  );
+  const handle = useHandle<HasPatchworkMetadata>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
@@ -117,21 +118,14 @@ export const ReviewSidebar: React.FC<{
   const changeGroupingOptions = useMemo<
     ChangeGroupingOptions<HasPatchworkMetadata>
   >(() => {
-    switch (docType) {
-      case "essay":
-        return { ...essayChangeGroupingOptions, markers };
+    const { includeChangeInHistory }: DataType<HasPatchworkMetadata> =
+      docTypes[docType];
 
-      case "tldraw":
-        return { ...tldrawChangeGroupingOptions, markers };
-
-      default:
-        return {
-          grouping: GROUPINGS.ByNumberOfChanges,
-          numericParameter: 60,
-          changeFilter: () => true,
-          markers,
-        };
-    }
+    return {
+      grouping: ByAuthorOrTime(60),
+      changeFilter: includeChangeInHistory ?? (() => true),
+      markers,
+    };
   }, [docType, markers]);
 
   // The grouping function returns change groups starting from the latest change.
@@ -595,7 +589,7 @@ const useChangelogSelection = function <T>({
 
 const ChangeGroupItem: React.FC<{
   group: GenericChangeGroup;
-  doc: MarkdownDoc;
+  doc: HasPatchworkMetadata;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (

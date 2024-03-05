@@ -22,13 +22,12 @@ import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
 import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
 import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
-import { BotEditor } from "@/bots/BotEditor";
 import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 export type Tool = {
   id: string;
@@ -130,7 +129,9 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create();
-      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
+      newDocHandle.change((doc) =>
+        docTypes[type].init(doc as HasPatchworkMetadata, repo)
+      );
 
       if (!rootFolderDoc) {
         return;
@@ -292,7 +293,6 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
                 <ToolComponent
-                  // @ts-expect-error
                   docType={selectedDocLink.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
@@ -402,7 +402,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] = useDocument(selectedDocUrl);
+  const [selectedDoc] = useDocument<HasPatchworkMetadata>(selectedDocUrl);
 
   const selectDoc = useCallback(
     (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {

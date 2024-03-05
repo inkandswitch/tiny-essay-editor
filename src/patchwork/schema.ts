@@ -3,6 +3,7 @@ import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { TextPatch } from "./utils";
 import * as A from "@automerge/automerge/next";
 import { EditRange } from "@/tee/schema";
+import { DecodedChangeWithMetadata } from "./groupChanges";
 
 export type SpatialBranchable = {
   spatialBranches: SpatialBranch[];

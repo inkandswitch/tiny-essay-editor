@@ -57,7 +57,7 @@ export type ChangeGroup<T> = {
 
 export type GenericChangeGroup = ChangeGroup<unknown>;
 
-interface DecodedChangeWithMetadata extends DecodedChange {
+export interface DecodedChangeWithMetadata extends DecodedChange {
   metadata: ChangeMetadata;
 }
 
@@ -94,52 +94,51 @@ export type ChangelogItem<T> = {
 
 type GroupingAlgorithm<T> = (
   currentGroup: ChangeGroup<T>,
-  newChange: DecodedChangeWithMetadata,
-  numericParameter: number
+  newChange: DecodedChangeWithMetadata
 ) => boolean;
 
-// A grouping algorithm returns a boolean denoting whether the new change should be added to the current group.
-// Some of these algorithms rely on MarkdownDoc-specific stats; need to generalize that further.
-export const GROUPINGS: {
-  [key in string]: GroupingAlgorithm<unknown>;
-} = {
-  ByActorAndNumChanges: (currentGroup, newChange, batchSize) => {
+export const groupingByActorAndNumChanges =
+  (batchSize) => (currentGroup, newChange) => {
     return (
       currentGroup.actorIds[0] === newChange.actor &&
       currentGroup.changes.length < batchSize
     );
-  },
-  ByActor: (currentGroup, newChange) => {
-    return currentGroup.actorIds[0] === newChange.actor;
-  },
-  ByAuthor: (currentGroup, newChange) => {
-    if (!newChange.metadata?.author) {
-      return true;
-    }
-    return currentGroup.authorUrls.includes(
-      newChange.metadata?.author as AutomergeUrl
-    );
-  },
-  ByNumberOfChanges: (currentGroup, newChange, batchSize: number) => {
+  };
+
+export const groupingByActor = <T>(
+  currentGroup: ChangeGroup<T>,
+  newChange: DecodedChangeWithMetadata
+) => {
+  return currentGroup.actorIds[0] === newChange.actor;
+};
+
+export const groupingByAuthor = <T>(
+  currentGroup: ChangeGroup<T>,
+  newChange: DecodedChangeWithMetadata
+) => {
+  if (!newChange.metadata?.author) {
+    return true;
+  }
+  return currentGroup.authorUrls.includes(
+    newChange.metadata?.author as AutomergeUrl
+  );
+};
+
+export const groupingByNumberOfChanges =
+  <T>(batchSize: number) =>
+  (currentGroup: ChangeGroup<T>, newChange: DecodedChangeWithMetadata) => {
     return currentGroup.changes.length < batchSize;
-  },
+  };
 
-  // todo: add back, it's the only grouping algorithm that's not generic
-  /* ByCharCount: (
-    currentGroup: ChangeGroup,
-    newChange: DecodedChangeWithMetadata,
-    batchSize: number
-  ) => {
-    return currentGroup.charsAdded + currentGroup.charsDeleted < batchSize;
-  }, */
+// This always combines everything into one group,
+// so we only end up splitting when there's a manual tag
+export const groupingByTagsOnly = () => true;
 
-  // This always combines everything into one group,
-  // so we only end up splitting when there's a manual tag
-  ByTagsOnly: () => true,
-
-  // "batch size" param here means "max gap allowed, in ms"
-  //
-  ByEditTime: (currentGroup, newChange, maxGapInMinutes) => {
+// "batch size" param here means "max gap allowed, in ms"
+//
+export const groupingByEditTime =
+  <T>(maxGapInMinutes: number) =>
+  (currentGroup: ChangeGroup<T>, newChange: DecodedChangeWithMetadata) => {
     if (
       (newChange.time === undefined || newChange.time === 0) &&
       (currentGroup.time === undefined || currentGroup.time === 0)
@@ -148,9 +147,11 @@ export const GROUPINGS: {
     }
 
     return newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
-  },
+  };
 
-  ByAuthorOrTime: (currentGroup, newChange, maxGapInMinutes) => {
+export const ByAuthorOrTime =
+  <T>(maxGapInMinutes: number) =>
+  (currentGroup: ChangeGroup<T>, newChange: DecodedChangeWithMetadata) => {
     const authorMatch =
       !newChange.metadata?.author ||
       currentGroup.authorUrls.includes(
@@ -163,24 +164,12 @@ export const GROUPINGS: {
       currentGroup.time === 0 ||
       newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
     return authorMatch && timeMatch;
-  },
+  };
 
-  // Other groupings to try:
-  // - time based sessions
-  // - use a manual grouping persisted somewhere?
-  // - nonlinear: group by actor, out of this sorted order of changes
-};
-
-export const GROUPINGS_THAT_TAKE_BATCH_SIZE: Array<keyof typeof GROUPINGS> = [
-  "ByActorAndNumChanges",
-  "ByNumberOfChanges",
-  "ByCharCount",
-];
-
-export const GROUPINGS_THAT_TAKE_GAP_TIME: Array<keyof typeof GROUPINGS> = [
-  "ByEditTime",
-  "ByAuthorOrTime",
-];
+// Other groupings to try:
+// - time based sessions
+// - use a manual grouping persisted somewhere?
+// - nonlinear: group by actor, out of this sorted order of changes
 
 export const getMarkersForDoc = <T extends Branchable & Taggable & Discussable>(
   handle: DocHandle<T>,
@@ -303,26 +292,11 @@ export type ChangeGroupingOptions<T> = {
   /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
   grouping: GroupingAlgorithm<T>;
 
-  /** A numeric parameter used by some grouping algorithms for things like batch size.
-   *  TODO: this should probably be more specifically named per grouping algo?
-   */
-  numericParameter: number;
-
   /** Markers to display at certain heads in the history */
   markers: HeadsMarker<T>[];
 
   /** Conditon to keep only certain changes */
-  changeFilter?: ({
-    doc,
-    decodedChange,
-  }: {
-    doc: T;
-    decodedChange: DecodedChange;
-  }) => boolean;
-
-  changeGroupStats?: (changeGroup: ChangeGroup<T>) => T;
-
-  changeGroupFilter?: (changeGroup: ChangeGroup<T>) => boolean;
+  changeFilter?: (doc: T, decodedChange: DecodedChangeWithMetadata) => boolean;
 };
 
 /** Returns a flat list of changelog items for display in the UI,
@@ -330,26 +304,12 @@ export type ChangeGroupingOptions<T> = {
  */
 export const getChangelogItems = <T extends Branchable>(
   doc: Doc<T>,
-  {
-    grouping,
-    numericParameter,
-    markers,
-    changeFilter,
-    changeGroupStats,
-    changeGroupFilter,
-  }: ChangeGroupingOptions<T> = {
-    grouping: GROUPINGS.ByActorAndNumChanges,
-    numericParameter: 100,
-    markers: [],
-  }
+  { grouping, markers, changeFilter }: ChangeGroupingOptions<T>
 ) => {
   const { changeGroups } = getGroupedChanges(doc, {
     grouping,
-    numericParameter,
     markers,
     changeFilter,
-    changeGroupStats,
-    changeGroupFilter,
   });
 
   const changelogItems: ChangelogItem<T>[] = [];
@@ -395,19 +355,7 @@ export const getChangelogItems = <T extends Branchable>(
  */
 export const getGroupedChanges = <T extends Branchable>(
   doc: Doc<T>,
-  {
-    grouping,
-    numericParameter,
-    markers,
-    changeFilter,
-    changeGroupFilter,
-    changeGroupStats,
-  }: ChangeGroupingOptions<T> = {
-    grouping: GROUPINGS.ByActorAndNumChanges,
-    /** Some algorithms have a numeric parameter like batch size that the user can control */
-    numericParameter: 100,
-    markers: [],
-  }
+  { grouping, markers, changeFilter }: ChangeGroupingOptions<T>
 ) => {
   // TODO: we should sort this list in a stable way across devices.
   const changes = getAllChangesWithMetadata(doc);
@@ -485,7 +433,7 @@ export const getGroupedChanges = <T extends Branchable>(
     const skipChange =
       // See if the datatype wants this change to appear in the log
       changeFilter &&
-      !changeFilter({ doc, decodedChange }) &&
+      !changeFilter(doc, decodedChange) &&
       // If a marker is present for this change, we have to include it so that the marker works.
       !markers.find((marker) => marker.heads.includes(decodedChange.hash));
 
@@ -570,10 +518,7 @@ export const getGroupedChanges = <T extends Branchable>(
     }
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
-    if (
-      currentGroup &&
-      grouping(currentGroup, decodedChange, numericParameter)
-    ) {
+    if (currentGroup && grouping(currentGroup, decodedChange)) {
       currentGroup.changes.push(decodedChange);
       currentGroup.to = decodedChange.hash;
       if (decodedChange.time && decodedChange.time > 0) {
