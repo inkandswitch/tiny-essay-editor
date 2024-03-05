@@ -9,7 +9,6 @@
 // - getAllChanges returns different orders on different devices;
 //   we should define a total order for changes across all devices.
 
-import { MarkdownDoc } from "@/tee/schema";
 import {
   Branch,
   Branchable,
@@ -28,6 +27,7 @@ import {
   getAllChanges,
   view,
   getHeads,
+  Patch,
 } from "@automerge/automerge/next";
 import { diffWithProvenance } from "./utils";
 import {
@@ -37,6 +37,7 @@ import {
 import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual, sortBy } from "lodash";
+import { TextPatch } from "./utils";
 
 /** Change group attributes that could work for any document */
 export type ChangeGroup<T> = {
@@ -297,6 +298,11 @@ export type ChangeGroupingOptions<T> = {
 
   /** Conditon to keep only certain changes */
   changeFilter?: (doc: T, decodedChange: DecodedChangeWithMetadata) => boolean;
+
+  /** Condition to keep only certain patches in the change group
+   * the number of kept patches is assigned as numberOfEdits
+   */
+  patchFilter?: (patch: Patch | TextPatch) => boolean; // todo: can we not leak TextPatch to all datatypes?
 };
 
 /** Returns a flat list of changelog items for display in the UI,
@@ -304,13 +310,9 @@ export type ChangeGroupingOptions<T> = {
  */
 export const getChangelogItems = <T extends Branchable>(
   doc: Doc<T>,
-  { grouping, markers, changeFilter }: ChangeGroupingOptions<T>
+  options: ChangeGroupingOptions<T>
 ) => {
-  const { changeGroups } = getGroupedChanges(doc, {
-    grouping,
-    markers,
-    changeFilter,
-  });
+  const { changeGroups } = getGroupedChanges(doc, options);
 
   const changelogItems: ChangelogItem<T>[] = [];
   for (const changeGroup of changeGroups) {
@@ -355,7 +357,7 @@ export const getChangelogItems = <T extends Branchable>(
  */
 export const getGroupedChanges = <T extends Branchable>(
   doc: Doc<T>,
-  { grouping, markers, changeFilter }: ChangeGroupingOptions<T>
+  { grouping, markers, changeFilter, patchFilter }: ChangeGroupingOptions<T>
 ) => {
   // TODO: we should sort this list in a stable way across devices.
   const changes = getAllChangesWithMetadata(doc);
@@ -372,11 +374,8 @@ export const getGroupedChanges = <T extends Branchable>(
     group.diff = diffWithProvenance(doc, diffHeads, [group.to]);
     group.docAtEndOfChangeGroup = view(doc, [group.to]);
 
-    // todo: fix
-    group.numberOfEdits = group.diff.patches.filter((patch) =>
-      "content" in doc
-        ? patch.path[0] === "content" || patch.path[0] === "commentThreads"
-        : true
+    group.numberOfEdits = group.diff.patches.filter(
+      (patch) => !patchFilter || patchFilter(patch)
     ).length;
 
     if (group.numberOfEdits === 0) {

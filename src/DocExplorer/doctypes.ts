@@ -6,6 +6,7 @@ import { EssayEditingBotDatatype } from "@/bots/datatype";
 import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { TextPatch } from "@/patchwork/utils";
 
 export interface DataType<T> {
   id: string;
@@ -20,7 +21,7 @@ export interface DataType<T> {
     doc: T,
     change: DecodedChangeWithMetadata
   ) => boolean;
-  includePatchInChangeGroup?: (patch: A.Patch) => boolean;
+  includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
 }
 
 export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {

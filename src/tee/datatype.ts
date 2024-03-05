@@ -8,6 +8,7 @@ import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
+import { TextPatch } from "@/patchwork/utils";
 
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
@@ -75,6 +76,9 @@ export const includeChangeInHistory = (
   );
 };
 
+export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>
+  patch.path[0] === "content" || patch.path[0] === "commentThreads";
+
 export const EssayDatatype: DataType<MarkdownDoc> = {
   id: "essay",
   name: "Essay",
@@ -83,5 +87,5 @@ export const EssayDatatype: DataType<MarkdownDoc> = {
   getTitle,
   markCopy,
   includeChangeInHistory,
-  //includePatchInChangeGroup,
+  includePatchInChangeGroup,
 };

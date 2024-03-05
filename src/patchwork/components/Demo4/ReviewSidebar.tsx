@@ -118,13 +118,16 @@ export const ReviewSidebar: React.FC<{
   const changeGroupingOptions = useMemo<
     ChangeGroupingOptions<HasPatchworkMetadata>
   >(() => {
-    const { includeChangeInHistory }: DataType<HasPatchworkMetadata> =
-      docTypes[docType];
+    const {
+      includeChangeInHistory,
+      includePatchInChangeGroup,
+    }: DataType<HasPatchworkMetadata> = docTypes[docType];
 
     return {
       grouping: ByAuthorOrTime(60),
-      changeFilter: includeChangeInHistory ?? (() => true),
       markers,
+      changeFilter: includeChangeInHistory,
+      patchFilter: includePatchInChangeGroup,
     };
   }, [docType, markers]);
 
@@ -621,7 +624,6 @@ const ChangeGroupDescription = ({
 }: //  doc
 {
   changeGroup: GenericChangeGroup;
-  //  doc: MarkdownDoc;
 }) => {
   let summary;
   // if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
