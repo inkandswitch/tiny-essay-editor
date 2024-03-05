@@ -3896,7 +3896,7 @@ humanize-ms@^1.2.1:
   dependencies:
     ms "^2.0.0"
 
-hyperformula@^2.4.0:
+hyperformula@^2.4.0, hyperformula@^2.6.2:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/hyperformula/-/hyperformula-2.6.2.tgz#763c74d7347012b847de3318fbe99383d6187587"
   integrity sha512-PtrYbEi+qyXEc1GSN8bhQqdOeDh6wajWpZajAMhJiJT/XRlXNm7LhSbkvi0cCCBGJHu+8zP3Y5qDmrzbdCh0QA==

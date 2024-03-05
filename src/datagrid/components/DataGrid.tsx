@@ -4,6 +4,7 @@ import { DataGridDoc } from "../schema";
 
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
+import { HyperFormula } from "hyperformula";
 import "handsontable/dist/handsontable.full.min.css";
 import { useEffect, useRef } from "react";
 
@@ -79,6 +80,7 @@ export const DataGrid = ({ docUrl }: { docUrl: AutomergeUrl }) => {
       autoWrapRow={true}
       autoWrapCol={true}
       licenseKey="non-commercial-and-evaluation"
+      formulas={{ engine: HyperFormula }}
     />
   );
 };
