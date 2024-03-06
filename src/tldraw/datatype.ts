@@ -22,9 +22,7 @@ export const init = (doc: TLDrawDoc) => {
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch) => {
-  console.log(patch.path[0] === "store");
-
-  return true;
+  return patch.path[0] === "store";
 };
 
 export const getLLMSummary = (doc: TLDrawDoc) => {
@@ -59,5 +57,5 @@ export const TLDrawDatatype: DataType<TLDrawDoc> = {
   markCopy,
   includePatchInChangeGroup,
   includeChangeInHistory,
-  getLLMSummary,
+  //   getLLMSummary,
 };
