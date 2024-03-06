@@ -44,6 +44,8 @@ export function translateAutomergePatchesToTLStoreUpdates(
   });
   const toPut = Object.values(updatedObjects);
 
+  console.log("put", toPut);
+
   return [toPut, toRemove];
 }
 
