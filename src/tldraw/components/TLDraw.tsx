@@ -153,7 +153,7 @@ function useDiffStyling(
           JSON.stringify(prevDoc.store[id])
         ) as any;
 
-        deletedShape.props.color = "grey";
+        deletedShape.opacity = 0.1;
         deletedShape.isLocked = true;
 
         activeTempShapeIds.add(deletedShape.id);
