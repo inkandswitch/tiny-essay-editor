@@ -1,10 +1,10 @@
 import { TLRecord, RecordId, TLStore } from "@tldraw/tldraw";
 import * as Automerge from "@automerge/automerge/next";
 
-export function applyAutomergePatchesToTLStore(
+export function translateAutomergePatchesToTLStoreUpdates(
   patches: Automerge.Patch[],
   store: TLStore
-) {
+): [TLRecord[], TLRecord["id"][]] {
   const toRemove: TLRecord["id"][] = [];
   const updatedObjects: { [id: string]: TLRecord } = {};
 
@@ -23,7 +23,7 @@ export function applyAutomergePatchesToTLStore(
       case "put":
         updatedObjects[id] = applyPutToObject(patch, record);
         break;
-      //@ts-expect-error
+      //@ts-expect-error not sure why this is missing
       case "update": {
         updatedObjects[id] = applyUpdateToObject(patch, record);
         break;
@@ -44,8 +44,18 @@ export function applyAutomergePatchesToTLStore(
   });
   const toPut = Object.values(updatedObjects);
 
-  // put / remove the records in the store
-  console.log({ patches, toPut });
+  return [toPut, toRemove];
+}
+
+export function applyAutomergePatchesToTLStore(
+  patches: Automerge.Patch[],
+  store: TLStore
+) {
+  const [toPut, toRemove] = translateAutomergePatchesToTLStoreUpdates(
+    patches,
+    store
+  );
+
   store.mergeRemoteChanges(() => {
     if (toRemove.length) store.remove(toRemove);
     if (toPut.length) store.put(toPut);
