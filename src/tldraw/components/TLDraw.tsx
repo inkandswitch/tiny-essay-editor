@@ -6,9 +6,6 @@ import { TLDrawDoc } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
 import {
   StyleProp,
-  T,
-  TLRecord,
-  TLShape,
   TLShapeId,
   TLStoreWithStatus,
   Tldraw,
@@ -99,62 +96,86 @@ function useDiffStyling(
   diff: DiffWithProvenance,
   store: TLStoreWithStatus
 ) {
-  const tempShapesRef = useRef<TLShapeId[]>([]);
-  const highlightedElementsRef = useRef<HTMLElement[]>([]);
+  const tempShapeIdsRef = useRef(new Set<TLShapeId>());
+  const highlightedElementsRef = useRef(new Set<HTMLElement>());
 
   useEffect(() => {
     if (!store.store) {
       return;
     }
 
-    store.store.remove(tempShapesRef.current);
-    highlightedElementsRef.current.forEach((element) => {
-      element.style.filter = "";
-    });
-
-    tempShapesRef.current = [];
-    highlightedElementsRef.current = [];
-
     if (!diff) {
+      store.store.remove(Array.from(tempShapeIdsRef.current));
+      highlightedElementsRef.current.forEach((element) => {
+        element.style.filter = "";
+      });
+
+      tempShapeIdsRef.current = new Set();
+      highlightedElementsRef.current = new Set();
       return;
     }
 
     setTimeout(() => {
       const prevDoc = A.view(doc, diff.fromHeads);
 
-      // TODO: this needs to, like, undo itself... maybe?
+      // track which temp shapes and highlighted elements are active in the current diff
+      const activeHighlightedElements = new Set<HTMLElement>();
+      const activeTempShapeIds = new Set<TLShapeId>();
+
       const [toPut, toRemove] = translateAutomergePatchesToTLStoreUpdates(
         diff.patches as Patch[],
         store.store
       );
+
       toPut.forEach((obj) => {
         const shapeElem = document.getElementById(obj.id);
         if (!shapeElem) {
           console.log("no shapeElem", obj.id);
           return;
         }
-        highlightedElementsRef.current.push(shapeElem);
+
+        activeHighlightedElements.add(shapeElem);
+        if (highlightedElementsRef.current.has(shapeElem)) {
+          return;
+        }
+
+        highlightedElementsRef.current.add(shapeElem);
         shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
       });
+
       toRemove.forEach((id) => {
+        activeTempShapeIds.add(id as TLShapeId);
+        if (tempShapeIdsRef.current.has(id as TLShapeId)) {
+          return;
+        }
+
         const deletedShape = JSON.parse(
           JSON.stringify(prevDoc.store[id])
         ) as any;
 
         deletedShape.props.color = "grey";
         deletedShape.isLocked = true;
-        tempShapesRef.current.push(deletedShape.id);
 
+        activeTempShapeIds.add(deletedShape.id);
+        tempShapeIdsRef.current.add(deletedShape.id);
         store.store.put([deletedShape]);
-
-        //        console.log("remove", prevDoc.store[id], prevDoc);
-        /*        const shapeElem = document.getElementById(id);
-        if (!shapeElem) {
-          console.log("no shapeElem", id);
-          return;
-        }
-        shapeElem.style.filter = "drop-shadow(0 0 0.75rem red)"; */
       });
+
+      // delete shapes that are not part of the current diff
+      store.store.remove(
+        Array.from(tempShapeIdsRef.current).filter(
+          (id) => !activeTempShapeIds.has(id)
+        )
+      );
+      tempShapeIdsRef.current = activeTempShapeIds;
+
+      // remove highlights that are not part of the current diff
+      Array.from(highlightedElementsRef.current)
+        .filter((element) => !activeHighlightedElements.has(element))
+        .forEach((element) => {
+          element.style.filter = "";
+        });
+      highlightedElementsRef.current = activeHighlightedElements;
     }, 100);
   }, [diff, store, doc]);
 }
