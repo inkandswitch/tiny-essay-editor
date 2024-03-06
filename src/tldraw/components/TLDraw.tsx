@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 
 import { TLDrawDoc } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import { StyleProp, T, Tldraw } from "@tldraw/tldraw";
+import { StyleProp, T, TLStoreWithStatus, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { next as A, Patch } from "@automerge/automerge";
@@ -15,7 +15,6 @@ const changeStyle = StyleProp.defineEnum("example:rating", {
   defaultValue: "unchanged",
   values: ["unchanged", "added", "removed", "changed"],
 });
-type ChangeStyle = T.TypeOf<typeof changeStyle>;
 
 export const TLDraw = ({
   docUrl,
@@ -37,9 +36,66 @@ export const TLDraw = ({
     [doc, heads]
   );
 
+  return (
+    <div className="tldraw__editor h-full overflow-auto">
+      {heads ? (
+        docAtHeads ? (
+          <ReadOnlyTLDraw
+            key={JSON.stringify(heads)}
+            userId={userId}
+            doc={docAtHeads}
+            diff={diff}
+            handle={handle}
+          />
+        ) : null
+      ) : (
+        <EditableTLDraw
+          userId={userId}
+          doc={docAtHeads}
+          diff={diff}
+          handle={handle}
+        />
+      )}
+    </div>
+  );
+};
+
+interface TlDrawProps {
+  doc: TLDrawDoc;
+  handle: DocHandle<TLDrawDoc>;
+  userId: string;
+  diff?: DiffWithProvenance;
+}
+
+const EditableTLDraw = ({ doc, handle, userId, diff }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
 
-  if (diff && store.store) {
+  useDiffStyling(diff, store);
+
+  return <Tldraw autoFocus store={store} />;
+};
+
+const ReadOnlyTLDraw = ({ doc, handle, userId, diff }: TlDrawProps) => {
+  const store = useAutomergeStore({ handle, doc, userId });
+
+  useDiffStyling(diff, store);
+
+  return (
+    <Tldraw
+      store={store}
+      autoFocus
+      onMount={(editor) => {
+        editor.updateInstanceState({ isReadonly: true });
+      }}
+    />
+  );
+};
+
+function useDiffStyling(diff: DiffWithProvenance, store: TLStoreWithStatus) {
+  useEffect(() => {
+    if (!diff || !store.store) {
+      return;
+    }
     setTimeout(() => {
       console.log("diff", diff);
       // TODO: this needs to, like, undo itself... maybe?
@@ -65,44 +121,5 @@ export const TLDraw = ({
       });
       console.log("toRemove", toRemove);
     }, 100);
-  }
-
-  return (
-    <div className="tldraw__editor h-full overflow-auto">
-      {heads ? (
-        docAtHeads ? (
-          <ReadOnlyTLDraw
-            key={JSON.stringify(heads)}
-            userId={userId}
-            doc={docAtHeads}
-            handle={handle}
-          />
-        ) : null
-      ) : (
-        <Tldraw autoFocus store={store} />
-      )}
-    </div>
-  );
-};
-
-const ReadOnlyTLDraw = ({
-  doc,
-  handle,
-  userId,
-}: {
-  doc: TLDrawDoc;
-  handle: DocHandle<TLDrawDoc>;
-  userId: string;
-}) => {
-  const store = useAutomergeStore({ handle, doc, userId });
-
-  return (
-    <Tldraw
-      store={store}
-      autoFocus
-      onMount={(editor) => {
-        editor.updateInstanceState({ isReadonly: true });
-      }}
-    />
-  );
-};
+  }, [diff, store]);
+}
