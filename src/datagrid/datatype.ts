@@ -2,6 +2,7 @@ import { Sheet } from "lucide-react";
 import { DataGridDoc } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { next as A } from "@automerge/automerge";
+import { DataType } from "@/DocExplorer/doctypes";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -39,7 +40,7 @@ export const includeChangeInHistory = (
 export const includePatchInChangeGroup = (patch: A.Patch) =>
   patch.path[0] === "data" || patch.path[0] === "commentThreads";
 
-export const DataGridDatatype = {
+export const DataGridDatatype: DataType<DataGridDoc> = {
   id: "datagrid",
   name: "DataGrid",
   icon: Sheet,
