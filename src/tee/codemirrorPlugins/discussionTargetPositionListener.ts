@@ -10,31 +10,6 @@ export interface DiscussionTargetPosition {
   discussion: Discussion;
 }
 
-export interface OverlayContainer {
-  width: number;
-  height: number;
-  top: number;
-  left: number;
-}
-
-export const setOverlayContainerEffect = StateEffect.define<OverlayContainer>();
-export const overlayContainerField = StateField.define<OverlayContainer | null>(
-  {
-    create() {
-      return null;
-    },
-    update(rect, tr) {
-      for (const e of tr.effects) {
-        if (e.is(setOverlayContainerEffect)) {
-          return e.value;
-        }
-      }
-
-      return rect;
-    },
-  }
-);
-
 interface DiscussionTargetPositionListenerConfig {
   onUpdate: (discussionTargetPositions: DiscussionTargetPosition[]) => void;
   estimatedLineHeight: number;
@@ -55,10 +30,7 @@ export const discussionTargetPositionListener = ({
           update.docChanged ||
           update.viewportChanged ||
           update.transactions.some((tr) =>
-            tr.effects.some(
-              (e) =>
-                e.is(setAnnotationsEffect) || e.is(setOverlayContainerEffect)
-            )
+            tr.effects.some((e) => e.is(setAnnotationsEffect))
           )
         ) {
           this.updatePositions(update.view);
@@ -66,12 +38,7 @@ export const discussionTargetPositionListener = ({
       }
 
       updatePositions(view: EditorView) {
-        const overlayContainer = view.state.field(overlayContainerField);
         const annotations = view.state.field(annotationsField);
-
-        if (!overlayContainer) {
-          return;
-        }
 
         // todo: there is probably a better way to do this
         // the problem here is that during update we can't read the positions
@@ -98,8 +65,8 @@ export const discussionTargetPositionListener = ({
                 return [
                   {
                     discussion,
-                    x: fromCoords.left - overlayContainer.left,
-                    y: fromCoords.bottom - overlayContainer.top * 2,
+                    x: fromCoords.left,
+                    y: fromCoords.bottom,
                   },
                 ];
               }
@@ -110,10 +77,8 @@ export const discussionTargetPositionListener = ({
               return [
                 {
                   discussion,
-                  x: overlayContainer.left,
-                  y:
-                    lineNumber * estimatedLineHeight -
-                    overlayContainer.scrollOffset,
+                  x: 0,
+                  y: lineNumber * estimatedLineHeight,
                 },
               ];
             }

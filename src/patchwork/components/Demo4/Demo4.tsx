@@ -70,7 +70,11 @@ import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { EditorProps, TextSelection } from "@/tee/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SpatialCommentsList } from "./SpatialCommentsList";
+import {
+  PositionMap,
+  SpatialCommentsLinesLayer,
+  SpatialCommentsList,
+} from "./SpatialComments";
 import {
   DiscussionTargetPosition,
   OverlayContainer,
@@ -82,8 +86,6 @@ import { BotEditor } from "@/bots/BotEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-
-const COMMENT_ANCHOR_OFFSET = 20;
 
 interface MakeBranchOptions {
   name?: string;
@@ -108,7 +110,6 @@ export const Demo4: React.FC<{
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
-
   // Reset compare view settings every time you switch branches
   useEffect(() => {
     if (selectedBranch.type === "main") {
@@ -301,18 +302,13 @@ export const Demo4: React.FC<{
         : currentEditSessionDiff?.fromHeads
       : undefined);
 
-  const [editorContainerElement, setEditorContainerElement] =
-    useState<HTMLDivElement>(null);
-  const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
-  const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
   >([]);
+  const [commentsPositionMap, setCommentPositionMap] = useState<PositionMap>();
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
   const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
-  const [commentsScrollOffset, setCommentsScrollOffset] = useState(0);
-
   const activeDiscussionIds = useMemo(() => {
     const ids = [];
 
@@ -327,57 +323,7 @@ export const Demo4: React.FC<{
     return ids;
   }, [selectedDiscussionId, hoveredDiscussionId]);
 
-  const overlayContainer = useMemo<OverlayContainer>(() => {
-    if (!bezierCurveLayerRect || reviewMode !== "comments") {
-      return;
-    }
-
-    return {
-      width: bezierCurveLayerRect.width,
-      height: bezierCurveLayerRect.height,
-      top: bezierCurveLayerRect.top,
-      left: bezierCurveLayerRect.left,
-    };
-  }, [bezierCurveLayerRect, reviewMode]);
-
-  const [commentPositionMap, setCommentPositionMap] = useState({});
-  const [bezierCurveLayerElement, setBezierCurveLayerElement] =
-    useState<HTMLDivElement>();
-
-  // handle resize of bezierCureveLayerElement
-  useEffect(() => {
-    if (!bezierCurveLayerElement || !editorContainerElement) {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
-      setEditorContainerRect(editorContainerElement.getBoundingClientRect());
-    });
-
-    setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
-
-    observer.observe(bezierCurveLayerElement);
-    observer.observe(editorContainerElement);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [bezierCurveLayerElement, editorContainerElement]);
-
   const activeDoc = branchDoc ?? doc;
-
-  const activeDiscussionTargetPositions = useMemo<
-    DiscussionTargetPosition[]
-  >(() => {
-    return sortBy(discussionTargetPositions, (target) =>
-      A.getCursorPosition(
-        activeDoc,
-        ["content"],
-        (target.discussion.target as EditRangeTarget).value.fromCursor
-      )
-    );
-  }, [doc?.content, discussionTargetPositions, bezierCurveLayerRect]);
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
@@ -413,11 +359,13 @@ export const Demo4: React.FC<{
     );
   }, [activeDoc?.content, activeDoc?.discussions]);
 
-  const branchDocHandle = useHandle<MarkdownDoc>(
-    selectedBranch && selectedBranch.type === "branch"
-      ? selectedBranch?.url
-      : undefined
-  );
+  // todo: make this generic
+
+  const topDiscussion = undefined; /* overlayContainer
+  ? activeDiscussionTargetPositions.find(
+      ({ y }) => y + overlayContainer.top > 0
+    )
+  : undefined; */
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
@@ -640,55 +588,11 @@ export const Demo4: React.FC<{
           )}
           <div className="flex-1 min-h-0 relative">
             {reviewMode === "comments" && isHistorySidebarOpen && (
-              <div
-                ref={setBezierCurveLayerElement}
-                className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
-                  true ? "pointer-events-none" : ""
-                }`}
-              >
-                {bezierCurveLayerRect && (
-                  <svg
-                    width={bezierCurveLayerRect.width}
-                    height={bezierCurveLayerRect.height}
-                  >
-                    {sortBy(activeDiscussionTargetPositions, (pos) =>
-                      activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0
-                    ).map((position) => {
-                      const commentPosition =
-                        commentPositionMap[position.discussion.id];
-
-                      if (!commentPosition) {
-                        return;
-                      }
-
-                      return (
-                        <BezierCurve
-                          color={
-                            activeDiscussionIds.includes(position.discussion.id)
-                              ? "#facc15"
-                              : "#d1d5db"
-                          }
-                          key={position.discussion.id}
-                          x1={bezierCurveLayerRect.width}
-                          y1={
-                            commentPositionMap[position.discussion.id].top -
-                            commentsScrollOffset +
-                            COMMENT_ANCHOR_OFFSET
-                          }
-                          x2={
-                            editorContainerRect.right -
-                            bezierCurveLayerRect.left +
-                            30
-                          }
-                          y2={position.y + bezierCurveLayerRect.top}
-                          x3={position.x}
-                          y3={position.y + bezierCurveLayerRect.top}
-                        />
-                      );
-                    })}
-                  </svg>
-                )}
-              </div>
+              <SpatialCommentsLinesLayer
+                activeDiscussionIds={activeDiscussionIds}
+                discussionTargetPositions={discussionTargetPositions}
+                commentsPositionMap={commentsPositionMap}
+              />
             )}
             <div className="flex h-full">
               {/*selectedBranch.type === "branch" && compareWithMainFlag && (
@@ -715,8 +619,6 @@ export const Demo4: React.FC<{
                 onUpdateDiscussionTargetPositions={
                   onUpdateDiscussionTargetPositions
                 }
-                overlayContainer={overlayContainer}
-                setEditorContainerElement={setEditorContainerElement}
                 hoveredDiscussionId={hoveredDiscussionId}
                 selectedDiscussionId={selectedDiscussionId}
                 setHoveredDiscussionId={setHoveredDiscussionId}
@@ -763,14 +665,10 @@ export const Demo4: React.FC<{
             )}
             {reviewMode === "comments" && (
               <SpatialCommentsList
-                changeDoc={changeDoc}
+                topDiscussion={topDiscussion}
                 discussions={discussions}
-                activeDiscussionTargetPositions={
-                  activeDiscussionTargetPositions
-                }
-                onChangeScrollOffset={setCommentsScrollOffset}
+                changeDoc={changeDoc}
                 onChangeCommentPositionMap={setCommentPositionMap}
-                overlayContainer={overlayContainer}
                 setSelectedDiscussionId={setSelectedDiscussionId}
                 selectedDiscussionId={selectedDiscussionId}
                 setHoveredDiscussionId={setHoveredDiscussionId}
@@ -956,57 +854,5 @@ const BranchActions: React.FC<{
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-};
-
-interface BezierCurveProps {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  x3: number;
-  y3: number;
-  x4?: number;
-  y4?: number;
-  color: string;
-}
-
-const BezierCurve: React.FC<BezierCurveProps> = ({
-  x1,
-  y1,
-  x2,
-  y2,
-  x3,
-  y3,
-  x4,
-  y4,
-  color,
-}) => {
-  // Control points for the Bezier curve from point 1 to point 2
-  const controlPoint1 = { x: x1 + (x2 - x1) / 3, y: y1 };
-  const controlPoint2 = { x: x2 - (x2 - x1) / 3, y: y2 };
-
-  // Path data for the Bezier curve from point 1 to point 2
-  const pathDataBezier1 = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
-
-  // Path data for the straight line from point 2 to point 3
-  const pathDataLine = `M ${x2} ${y2} L ${x3} ${y3}`;
-
-  let pathDataBezier2 = "";
-
-  if (x4 !== undefined && y4 !== undefined) {
-    // Control points for the Bezier curve from point 3 to point 4 that bends outwards
-    const controlPoint3 = { x: x4, y: y3 };
-    const controlPoint4 = { x: x4, y: y3 };
-
-    // Path data for the Bezier curve from point 3 to point 4
-    pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
-  }
-
-  // Combine all path datas
-  const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
-
-  return (
-    <path d={combinedPathData} stroke={color} fill="none" strokeWidth="1" />
   );
 };

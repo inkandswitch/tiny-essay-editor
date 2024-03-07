@@ -7,10 +7,7 @@ import React, {
   useReducer,
 } from "react";
 import { Discussion, DiscussionComment } from "@/patchwork/schema";
-import {
-  DiscussionTargetPosition,
-  OverlayContainer,
-} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
@@ -28,12 +25,10 @@ import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
 
 interface SpatialCommentsListProps {
+  topDiscussion: Discussion;
   discussions: Discussion[];
-  activeDiscussionTargetPositions: DiscussionTargetPosition[];
-  overlayContainer: OverlayContainer;
   changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
-  onChangeScrollOffset: (offset: number) => void;
   setSelectedDiscussionId: (id: string) => void;
   setHoveredDiscussionId: (id: string) => void;
   selectedDiscussionId: string;
@@ -42,21 +37,24 @@ interface SpatialCommentsListProps {
 
 export const SpatialCommentsList = React.memo(
   ({
+    topDiscussion,
     discussions,
-    activeDiscussionTargetPositions,
-    overlayContainer,
     changeDoc,
     onChangeCommentPositionMap,
-    onChangeScrollOffset,
     setSelectedDiscussionId,
     selectedDiscussionId,
     setHoveredDiscussionId,
     hoveredDiscussionId,
   }: SpatialCommentsListProps) => {
-    const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
     const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
       useState<string>();
+    const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
+    const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
+    const scrollContainerRect = useMemo(
+      () => scrollContainer?.getBoundingClientRect(),
+      [scrollContainer]
+    );
 
     const replyToDiscussion = (discussion: Discussion, content: string) => {
       setActiveReplyDiscussionId(null);
@@ -91,14 +89,10 @@ export const SpatialCommentsList = React.memo(
       useDiscussionsPositionMap({
         discussions,
         onChangeCommentPositionMap,
-        topOffset: 8,
+        offset: scrollContainerRect
+          ? scrollContainerRect.top - scrollOffset
+          : 0,
       });
-
-    const topDiscussion = overlayContainer
-      ? activeDiscussionTargetPositions.find(
-          ({ y }) => y + overlayContainer.top > 0
-        )
-      : undefined;
 
     const setScrollTarget = useSetScrollTarget(
       discussionsPositionMap,
@@ -128,19 +122,18 @@ export const SpatialCommentsList = React.memo(
         return;
       }
 
-      setScrollTarget(topDiscussion.discussion.id);
-    }, [JSON.stringify(topDiscussion), selectedDiscussionId, scrollContainer]);
+      setScrollTarget(topDiscussion.id);
+    }, [topDiscussion?.id, selectedDiscussionId, scrollContainer]);
 
     return (
       <div
+        ref={setScrollContainer}
         onScroll={(evt) =>
-          onChangeScrollOffset((evt.target as HTMLDivElement).scrollTop)
+          setScrollOffset((evt.target as HTMLDivElement).scrollTop)
         }
         className="bg-gray-50 flex- h-full p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
-        ref={setScrollContainer}
       >
         {discussions &&
-          overlayContainer &&
           discussions.map((discussion, index) => (
             <DiscussionView
               key={discussion.id}
@@ -410,7 +403,7 @@ const DiscusssionCommentView = ({
   );
 };
 
-type PositionMap = Record<string, { top: number; bottom: number }>;
+export type PositionMap = Record<string, { top: number; bottom: number }>;
 
 interface UseDiscussionsPositionMapResult {
   registerDiscussionElement: (
@@ -423,13 +416,13 @@ interface UseDiscussionsPositionMapResult {
 interface UseDiscussionPositionOptions {
   discussions: Discussion[];
   onChangeCommentPositionMap?: (map: PositionMap) => void;
-  topOffset?: number;
+  offset: number;
 }
 
 const useDiscussionsPositionMap = ({
   discussions,
   onChangeCommentPositionMap,
-  topOffset = 0,
+  offset,
 }: UseDiscussionPositionOptions): UseDiscussionsPositionMapResult => {
   const elementByDiscussionId = useRef(new Map<HTMLDivElement, string>());
   const discussionIdByElement = useRef(new Map<HTMLDivElement, string>());
@@ -477,7 +470,7 @@ const useDiscussionsPositionMap = ({
   };
 
   const discussionsPositionMap = useMemo(() => {
-    let currentPos = topOffset;
+    let currentPos = offset;
     const positionMap = {};
 
     for (const discussion of discussions) {
@@ -492,7 +485,7 @@ const useDiscussionsPositionMap = ({
       onChangeCommentPositionMap(positionMap);
     }
     return positionMap;
-  }, [discussions, forceChangeDependency, topOffset]);
+  }, [discussions, forceChangeDependency, offset]);
 
   return { registerDiscussionElement, discussionsPositionMap };
 };
@@ -552,4 +545,139 @@ export const useSetScrollTarget = (
       triggerScrollPositionUpdate();
     }
   };
+};
+
+const COMMENT_ANCHOR_OFFSET = 30;
+
+export const SpatialCommentsLinesLayer = ({
+  commentsPositionMap,
+  discussionTargetPositions,
+  activeDiscussionIds,
+}: {
+  commentsPositionMap: PositionMap;
+  discussionTargetPositions: DiscussionTargetPosition[];
+  activeDiscussionIds: string[];
+}) => {
+  const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
+  const [bezierCurveLayerElement, setBezierCurveLayerElement] =
+    useState<HTMLDivElement>();
+
+  // handle resize of bezierCureveLayerElement
+  useEffect(() => {
+    if (!bezierCurveLayerElement) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
+    });
+
+    setBezierCurveLayerRect(bezierCurveLayerElement.getBoundingClientRect());
+
+    observer.observe(bezierCurveLayerElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [bezierCurveLayerElement]);
+
+  return (
+    <div
+      ref={setBezierCurveLayerElement}
+      className="absolute z-50 top-0 right-0 bottom-0 left-0 pointer-events-none"
+    >
+      {bezierCurveLayerRect && (
+        <svg
+          width={bezierCurveLayerRect.width}
+          height={bezierCurveLayerRect.height}
+        >
+          {sortBy(discussionTargetPositions, (pos) =>
+            activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0
+          ).map((position) => {
+            const commentPosition = commentsPositionMap[position.discussion.id];
+
+            if (!commentPosition) {
+              return;
+            }
+
+            return (
+              <BezierCurve
+                color={
+                  activeDiscussionIds.includes(position.discussion.id)
+                    ? "#facc15"
+                    : "#d1d5db"
+                }
+                key={position.discussion.id}
+                x1={bezierCurveLayerRect.width}
+                y1={
+                  commentsPositionMap[position.discussion.id].top +
+                  COMMENT_ANCHOR_OFFSET -
+                  bezierCurveLayerRect.top
+                }
+                // todo: draw the line to the border of the editor
+                // x2={editorContainerRect.right - bezierCurveLayerRect.left + 30}
+                // y2={position.y + bezierCurveLayerRect.top}
+                x2={position.x}
+                y2={position.y - bezierCurveLayerRect.top}
+                x3={position.x}
+                y3={position.y - bezierCurveLayerRect.top}
+              />
+            );
+          })}
+        </svg>
+      )}
+    </div>
+  );
+};
+
+interface BezierCurveProps {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  x3: number;
+  y3: number;
+  x4?: number;
+  y4?: number;
+  color: string;
+}
+
+const BezierCurve: React.FC<BezierCurveProps> = ({
+  x1,
+  y1,
+  x2,
+  y2,
+  x3,
+  y3,
+  x4,
+  y4,
+  color,
+}) => {
+  // Control points for the Bezier curve from point 1 to point 2
+  const controlPoint1 = { x: x1 + (x2 - x1) / 3, y: y1 };
+  const controlPoint2 = { x: x2 - (x2 - x1) / 3, y: y2 };
+
+  // Path data for the Bezier curve from point 1 to point 2
+  const pathDataBezier1 = `M ${x1} ${y1} C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${x2} ${y2}`;
+
+  // Path data for the straight line from point 2 to point 3
+  const pathDataLine = `M ${x2} ${y2} L ${x3} ${y3}`;
+
+  let pathDataBezier2 = "";
+
+  if (x4 !== undefined && y4 !== undefined) {
+    // Control points for the Bezier curve from point 3 to point 4 that bends outwards
+    const controlPoint3 = { x: x4, y: y3 };
+    const controlPoint4 = { x: x4, y: y3 };
+
+    // Path data for the Bezier curve from point 3 to point 4
+    pathDataBezier2 = `M ${x3} ${y3} C ${controlPoint3.x} ${controlPoint3.y}, ${controlPoint4.x} ${controlPoint4.y}, ${x4} ${y4}`;
+  }
+
+  // Combine all path datas
+  const combinedPathData = `${pathDataBezier1} ${pathDataLine} ${pathDataBezier2}`;
+
+  return (
+    <path d={combinedPathData} stroke={color} fill="none" strokeWidth="1" />
+  );
 };

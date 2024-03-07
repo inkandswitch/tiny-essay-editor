@@ -61,9 +61,6 @@ import { TextPatch } from "@/patchwork/utils";
 import {
   discussionTargetPositionListener,
   DiscussionTargetPosition,
-  overlayContainerField,
-  OverlayContainer,
-  setOverlayContainerEffect,
 } from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export type TextSelection = {
@@ -102,7 +99,6 @@ export function MarkdownEditor({
   path,
   setSelection,
   setView,
-  setActiveThreadIds,
   threadsWithPositions: annotationsWithPositions,
   readOnly,
   docHeads,
@@ -112,7 +108,6 @@ export function MarkdownEditor({
   onOpenSnippet,
   foldRanges,
   discussionAnnotations,
-  overlayContainer,
   setEditorContainerElement,
   isCommentBoxOpen,
   onUpdateDiscussionTargetPositions,
@@ -129,13 +124,6 @@ export function MarkdownEditor({
       effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
   }, [debugHighlights, editorRoot.current]);
-
-  // Propagate overlayContainer into codemirror
-  useEffect(() => {
-    editorRoot.current?.dispatch({
-      effects: setOverlayContainerEffect.of(overlayContainer),
-    });
-  }, [overlayContainer]);
 
   // propagate fold ranges into codemirror
   useEffect(() => {
@@ -270,7 +258,6 @@ export function MarkdownEditor({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
-        overlayContainerField,
         codeFolding({
           placeholderDOM: () => {
             // TODO use a nicer API for creating these elements?
