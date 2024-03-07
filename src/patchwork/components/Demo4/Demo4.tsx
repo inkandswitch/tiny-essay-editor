@@ -73,12 +73,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PositionMap,
   SpatialCommentsLinesLayer,
-  SpatialCommentsList,
+  SpatialCommentsSidebar,
 } from "./SpatialComments";
-import {
-  DiscussionTargetPosition,
-  OverlayContainer,
-} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
 import { DiffStyle } from "@/tee/components/MarkdownEditor";
 import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
@@ -308,6 +305,7 @@ export const Demo4: React.FC<{
   >([]);
   const [commentsPositionMap, setCommentPositionMap] = useState<PositionMap>();
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
+
   const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
   const activeDiscussionIds = useMemo(() => {
     const ids = [];
@@ -664,7 +662,7 @@ export const Demo4: React.FC<{
               />
             )}
             {reviewMode === "comments" && (
-              <SpatialCommentsList
+              <SpatialCommentsSidebar
                 topDiscussion={topDiscussion}
                 discussions={discussions}
                 changeDoc={changeDoc}
@@ -689,8 +687,6 @@ const DocEditor = ({
   docHeads,
   diff,
   actorIdToAuthor,
-  overlayContainer,
-  setEditorContainerElement,
   discussions,
   onUpdateDiscussionTargetPositions,
   hoveredDiscussionId,
@@ -709,9 +705,7 @@ const DocEditor = ({
           diff={diff}
           actorIdToAuthor={actorIdToAuthor}
           onUpdateDiscussionTargetPositions={onUpdateDiscussionTargetPositions}
-          overlayContainer={overlayContainer}
           discussions={discussions}
-          setEditorContainerElement={setEditorContainerElement}
           hoveredDiscussionId={hoveredDiscussionId}
           selectedDiscussionId={selectedDiscussionId}
           setHoveredDiscussionId={setHoveredDiscussionId}

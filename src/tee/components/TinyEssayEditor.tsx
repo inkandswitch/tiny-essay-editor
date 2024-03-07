@@ -32,8 +32,6 @@ export const TinyEssayEditor = ({
   docHeads,
   diff,
   actorIdToAuthor,
-  overlayContainer,
-  setEditorContainerElement,
   discussions,
   selectedDiscussionId,
   hoveredDiscussionId,
@@ -242,9 +240,11 @@ export const TinyEssayEditor = ({
 
         return from <= selection.from && selection.from <= to;
       });
-    }
 
-    setSelectedDiscussionId(focusedDiscussion?.id);
+      if (focusedDiscussion) {
+        setSelectedDiscussionId(focusedDiscussion.id);
+      }
+    }
   }, [selection]);
 
   // update scroll position
@@ -313,8 +313,6 @@ export const TinyEssayEditor = ({
               docHeads={docHeads}
               diff={patchesForEditor}
               discussionAnnotations={discussionAnnotations}
-              overlayContainer={overlayContainer}
-              setEditorContainerElement={setEditorContainerElement}
               onUpdateDiscussionTargetPositions={(targetPositions) => {
                 setActiveDiscussionTargetPositions(targetPositions);
                 onUpdateDiscussionTargetPositions(targetPositions);

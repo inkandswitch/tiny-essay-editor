@@ -35,7 +35,7 @@ interface SpatialCommentsListProps {
   hoveredDiscussionId: string;
 }
 
-export const SpatialCommentsList = React.memo(
+export const SpatialCommentsSidebar = React.memo(
   ({
     topDiscussion,
     discussions,
@@ -149,9 +149,9 @@ export const SpatialCommentsList = React.memo(
                 setHoveredDiscussionId(isHovered ? discussion.id : undefined)
               }
               isSelected={selectedDiscussionId === discussion.id}
-              setIsSelected={(isSelected) =>
-                setSelectedDiscussionId(isSelected ? discussion.id : undefined)
-              }
+              setIsSelected={(isSelected) => {
+                setSelectedDiscussionId(isSelected ? discussion.id : undefined);
+              }}
               ref={(element) =>
                 registerDiscussionElement(discussion.id, element)
               }

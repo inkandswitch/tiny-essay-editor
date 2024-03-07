@@ -9,10 +9,7 @@ import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { DiffWithProvenance } from "@/patchwork/schema";
-import {
-  OverlayContainer,
-  DiscussionTargetPosition,
-} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { Discussion } from "@/patchwork/schema";
 export interface DataType<T> {
   id: string;
@@ -52,8 +49,6 @@ export interface DocEditorProps<T> {
   // spatial comments interface
   // todo: simplify, avoid passing size information up and down
   discussions: Discussion[]; // todo: should be a list of anchors
-  overlayContainer?: OverlayContainer;
-  setEditorContainerElement?: (container: HTMLDivElement) => void;
   selectedDiscussionId: string;
   hoveredDiscussionId: string;
   setHoveredDiscussionId: (id: string) => void;
