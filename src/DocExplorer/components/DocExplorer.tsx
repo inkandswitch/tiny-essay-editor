@@ -17,21 +17,17 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { HistoryPlayground } from "@/patchwork/components/HistoryPlayground";
 import { DraftsPlayground } from "@/patchwork/components/Drafts";
-import { SpatialHistoryPlayground } from "@/patchwork/components/Spatial";
 import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
 import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
-import { Demo3 } from "@/patchwork/components/Demo3/Demo3";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
 import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
-import { BotEditor } from "@/bots/BotEditor";
 import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 export type Tool = {
   id: string;
@@ -47,11 +43,6 @@ const TOOLS = {
       component: Demo4,
     },
     {
-      id: "demo3",
-      name: "Demo 3",
-      component: Demo3,
-    },
-    {
       id: "editGroups",
       name: "Edit Groups",
       component: EditGroupsPlayground,
@@ -60,16 +51,6 @@ const TOOLS = {
       id: "tee",
       name: "Editor",
       component: TinyEssayEditor,
-    },
-    {
-      id: "history",
-      name: "🛠️ History",
-      component: HistoryPlayground,
-    },
-    {
-      id: "spatial",
-      name: "🛠️ Spatial",
-      component: SpatialHistoryPlayground,
     },
     {
       id: "drafts",
@@ -89,12 +70,19 @@ const TOOLS = {
   ],
   tldraw: [
     {
-      id: "tldraw",
-      name: "Drawing",
-      component: TLDraw,
+      id: "demo4",
+      name: "Demo 4",
+      component: Demo4,
     },
   ],
-  bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
+  datagrid: [
+    {
+      id: "demo4",
+      name: "Demo 4",
+      component: Demo4,
+    },
+  ],
+  bot: [{ id: "demo4", name: "Demo 4", component: Demo4 }],
 };
 
 export const DocExplorer: React.FC = () => {
@@ -141,7 +129,9 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create();
-      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
+      newDocHandle.change((doc) =>
+        docTypes[type].init(doc as HasPatchworkMetadata, repo)
+      );
 
       if (!rootFolderDoc) {
         return;
@@ -303,9 +293,9 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
                 <ToolComponent
+                  docType={selectedDocLink.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
-                  // @ts-expect-error not all tools understand branching yet... but they probably will eventually..?
                   selectedBranch={selectedBranch}
                   setSelectedBranch={selectBranch}
                 />
@@ -412,7 +402,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] = useDocument(selectedDocUrl);
+  const [selectedDoc] = useDocument<HasPatchworkMetadata>(selectedDocUrl);
 
   const selectDoc = useCallback(
     (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {

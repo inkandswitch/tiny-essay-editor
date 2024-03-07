@@ -255,3 +255,8 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Hack: hide tldraw page menu */
+.tlui-menu-zone__controls {
+  display: none !important;
+}

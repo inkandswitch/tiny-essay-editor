@@ -14,7 +14,7 @@ import {
   slashCommands,
 } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { Branchable, DiscussionComment } from "@/patchwork/schema";
+import { Branchable, DiscussionComment, Taggable } from "@/patchwork/schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,7 @@ import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { ChangelogSelection } from "./ReviewSidebar";
 import { ChangelogItem } from "@/patchwork/groupChanges";
 import { toast } from "sonner";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 type CommentBoxAction =
   | { type: "comment"; value: string }
@@ -52,29 +53,24 @@ const parseCommentBoxContent = (content: string): CommentBoxAction => {
   }
 };
 
-type DiscussionInputProps = {
-  doc: MarkdownDoc;
-  changeDoc: (fn: (doc: MarkdownDoc) => void) => void;
-  handle: DocHandle<MarkdownDoc>;
-  textSelection: TextSelection;
-  onClearTextSelection: () => void;
+type DiscussionInputProps<T> = {
+  doc: T;
+  changeDoc: (fn: (doc: T) => void) => void;
+  handle: DocHandle<T>;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-  changelogItems: ChangelogItem[];
+  changelogItems: ChangelogItem<T>[];
   changelogSelection: ChangelogSelection;
 };
-
-export const DiscussionInput: React.FC<DiscussionInputProps> = ({
+export const DiscussionInput = function <T extends HasPatchworkMetadata>({
   doc,
   changeDoc,
   handle,
-  textSelection,
-  onClearTextSelection,
   selectedBranch,
   setSelectedBranch,
   changelogItems,
   changelogSelection,
-}) => {
+}: DiscussionInputProps<T>) {
   const repo = useRepo();
   const account = useCurrentAccount();
   const [commentBoxContent, setCommentBoxContent] = useState("");
@@ -140,7 +136,6 @@ export const DiscussionInput: React.FC<DiscussionInputProps> = ({
       };
     });
 
-    onClearTextSelection();
     setCommentBoxContent("");
   };
   const handleSubmitDiscussion = () => {

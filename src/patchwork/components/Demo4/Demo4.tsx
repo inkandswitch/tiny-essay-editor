@@ -1,4 +1,5 @@
 import { MarkdownDoc } from "@/tee/schema";
+import { DocType } from "@/DocExplorer/doctypes";
 import { DiffWithProvenance, Discussion, EditRangeTarget } from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -6,6 +7,7 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
+import { DocHandle } from "@automerge/automerge-repo";
 import React, {
   useCallback,
   useEffect,
@@ -62,7 +64,6 @@ import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../../utils";
 import { ReviewSidebar } from "./ReviewSidebar";
-import { Hash } from "../Hash";
 import {
   createBranch,
   deleteBranch,
@@ -79,6 +80,11 @@ import {
   OverlayContainer,
 } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
+import { DiffStyle } from "@/tee/components/MarkdownEditor";
+import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
+import { BotEditor } from "@/bots/BotEditor";
+import { TLDraw } from "@/tldraw/components/TLDraw";
+import { DataGrid } from "@/datagrid/components/DataGrid";
 
 const COMMENT_ANCHOR_OFFSET = 20;
 
@@ -91,9 +97,10 @@ type ReviewMode = "comments" | "timeline";
 
 export const Demo4: React.FC<{
   docUrl: AutomergeUrl;
+  docType: DocType;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-}> = ({ docUrl, selectedBranch, setSelectedBranch }) => {
+}> = ({ docUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -106,6 +113,10 @@ export const Demo4: React.FC<{
     useState<boolean>(false);
 
   const [textSelection, setTextSelection] = useState<TextSelection>();
+  const supportsBranches = true; ///docType === "essay"; // todo: remove this flag, branches shouldn't require any special implementation from the data type
+  const supportsComments = docType === "essay";
+  const supportsHistory =
+    docType === "essay" || docType === "tldraw" || docType == "datagrid";
 
   // Reset compare view settings every time you switch branches
   useEffect(() => {
@@ -158,9 +169,11 @@ export const Demo4: React.FC<{
 
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
+  const isAltKeyPressed = useAltKeyPressed();
   const showDiff =
     (showChangesFlag && selectedBranch.type === "branch") ||
-    isHoveringYankToBranchOption;
+    isHoveringYankToBranchOption ||
+    isAltKeyPressed;
 
   // init branch metadata when the doc loads if it doesn't have it already
   useEffect(() => {
@@ -506,11 +519,11 @@ export const Demo4: React.FC<{
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
   return (
-    <div className="flex overflow-hidden h-full ">
-      <div className="flex-grow overflow-hidden">
-        <div className="flex h-full">
-          <div className="flex-grow">
-            <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
+    <div className="flex h-full">
+      <div className="flex flex-col flex-1">
+        <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
+          {supportsBranches && (
+            <>
               <Select
                 value={JSON.stringify(selectedBranch)}
                 onValueChange={(value) => {
@@ -693,226 +706,274 @@ export const Demo4: React.FC<{
                   </div>
                 )}
               </div>
-              {!isHistorySidebarOpen && (
-                <div
-                  className={` ml-auto ${
-                    isHistorySidebarOpen ? "mr-96" : "mr-4"
-                  }`}
+            </>
+          )}
+          {!isHistorySidebarOpen && supportsHistory && (
+            <div
+              className={` ml-auto ${isHistorySidebarOpen ? "mr-96" : "mr-4"}`}
+            >
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+                  variant="outline"
+                  className="h-8 text-x"
                 >
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() =>
-                        setIsHistorySidebarOpen(!isHistorySidebarOpen)
-                      }
-                      variant="outline"
-                      className="h-8 text-x"
-                    >
-                      <MessageSquareIcon size={20} />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="h-full items-stretch justify-stretch relative flex flex-col">
-              {compareWithMainFlag && selectedBranchLink?.name && (
-                <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
-                  <div className="flex-1 pl-4">
-                    <div className="inline-flex items-center gap-1">
-                      <CrownIcon className="inline mr-1" size={12} /> Main
-                    </div>
-                  </div>
-                  <div className="flex-1 pl-4">
-                    {" "}
-                    <GitBranchIcon className="inline mr-1" size={12} />
-                    {selectedBranchLink.name}
-                  </div>
-                </div>
-              )}
-              <div className="flex-1 min-h-0 relative">
-                {reviewMode === "comments" && isHistorySidebarOpen && (
-                  <div
-                    ref={setBezierCurveLayerElement}
-                    className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
-                      true ? "pointer-events-none" : ""
-                    }`}
-                  >
-                    {bezierCurveLayerRect && (
-                      <svg
-                        width={bezierCurveLayerRect.width}
-                        height={bezierCurveLayerRect.height}
-                      >
-                        {sortBy(activeDiscussionTargetPositions, (pos) =>
-                          activeDiscussionIds.includes(pos.discussion.id)
-                            ? 1
-                            : 0
-                        ).map((position) => {
-                          const commentPosition =
-                            commentPositionMap[position.discussion.id];
-
-                          if (!commentPosition) {
-                            return;
-                          }
-
-                          /* filter out lines to comments that are out of view
-                          if (
-                            commentPositionMap[position.discussion.id].top -
-                              commentsScrollOffset >
-                              bezierCurveLayerRect.height ||
-                            commentPositionMap[position.discussion.id].bottom -
-                              commentsScrollOffset <
-                              0
-                          ) {
-                            return;
-                          }
-                          */
-
-                          return (
-                            <BezierCurve
-                              color={
-                                activeDiscussionIds.includes(
-                                  position.discussion.id
-                                )
-                                  ? "#facc15"
-                                  : "#d1d5db"
-                              }
-                              key={position.discussion.id}
-                              x1={bezierCurveLayerRect.width}
-                              y1={
-                                commentPositionMap[position.discussion.id].top -
-                                commentsScrollOffset +
-                                COMMENT_ANCHOR_OFFSET
-                              }
-                              x2={
-                                editorContainerRect.right -
-                                bezierCurveLayerRect.left +
-                                30
-                              }
-                              y2={position.y + bezierCurveLayerRect.top}
-                              x3={position.x}
-                              y3={position.y + bezierCurveLayerRect.top}
-                            />
-                          );
-                        })}
-                      </svg>
-                    )}
-                  </div>
-                )}
-                <div
-                  className="h-full overflow-auto"
-                  ref={setScrollContainer}
-                  onScroll={(event) => {
-                    setScrollOffset((event.target as HTMLDivElement).scrollTop);
-                  }}
-                >
-                  <div className="flex">
-                    {selectedBranch.type === "branch" &&
-                      compareWithMainFlag && (
-                        <TinyEssayEditor
-                          docUrl={docUrl}
-                          branchDocHandle={branchDocHandle}
-                          key={`compare-${docUrl}`}
-                          diff={showDiff ? currentEditSessionDiff : undefined}
-                          diffBase={
-                            showDiff
-                              ? currentEditSessionDiff?.fromHeads
-                              : undefined
-                          }
-                          showDiffAsComments
-                          actorIdToAuthor={actorIdToAuthor}
-                        />
-                      )}
-                    <TinyEssayEditor
-                      docUrl={selectedBranchLink?.url ?? docUrl}
-                      mainDocHandle={compareWithMainFlag ? handle : undefined}
-                      docHeads={docHeads}
-                      readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
-                      key={`main-${docUrl}`}
-                      diff={diffForEditor}
-                      diffBase={diffBase}
-                      showDiffAsComments
-                      actorIdToAuthor={actorIdToAuthor}
-                      showBranchLayers={
-                        selectedBranch.type === "branch" && !compareWithMainFlag
-                      }
-                      selectMainBranch={() =>
-                        setSelectedBranch({ type: "main" })
-                      }
-                      onChangeSelection={(selection) => {
-                        setTextSelection(selection);
-                      }}
-                      onUpdateDiscussionTargetPositions={
-                        onUpdateDiscussionTargetPositions
-                      }
-                      overlayContainer={overlayContainer}
-                      setEditorContainerElement={setEditorContainerElement}
-                      activeDiscussionIds={activeDiscussionIds}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {isHistorySidebarOpen && (
-            <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
-              <div
-                className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-                onClick={() => setIsHistorySidebarOpen(false)}
-              >
-                <ChevronsRight size={16} />
-              </div>
-
-              <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
-                <Tabs
-                  value={reviewMode}
-                  onValueChange={(value) => setReviewMode(value as ReviewMode)}
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                    <TabsTrigger value="comments">Comments</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              <div className="min-h-0 flex-grow w-96">
-                {reviewMode === "timeline" && (
-                  <ReviewSidebar
-                    // set key to trigger re-mount on branch change
-                    key={selectedBranchLink?.url ?? docUrl}
-                    docUrl={selectedBranchLink?.url ?? docUrl}
-                    setDocHeads={setDocHeadsFromHistorySidebar}
-                    setDiff={setDiffFromHistorySidebar}
-                    textSelection={textSelection}
-                    onClearTextSelection={() => {
-                      setTextSelection({ from: 0, to: 0, yCoord: 0 });
-                    }}
-                    selectedBranch={selectedBranch}
-                    setSelectedBranch={setSelectedBranch}
-                  />
-                )}
-                {reviewMode === "comments" && (
-                  <SpatialCommentsList
-                    changeDoc={changeDoc}
-                    discussions={discussions}
-                    activeDiscussionTargetPositions={
-                      activeDiscussionTargetPositions
-                    }
-                    onChangeScrollOffset={setCommentsScrollOffset}
-                    onChangeCommentPositionMap={setCommentPositionMap}
-                    overlayContainer={overlayContainer}
-                    setSelectedDiscussionId={setSelectedDiscussionId}
-                    selectedDiscussionId={selectedDiscussionId}
-                    setHoveredDiscussionId={setHoveredDiscussionId}
-                    hoveredDiscussionId={hoveredDiscussionId}
-                  />
-                )}
+                  <MessageSquareIcon size={20} />
+                </Button>
               </div>
             </div>
           )}
         </div>
+        <div className="h-full items-stretch justify-stretch relative flex flex-col">
+          {compareWithMainFlag && selectedBranchLink?.name && (
+            <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
+              <div className="flex-1 pl-4">
+                <div className="inline-flex items-center gap-1">
+                  <CrownIcon className="inline mr-1" size={12} /> Main
+                </div>
+              </div>
+              <div className="flex-1 pl-4">
+                {" "}
+                <GitBranchIcon className="inline mr-1" size={12} />
+                {selectedBranchLink.name}
+              </div>
+            </div>
+          )}
+          <div className="flex-1 min-h-0 relative">
+            {reviewMode === "comments" && isHistorySidebarOpen && (
+              <div
+                ref={setBezierCurveLayerElement}
+                className={`absolute z-50 top-0 right-0 bottom-0 left-0 ${
+                  true ? "pointer-events-none" : ""
+                }`}
+              >
+                {bezierCurveLayerRect && (
+                  <svg
+                    width={bezierCurveLayerRect.width}
+                    height={bezierCurveLayerRect.height}
+                  >
+                    {sortBy(activeDiscussionTargetPositions, (pos) =>
+                      activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0
+                    ).map((position) => {
+                      const commentPosition =
+                        commentPositionMap[position.discussion.id];
+
+                      if (!commentPosition) {
+                        return;
+                      }
+
+                      return (
+                        <BezierCurve
+                          color={
+                            activeDiscussionIds.includes(position.discussion.id)
+                              ? "#facc15"
+                              : "#d1d5db"
+                          }
+                          key={position.discussion.id}
+                          x1={bezierCurveLayerRect.width}
+                          y1={
+                            commentPositionMap[position.discussion.id].top -
+                            commentsScrollOffset +
+                            COMMENT_ANCHOR_OFFSET
+                          }
+                          x2={
+                            editorContainerRect.right -
+                            bezierCurveLayerRect.left +
+                            30
+                          }
+                          y2={position.y + bezierCurveLayerRect.top}
+                          x3={position.x}
+                          y3={position.y + bezierCurveLayerRect.top}
+                        />
+                      );
+                    })}
+                  </svg>
+                )}
+              </div>
+            )}
+            <div
+              className="h-full overflow-auto"
+              ref={setScrollContainer}
+              onScroll={(event) => {
+                setScrollOffset((event.target as HTMLDivElement).scrollTop);
+              }}
+            >
+              <div className="flex h-full">
+                {selectedBranch.type === "branch" && compareWithMainFlag && (
+                  <DocEditor
+                    docType={docType}
+                    docUrl={docUrl}
+                    branchDocHandle={branchDocHandle}
+                    key={`compare-${docUrl}`}
+                    diff={showDiff ? currentEditSessionDiff : undefined}
+                    diffBase={
+                      showDiff ? currentEditSessionDiff?.fromHeads : undefined
+                    }
+                    actorIdToAuthor={actorIdToAuthor}
+                  />
+                )}
+                <DocEditor
+                  docType={docType}
+                  docUrl={selectedBranchLink?.url ?? docUrl}
+                  mainDocHandle={compareWithMainFlag ? handle : undefined}
+                  docHeads={docHeads}
+                  readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
+                  key={`main-${docUrl}`}
+                  diff={diffForEditor}
+                  diffBase={diffBase}
+                  actorIdToAuthor={actorIdToAuthor}
+                  showBranchLayers={
+                    selectedBranch.type === "branch" && !compareWithMainFlag
+                  }
+                  selectMainBranch={() => setSelectedBranch({ type: "main" })}
+                  onChangeSelection={(selection) => {
+                    setTextSelection(selection);
+                  }}
+                  onUpdateDiscussionTargetPositions={
+                    onUpdateDiscussionTargetPositions
+                  }
+                  overlayContainer={overlayContainer}
+                  setEditorContainerElement={setEditorContainerElement}
+                  activeDiscussionIds={activeDiscussionIds}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {isHistorySidebarOpen && (
+        <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
+          <div
+            className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
+            onClick={() => setIsHistorySidebarOpen(false)}
+          >
+            <ChevronsRight size={16} />
+          </div>
+
+          <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
+            <Tabs
+              value={reviewMode}
+              onValueChange={(value) => setReviewMode(value as ReviewMode)}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="min-h-0 flex-grow w-96">
+            {reviewMode === "timeline" && (
+              <ReviewSidebar
+                // set key to trigger re-mount on branch change
+                key={selectedBranchLink?.url ?? docUrl}
+                docType={docType}
+                docUrl={selectedBranchLink?.url ?? docUrl}
+                setDocHeads={setDocHeadsFromHistorySidebar}
+                setDiff={setDiffFromHistorySidebar}
+                selectedBranch={selectedBranch}
+                setSelectedBranch={setSelectedBranch}
+              />
+            )}
+            {reviewMode === "comments" && (
+              <SpatialCommentsList
+                changeDoc={changeDoc}
+                discussions={discussions}
+                activeDiscussionTargetPositions={
+                  activeDiscussionTargetPositions
+                }
+                onChangeScrollOffset={setCommentsScrollOffset}
+                onChangeCommentPositionMap={setCommentPositionMap}
+                overlayContainer={overlayContainer}
+                setSelectedDiscussionId={setSelectedDiscussionId}
+                selectedDiscussionId={selectedDiscussionId}
+                setHoveredDiscussionId={setHoveredDiscussionId}
+                hoveredDiscussionId={hoveredDiscussionId}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+// todo: cleanup this interface and remove code essay editor specific props
+const DocEditor = ({
+  docType,
+  docUrl,
+  mainDocHandle,
+  branchDocHandle,
+  docHeads,
+  diff,
+  readOnly,
+  diffBase,
+  actorIdToAuthor,
+  onChangeSelection,
+  showBranchLayers,
+  selectMainBranch,
+  overlayContainer,
+  setEditorContainerElement,
+  activeDiscussionIds,
+  onUpdateDiscussionTargetPositions,
+}: {
+  docType: DocType;
+  docUrl: AutomergeUrl;
+  mainDocHandle?: DocHandle<any>; // todo: type this
+  branchDocHandle?: DocHandle<any>; // todo: type this
+  docHeads?: A.Heads;
+  activeDiscussionIds?: string[];
+  diff?: DiffWithProvenance;
+  readOnly?: boolean;
+  diffBase?: A.Heads;
+  onChangeSelection?: (selection: TextSelection) => void;
+  actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>;
+  showBranchLayers?: boolean;
+  selectMainBranch?: () => void;
+  overlayContainer?: OverlayContainer;
+  setEditorContainerElement?: (container: HTMLDivElement) => void;
+  onUpdateDiscussionTargetPositions?: (
+    positions: DiscussionTargetPosition[]
+  ) => void;
+}) => {
+  switch (docType) {
+    case "bot":
+      return <BotEditor docUrl={docUrl} />;
+    case "essay":
+      return (
+        <TinyEssayEditor
+          docUrl={docUrl}
+          mainDocHandle={mainDocHandle}
+          branchDocHandle={branchDocHandle}
+          docHeads={docHeads}
+          readOnly={readOnly}
+          diff={diff}
+          diffBase={diffBase}
+          showDiffAsComments
+          actorIdToAuthor={actorIdToAuthor}
+          showBranchLayers={showBranchLayers}
+          selectMainBranch={selectMainBranch}
+          onChangeSelection={onChangeSelection}
+          onUpdateDiscussionTargetPositions={onUpdateDiscussionTargetPositions}
+          overlayContainer={overlayContainer}
+          setEditorContainerElement={setEditorContainerElement}
+          activeDiscussionIds={activeDiscussionIds}
+        />
+      );
+    case "tldraw":
+      return (
+        <div className="h-full w-full">
+          <TLDraw docUrl={docUrl} heads={docHeads} diff={diff} />
+        </div>
+      );
+    case "datagrid":
+      return (
+        <div className="h-full w-full">
+          <DataGrid docUrl={docUrl} heads={docHeads} />
+        </div>
+      );
+  }
 };
 
 const BranchActions: React.FC<{
@@ -1089,4 +1150,36 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   return (
     <path d={combinedPathData} stroke={color} fill="none" strokeWidth="1" />
   );
+};
+
+const useAltKeyPressed = () => {
+  const [isAltPressed, setIsAltPressed] = useState(false);
+
+  useEffect(() => {
+    // Function to set isAltPressed to true when the Alt key is down
+    const handleKeyDown = (event) => {
+      if (event.altKey) {
+        setIsAltPressed(true);
+      }
+    };
+
+    // Function to set isAltPressed to false when the Alt key is released
+    const handleKeyUp = (event) => {
+      if (event.key === "Alt") {
+        setIsAltPressed(false);
+      }
+    };
+
+    // Adding event listeners
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []); // Empty dependency array means the effect runs only once after the initial render
+
+  return isAltPressed;
 };

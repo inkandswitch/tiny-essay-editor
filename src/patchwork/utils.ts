@@ -2,11 +2,10 @@ import React from "react";
 import { DiffWithProvenance } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { lastIndexOf, sortBy } from "lodash";
-import { useDebounce } from "./components/Spatial";
+import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
@@ -481,4 +480,18 @@ function mapValues<T extends Record<string, unknown>, V>(
     result[key] = fn(obj[key]);
     return result;
   }, {} as Record<keyof T, V>);
+}
+
+export function useDebounce<T>(value: T, delay?: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay || 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }

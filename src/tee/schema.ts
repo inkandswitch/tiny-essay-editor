@@ -137,7 +137,7 @@ export type User = {
 // todo: split content of document and metadata
 // currently branches copy also global metadata
 // unclear if comments should be part of the doc or the content
-type _MarkdownDoc = {
+export type MarkdownDoc = HasPatchworkMetadata & {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
 
@@ -145,6 +145,3 @@ type _MarkdownDoc = {
   drafts: { [key: string]: PersistedDraft };
   users: User[];
 };
-
-// Our final MarkdownDoc type has the Markdown stuff and the patchwork metadata
-export type MarkdownDoc = _MarkdownDoc & HasPatchworkMetadata;
