@@ -108,6 +108,7 @@ function useDiffStyling(
       store.store.remove(Array.from(tempShapeIdsRef.current));
       highlightedElementsRef.current.forEach((element) => {
         element.style.filter = "";
+        element.classList.remove("new-shape");
       });
 
       tempShapeIdsRef.current = new Set();
@@ -141,6 +142,7 @@ function useDiffStyling(
 
         highlightedElementsRef.current.add(shapeElem);
         shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)"; // add style for "new" element here
+        shapeElem.classList.add("new-shape");
       });
 
       toRemove.forEach((id) => {
@@ -173,7 +175,9 @@ function useDiffStyling(
       Array.from(highlightedElementsRef.current)
         .filter((element) => !activeHighlightedElements.has(element))
         .forEach((element) => {
-          element.style.filter = ""; // reset style of "new" elements here
+          console.log("reset");
+          element.classList.remove("new-shape");
+          element.style.filter = "";
         });
       highlightedElementsRef.current = activeHighlightedElements;
     }, 100);
