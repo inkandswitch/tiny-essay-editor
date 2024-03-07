@@ -486,7 +486,6 @@ export const useAnnotationsWithPositions = ({
   selectedAnnotationIds,
   editorRef,
   diff,
-  diffBase,
   visibleAuthorsForEdits,
   reviewStateFilter,
 }: {
@@ -495,7 +494,6 @@ export const useAnnotationsWithPositions = ({
   selectedAnnotationIds: string[];
   editorRef: React.MutableRefObject<HTMLElement | null>;
   diff?: DiffWithProvenance;
-  diffBase?: A.Heads;
   visibleAuthorsForEdits: AutomergeUrl[];
   reviewStateFilter: ReviewStateFilter;
 }) => {
@@ -590,7 +588,6 @@ export const useAnnotationsWithPositions = ({
 
     return getTextAnnotationsForUI({
       doc,
-      diffBase,
       selectedAnnotationIds,
       patchAnnotations: patchAnnotationsToShow,
       diff,
@@ -603,7 +600,6 @@ export const useAnnotationsWithPositions = ({
     selectedAnnotationIds,
     diff,
     visibleAuthorsForEdits,
-    diffBase,
     reviewStateFilter,
   ]);
 

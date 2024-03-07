@@ -1,4 +1,5 @@
 import { next as A } from "@automerge/automerge";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
@@ -7,7 +8,12 @@ import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-
+import { DiffWithProvenance } from "@/patchwork/schema";
+import {
+  OverlayContainer,
+  DiscussionTargetPosition,
+} from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { Discussion } from "@/patchwork/schema";
 export interface DataType<T> {
   id: string;
   name: string;
@@ -35,3 +41,22 @@ export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {
 } as const;
 
 export type DocType = keyof typeof docTypes;
+
+export interface DocEditorProps<T> {
+  docUrl: AutomergeUrl;
+  docHeads?: A.Heads;
+  activeDiscussionIds?: string[];
+  diff?: DiffWithProvenance;
+  actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
+
+  // spatial comments interface
+  // todo: simplify, avoid passing size information up and down
+  discussions: Discussion[]; // todo: should be a list of anchors
+  overlayContainer?: OverlayContainer;
+  setEditorContainerElement?: (container: HTMLDivElement) => void;
+  setHoveredDiscussionId: (id: string) => void;
+  setSelectedDiscussionId: (id: string) => void;
+  onUpdateDiscussionTargetPositions?: (
+    positions: DiscussionTargetPosition[]
+  ) => void;
+}

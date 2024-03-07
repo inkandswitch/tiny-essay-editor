@@ -68,7 +68,7 @@ import {
 } from "../../branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
-import { TextSelection } from "@/tee/components/MarkdownEditor";
+import { EditorProps, TextSelection } from "@/tee/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SpatialCommentsList } from "./SpatialCommentsList";
 import {
@@ -81,6 +81,7 @@ import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { BotEditor } from "@/bots/BotEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
 
 const COMMENT_ANCHOR_OFFSET = 20;
 
@@ -107,8 +108,6 @@ export const Demo4: React.FC<{
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
-
-  const [textSelection, setTextSelection] = useState<TextSelection>();
 
   // Reset compare view settings every time you switch branches
   useEffect(() => {
@@ -456,33 +455,6 @@ export const Demo4: React.FC<{
     );
   }, [activeDoc?.content, activeDoc?.discussions]);
 
-  useEffect(() => {
-    let focusedDiscussion: Discussion;
-
-    if (textSelection && textSelection.from === textSelection.to) {
-      focusedDiscussion = (discussions ?? []).find((discussion) => {
-        if (!discussion.target || discussion.target.type !== "editRange") {
-          return false;
-        }
-
-        const from = A.getCursorPosition(
-          doc,
-          ["content"],
-          discussion.target.value.fromCursor
-        );
-        const to = A.getCursorPosition(
-          doc,
-          ["content"],
-          discussion.target.value.toCursor
-        );
-
-        return from <= textSelection.from && textSelection.from <= to;
-      });
-    }
-
-    setSelectedDiscussionId(focusedDiscussion?.id);
-  }, [textSelection]);
-
   const branchDocHandle = useHandle<MarkdownDoc>(
     selectedBranch && selectedBranch.type === "branch"
       ? selectedBranch?.url
@@ -768,7 +740,7 @@ export const Demo4: React.FC<{
               }}
             >
               <div className="flex h-full">
-                {selectedBranch.type === "branch" && compareWithMainFlag && (
+                {/*selectedBranch.type === "branch" && compareWithMainFlag && (
                   <DocEditor
                     docType={docType}
                     docUrl={docUrl}
@@ -780,30 +752,23 @@ export const Demo4: React.FC<{
                     }
                     actorIdToAuthor={actorIdToAuthor}
                   />
-                )}
+                  )*/}
                 <DocEditor
                   docType={docType}
                   docUrl={selectedBranchLink?.url ?? docUrl}
-                  mainDocHandle={compareWithMainFlag ? handle : undefined}
                   docHeads={docHeads}
-                  readOnly={docHeads && !isEqual(docHeads, A.getHeads(doc))}
                   key={`main-${docUrl}`}
                   diff={diffForEditor}
-                  diffBase={diffBase}
                   actorIdToAuthor={actorIdToAuthor}
-                  showBranchLayers={
-                    selectedBranch.type === "branch" && !compareWithMainFlag
-                  }
-                  selectMainBranch={() => setSelectedBranch({ type: "main" })}
-                  onChangeSelection={(selection) => {
-                    setTextSelection(selection);
-                  }}
+                  discussions={discussions}
                   onUpdateDiscussionTargetPositions={
                     onUpdateDiscussionTargetPositions
                   }
                   overlayContainer={overlayContainer}
                   setEditorContainerElement={setEditorContainerElement}
                   activeDiscussionIds={activeDiscussionIds}
+                  setHoveredDiscussionId={setHoveredDiscussionId}
+                  setSelectedDiscussionId={setSelectedDiscussionId}
                 />
               </div>
             </div>
@@ -872,40 +837,17 @@ export const Demo4: React.FC<{
 const DocEditor = ({
   docType,
   docUrl,
-  mainDocHandle,
-  branchDocHandle,
   docHeads,
   diff,
-  readOnly,
-  diffBase,
   actorIdToAuthor,
-  onChangeSelection,
-  showBranchLayers,
-  selectMainBranch,
   overlayContainer,
   setEditorContainerElement,
+  discussions,
   activeDiscussionIds,
   onUpdateDiscussionTargetPositions,
-}: {
-  docType: DocType;
-  docUrl: AutomergeUrl;
-  mainDocHandle?: DocHandle<any>; // todo: type this
-  branchDocHandle?: DocHandle<any>; // todo: type this
-  docHeads?: A.Heads;
-  activeDiscussionIds?: string[];
-  diff?: DiffWithProvenance;
-  readOnly?: boolean;
-  diffBase?: A.Heads;
-  onChangeSelection?: (selection: TextSelection) => void;
-  actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>;
-  showBranchLayers?: boolean;
-  selectMainBranch?: () => void;
-  overlayContainer?: OverlayContainer;
-  setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateDiscussionTargetPositions?: (
-    positions: DiscussionTargetPosition[]
-  ) => void;
-}) => {
+  setHoveredDiscussionId,
+  setSelectedDiscussionId,
+}: DocEditorProps<unknown> & { docType: DocType }) => {
   switch (docType) {
     case "bot":
       return <BotEditor docUrl={docUrl} />;
@@ -913,20 +855,15 @@ const DocEditor = ({
       return (
         <TinyEssayEditor
           docUrl={docUrl}
-          mainDocHandle={mainDocHandle}
-          branchDocHandle={branchDocHandle}
           docHeads={docHeads}
-          readOnly={readOnly}
           diff={diff}
-          diffBase={diffBase}
-          showDiffAsComments
           actorIdToAuthor={actorIdToAuthor}
-          showBranchLayers={showBranchLayers}
-          selectMainBranch={selectMainBranch}
-          onChangeSelection={onChangeSelection}
           onUpdateDiscussionTargetPositions={onUpdateDiscussionTargetPositions}
           overlayContainer={overlayContainer}
+          discussions={discussions}
           setEditorContainerElement={setEditorContainerElement}
+          setHoveredDiscussionId={setHoveredDiscussionId}
+          setSelectedDiscussionId={setSelectedDiscussionId}
           activeDiscussionIds={activeDiscussionIds}
         />
       );

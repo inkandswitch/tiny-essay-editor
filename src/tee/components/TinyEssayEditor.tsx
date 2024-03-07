@@ -1,12 +1,11 @@
 import { next as A } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { DiffStyle, MarkdownEditor, TextSelection } from "./MarkdownEditor";
+import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { DiscussionAnotationForUI, MarkdownDoc } from "../schema";
-import { DiffWithProvenance } from "@/patchwork/schema";
 
 import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
@@ -15,88 +14,48 @@ import {
   useAnnotationsWithPositions,
   useStaticCallback,
 } from "../utils";
-import { CommentsSidebar } from "./CommentsSidebar";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { TextPatch } from "@/patchwork/utils";
-import {
-  ActorId,
-  Heads,
-  Patch,
-  getCursorPosition,
-  view,
-} from "@automerge/automerge/next";
+import { Patch, getCursorPosition, view } from "@automerge/automerge/next";
 import { uniq } from "lodash";
 import "../../tee/index.css";
-import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
-import {
-  DiscussionTargetPosition,
-  OverlayContainer,
-} from "../codemirrorPlugins/discussionTargetPositionListener";
+import { Discussion } from "@/patchwork/schema";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { isEqual } from "lodash";
 
 export const TinyEssayEditor = ({
   docUrl,
-  mainDocHandle,
-  branchDocHandle,
   docHeads,
   diff,
-  readOnly,
-  diffStyle,
-  foldRanges,
-  showDiffAsComments,
-  diffBase,
   actorIdToAuthor,
-  onChangeSelection,
-  debugHighlights,
-  showBranchLayers,
-  selectMainBranch,
   overlayContainer,
   setEditorContainerElement,
-  currentlyActiveHeads,
   activeDiscussionIds,
+  discussions,
+  setHoveredDiscussionId,
+  setSelectedDiscussionId,
   onUpdateDiscussionTargetPositions,
-}: {
-  docUrl: AutomergeUrl;
-  mainDocHandle?: DocHandle<MarkdownDoc>;
-  branchDocHandle?: DocHandle<MarkdownDoc>;
-  docHeads?: Heads;
-  activeDiscussionIds?: string[];
-  diff?: DiffWithProvenance;
-  readOnly?: boolean;
-  diffStyle?: DiffStyle;
-  foldRanges?: { from: number; to: number }[];
-  showDiffAsComments?: boolean;
-  diffBase?: Heads;
-  onChangeSelection?: (selection: TextSelection) => void;
-  actorIdToAuthor?: Record<ActorId, AutomergeUrl>;
-  debugHighlights?: DebugHighlight[];
-  showBranchLayers?: boolean;
-  selectMainBranch?: () => void;
-  overlayContainer?: OverlayContainer;
-  currentlyActiveHeads?: A.Heads;
-  setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateDiscussionTargetPositions?: (
-    positions: DiscussionTargetPosition[]
-  ) => void;
-}) => {
+}: DocEditorProps<MarkdownDoc>) => {
   const account = useCurrentAccount();
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, _setSelection] = useState<TextSelection>();
+  const [selection, setSelection] = useState<TextSelection>();
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>(
     []
   );
   const [editorView, setEditorView] = useState<EditorView>();
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
   >([]);
 
-  const setSelection = useStaticCallback((newSelection: TextSelection) => {
+  /* const setSelection = useStaticCallback((newSelection: TextSelection) => {
     if (
       selection &&
       newSelection.from === selection.from &&
@@ -106,11 +65,7 @@ export const TinyEssayEditor = ({
     }
 
     _setSelection(newSelection);
-
-    if (onChangeSelection) {
-      onChangeSelection(newSelection);
-    }
-  });
+  }); */
 
   const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilter>(
     {
@@ -143,18 +98,17 @@ export const TinyEssayEditor = ({
     [doc, docHeads]
   );
 
-  const annotationsWithPositions = useAnnotationsWithPositions({
+  const annotations = useAnnotationsWithPositions({
     doc: docAtHeads,
     view: editorView,
     selectedAnnotationIds: selectedAnnotationIds,
     editorRef,
-    diff: showDiffAsComments ? diff : undefined,
-    diffBase,
+    diff,
     visibleAuthorsForEdits,
     reviewStateFilter,
   });
 
-  const annotations = annotationsWithPositions;
+  //  const annotations = annotationsWithPositions;
 
   // only show a diff in the text editor if we have edits or edit groups on in the sidebar
   const patchesForEditor = useMemo(() => {
@@ -256,6 +210,34 @@ export const TinyEssayEditor = ({
     });
   }, [doc?.discussions, doc?.content, activeDiscussionIds]);
 
+  // focus discussion
+  useEffect(() => {
+    let focusedDiscussion: Discussion;
+
+    if (selection && selection.from === selection.to) {
+      focusedDiscussion = (discussions ?? []).find((discussion) => {
+        if (!discussion.target || discussion.target.type !== "editRange") {
+          return false;
+        }
+
+        const from = A.getCursorPosition(
+          doc,
+          ["content"],
+          discussion.target.value.fromCursor
+        );
+        const to = A.getCursorPosition(
+          doc,
+          ["content"],
+          discussion.target.value.toCursor
+        );
+
+        return from <= selection.from && selection.from <= to;
+      });
+    }
+
+    setSelectedDiscussionId(focusedDiscussion?.id);
+  }, [selection]);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
@@ -271,21 +253,14 @@ export const TinyEssayEditor = ({
          */}
         <div className="flex @xl:mt-4 @xl:mr-2 @xl:mb-8 @xl:ml-[-100px] @4xl:ml-[-200px] w-full @xl:w-4/5  max-w-[722px]">
           <div
-            className={`group absolute -z-10 bg-white box-border rounded-md px-8 py-4 w-10 h-full transition-all border border-gray-200 hover:border-gray-400 mt-3 -ml-4  `}
-            onClick={() => selectMainBranch && selectMainBranch()}
-          >
-            <div className="absolute -left-10 top-0 text-gray-500 font-semibold text-xs transition-opacity duration-300 ease-in-out group-hover:opacity-100 opacity-0">
-              main
-            </div>
-          </div>
-          <div
             className={`w-full bg-white box-border rounded-md px-8 py-4 transition-all duration-500 ${
               readOnly
                 ? " border-2 border-dashed border-slate-400"
                 : "border border-gray-200 "
-            } ${showBranchLayers ? "" : "mt-3 -ml-4"}`}
+            }`}
           >
             <MarkdownEditor
+              diffStyle="normal"
               handle={handle}
               path={["content"]}
               setSelection={setSelection}
@@ -295,9 +270,6 @@ export const TinyEssayEditor = ({
               readOnly={readOnly ?? false}
               docHeads={docHeads}
               diff={patchesForEditor}
-              diffStyle={diffStyle ?? "normal"}
-              foldRanges={foldRanges}
-              debugHighlights={debugHighlights}
               discussionAnnotations={discussionAnnotations}
               overlayContainer={overlayContainer}
               setEditorContainerElement={setEditorContainerElement}
@@ -308,26 +280,27 @@ export const TinyEssayEditor = ({
             />
           </div>
           <div className="ml-2 w-0">
-            <CommentsSidebar
-              handle={handle}
-              diffBase={diffBase}
-              doc={docAtHeads}
-              changeDoc={changeDoc}
-              mainDocHandle={mainDocHandle}
-              branchDocHandle={branchDocHandle}
-              selection={selection}
-              reviewStateFilter={reviewStateFilter}
-              setReviewStateFilter={setReviewStateFilter}
-              selectedAnnotationIds={selectedAnnotationIds}
-              setSelectedAnnotationIds={setSelectedAnnotationIds}
-              annotationsWithPositions={annotations}
-              diff={diff}
-              visibleAuthorsForEdits={visibleAuthorsForEdits}
-              setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
-              authors={authors}
-              isCommentBoxOpen={isCommentBoxOpen}
-              setIsCommentBoxOpen={setIsCommentBoxOpen}
-            />
+            {/*
+              <CommentsSidebar
+                handle={handle}
+                doc={docAtHeads}
+                changeDoc={changeDoc}
+                mainDocHandle={mainDocHandle}
+                branchDocHandle={branchDocHandle}
+                selection={selection}
+                reviewStateFilter={reviewStateFilter}
+                setReviewStateFilter={setReviewStateFilter}
+                selectedAnnotationIds={selectedAnnotationIds}
+                setSelectedAnnotationIds={setSelectedAnnotationIds}
+                annotationsWithPositions={annotations}
+                diff={diff}
+                visibleAuthorsForEdits={visibleAuthorsForEdits}
+                setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
+                authors={authors}
+                isCommentBoxOpen={isCommentBoxOpen}
+                setIsCommentBoxOpen={setIsCommentBoxOpen}
+              />
+            */}
           </div>
         </div>
       </div>
