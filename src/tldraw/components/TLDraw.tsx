@@ -4,22 +4,12 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 
 import { TLDrawDoc } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import {
-  StyleProp,
-  TLShapeId,
-  TLStoreWithStatus,
-  Tldraw,
-} from "@tldraw/tldraw";
+import { TLShapeId, TLStoreWithStatus, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { next as A, Patch } from "@automerge/automerge";
 import { DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
-
-const changeStyle = StyleProp.defineEnum("example:rating", {
-  defaultValue: "unchanged",
-  values: ["unchanged", "added", "removed", "changed"],
-});
 
 export const TLDraw = ({
   docUrl,
