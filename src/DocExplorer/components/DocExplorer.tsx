@@ -17,8 +17,6 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { DraftsPlayground } from "@/patchwork/components/Drafts";
-import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
 import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
 import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
@@ -43,19 +41,9 @@ const TOOLS = {
       component: Demo4,
     },
     {
-      id: "editGroups",
-      name: "Edit Groups",
-      component: EditGroupsPlayground,
-    },
-    {
       id: "tee",
       name: "Editor",
       component: TinyEssayEditor,
-    },
-    {
-      id: "drafts",
-      name: "🛠️ Drafts",
-      component: DraftsPlayground,
     },
     {
       id: "spatialBranches",

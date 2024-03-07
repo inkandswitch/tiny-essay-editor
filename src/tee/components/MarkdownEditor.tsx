@@ -86,7 +86,6 @@ export type EditorProps = {
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
-  overlayContainer?: OverlayContainer;
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
   onUpdateDiscussionTargetPositions?: (

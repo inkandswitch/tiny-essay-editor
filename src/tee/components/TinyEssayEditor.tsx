@@ -32,7 +32,7 @@ export const TinyEssayEditor = ({
   docHeads,
   diff,
   actorIdToAuthor,
-  discussions,
+  discussions = [],
   selectedDiscussionId,
   hoveredDiscussionId,
   setSelectedDiscussionId,

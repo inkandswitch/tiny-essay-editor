@@ -48,11 +48,11 @@ export interface DocEditorProps<T> {
 
   // spatial comments interface
   // todo: simplify, avoid passing size information up and down
-  discussions: Discussion[]; // todo: should be a list of anchors
-  selectedDiscussionId: string;
-  hoveredDiscussionId: string;
-  setHoveredDiscussionId: (id: string) => void;
-  setSelectedDiscussionId: (id: string) => void;
+  discussions?: Discussion[]; // todo: should be a list of anchors
+  selectedDiscussionId?: string;
+  hoveredDiscussionId?: string;
+  setHoveredDiscussionId?: (id: string) => void;
+  setSelectedDiscussionId?: (id: string) => void;
   onUpdateDiscussionTargetPositions?: (
     positions: DiscussionTargetPosition[]
   ) => void;
