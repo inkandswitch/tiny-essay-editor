@@ -140,7 +140,7 @@ function useDiffStyling(
         }
 
         highlightedElementsRef.current.add(shapeElem);
-        shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
+        shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)"; // add style for "new" element here
       });
 
       toRemove.forEach((id) => {
@@ -173,7 +173,7 @@ function useDiffStyling(
       Array.from(highlightedElementsRef.current)
         .filter((element) => !activeHighlightedElements.has(element))
         .forEach((element) => {
-          element.style.filter = "";
+          element.style.filter = ""; // reset style of "new" elements here
         });
       highlightedElementsRef.current = activeHighlightedElements;
     }, 100);

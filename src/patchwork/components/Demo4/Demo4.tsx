@@ -165,9 +165,11 @@ export const Demo4: React.FC<{
 
   const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
 
+  const isAltKeyPressed = useAltKeyPressed();
   const showDiff =
     (showChangesFlag && selectedBranch.type === "branch") ||
-    isHoveringYankToBranchOption;
+    isHoveringYankToBranchOption ||
+    isAltKeyPressed;
 
   // init branch metadata when the doc loads if it doesn't have it already
   useEffect(() => {
@@ -1139,4 +1141,36 @@ const BezierCurve: React.FC<BezierCurveProps> = ({
   return (
     <path d={combinedPathData} stroke={color} fill="none" strokeWidth="1" />
   );
+};
+
+const useAltKeyPressed = () => {
+  const [isAltPressed, setIsAltPressed] = useState(false);
+
+  useEffect(() => {
+    // Function to set isAltPressed to true when the Alt key is down
+    const handleKeyDown = (event) => {
+      if (event.altKey) {
+        setIsAltPressed(true);
+      }
+    };
+
+    // Function to set isAltPressed to false when the Alt key is released
+    const handleKeyUp = (event) => {
+      if (event.key === "Alt") {
+        setIsAltPressed(false);
+      }
+    };
+
+    // Adding event listeners
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []); // Empty dependency array means the effect runs only once after the initial render
+
+  return isAltPressed;
 };
