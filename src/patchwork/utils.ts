@@ -58,7 +58,9 @@ export const useActorIdToAuthorMap = (
         let metadata;
         try {
           metadata = JSON.parse(decodedChange.message);
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
 
         actorIdToAuthorRef.current[decodedChange.actor] = metadata?.author;
       });
@@ -86,7 +88,7 @@ export const useActorIdToAuthorMap = (
     return () => {
       handle.off("change", onChange);
     };
-  }, []);
+  }, [forceUpdate, handle]);
 
   return actorIdToAuthorRef.current;
 };
@@ -134,8 +136,8 @@ export const combinePatches = (
   // 1. combine redundant pathces
 
   for (let i = 0; i < patches.length; i++) {
-    let currentPatch = patches[i];
-    let nextPatch = patches[i + 1];
+    const currentPatch = patches[i];
+    const nextPatch = patches[i + 1];
 
     // filter out non text patches
     if (currentPatch.action !== "splice" && currentPatch.action !== "del") {
@@ -240,8 +242,8 @@ export const combinePatches = (
   const patchesWithReplaces: TextPatch[] = [];
 
   for (let i = 0; i < combinedPatches.length; i++) {
-    let currentPatch = combinedPatches[i];
-    let nextPatch = combinedPatches[i + 1];
+    const currentPatch = combinedPatches[i];
+    const nextPatch = combinedPatches[i + 1];
 
     if (
       nextPatch &&
@@ -369,8 +371,8 @@ export const copyDocAtHeads = <T>(doc: A.Doc<T>, heads: A.Heads): A.Doc<T> => {
     .filter((change) => !extraneousChanges.has(change.hash))
     .map((change) => A.encodeChange(change));
 
-  let cloned = A.init<T>();
-  let [resultDoc] = A.applyChanges(cloned, desiredChanges);
+  const cloned = A.init<T>();
+  const [resultDoc] = A.applyChanges(cloned, desiredChanges);
 
   return resultDoc;
 };

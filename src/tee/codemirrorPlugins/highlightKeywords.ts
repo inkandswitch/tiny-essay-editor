@@ -34,7 +34,6 @@ function getHighlightWords(view: EditorView) {
     const text = view.state.sliceDoc(from, to);
 
     let match;
-    // eslint-disable-next-line no-cond-assign
     while ((match = HIGHLIGHT_KEYWORDS_REGEX.exec(text))) {
       const position = match.index + from;
       decorations.push(

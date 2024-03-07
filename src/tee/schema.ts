@@ -2,16 +2,7 @@ import * as A from "@automerge/automerge/next";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { TextPatch } from "@/patchwork/utils";
-import {
-  Branchable,
-  Taggable,
-  Diffable,
-  SpatialBranchable,
-  Discussable,
-  Discussion,
-  HasChangeGroupSummaries,
-  HasPatchworkMetadata,
-} from "@/patchwork/schema";
+import { Discussion, HasPatchworkMetadata } from "@/patchwork/schema";
 
 export type Comment = {
   id: string;

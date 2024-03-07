@@ -15,7 +15,7 @@ export function applyTLStoreChangesToAutomerge(
     doc.store[record.id] = record;
   });
 
-  Object.values(changes.updated).forEach(([_, record]) => {
+  Object.values(changes.updated).forEach(([, record]) => {
     deepCompareAndUpdate(doc.store[record.id], record);
   });
 
@@ -25,7 +25,6 @@ export function applyTLStoreChangesToAutomerge(
 }
 
 function deepCompareAndUpdate(objectA: any, objectB: any) {
-  // eslint-disable-line
   if (_.isArray(objectB)) {
     if (!_.isArray(objectA)) {
       // if objectA is not an array, replace it with objectB

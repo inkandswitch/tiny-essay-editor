@@ -74,7 +74,7 @@ const pathToId = (path: string[]): RecordId<any> => {
 };
 
 const applyInsertToObject = (patch: Automerge.Patch, object: any): TLRecord => {
-  //@ts-expect-error
+  //@ts-expect-error values does indeed exist on patch... not sure why the type is wrong
   const { path, values } = patch;
   let current = object;
   const insertionPoint = path[path.length - 1];
@@ -94,7 +94,7 @@ const applyInsertToObject = (patch: Automerge.Patch, object: any): TLRecord => {
 };
 
 const applyPutToObject = (patch: Automerge.Patch, object: any): TLRecord => {
-  //@ts-expect-error
+  //@ts-expect-error values does indeed exist on patch... not sure why the type is wrong
   const { path, value } = patch;
   let current = object;
   // special case
@@ -120,7 +120,7 @@ const applyPutToObject = (patch: Automerge.Patch, object: any): TLRecord => {
 };
 
 const applyUpdateToObject = (patch: Automerge.Patch, object: any): TLRecord => {
-  //@ts-expect-error
+  //@ts-expect-error values does indeed exist on patch... not sure why the type is wrong
   const { path, value } = patch;
   let current = object;
   const parts = path.slice(2, -1);
@@ -136,7 +136,7 @@ const applyUpdateToObject = (patch: Automerge.Patch, object: any): TLRecord => {
 };
 
 const applySpliceToObject = (patch: Automerge.Patch, object: any): TLRecord => {
-  //@ts-expect-error
+  //@ts-expect-error values does indeed exist on patch... not sure why the type is wrong
   const { path, value } = patch;
   let current = object;
   const insertionPoint = path[path.length - 1];

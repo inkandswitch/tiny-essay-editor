@@ -1,5 +1,4 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
-import { StateEffect, StateField } from "@codemirror/state";
 import { setAnnotationsEffect, annotationsField } from "./annotations";
 import { Discussion } from "@/patchwork/schema";
 

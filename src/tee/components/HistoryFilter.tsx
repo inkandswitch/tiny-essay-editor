@@ -1,10 +1,8 @@
 import { ListFilter } from "lucide-react";
 import { useState } from "react";
-import { TextAnnotation } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { ReviewStateFilter } from "../utils";
-import { filter } from "lodash";
 
 export const HistoryFilter: React.FC<{
   visibleAuthorsForEdits: AutomergeUrl[];
@@ -53,28 +51,6 @@ export const HistoryFilter: React.FC<{
     </div>
   );
 };
-
-function TypeIcon({ annotationType }: { annotationType: string }) {
-  const symbol = annotationType[0].toUpperCase();
-
-  const colorMap: Record<string, string> = {
-    Comments: "bg-yellow-500 border-yellow-600",
-    Edits: "bg-green-500 border-green-600",
-  };
-
-  const colorClasses =
-    colorMap[annotationType] || "bg-gray-500 border-grat-500"; // Default color if type is not found
-
-  return (
-    <div>
-      <div
-        className={`flex h-4 w-4 items-center justify-center rounded border ${colorClasses}`}
-      >
-        <span className="white font-medium text-white shadow-sm">{symbol}</span>
-      </div>
-    </div>
-  );
-}
 
 const FilterSettings: React.FC<{
   authors: AutomergeUrl[];
@@ -154,36 +130,3 @@ const FilterSettings: React.FC<{
     </div>
   );
 };
-
-function HistoryTrimmer() {
-  const [range, setRange] = useState({ start: 0, end: 100 });
-
-  const handleRangeChange = (value, type) => {
-    setRange({ ...range, [type]: value });
-  };
-
-  return (
-    <div className="flex space-x-2">
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={range.start}
-        onChange={(e) => handleRangeChange(e.target.value, "start")}
-        className="w-full"
-      />
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={range.end}
-        onChange={(e) => handleRangeChange(e.target.value, "end")}
-        className="w-full"
-      />
-    </div>
-  );
-}
-
-function randomHeight() {
-  return Math.floor(Math.random() * (8 - 2 + 1)) + 2;
-}

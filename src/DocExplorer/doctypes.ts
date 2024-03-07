@@ -1,5 +1,5 @@
 import { next as A } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
@@ -39,7 +39,7 @@ export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {
 
 export type DocType = keyof typeof docTypes;
 
-export interface DocEditorProps<T> {
+export interface DocEditorProps {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];

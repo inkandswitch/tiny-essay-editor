@@ -17,9 +17,6 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
-import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
@@ -39,21 +36,6 @@ const TOOLS = {
       id: "demo4",
       name: "Demo 4",
       component: Demo4,
-    },
-    {
-      id: "tee",
-      name: "Editor",
-      component: TinyEssayEditor,
-    },
-    {
-      id: "spatialBranches",
-      name: "🛠️ Spatial Branches",
-      component: SpatialBranchesPlayground,
-    },
-    {
-      id: "sideBySide",
-      name: "🛠️ Side by Side",
-      component: SideBySidePlayground,
     },
   ],
   tldraw: [
@@ -445,8 +427,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
         setSelectedBranch({ type: "main" });
       }
     },
-    // [rootFolderDoc, changeRootFolderDoc, selectDoc, setSelectedBranch]
-    [rootFolderDoc]
+    [changeRootFolderDoc, rootFolderDoc]
   );
 
   // observe the URL hash to change the selected document

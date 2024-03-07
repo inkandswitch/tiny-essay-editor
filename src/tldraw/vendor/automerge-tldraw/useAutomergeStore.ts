@@ -114,7 +114,7 @@ export function useAutomergeStore({
       unsubs.forEach((fn) => fn());
       unsubs.length = 0;
     };
-  }, [handle, store]);
+  }, [doc, handle, store]);
 
   return storeWithStatus;
 }
@@ -154,7 +154,7 @@ export function useAutomergePresence({
     // put / remove the records in the store
     const toRemove = innerStore.query
       .records("instance_presence")
-      // @ts-expect-error
+      // @ts-expect-error tldraw types need update
       .get()
       .sort(sortById)
       .map((record) => record.id)
@@ -189,12 +189,12 @@ export function useAutomergePresence({
     )(innerStore);
 
     return react("when presence changes", () => {
-      //@ts-expect-error
+      // @ts-expect-error tldraw types need update
       const presence = presenceDerivation.get();
       requestAnimationFrame(() => {
         updateLocalState(presence);
       });
     });
-  }, [innerStore, userId, updateLocalState]);
+  }, [innerStore, userId, updateLocalState, color, name]);
   /* ----------- End presence stuff ----------- */
 }

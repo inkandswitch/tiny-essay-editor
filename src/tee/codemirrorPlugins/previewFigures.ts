@@ -98,7 +98,6 @@ function getFigures(view: EditorView) {
     const text = view.state.sliceDoc(from, to);
 
     let match;
-    // eslint-disable-next-line no-cond-assign
     while ((match = INLINE_EXPR_REGEX.exec(text))) {
       const position = match.index + from;
 
@@ -120,7 +119,6 @@ function getFigures(view: EditorView) {
       }
     }
 
-    // eslint-disable-next-line no-cond-assign
     while ((match = BLOCK_EXPR_REGEX.exec(text))) {
       const position = match.index + from;
       const doc = parser.parseFromString(match.groups.source, "text/html");

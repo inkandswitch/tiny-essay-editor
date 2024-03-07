@@ -5,7 +5,6 @@ import {
   TextAnnotationWithPosition,
   MarkdownDoc,
   DraftAnnotation,
-  ThreadAnnotation,
   PersistedDraft,
   EditRange,
   PatchAnnotation,
@@ -19,10 +18,8 @@ import {
   Check,
   FolderIcon,
   FolderOpenIcon,
-  GroupIcon,
   MessageCircleIcon,
   MessageSquarePlus,
-  MoreHorizontalIcon,
   Reply,
   UndoIcon,
   CheckIcon,
@@ -30,7 +27,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { next as A, ChangeFn, Doc, uuid } from "@automerge/automerge";
+import { next as A, ChangeFn, uuid } from "@automerge/automerge";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import this from @automerge/automerge directly
 
 import {
@@ -40,7 +37,7 @@ import {
   PopoverClose,
 } from "@/components/ui/popover";
 import { TextSelection } from "./MarkdownEditor";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getRelativeTimeString,
   cmRangeToAMRange,
@@ -55,7 +52,6 @@ import { ReadonlySnippetView } from "./ReadonlySnippetView";
 import { getAttrOfPatch } from "@/patchwork/groupPatches";
 import { HistoryFilter } from "./HistoryFilter";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
-import { useHandle } from "@automerge/automerge-repo-react-hooks";
 import { copyDocAtHeads } from "@/patchwork/utils";
 import { DiscussionComment } from "@/patchwork/schema";
 
@@ -440,7 +436,7 @@ export const CommentsSidebar = ({
       const spliceCursor = A.getCursor(doc, ["content"], index - 1);
 
       // insert change on main at the heads when this branch was forked of
-      let newDiffBase = mainDocHandle.changeAt(
+      const newDiffBase = mainDocHandle.changeAt(
         handle.docSync().branchMetadata.source.branchHeads, // read branchHeads directly, diffBase might be stale
         (mainDoc) => {
           const spliceIndexInMain = getCursorPositionSafely(
@@ -535,7 +531,7 @@ export const CommentsSidebar = ({
     }
   };
 
-  const moveEditsToBranch = (annotation: TextAnnotation) => {
+  const moveEditsToBranch = () => {
     alert("not implemented yet");
   };
 
@@ -1231,7 +1227,7 @@ function extractWord(text: string, from: number, to: number) {
   return text.substring(start, end);
 }
 
-const PUNCTUATION_REGEX = /[!\"#$%&'()*+,-./:;<=>?@\[\\\]^_`{|}~“”]/;
+const PUNCTUATION_REGEX = /[!\"#$%&'()*+,-./:;<=>?@[\\\]^_`{|}~“”]/;
 
 function isPunctuation(value: string) {
   return PUNCTUATION_REGEX.test(value);

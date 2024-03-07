@@ -122,14 +122,14 @@ export function MarkdownEditor({
     editorRoot.current?.dispatch({
       effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
-  }, [debugHighlights, editorRoot.current]);
+  }, [debugHighlights]);
 
   // propagate fold ranges into codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
       effects: (foldRanges ?? []).map((range) => foldEffect.of(range)),
     });
-  }, [foldRanges, editorRoot.current]);
+  }, [foldRanges]);
 
   // Propagate patches into the codemirror
   useEffect(() => {
@@ -176,7 +176,7 @@ export function MarkdownEditor({
     if (isCommentBoxOpen) {
       const selection = editorRoot.current.state.selection.main;
       annotations.push({
-        //@ts-ignore
+        // @ts-expect-error annotations doesn't have a "type" yet?
         type: "discussion",
         id: "PENDING_COMMENT",
         from: selection.from,

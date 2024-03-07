@@ -1,23 +1,19 @@
-import { MarkdownDoc } from "@/tee/schema";
 import { DocType } from "@/DocExplorer/doctypes";
-import { DiffWithProvenance, Discussion, EditRangeTarget } from "../../schema";
+import {
+  DiffWithProvenance,
+  EditRangeTarget,
+  HasPatchworkMetadata,
+} from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { DocHandle } from "@automerge/automerge-repo";
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { isEqual, truncate, sortBy } from "lodash";
+import { truncate, sortBy } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -29,7 +25,6 @@ import {
   Link,
   MergeIcon,
   MessageSquareIcon,
-  MilestoneIcon,
   MoreHorizontal,
   PlusIcon,
   SplitIcon,
@@ -68,7 +63,6 @@ import {
 } from "../../branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
-import { EditorProps, TextSelection } from "@/tee/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PositionMap,
@@ -77,12 +71,11 @@ import {
 } from "./SpatialComments";
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
-import { DiffStyle } from "@/tee/components/MarkdownEditor";
-import { DebugHighlight } from "@/tee/codemirrorPlugins/DebugHighlight";
 import { BotEditor } from "@/bots/BotEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { isMarkdownDoc } from "@/tee/datatype";
 
 interface MakeBranchOptions {
   name?: string;
@@ -98,8 +91,8 @@ export const Demo4: React.FC<{
   setSelectedBranch: (branch: SelectedBranch) => void;
 }> = ({ docUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(docUrl);
+  const handle = useHandle<HasPatchworkMetadata>(docUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
@@ -139,7 +132,7 @@ export const Demo4: React.FC<{
     }
 
     setSessionStartHeads(A.getHeads(doc));
-  }, [doc]);
+  }, [doc, sessionStartHeads]);
 
   const currentEditSessionDiff = useMemo(() => {
     if (!doc || !sessionStartHeads) {
@@ -188,10 +181,15 @@ export const Demo4: React.FC<{
       toast("Created a new branch");
       return branchHandle;
     },
-    [repo, handle, account?.contactHandle?.url]
+    [repo, handle, account?.contactHandle?.url, setSelectedBranch]
   );
 
   const moveCurrentChangesToBranch = () => {
+    if (!isMarkdownDoc(doc))
+      throw new Error(
+        "No content to move to branch; this only works for MarkdownDoc now"
+      );
+
     // todo: only pull in changes the author made themselves?
     const latestText = doc.content;
     const textBeforeEditSession = A.view(doc, sessionStartHeads).content;
@@ -218,13 +216,13 @@ export const Demo4: React.FC<{
       deleteBranch({ docHandle: handle, branchUrl });
       toast("Deleted branch");
     },
-    [handle]
+    [handle, setSelectedBranch]
   );
 
   const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
-      const branchHandle = repo.find<MarkdownDoc>(branchUrl);
-      const docHandle = repo.find<MarkdownDoc>(docUrl);
+      const branchHandle = repo.find<HasPatchworkMetadata>(branchUrl);
+      const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
       mergeBranch({
         docHandle,
         branchHandle,
@@ -233,12 +231,12 @@ export const Demo4: React.FC<{
       setSelectedBranch({ type: "main" });
       toast.success("Branch merged to main");
     },
-    [docUrl, repo, account?.contactHandle?.url]
+    [repo, docUrl, account?.contactHandle?.url, setSelectedBranch]
   );
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
-    const draftHandle = repo.find<MarkdownDoc>(draftUrl);
-    const docHandle = repo.find<MarkdownDoc>(docUrl);
+    const draftHandle = repo.find<HasPatchworkMetadata>(draftUrl);
+    const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
@@ -249,7 +247,7 @@ export const Demo4: React.FC<{
 
   const renameBranch = useCallback(
     (draftUrl: AutomergeUrl, newName: string) => {
-      const docHandle = repo.find<MarkdownDoc>(docUrl);
+      const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
       docHandle.change((doc) => {
         const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
@@ -263,7 +261,7 @@ export const Demo4: React.FC<{
     [docUrl, repo]
   );
 
-  const [branchDoc] = useDocument<MarkdownDoc>(
+  const [branchDoc] = useDocument<HasPatchworkMetadata>(
     selectedBranch.type === "branch" ? selectedBranch.url : undefined
   );
 
@@ -290,14 +288,6 @@ export const Demo4: React.FC<{
   const diffForEditor =
     diffFromHistorySidebar ??
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
-
-  const diffBase =
-    diffFromHistorySidebar?.fromHeads ??
-    (showDiff
-      ? branchDiff
-        ? branchDiff?.fromHeads
-        : currentEditSessionDiff?.fromHeads
-      : undefined);
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
@@ -355,7 +345,7 @@ export const Demo4: React.FC<{
         );
       }
     );
-  }, [activeDoc?.content, activeDoc?.discussions]);
+  }, [activeDoc]);
 
   // todo: make this generic
 
@@ -693,7 +683,7 @@ const DocEditor = ({
   selectedDiscussionId,
   setHoveredDiscussionId,
   setSelectedDiscussionId,
-}: DocEditorProps<unknown> & { docType: DocType }) => {
+}: DocEditorProps & { docType: DocType }) => {
   switch (docType) {
     case "bot":
       return <BotEditor docUrl={docUrl} />;
@@ -728,8 +718,8 @@ const DocEditor = ({
 };
 
 const BranchActions: React.FC<{
-  doc: MarkdownDoc;
-  branchDoc: MarkdownDoc;
+  doc: HasPatchworkMetadata;
+  branchDoc: HasPatchworkMetadata;
   branchUrl: AutomergeUrl;
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;
@@ -754,6 +744,8 @@ const BranchActions: React.FC<{
   // compute new name suggestions anytime the branch heads change
   useEffect(() => {
     if (!dropdownOpen || !doc || !branchDoc) return;
+    if (!isMarkdownDoc(doc) || !isMarkdownDoc(branchDoc))
+      throw new Error("This only works for MarkdownDoc now");
     setNameSuggestions([]);
     (async () => {
       const suggestions = (

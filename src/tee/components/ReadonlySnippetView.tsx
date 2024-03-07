@@ -112,7 +112,7 @@ export function ReadonlySnippetView({
     return () => {
       view.destroy();
     };
-  }, [text, patches]);
+  }, [text, patches, setSelection]);
 
   return (
     <div className="flex flex-col items-stretch">

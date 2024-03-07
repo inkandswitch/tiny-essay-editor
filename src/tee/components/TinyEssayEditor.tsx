@@ -3,17 +3,13 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
 import { DiscussionAnotationForUI, MarkdownDoc } from "../schema";
 
-import { Mark, PatchWithAttr } from "@automerge/automerge-wasm";
+import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
-import {
-  ReviewStateFilter,
-  useAnnotationsWithPositions,
-  useStaticCallback,
-} from "../utils";
+import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
@@ -37,7 +33,7 @@ export const TinyEssayEditor = ({
   hoveredDiscussionId,
   setSelectedDiscussionId,
   onUpdateDiscussionTargetPositions,
-}: DocEditorProps<MarkdownDoc>) => {
+}: DocEditorProps) => {
   const account = useCurrentAccount();
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -46,12 +42,12 @@ export const TinyEssayEditor = ({
     []
   );
   const [editorView, setEditorView] = useState<EditorView>();
-  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
+  const [isCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
   const [activeDiscussionTargetPositions, setActiveDiscussionTargetPositions] =
     useState<DiscussionTargetPosition[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const [scrollOffset] = useState(0);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
@@ -86,7 +82,7 @@ export const TinyEssayEditor = ({
       ...filter,
       self: account.contactHandle.url,
     }));
-  }, [account?.contactHandle.url]);
+  }, [account, account.contactHandle.url]);
 
   // If the authors on the doc change, show changes by all authors
   useEffect(() => {
@@ -170,7 +166,15 @@ export const TinyEssayEditor = ({
         return visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr;
       })
     );
-  }, [diff, visibleAuthorsForEdits, reviewStateFilter, docAtHeads]);
+  }, [
+    diff,
+    visibleAuthorsForEdits,
+    doc?.drafts,
+    docAtHeads,
+    reviewStateFilter.showReviewedBySelf,
+    reviewStateFilter.self,
+    reviewStateFilter.showReviewedByOthers,
+  ]);
 
   const discussionAnnotations = useMemo<DiscussionAnotationForUI[]>(() => {
     if (!doc?.discussions) {
@@ -210,12 +214,7 @@ export const TinyEssayEditor = ({
         return [];
       }
     });
-  }, [
-    doc?.discussions,
-    doc?.content,
-    hoveredDiscussionId,
-    selectedDiscussionId,
-  ]);
+  }, [doc, hoveredDiscussionId, selectedDiscussionId]);
 
   // focus discussion
   useEffect(() => {
@@ -245,7 +244,7 @@ export const TinyEssayEditor = ({
         setSelectedDiscussionId(focusedDiscussion.id);
       }
     }
-  }, [selection]);
+  }, [discussions, doc, selection, setSelectedDiscussionId]);
 
   // update scroll position
   // scroll selectedDiscussion into view
@@ -275,7 +274,12 @@ export const TinyEssayEditor = ({
 
       return;
     }
-  }, [editorContainer, selectedDiscussionId]);
+  }, [
+    activeDiscussionTargetPositions,
+    editorContainer,
+    scrollOffset,
+    selectedDiscussionId,
+  ]);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {

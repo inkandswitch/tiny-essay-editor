@@ -6,7 +6,11 @@ import React, {
   useState,
   useReducer,
 } from "react";
-import { Discussion, DiscussionComment } from "@/patchwork/schema";
+import {
+  Discussion,
+  DiscussionComment,
+  HasPatchworkMetadata,
+} from "@/patchwork/schema";
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
@@ -20,14 +24,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, Reply } from "lucide-react";
-import { MarkdownDoc } from "@/tee/schema";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
 
 interface SpatialCommentsListProps {
   topDiscussion: Discussion;
   discussions: Discussion[];
-  changeDoc: (changeFn: (doc: MarkdownDoc) => void) => void;
+  changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedDiscussionId: (id: string) => void;
   setHoveredDiscussionId: (id: string) => void;
@@ -123,7 +126,14 @@ export const SpatialCommentsSidebar = React.memo(
       }
 
       setScrollTarget(topDiscussion.id);
-    }, [topDiscussion?.id, selectedDiscussionId, scrollContainer]);
+    }, [
+      topDiscussion.id,
+      selectedDiscussionId,
+      scrollContainer,
+      topDiscussion,
+      setScrollTarget,
+      discussionsPositionMap,
+    ]);
 
     return (
       <div
@@ -276,7 +286,7 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
       return () => {
         window.removeEventListener("keydown", onKeydown);
       };
-    }, [isSelected]);
+    }, [isSelected, onSelectNext, onSelectPrev, setIsReplyBoxOpen]);
 
     return (
       <div
@@ -429,7 +439,7 @@ const useDiscussionsPositionMap = ({
   const elementSizes = useRef<Record<string, number>>({});
   // create an artificial dependency that triggeres a re-eval of effects / memos
   // that depend on it when forceChange is called
-  const [forceChangeDependency, forceChange] = useReducer(() => ({}), {});
+  const [, forceChange] = useReducer(() => ({}), {});
   const [resizeObserver] = useState(
     () =>
       new ResizeObserver((events) => {
@@ -449,7 +459,7 @@ const useDiscussionsPositionMap = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [resizeObserver]);
 
   const registerDiscussionElement = (
     discussionId: string,
@@ -485,7 +495,7 @@ const useDiscussionsPositionMap = ({
       onChangeCommentPositionMap(positionMap);
     }
     return positionMap;
-  }, [discussions, forceChangeDependency, offset]);
+  }, [discussions, offset, onChangeCommentPositionMap]);
 
   return { registerDiscussionElement, discussionsPositionMap };
 };
@@ -534,7 +544,7 @@ export const useSetScrollTarget = (
     if (scrollContainer && targetIdRef.current !== undefined) {
       triggerScrollPositionUpdate();
     }
-  }, [scrollContainer]);
+  }, [scrollContainer, triggerScrollPositionUpdate]);
 
   return (discussionId: string) => {
     const prevTarget = targetIdRef.current;

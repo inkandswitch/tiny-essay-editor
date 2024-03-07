@@ -5,7 +5,7 @@
 import { next as A } from "@automerge/automerge";
 import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
-import { splice } from "@automerge/automerge/next";
+import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
 import { TextPatch } from "@/patchwork/utils";
@@ -78,6 +78,11 @@ export const includeChangeInHistory = (
 
 export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>
   patch.path[0] === "content" || patch.path[0] === "commentThreads";
+
+export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
+  const typedDoc = doc as MarkdownDoc;
+  return !!typedDoc.content && !!typedDoc.commentThreads;
+};
 
 export const EssayDatatype: DataType<MarkdownDoc> = {
   id: "essay",

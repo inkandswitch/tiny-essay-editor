@@ -58,7 +58,7 @@ export const DataGrid = ({
     return false;
   };
 
-  const onBeforeCreateRow = (index, amount, source) => {
+  const onBeforeCreateRow = (index, amount) => {
     handle.change((doc) => {
       doc.data.splice(
         index,
@@ -69,7 +69,7 @@ export const DataGrid = ({
     return false;
   };
 
-  const onBeforeCreateCol = (index, amount, source) => {
+  const onBeforeCreateCol = (index, amount) => {
     handle.change((doc) => {
       doc.data.forEach((row) => {
         row.splice(index, 0, ...new Array(amount).fill(null));
