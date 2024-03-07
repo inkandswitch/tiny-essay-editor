@@ -25,6 +25,7 @@ import "../../tee/index.css";
 import { Discussion } from "@/patchwork/schema";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isEqual } from "lodash";
+import { DiscussionTargetPosition } from "../codemirrorPlugins/discussionTargetPositionListener";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -33,9 +34,9 @@ export const TinyEssayEditor = ({
   actorIdToAuthor,
   overlayContainer,
   setEditorContainerElement,
-  activeDiscussionIds,
   discussions,
-  setHoveredDiscussionId,
+  selectedDiscussionId,
+  hoveredDiscussionId,
   setSelectedDiscussionId,
   onUpdateDiscussionTargetPositions,
 }: DocEditorProps<MarkdownDoc>) => {
@@ -48,8 +49,11 @@ export const TinyEssayEditor = ({
   );
   const [editorView, setEditorView] = useState<EditorView>();
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
+  const [activeDiscussionTargetPositions, setActiveDiscussionTargetPositions] =
+    useState<DiscussionTargetPosition[]>([]);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
@@ -86,8 +90,6 @@ export const TinyEssayEditor = ({
     }));
   }, [account?.contactHandle.url]);
 
-  const authors = uniq(Object.values(actorIdToAuthor ?? {}));
-
   // If the authors on the doc change, show changes by all authors
   useEffect(() => {
     setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
@@ -102,7 +104,7 @@ export const TinyEssayEditor = ({
     doc: docAtHeads,
     view: editorView,
     selectedAnnotationIds: selectedAnnotationIds,
-    editorRef,
+    editorContainer,
     diff,
     visibleAuthorsForEdits,
     reviewStateFilter,
@@ -200,7 +202,9 @@ export const TinyEssayEditor = ({
               ["content"],
               discussion.target.value.toCursor
             ),
-            active: activeDiscussionIds.includes(discussion.id),
+            active:
+              discussion.id === hoveredDiscussionId ||
+              discussion.id === selectedDiscussionId,
             id: discussion.id,
           },
         ];
@@ -208,7 +212,12 @@ export const TinyEssayEditor = ({
         return [];
       }
     });
-  }, [doc?.discussions, doc?.content, activeDiscussionIds]);
+  }, [
+    doc?.discussions,
+    doc?.content,
+    hoveredDiscussionId,
+    selectedDiscussionId,
+  ]);
 
   // focus discussion
   useEffect(() => {
@@ -238,13 +247,46 @@ export const TinyEssayEditor = ({
     setSelectedDiscussionId(focusedDiscussion?.id);
   }, [selection]);
 
+  // update scroll position
+  // scroll selectedDiscussion into view
+  useEffect(() => {
+    if (!editorContainer) {
+      return;
+    }
+
+    if (selectedDiscussionId) {
+      const target = activeDiscussionTargetPositions.find(
+        ({ discussion }) => discussion.id === selectedDiscussionId
+      );
+
+      if (!target) {
+        return;
+      }
+
+      const targetPos = target.y + scrollOffset;
+
+      // unsure why we need to subtract something here otherwise it doesn't scroll all the way to the bottom
+      if (target.y < 0 || target.y >= editorContainer.clientHeight - 150) {
+        editorContainer.scrollTo({
+          top: targetPos,
+          behavior: "smooth",
+        });
+      }
+
+      return;
+    }
+  }, [editorContainer, selectedDiscussionId]);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
   }
 
   return (
-    <div className="h-full overflow-auto min-h-0 w-full" ref={editorRef}>
+    <div
+      className="h-full overflow-auto min-h-0 w-full"
+      ref={setEditorContainer}
+    >
       <div className="@container flex bg-gray-100 justify-center">
         {/* This has some subtle behavior for responsiveness.
             - We use container queries to adjust the width of the editor based on the size of our container.
@@ -273,9 +315,10 @@ export const TinyEssayEditor = ({
               discussionAnnotations={discussionAnnotations}
               overlayContainer={overlayContainer}
               setEditorContainerElement={setEditorContainerElement}
-              onUpdateDiscussionTargetPositions={
-                onUpdateDiscussionTargetPositions
-              }
+              onUpdateDiscussionTargetPositions={(targetPositions) => {
+                setActiveDiscussionTargetPositions(targetPositions);
+                onUpdateDiscussionTargetPositions(targetPositions);
+              }}
               isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>

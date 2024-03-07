@@ -433,23 +433,20 @@ export const getVisibleTheadsWithPos = ({
   return threadsWithPositions;
 };
 
-export const useScrollPosition = (
-  ref: React.MutableRefObject<HTMLElement | null>
-) => {
+export const useScrollPosition = (container: HTMLElement | null) => {
   const [scrollPosition, setScrollPosition] = useState(0);
 
   useEffect(() => {
-    if (!ref.current) {
+    if (!container) {
       return;
     }
-    const div = ref.current;
     const updatePosition = () => {
-      setScrollPosition(div.scrollTop);
+      setScrollPosition(container.scrollTop);
     };
-    div.addEventListener("scroll", () => updatePosition());
+    container.addEventListener("scroll", () => updatePosition());
     updatePosition();
-    return () => div.removeEventListener("scroll", updatePosition);
-  }, [ref, ref.current]);
+    return () => container.removeEventListener("scroll", updatePosition);
+  }, [container]);
 
   return scrollPosition;
 };
@@ -484,7 +481,7 @@ export const useAnnotationsWithPositions = ({
   doc,
   view,
   selectedAnnotationIds,
-  editorRef,
+  editorContainer,
   diff,
   visibleAuthorsForEdits,
   reviewStateFilter,
@@ -492,7 +489,7 @@ export const useAnnotationsWithPositions = ({
   doc: MarkdownDoc;
   view: EditorView;
   selectedAnnotationIds: string[];
-  editorRef: React.MutableRefObject<HTMLElement | null>;
+  editorContainer: HTMLElement | null;
   diff?: DiffWithProvenance;
   visibleAuthorsForEdits: AutomergeUrl[];
   reviewStateFilter: ReviewStateFilter;
@@ -611,7 +608,7 @@ export const useAnnotationsWithPositions = ({
   // we just use CodeMirror to compute position, and it doesn't tell us position
   // of comments that are way off-screen. That's why we need this scroll handler
   // to catch when things come near the screen)
-  const scrollPosition = useScrollPosition(editorRef);
+  const scrollPosition = useScrollPosition(editorContainer);
 
   const threadsWithPositions = useMemo(
     () => {

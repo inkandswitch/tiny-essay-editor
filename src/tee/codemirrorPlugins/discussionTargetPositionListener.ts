@@ -15,7 +15,6 @@ export interface OverlayContainer {
   height: number;
   top: number;
   left: number;
-  scrollOffset: number;
 }
 
 export const setOverlayContainerEffect = StateEffect.define<OverlayContainer>();

@@ -54,6 +54,8 @@ export interface DocEditorProps<T> {
   discussions: Discussion[]; // todo: should be a list of anchors
   overlayContainer?: OverlayContainer;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
+  selectedDiscussionId: string;
+  hoveredDiscussionId: string;
   setHoveredDiscussionId: (id: string) => void;
   setSelectedDiscussionId: (id: string) => void;
   onUpdateDiscussionTargetPositions?: (

@@ -305,9 +305,7 @@ export const Demo4: React.FC<{
     useState<HTMLDivElement>(null);
   const [editorContainerRect, setEditorContainerRect] = useState<DOMRect>(null);
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
-  const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>(null);
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
-  const [scrollOffset, setScrollOffset] = useState(0);
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
     DiscussionTargetPosition[]
   >([]);
@@ -335,13 +333,12 @@ export const Demo4: React.FC<{
     }
 
     return {
-      scrollOffset,
       width: bezierCurveLayerRect.width,
       height: bezierCurveLayerRect.height,
       top: bezierCurveLayerRect.top,
       left: bezierCurveLayerRect.left,
     };
-  }, [bezierCurveLayerRect, scrollOffset, reviewMode]);
+  }, [bezierCurveLayerRect, reviewMode]);
 
   const [commentPositionMap, setCommentPositionMap] = useState({});
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
@@ -368,44 +365,11 @@ export const Demo4: React.FC<{
     };
   }, [bezierCurveLayerElement, editorContainerElement]);
 
-  // scroll selectedDiscussion into view
-  useEffect(() => {
-    if (!scrollContainer) {
-      return;
-    }
-
-    if (selectedDiscussionId) {
-      const target = activeDiscussionTargetPositions.find(
-        ({ discussion }) => discussion.id === selectedDiscussionId
-      );
-
-      if (!target) {
-        return;
-      }
-
-      const targetPos = target.y + scrollOffset;
-
-      // unsure why I need to subtract something here otherwise it doesn't scroll all the way to the bottom
-      if (target.y < 0 || target.y >= scrollContainer.clientHeight - 150) {
-        scrollContainer.scrollTo({
-          top: targetPos,
-          behavior: "smooth",
-        });
-      }
-
-      return;
-    }
-  }, [scrollContainer, selectedDiscussionId]);
-
   const activeDoc = branchDoc ?? doc;
 
   const activeDiscussionTargetPositions = useMemo<
     DiscussionTargetPosition[]
   >(() => {
-    if (!scrollContainer) {
-      return [];
-    }
-
     return sortBy(discussionTargetPositions, (target) =>
       A.getCursorPosition(
         activeDoc,
@@ -413,13 +377,7 @@ export const Demo4: React.FC<{
         (target.discussion.target as EditRangeTarget).value.fromCursor
       )
     );
-  }, [
-    doc?.content,
-    scrollOffset,
-    discussionTargetPositions,
-    scrollContainer,
-    bezierCurveLayerRect,
-  ]);
+  }, [doc?.content, discussionTargetPositions, bezierCurveLayerRect]);
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
@@ -732,15 +690,8 @@ export const Demo4: React.FC<{
                 )}
               </div>
             )}
-            <div
-              className="h-full overflow-auto"
-              ref={setScrollContainer}
-              onScroll={(event) => {
-                setScrollOffset((event.target as HTMLDivElement).scrollTop);
-              }}
-            >
-              <div className="flex h-full">
-                {/*selectedBranch.type === "branch" && compareWithMainFlag && (
+            <div className="flex h-full">
+              {/*selectedBranch.type === "branch" && compareWithMainFlag && (
                   <DocEditor
                     docType={docType}
                     docUrl={docUrl}
@@ -753,24 +704,24 @@ export const Demo4: React.FC<{
                     actorIdToAuthor={actorIdToAuthor}
                   />
                   )*/}
-                <DocEditor
-                  docType={docType}
-                  docUrl={selectedBranchLink?.url ?? docUrl}
-                  docHeads={docHeads}
-                  key={`main-${docUrl}`}
-                  diff={diffForEditor}
-                  actorIdToAuthor={actorIdToAuthor}
-                  discussions={discussions}
-                  onUpdateDiscussionTargetPositions={
-                    onUpdateDiscussionTargetPositions
-                  }
-                  overlayContainer={overlayContainer}
-                  setEditorContainerElement={setEditorContainerElement}
-                  activeDiscussionIds={activeDiscussionIds}
-                  setHoveredDiscussionId={setHoveredDiscussionId}
-                  setSelectedDiscussionId={setSelectedDiscussionId}
-                />
-              </div>
+              <DocEditor
+                docType={docType}
+                docUrl={selectedBranchLink?.url ?? docUrl}
+                docHeads={docHeads}
+                key={`main-${docUrl}`}
+                diff={diffForEditor}
+                actorIdToAuthor={actorIdToAuthor}
+                discussions={discussions}
+                onUpdateDiscussionTargetPositions={
+                  onUpdateDiscussionTargetPositions
+                }
+                overlayContainer={overlayContainer}
+                setEditorContainerElement={setEditorContainerElement}
+                hoveredDiscussionId={hoveredDiscussionId}
+                selectedDiscussionId={selectedDiscussionId}
+                setHoveredDiscussionId={setHoveredDiscussionId}
+                setSelectedDiscussionId={setSelectedDiscussionId}
+              />
             </div>
           </div>
         </div>
@@ -843,8 +794,9 @@ const DocEditor = ({
   overlayContainer,
   setEditorContainerElement,
   discussions,
-  activeDiscussionIds,
   onUpdateDiscussionTargetPositions,
+  hoveredDiscussionId,
+  selectedDiscussionId,
   setHoveredDiscussionId,
   setSelectedDiscussionId,
 }: DocEditorProps<unknown> & { docType: DocType }) => {
@@ -862,9 +814,10 @@ const DocEditor = ({
           overlayContainer={overlayContainer}
           discussions={discussions}
           setEditorContainerElement={setEditorContainerElement}
+          hoveredDiscussionId={hoveredDiscussionId}
+          selectedDiscussionId={selectedDiscussionId}
           setHoveredDiscussionId={setHoveredDiscussionId}
           setSelectedDiscussionId={setSelectedDiscussionId}
-          activeDiscussionIds={activeDiscussionIds}
         />
       );
     case "tldraw":
