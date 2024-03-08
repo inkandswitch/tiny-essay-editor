@@ -82,7 +82,7 @@ export const TinyEssayEditor = ({
       ...filter,
       self: account.contactHandle.url,
     }));
-  }, [account, account.contactHandle.url]);
+  }, [account, account?.contactHandle.url]);
 
   // If the authors on the doc change, show changes by all authors
   useEffect(() => {
