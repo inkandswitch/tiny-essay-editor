@@ -92,7 +92,7 @@ const EditableTLDraw = ({
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling(doc, diff, store);
+  useDiffStyling({ doc, diff, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -113,7 +113,7 @@ const ReadOnlyTLDraw = ({
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling(doc, diff, store);
+  useDiffStyling({ doc, diff, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -187,7 +187,7 @@ const useCameraSync = ({
     }
 
     const onChange = () => {
-      if (editor.cameraState !== "idle") {
+      if (editor.cameraState === "moving") {
         onChangeCamera(editor.camera);
       }
     };
@@ -200,13 +200,34 @@ const useCameraSync = ({
   }, [editor, onChangeCamera]);
 };
 
-const useDiffStyling = (
-  doc: TLDrawDoc,
-  diff: DiffWithProvenance,
-  store: TLStoreWithStatus
-) => {
+const useDiffStyling = ({
+  doc,
+  diff,
+  store,
+  editor,
+}: {
+  doc: TLDrawDoc;
+  diff: DiffWithProvenance;
+  store: TLStoreWithStatus;
+  editor: Editor;
+}) => {
   const tempShapeIdsRef = useRef(new Set<TLShapeId>());
   const highlightedElementsRef = useRef(new Set<HTMLElement>());
+  const [camera, setCamera] = useState<TLCamera>();
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.on("change", () => {
+      if (editor.cameraState === "moving") {
+        setCamera(editor.camera);
+      }
+    });
+
+    return () => {};
+  }, [editor]);
 
   useEffect(() => {
     if (!store.store) {
@@ -239,7 +260,6 @@ const useDiffStyling = (
       toPut.forEach((obj) => {
         const shapeElem = document.getElementById(obj.id);
         if (!shapeElem) {
-          console.log("no shapeElem", obj.id);
           return;
         }
 
@@ -286,5 +306,5 @@ const useDiffStyling = (
         });
       highlightedElementsRef.current = activeHighlightedElements;
     }, 100);
-  }, [diff, store, doc]);
+  }, [diff, store, doc, camera]);
 };
