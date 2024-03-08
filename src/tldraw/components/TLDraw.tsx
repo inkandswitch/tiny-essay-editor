@@ -44,6 +44,17 @@ export const TLDraw = ({
     [doc, docHeads]
   );
 
+  const [localCamera, setLocalCamera] = useState<TLCamera>();
+
+  const setCamera = (camera: TLCamera) => {
+    if (onChangeCamera) {
+      onChangeCamera(camera);
+      return;
+    }
+
+    setLocalCamera(camera);
+  };
+
   return (
     <div className="tldraw__editor h-full overflow-auto">
       {docHeads ? (
@@ -54,8 +65,8 @@ export const TLDraw = ({
             doc={docAtHeads}
             diff={diff}
             handle={handle}
-            camera={camera}
-            onChangeCamera={onChangeCamera}
+            camera={camera ?? localCamera}
+            onChangeCamera={setCamera}
           />
         ) : null
       ) : (
@@ -64,8 +75,8 @@ export const TLDraw = ({
           doc={doc}
           diff={diff}
           handle={handle}
-          camera={camera}
-          onChangeCamera={onChangeCamera}
+          camera={camera ?? localCamera}
+          onChangeCamera={setCamera}
         />
       )}
     </div>
@@ -147,6 +158,7 @@ export const SideBySide = ({
         <TLDraw
           docUrl={mainDocUrl}
           diff={mainDiff}
+          key={mainDocUrl}
           camera={camera}
           onChangeCamera={setCamera}
         />
@@ -154,6 +166,7 @@ export const SideBySide = ({
       <div className="h-full flex-1 overflow-auto border-l border-l-gray-200">
         <TLDraw
           docUrl={docUrl}
+          key={docUrl}
           docHeads={docHeads}
           diff={diff}
           camera={camera}
