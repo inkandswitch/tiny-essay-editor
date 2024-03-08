@@ -23,6 +23,7 @@ import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
 import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { useStaticCallback } from "@/tee/utils";
 
 export type Tool = {
   id: string;
@@ -59,7 +60,12 @@ export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
+  const [rootFolderDoc, _changeRootFolderDoc] = useCurrentRootFolderDoc();
+
+  // we need to wrap _changeRootFolderDoc with useStaticCallback, otherwise changeRootFolderDoc will be a differen instance on each render
+  // which triggers an infinite rerender loop because we pass it to useSelectedDoc as a dependency
+  // probably we should push this down into automerge-repo that useDocument returns the same callback if the url hasn't changed
+  const changeRootFolderDoc = useStaticCallback(_changeRootFolderDoc);
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [showToolPicker, setShowToolPicker] = useState(false);
@@ -432,6 +438,10 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
 
   // observe the URL hash to change the selected document
   useEffect(() => {
+    if (rootFolderDoc === undefined) {
+      return;
+    }
+
     const hashChangeHandler = () => {
       const urlParams = parseCurrentUrlHash();
       if (!urlParams) return;
@@ -447,7 +457,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     return () => {
       window.removeEventListener("hashchange", hashChangeHandler, false);
     };
-  }, [openDocFromUrl]);
+  }, [openDocFromUrl, rootFolderDoc !== undefined]);
 
   return {
     selectedDocUrl,
