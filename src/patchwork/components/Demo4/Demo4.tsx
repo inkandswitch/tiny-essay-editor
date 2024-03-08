@@ -89,10 +89,10 @@ export const Demo4: React.FC<{
   docType: DocType;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-}> = ({ docUrl, docType, selectedBranch, setSelectedBranch }) => {
+}> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
-  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(docUrl);
-  const handle = useHandle<HasPatchworkMetadata>(docUrl);
+  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(mainDocUrl);
+  const handle = useHandle<HasPatchworkMetadata>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
@@ -110,7 +110,7 @@ export const Demo4: React.FC<{
       setShowChangesFlag(true);
       setCompareWithMainFlag(false);
     }
-  }, [selectedBranch]);
+  }, [JSON.stringify(selectedBranch)]);
 
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
     useState<boolean>(false);
@@ -149,7 +149,7 @@ export const Demo4: React.FC<{
     };
   }, [doc, sessionStartHeads]);
 
-  const actorIdToAuthor = useActorIdToAuthorMap(docUrl);
+  const actorIdToAuthor = useActorIdToAuthorMap(mainDocUrl);
 
   const showDiff =
     (showChangesFlag && selectedBranch.type === "branch") ||
@@ -222,7 +222,7 @@ export const Demo4: React.FC<{
   const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
       const branchHandle = repo.find<HasPatchworkMetadata>(branchUrl);
-      const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
+      const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
       mergeBranch({
         docHandle,
         branchHandle,
@@ -231,12 +231,12 @@ export const Demo4: React.FC<{
       setSelectedBranch({ type: "main" });
       toast.success("Branch merged to main");
     },
-    [repo, docUrl, account?.contactHandle?.url, setSelectedBranch]
+    [repo, mainDocUrl, account?.contactHandle?.url, setSelectedBranch]
   );
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
     const draftHandle = repo.find<HasPatchworkMetadata>(draftUrl);
-    const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
+    const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
@@ -247,7 +247,7 @@ export const Demo4: React.FC<{
 
   const renameBranch = useCallback(
     (draftUrl: AutomergeUrl, newName: string) => {
-      const docHandle = repo.find<HasPatchworkMetadata>(docUrl);
+      const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
       docHandle.change((doc) => {
         const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
@@ -258,7 +258,7 @@ export const Demo4: React.FC<{
         }
       });
     },
-    [docUrl, repo]
+    [mainDocUrl, repo]
   );
 
   const [branchDoc] = useDocument<HasPatchworkMetadata>(
@@ -582,26 +582,15 @@ export const Demo4: React.FC<{
                 commentsPositionMap={commentsPositionMap}
               />
             )}
-            <div className="flex h-full">
-              {/*selectedBranch.type === "branch" && compareWithMainFlag && (
-                  <DocEditor
-                    docType={docType}
-                    docUrl={docUrl}
-                    branchDocHandle={branchDocHandle}
-                    key={`compare-${docUrl}`}
-                    diff={showDiff ? currentEditSessionDiff : undefined}
-                    diffBase={
-                      showDiff ? currentEditSessionDiff?.fromHeads : undefined
-                    }
-                    actorIdToAuthor={actorIdToAuthor}
-                  />
-                  )*/}
-              <DocEditor
+            {selectedBranch.type === "branch" && compareWithMainFlag ? (
+              <SideBySide
+                key={mainDocUrl}
+                mainDocUrl={mainDocUrl}
                 docType={docType}
-                docUrl={selectedBranchLink?.url ?? docUrl}
+                docUrl={selectedBranchLink?.url}
                 docHeads={docHeads}
-                key={`main-${docUrl}`}
-                diff={diffForEditor}
+                diff={showDiff ? diffForEditor : undefined}
+                mainDiff={showDiff ? currentEditSessionDiff : undefined}
                 actorIdToAuthor={actorIdToAuthor}
                 discussions={discussions}
                 onUpdateDiscussionTargetPositions={
@@ -612,7 +601,24 @@ export const Demo4: React.FC<{
                 setHoveredDiscussionId={setHoveredDiscussionId}
                 setSelectedDiscussionId={setSelectedDiscussionId}
               />
-            </div>
+            ) : (
+              <DocEditor
+                key={selectedBranchLink?.url ?? mainDocUrl}
+                docType={docType}
+                docUrl={selectedBranchLink?.url ?? mainDocUrl}
+                docHeads={docHeads}
+                diff={showDiff ? diffForEditor : undefined}
+                actorIdToAuthor={actorIdToAuthor}
+                discussions={discussions}
+                onUpdateDiscussionTargetPositions={
+                  onUpdateDiscussionTargetPositions
+                }
+                hoveredDiscussionId={hoveredDiscussionId}
+                selectedDiscussionId={selectedDiscussionId}
+                setHoveredDiscussionId={setHoveredDiscussionId}
+                setSelectedDiscussionId={setSelectedDiscussionId}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -642,9 +648,9 @@ export const Demo4: React.FC<{
             {reviewMode === "timeline" && (
               <ReviewSidebar
                 // set key to trigger re-mount on branch change
-                key={selectedBranchLink?.url ?? docUrl}
+                key={selectedBranchLink?.url ?? mainDocUrl}
                 docType={docType}
-                docUrl={selectedBranchLink?.url ?? docUrl}
+                docUrl={selectedBranchLink?.url ?? mainDocUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
                 selectedBranch={selectedBranch}
@@ -670,7 +676,10 @@ export const Demo4: React.FC<{
   );
 };
 
-// todo: cleanup this interface and remove code essay editor specific props
+interface DocEditorPropsWithDocType extends DocEditorProps {
+  docType: DocType;
+}
+
 const DocEditor = ({
   docType,
   docUrl,
@@ -683,7 +692,7 @@ const DocEditor = ({
   selectedDiscussionId,
   setHoveredDiscussionId,
   setSelectedDiscussionId,
-}: DocEditorProps & { docType: DocType }) => {
+}: DocEditorPropsWithDocType) => {
   switch (docType) {
     case "bot":
       return <BotEditor docUrl={docUrl} />;
@@ -712,6 +721,68 @@ const DocEditor = ({
       return (
         <div className="h-full w-full">
           <DataGrid docUrl={docUrl} heads={docHeads} />
+        </div>
+      );
+  }
+};
+
+interface SideBySideProps extends DocEditorPropsWithDocType {
+  mainDiff: DiffWithProvenance;
+  mainDocUrl: AutomergeUrl;
+}
+
+export const SideBySide = ({
+  docType,
+  docUrl,
+  mainDocUrl,
+  docHeads,
+  diff,
+  mainDiff,
+  actorIdToAuthor,
+  discussions,
+  onUpdateDiscussionTargetPositions,
+  hoveredDiscussionId,
+  selectedDiscussionId,
+  setHoveredDiscussionId,
+  setSelectedDiscussionId,
+}: SideBySideProps) => {
+  switch (docType) {
+    default:
+      return (
+        <div className="flex h-full w-full">
+          <div className="h-full flex-1 overflow-auto">
+            <DocEditor
+              docType={docType}
+              docUrl={mainDocUrl}
+              diff={mainDiff}
+              actorIdToAuthor={actorIdToAuthor}
+              discussions={discussions}
+              onUpdateDiscussionTargetPositions={
+                onUpdateDiscussionTargetPositions
+              }
+              hoveredDiscussionId={hoveredDiscussionId}
+              selectedDiscussionId={selectedDiscussionId}
+              setHoveredDiscussionId={setHoveredDiscussionId}
+              setSelectedDiscussionId={setSelectedDiscussionId}
+            />
+          </div>
+          <div className="h-full flex-1 overflow-auto">
+            <DocEditor
+              docType={docType}
+              docUrl={docUrl}
+              docHeads={docHeads}
+              diff={diff}
+              actorIdToAuthor={actorIdToAuthor}
+              discussions={discussions}
+              onUpdateDiscussionTargetPositions={
+                onUpdateDiscussionTargetPositions
+              }
+              hoveredDiscussionId={hoveredDiscussionId}
+              selectedDiscussionId={selectedDiscussionId}
+              setHoveredDiscussionId={setHoveredDiscussionId}
+              setSelectedDiscussionId={setSelectedDiscussionId}
+            />
+          </div>
         </div>
       );
   }
