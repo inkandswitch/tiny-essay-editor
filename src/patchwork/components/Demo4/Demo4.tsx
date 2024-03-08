@@ -72,7 +72,10 @@ import {
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
+import {
+  TLDraw,
+  SideBySide as TLDrawSideBySide,
+} from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
@@ -714,40 +717,46 @@ const DocEditor = ({
     case "tldraw":
       return (
         <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} heads={docHeads} diff={diff} />
+          <TLDraw docUrl={docUrl} docHeads={docHeads} diff={diff} />
         </div>
       );
     case "datagrid":
       return (
         <div className="h-full w-full">
-          <DataGrid docUrl={docUrl} heads={docHeads} />
+          <DataGrid docUrl={docUrl} docHeads={docHeads} />
         </div>
       );
   }
 };
 
-interface SideBySideProps extends DocEditorPropsWithDocType {
+export interface SideBySideProps extends DocEditorPropsWithDocType {
   mainDiff: DiffWithProvenance;
   mainDocUrl: AutomergeUrl;
 }
 
-export const SideBySide = ({
-  docType,
-  docUrl,
-  mainDocUrl,
-  docHeads,
-  diff,
-  mainDiff,
-  actorIdToAuthor,
-  discussions,
-  onUpdateDiscussionTargetPositions,
-  hoveredDiscussionId,
-  selectedDiscussionId,
-  setHoveredDiscussionId,
-  setSelectedDiscussionId,
-}: SideBySideProps) => {
-  switch (docType) {
-    default:
+export const SideBySide = (props: SideBySideProps) => {
+  switch (props.docType) {
+    case "tldraw": {
+      return <TLDrawSideBySide {...props} />;
+    }
+
+    default: {
+      const {
+        docType,
+        docUrl,
+        mainDocUrl,
+        docHeads,
+        diff,
+        mainDiff,
+        actorIdToAuthor,
+        discussions,
+        onUpdateDiscussionTargetPositions,
+        hoveredDiscussionId,
+        selectedDiscussionId,
+        setHoveredDiscussionId,
+        setSelectedDiscussionId,
+      } = props;
+
       return (
         <div className="flex h-full w-full">
           <div className="h-full flex-1 overflow-auto">
@@ -785,6 +794,7 @@ export const SideBySide = ({
           </div>
         </div>
       );
+    }
   }
 };
 

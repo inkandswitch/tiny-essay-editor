@@ -15,10 +15,10 @@ registerAllModules();
 
 export const DataGrid = ({
   docUrl,
-  heads,
+  docHeads,
 }: {
   docUrl: AutomergeUrl;
-  heads: Heads;
+  docHeads: Heads;
 }) => {
   useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
@@ -27,8 +27,8 @@ export const DataGrid = ({
 
   useEffect(() => {
     const updateHotTable = ({ doc }) => {
-      if (heads) {
-        doc = Automerge.view(doc, heads);
+      if (docHeads) {
+        doc = Automerge.view(doc, docHeads);
       }
       console.log("table changed", doc);
       // The Handsontable instance is stored under the `hotInstance` property of the wrapper component.
@@ -41,7 +41,7 @@ export const DataGrid = ({
     return () => {
       handle.off("change", updateHotTable);
     };
-  }, [handle, heads]);
+  }, [handle, docHeads]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {

@@ -1,24 +1,37 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
+import { isEqual } from "lodash";
 
 import { TLDrawDoc } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import { TLShapeId, TLStoreWithStatus, Tldraw } from "@tldraw/tldraw";
+import {
+  TLCamera,
+  TLShapeId,
+  TLStoreWithStatus,
+  Tldraw,
+  Editor,
+  Box2d,
+} from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { next as A, Patch } from "@automerge/automerge";
 import { DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
+import { SideBySideProps } from "@/patchwork/components/Demo4/Demo4";
 
 export const TLDraw = ({
   docUrl,
-  heads,
+  docHeads,
   diff,
+  camera,
+  onChangeCamera,
 }: {
   docUrl: AutomergeUrl;
-  heads?: A.Heads;
+  docHeads?: A.Heads;
   diff?: DiffWithProvenance;
+  camera?: TLCamera;
+  onChangeCamera?: (camera: TLCamera) => void;
 }) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -27,24 +40,33 @@ export const TLDraw = ({
 
   const [doc] = useDocument<TLDrawDoc>(docUrl);
   const docAtHeads = useMemo(
-    () => (heads ? A.view(doc, heads) : undefined),
-    [doc, heads]
+    () => (docHeads ? A.view(doc, docHeads) : undefined),
+    [doc, docHeads]
   );
 
   return (
     <div className="tldraw__editor h-full overflow-auto">
-      {heads ? (
+      {docHeads ? (
         docAtHeads ? (
           <ReadOnlyTLDraw
-            key={JSON.stringify(heads)}
+            key={JSON.stringify(docHeads)}
             userId={userId}
             doc={docAtHeads}
             diff={diff}
             handle={handle}
+            camera={camera}
+            onChangeCamera={onChangeCamera}
           />
         ) : null
       ) : (
-        <EditableTLDraw userId={userId} doc={doc} diff={diff} handle={handle} />
+        <EditableTLDraw
+          userId={userId}
+          doc={doc}
+          diff={diff}
+          handle={handle}
+          camera={camera}
+          onChangeCamera={onChangeCamera}
+        />
       )}
     </div>
   );
@@ -55,37 +77,134 @@ interface TlDrawProps {
   handle: DocHandle<TLDrawDoc>;
   userId: string;
   diff?: DiffWithProvenance;
+  camera?: TLCamera;
+  onChangeCamera?: (camera: TLCamera) => void;
 }
 
-const EditableTLDraw = ({ doc, handle, userId, diff }: TlDrawProps) => {
+const EditableTLDraw = ({
+  doc,
+  handle,
+  userId,
+  diff,
+  camera,
+  onChangeCamera,
+}: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
+  const [editor, setEditor] = useState<Editor>();
 
   useDiffStyling(doc, diff, store);
+  useCameraSync({
+    editor,
+    onChangeCamera,
+    camera,
+  });
 
-  return <Tldraw autoFocus store={store} />;
+  return <Tldraw autoFocus store={store} onMount={setEditor} />;
 };
 
-const ReadOnlyTLDraw = ({ doc, handle, userId, diff }: TlDrawProps) => {
+const ReadOnlyTLDraw = ({
+  doc,
+  handle,
+  userId,
+  diff,
+  onChangeCamera,
+  camera,
+}: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
+  const [editor, setEditor] = useState<Editor>();
 
   useDiffStyling(doc, diff, store);
+  useCameraSync({
+    editor,
+    onChangeCamera,
+    camera,
+  });
 
   return (
     <Tldraw
       store={store}
       autoFocus
       onMount={(editor) => {
+        setEditor(editor);
         editor.updateInstanceState({ isReadonly: true });
       }}
     />
   );
 };
 
-function useDiffStyling(
+export const SideBySide = ({
+  docUrl,
+  mainDocUrl,
+  docHeads,
+  diff,
+  mainDiff,
+}: SideBySideProps) => {
+  const [camera, setCamera] = useState<TLCamera>();
+
+  return (
+    <div className="flex h-full w-full">
+      <div className="h-full flex-1 overflow-auto">
+        <TLDraw
+          docUrl={mainDocUrl}
+          diff={mainDiff}
+          camera={camera}
+          onChangeCamera={setCamera}
+        />
+      </div>
+      <div className="h-full flex-1 overflow-auto border-l border-l-gray-200">
+        <TLDraw
+          docUrl={docUrl}
+          docHeads={docHeads}
+          diff={diff}
+          camera={camera}
+          onChangeCamera={setCamera}
+        />
+      </div>
+    </div>
+  );
+};
+
+const useCameraSync = ({
+  camera: camera,
+  onChangeCamera: onChangeCamera,
+  editor,
+}: {
+  camera?: TLCamera;
+  onChangeCamera?: (camera: TLCamera) => void;
+  editor: Editor;
+}) => {
+  useEffect(() => {
+    if (!editor || !camera || isEqual(editor.camera, camera)) {
+      return;
+    }
+
+    editor.setCamera(camera);
+  }, [editor, camera]);
+
+  useEffect(() => {
+    if (!editor || !onChangeCamera) {
+      return;
+    }
+
+    const onChange = () => {
+      if (editor.cameraState !== "idle") {
+        onChangeCamera(editor.camera);
+      }
+    };
+
+    editor.on("change", onChange);
+
+    return () => {
+      editor.off("change", onChange);
+    };
+  }, [editor, onChangeCamera]);
+};
+
+const useDiffStyling = (
   doc: TLDrawDoc,
   diff: DiffWithProvenance,
   store: TLStoreWithStatus
-) {
+) => {
   const tempShapeIdsRef = useRef(new Set<TLShapeId>());
   const highlightedElementsRef = useRef(new Set<HTMLElement>());
 
@@ -168,4 +287,4 @@ function useDiffStyling(
       highlightedElementsRef.current = activeHighlightedElements;
     }, 100);
   }, [diff, store, doc]);
-}
+};
