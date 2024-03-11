@@ -110,3 +110,42 @@ export type HasPatchworkMetadata = HasChangeGroupSummaries &
   Taggable &
   Diffable &
   Discussable;
+
+type AnnotationId = string & { __annotationId: true };
+
+interface AddAnnotation<T, V> {
+  id?: AnnotationId;
+  type: "added";
+  target: AnnotationTarget<T>;
+  added: V;
+}
+
+interface DeleteAnnotation<T, V> {
+  id?: AnnotationId;
+  type: "delete";
+  target: AnnotationTarget<T>;
+  deleted: V;
+}
+
+interface ChangeAnnotation<T, V> {
+  id?: AnnotationId;
+  type: "changed";
+  target: AnnotationTarget<T>;
+  before: V;
+  after: V;
+}
+
+interface HighlightAnnotation<T, V> {
+  id?: AnnotationId;
+  type: "highlight";
+  target: AnnotationTarget<T>;
+}
+
+export type Annotation<T, V> =
+  | AddAnnotation<T, V>
+  | DeleteAnnotation<T, V>
+  | ChangeAnnotation<T, V>;
+
+interface AnnotationTarget<T> {
+  __annotationTarget: true;
+}
