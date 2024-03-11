@@ -30,6 +30,9 @@ export const includeChangeInHistory = (
   decodedChange: DecodedChangeWithMetadata
 ) => {
   const dataObjId = A.getObjectId(doc, "data");
+  // GL 3/11/24: this is miserable, we need to collect a whole bunch of object ids
+  // for the rows inside the data object in order to filter changes.
+  // It'd be much nicer to check "is this change working somewhere within this path".
   const rowObjIds = doc.data.map((_, index) => A.getObjectId(doc.data, index));
   const commentsObjID = A.getObjectId(doc, "commentThreads");
 

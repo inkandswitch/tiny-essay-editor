@@ -30,7 +30,6 @@ export const DataGrid = ({
       if (docHeads) {
         doc = Automerge.view(doc, docHeads);
       }
-      console.log("table changed", doc);
       // The Handsontable instance is stored under the `hotInstance` property of the wrapper component.
       if (doc.data) {
         hotTableComponentRef.current.hotInstance.updateData(doc.data);

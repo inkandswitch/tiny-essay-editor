@@ -38,7 +38,7 @@ export function translateAutomergePatchesToTLStoreUpdates(
         break;
       }
       default: {
-        console.log("Unsupported patch:", patch);
+        console.error("Unsupported patch:", patch);
       }
     }
   });
