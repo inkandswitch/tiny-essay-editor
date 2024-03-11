@@ -4,7 +4,7 @@ import {
   EditRangeTarget,
   HasPatchworkMetadata,
   Annotation,
-} from "../../schema";
+} from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -31,7 +31,7 @@ import {
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -54,14 +54,14 @@ import { useCurrentAccount } from "@/DocExplorer/account";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { combinePatches } from "../../utils";
+import { combinePatches } from "../utils";
 import { TimelineSidebar } from "./TimelineSidebar";
 import {
   createBranch,
   deleteBranch,
   mergeBranch,
   suggestBranchName,
-} from "../../branches";
+} from "../branches";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -89,7 +89,8 @@ interface MakeBranchOptions {
 
 type ReviewMode = "comments" | "timeline";
 
-export const Demo4: React.FC<{
+/** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
+export const PatchworkDocEditor: React.FC<{
   docUrl: AutomergeUrl;
   docType: DocType;
   selectedBranch: SelectedBranch;

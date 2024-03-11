@@ -14,7 +14,7 @@ import {
   GenericChangeGroup,
   getChangelogItems,
   getMarkersForDoc,
-} from "../../groupChanges";
+} from "../groupChanges";
 import { DataType, docTypes } from "@/DocExplorer/doctypes";
 
 import {
@@ -36,7 +36,7 @@ import {
   HasChangeGroupSummaries,
   HasPatchworkMetadata,
   Tag,
-} from "../../schema";
+} from "../schema";
 import { useSlots } from "@/patchwork/utils";
 import { TextSelection } from "@/tee/components/MarkdownEditor";
 
@@ -57,7 +57,7 @@ import {
 } from "@/patchwork/changeGroupSummaries";
 
 import { DocType } from "@/DocExplorer/doctypes";
-import { ChangeGroupingOptions } from "../../groupChanges";
+import { ChangeGroupingOptions } from "../groupChanges";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +80,7 @@ type ChangelogSelectionAnchor = {
   /* The pixel position of the anchor */
   yPos: number;
 };
+
 export type ChangelogSelection =
   | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
   | undefined;

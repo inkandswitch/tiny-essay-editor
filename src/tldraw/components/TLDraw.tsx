@@ -18,7 +18,7 @@ import { useCurrentAccount } from "@/DocExplorer/account";
 import { next as A, Patch } from "@automerge/automerge";
 import { DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
-import { SideBySideProps } from "@/patchwork/components/Demo4/Demo4";
+import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
 
 export const TLDraw = ({
   docUrl,

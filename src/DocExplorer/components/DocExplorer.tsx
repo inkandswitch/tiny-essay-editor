@@ -21,7 +21,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
-import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
+import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { useStaticCallback } from "@/tee/utils";
 
@@ -36,24 +36,24 @@ const TOOLS = {
     {
       id: "demo4",
       name: "Demo 4",
-      component: Demo4,
+      component: PatchworkDocEditor,
     },
   ],
   tldraw: [
     {
       id: "demo4",
       name: "Demo 4",
-      component: Demo4,
+      component: PatchworkDocEditor,
     },
   ],
   datagrid: [
     {
       id: "demo4",
       name: "Demo 4",
-      component: Demo4,
+      component: PatchworkDocEditor,
     },
   ],
-  bot: [{ id: "demo4", name: "Demo 4", component: Demo4 }],
+  bot: [{ id: "demo4", name: "Demo 4", component: PatchworkDocEditor }],
 };
 
 export const DocExplorer: React.FC = () => {
