@@ -25,37 +25,6 @@ import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { useStaticCallback } from "@/tee/utils";
 
-export type Tool = {
-  id: string;
-  name: string;
-  component: React.FC;
-};
-
-const TOOLS = {
-  essay: [
-    {
-      id: "demo4",
-      name: "Demo 4",
-      component: PatchworkDocEditor,
-    },
-  ],
-  tldraw: [
-    {
-      id: "demo4",
-      name: "Demo 4",
-      component: PatchworkDocEditor,
-    },
-  ],
-  datagrid: [
-    {
-      id: "demo4",
-      name: "Demo 4",
-      component: PatchworkDocEditor,
-    },
-  ],
-  bot: [{ id: "demo4", name: "Demo 4", component: PatchworkDocEditor }],
-};
-
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
@@ -68,7 +37,6 @@ export const DocExplorer: React.FC = () => {
   const changeRootFolderDoc = useStaticCallback(_changeRootFolderDoc);
 
   const [showSidebar, setShowSidebar] = useState(false);
-  const [showToolPicker, setShowToolPicker] = useState(false);
 
   const {
     selectedDoc,
@@ -86,17 +54,6 @@ export const DocExplorer: React.FC = () => {
   );
 
   const selectedDocName = selectedDocLink?.name;
-
-  const availableTools = useMemo(
-    () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
-    [selectedDocLink]
-  );
-  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
-  useEffect(() => {
-    setActiveTool(availableTools[0]);
-  }, [availableTools]);
-
-  const ToolComponent = activeTool?.component;
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
@@ -172,11 +129,6 @@ export const DocExplorer: React.FC = () => {
       // toggle the sidebar open/closed when the user types cmd-backslash
       if (event.key === "\\" && event.metaKey) {
         setShowSidebar((prev) => !prev);
-      }
-
-      // Toggle the tool picker visibility when the user types cmd-backtick
-      if (event.key === "`" && event.ctrlKey) {
-        setShowToolPicker((prev) => !prev);
       }
 
       // if there's no document selected and the user hits enter, make a new document
@@ -267,8 +219,8 @@ export const DocExplorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent
+              {selectedDocUrl && selectedDoc && (
+                <PatchworkDocEditor
                   docType={selectedDocLink.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
@@ -280,22 +232,7 @@ export const DocExplorer: React.FC = () => {
           </div>
         </div>
       </div>
-      {showToolPicker && selectedDocLink && (
-        <div className="flex  absolute top-1 px-2 py-1 left-[30%] bg-black bg-opacity-30  rounded-lg font-mono font-bold border">
-          <img src="/construction.png" className="h-6 mr-2"></img>
-          {TOOLS[selectedDocLink.type].map((tool) => (
-            <div
-              key={tool.id}
-              className={`inline-block px-2 py-1 mr-1 text-xs  hover:bg-gray-200 cursor-pointer ${
-                tool.id === activeTool?.id ? "bg-yellow-100 bg-opacity-70" : ""
-              } rounded-full`}
-              onClick={() => setActiveTool(tool)}
-            >
-              {tool.name}
-            </div>
-          ))}
-        </div>
-      )}
+
       <Toaster />
     </div>
   );
