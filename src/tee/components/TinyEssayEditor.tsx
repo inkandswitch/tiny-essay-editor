@@ -5,7 +5,11 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { useEffect, useMemo, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { DiscussionAnotationForUI, MarkdownDoc } from "../schema";
+import {
+  MarkdownDoc,
+  MarkdownDocAnchor,
+  ResolvedMarkdownDocAnchor,
+} from "../schema";
 
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
@@ -14,26 +18,26 @@ import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { TextPatch } from "@/patchwork/utils";
+import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Patch, getCursorPosition, view } from "@automerge/automerge/next";
 import { uniq } from "lodash";
 import "../../tee/index.css";
-import { Discussion } from "@/patchwork/schema";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isEqual } from "lodash";
 import { DiscussionTargetPosition } from "../codemirrorPlugins/discussionTargetPositionListener";
+import { Annotation } from "@/patchwork/schema";
 
 export const TinyEssayEditor = ({
   docUrl,
   docHeads,
-  diff,
+  annotations,
   actorIdToAuthor,
   discussions = [],
   selectedDiscussionId,
   hoveredDiscussionId,
   setSelectedDiscussionId,
   onUpdateDiscussionTargetPositions,
-}: DocEditorProps) => {
+}: DocEditorProps<MarkdownDocAnchor, string>) => {
   const account = useCurrentAccount();
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -94,89 +98,7 @@ export const TinyEssayEditor = ({
     [doc, docHeads]
   );
 
-  const annotations = useAnnotationsWithPositions({
-    doc: docAtHeads,
-    view: editorView,
-    selectedAnnotationIds: selectedAnnotationIds,
-    editorContainer,
-    diff,
-    visibleAuthorsForEdits,
-    reviewStateFilter,
-  });
-
-  //  const annotations = annotationsWithPositions;
-
-  // only show a diff in the text editor if we have edits or edit groups on in the sidebar
-  const patchesForEditor = useMemo(() => {
-    return (
-      diff &&
-      diff.patches.filter((patch) => {
-        if (
-          ["splice", "del", "replace"].includes(patch.action) &&
-          patch.path[0] === "content"
-        ) {
-          const draft = Object.values(doc?.drafts ?? {}).find((draft) => {
-            return draft.editRangesWithComments.some(({ editRange }) => {
-              const from = getCursorPosition(
-                docAtHeads,
-                ["content"],
-                editRange.fromCursor
-              );
-              const to = getCursorPosition(
-                docAtHeads,
-                ["content"],
-                editRange.toCursor
-              );
-
-              const patchFrom = patch.path[1] as number;
-              const patchTo = patchFrom + getPatchLength(patch);
-
-              return (
-                // this is bad and wrong, replace groups are not create correctly
-                (patch.action === "replace" && from === patchFrom) ||
-                (from <= patchFrom && to >= patchTo)
-              );
-            });
-          });
-
-          if (draft?.reviews) {
-            if (
-              !reviewStateFilter.showReviewedBySelf &&
-              draft.reviews &&
-              draft.reviews[reviewStateFilter.self]
-            ) {
-              return false;
-            }
-
-            const reviewers = Object.keys(draft.reviews);
-            if (
-              !reviewStateFilter.showReviewedByOthers &&
-              (!reviewStateFilter.showReviewedBySelf ||
-                !draft.reviews[reviewStateFilter.self]) &&
-              (reviewers.length > 1 ||
-                (reviewers.length === 1 &&
-                  reviewers[0] !== reviewStateFilter.self))
-            ) {
-              return false;
-            }
-          }
-        }
-
-        // @ts-expect-error - we should know we have patch.attr here?
-        return visibleAuthorsForEdits?.includes(patch.attr) || !patch.attr;
-      })
-    );
-  }, [
-    diff,
-    visibleAuthorsForEdits,
-    doc?.drafts,
-    docAtHeads,
-    reviewStateFilter.showReviewedBySelf,
-    reviewStateFilter.self,
-    reviewStateFilter.showReviewedByOthers,
-  ]);
-
-  const discussionAnnotations = useMemo<DiscussionAnotationForUI[]>(() => {
+  /*  const discussionAnnotations = useMemo<DiscussionAnotationForUI[]>(() => {
     if (!doc?.discussions) {
       return [];
     }
@@ -214,10 +136,10 @@ export const TinyEssayEditor = ({
         return [];
       }
     });
-  }, [doc, hoveredDiscussionId, selectedDiscussionId]);
+  }, [doc, hoveredDiscussionId, selectedDiscussionId]); */
 
   // focus discussion
-  useEffect(() => {
+  /* useEffect(() => {
     let focusedDiscussion: Discussion;
 
     if (selection && selection.from === selection.to) {
@@ -244,7 +166,7 @@ export const TinyEssayEditor = ({
         setSelectedDiscussionId(focusedDiscussion.id);
       }
     }
-  }, [discussions, doc, selection, setSelectedDiscussionId]);
+  }, [discussions, doc, selection, setSelectedDiscussionId]); */
 
   // update scroll position
   // scroll selectedDiscussion into view
@@ -281,6 +203,31 @@ export const TinyEssayEditor = ({
     selectedDiscussionId,
   ]);
 
+  console.log(annotations);
+
+  const resolvedAnnotations = useMemo<
+    Annotation<ResolvedMarkdownDocAnchor, string>[]
+  >(() => {
+    return annotations.flatMap((annotation) => {
+      const fromPos = getCursorPositionSafely(
+        doc,
+        ["content"],
+        annotation.target.from
+      );
+      const toPos = getCursorPositionSafely(
+        doc,
+        ["content"],
+        annotation.target.to
+      );
+
+      return !fromPos || !toPos
+        ? []
+        : [{ ...annotation, target: { from: fromPos, to: toPos } }];
+    });
+  }, [doc, annotations]);
+
+  console.log(resolvedAnnotations);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
@@ -311,12 +258,10 @@ export const TinyEssayEditor = ({
               path={["content"]}
               setSelection={setSelection}
               setView={setEditorView}
-              threadsWithPositions={annotations}
+              annotations={resolvedAnnotations}
               setActiveThreadIds={setSelectedAnnotationIds}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              diff={patchesForEditor}
-              discussionAnnotations={discussionAnnotations}
               onUpdateDiscussionTargetPositions={(targetPositions) => {
                 setActiveDiscussionTargetPositions(targetPositions);
                 onUpdateDiscussionTargetPositions(targetPositions);

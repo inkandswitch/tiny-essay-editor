@@ -4,11 +4,13 @@
 
 import { next as A } from "@automerge/automerge";
 import { Text } from "lucide-react";
-import { MarkdownDoc } from "./schema";
+import { MarkdownDocAnchor, MarkdownDoc } from "./schema";
 import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
 import { TextPatch } from "@/patchwork/utils";
+import { Annotation, AnnotationId } from "@/patchwork/schema";
+import { getCursorSafely } from "@/patchwork/utils";
 
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
@@ -84,7 +86,82 @@ export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   return !!typedDoc.content && !!typedDoc.commentThreads;
 };
 
-export const EssayDatatype: DataType<MarkdownDoc> = {
+export const patchesToAnnotations = (doc: MarkdownDoc, patches: A.Patch[]) => {
+  return patches.flatMap((patch): Annotation<MarkdownDocAnchor, string>[] => {
+    if (
+      patch.path[0] !== "content" ||
+      !["splice", "del"].includes(patch.action)
+    )
+      return [];
+
+    switch (patch.action) {
+      case "splice": {
+        const patchStart = patch.path[1] as number;
+        const patchEnd = Math.min(
+          (patch.path[1] as number) + patch.value.length,
+          doc.content.length - 1
+        );
+        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
+        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+
+        if (!fromCursor || !toCursor) {
+          console.warn("Failed to get cursor for patch", patch);
+          return [];
+        }
+
+        return [
+          {
+            type: "added",
+            added: patch.value,
+            target: {
+              from: fromCursor,
+              to: toCursor,
+            },
+          },
+        ];
+      }
+      case "del":
+        {
+          const patchStart = patch.path[1] as number;
+          const patchEnd = (patch.path[1] as number) + 1;
+          const fromCursor = getCursorSafely(doc, ["content"], patchStart);
+          const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+
+          if (!fromCursor || !toCursor) {
+            console.warn("Failed to get cursor for patch", patch);
+            return [];
+          }
+
+          return [
+            {
+              type: "deleted",
+              deleted: patch.removed,
+              target: {
+                from: fromCursor,
+                to: toCursor,
+              },
+            },
+          ];
+        }
+
+        break;
+
+      // todo: handle replace
+      /*   case "replace":
+            (patchStart = patch.path[1] as number),
+              (patchEnd = Math.min(
+                (patch.path[1] as number) + patch.new.length,
+                doc.content.length - 1
+              ));
+
+            break; */
+      default:
+        throw new Error("invalid patch");
+    }
+  });
+};
+
+export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   id: "essay",
   name: "Essay",
   icon: Text,
@@ -93,4 +170,5 @@ export const EssayDatatype: DataType<MarkdownDoc> = {
   markCopy,
   includeChangeInHistory,
   includePatchInChangeGroup,
+  patchesToAnnotations,
 };

@@ -1,8 +1,9 @@
-import { DocType } from "@/DocExplorer/doctypes";
+import { DocType, docTypes } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
   EditRangeTarget,
   HasPatchworkMetadata,
+  Annotation,
 } from "../../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -79,6 +80,7 @@ import {
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
+import { MarkdownDocAnchor } from "@/tee/schema";
 
 interface MakeBranchOptions {
   name?: string;
@@ -144,6 +146,7 @@ export const Demo4: React.FC<{
 
     const diff = diffWithProvenance(doc, sessionStartHeads, A.getHeads(doc));
 
+    // todo: generalize
     return {
       ...diff,
       patches: combinePatches(
@@ -268,7 +271,7 @@ export const Demo4: React.FC<{
     selectedBranch.type === "branch" ? selectedBranch.url : undefined
   );
 
-  const rawBranchDiff = useMemo(() => {
+  const branchDiff = useMemo(() => {
     if (branchDoc) {
       return diffWithProvenance(
         branchDoc,
@@ -278,19 +281,23 @@ export const Demo4: React.FC<{
     }
   }, [branchDoc]);
 
-  const branchDiff = useMemo(() => {
-    //return rawBranchDiff;
-    if (rawBranchDiff) {
-      return {
-        ...rawBranchDiff,
-        patches: combinePatches(rawBranchDiff.patches),
-      };
-    }
-  }, [rawBranchDiff]);
-
   const diffForEditor =
     diffFromHistorySidebar ??
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
+
+  const activeDoc = branchDoc ?? doc;
+
+  const annotations = useMemo(() => {
+    if (!diffForEditor || !doc) {
+      return [];
+    }
+
+    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
+
+    return patchesToAnnotations
+      ? patchesToAnnotations(activeDoc, diffForEditor.patches as A.Patch[])
+      : [];
+  }, [activeDoc, diffForEditor]);
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
@@ -313,8 +320,6 @@ export const Demo4: React.FC<{
 
     return ids;
   }, [selectedDiscussionId, hoveredDiscussionId]);
-
-  const activeDoc = branchDoc ?? doc;
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
@@ -586,31 +591,33 @@ export const Demo4: React.FC<{
               />
             )}
             {selectedBranch.type === "branch" && compareWithMainFlag ? (
-              <SideBySide
-                key={mainDocUrl}
-                mainDocUrl={mainDocUrl}
-                docType={docType}
-                docUrl={selectedBranchLink?.url}
-                docHeads={docHeads}
-                diff={showDiff ? diffForEditor : undefined}
-                mainDiff={showDiff ? currentEditSessionDiff : undefined}
-                actorIdToAuthor={actorIdToAuthor}
-                discussions={discussions}
-                onUpdateDiscussionTargetPositions={
-                  onUpdateDiscussionTargetPositions
-                }
-                hoveredDiscussionId={hoveredDiscussionId}
-                selectedDiscussionId={selectedDiscussionId}
-                setHoveredDiscussionId={setHoveredDiscussionId}
-                setSelectedDiscussionId={setSelectedDiscussionId}
-              />
+              false && (
+                <SideBySide
+                  key={mainDocUrl}
+                  mainDocUrl={mainDocUrl}
+                  docType={docType}
+                  docUrl={selectedBranchLink?.url}
+                  docHeads={docHeads}
+                  annotations={annotations}
+                  mainDiff={showDiff ? currentEditSessionDiff : undefined}
+                  actorIdToAuthor={actorIdToAuthor}
+                  discussions={discussions}
+                  onUpdateDiscussionTargetPositions={
+                    onUpdateDiscussionTargetPositions
+                  }
+                  hoveredDiscussionId={hoveredDiscussionId}
+                  selectedDiscussionId={selectedDiscussionId}
+                  setHoveredDiscussionId={setHoveredDiscussionId}
+                  setSelectedDiscussionId={setSelectedDiscussionId}
+                />
+              )
             ) : (
               <DocEditor
                 key={selectedBranchLink?.url ?? mainDocUrl}
                 docType={docType}
                 docUrl={selectedBranchLink?.url ?? mainDocUrl}
                 docHeads={docHeads}
-                diff={showDiff ? diffForEditor : undefined}
+                annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 discussions={discussions}
                 onUpdateDiscussionTargetPositions={
@@ -679,15 +686,15 @@ export const Demo4: React.FC<{
   );
 };
 
-interface DocEditorPropsWithDocType extends DocEditorProps {
+interface DocEditorPropsWithDocType<T, V> extends DocEditorProps<T, V> {
   docType: DocType;
 }
 
-const DocEditor = ({
+const DocEditor = <T, V>({
   docType,
   docUrl,
   docHeads,
-  diff,
+  annotations,
   actorIdToAuthor,
   discussions,
   onUpdateDiscussionTargetPositions,
@@ -695,7 +702,7 @@ const DocEditor = ({
   selectedDiscussionId,
   setHoveredDiscussionId,
   setSelectedDiscussionId,
-}: DocEditorPropsWithDocType) => {
+}: DocEditorPropsWithDocType<T, V>) => {
   switch (docType) {
     case "bot":
       return <BotEditor docUrl={docUrl} />;
@@ -704,7 +711,7 @@ const DocEditor = ({
         <TinyEssayEditor
           docUrl={docUrl}
           docHeads={docHeads}
-          diff={diff}
+          annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
           actorIdToAuthor={actorIdToAuthor}
           onUpdateDiscussionTargetPositions={onUpdateDiscussionTargetPositions}
           discussions={discussions}
@@ -729,12 +736,12 @@ const DocEditor = ({
   }
 };
 
-export interface SideBySideProps extends DocEditorPropsWithDocType {
+export interface SideBySideProps<T, V> extends DocEditorPropsWithDocType<T, V> {
   mainDiff: DiffWithProvenance;
   mainDocUrl: AutomergeUrl;
 }
 
-export const SideBySide = (props: SideBySideProps) => {
+export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
   switch (props.docType) {
     case "tldraw": {
       return <TLDrawSideBySide {...props} />;

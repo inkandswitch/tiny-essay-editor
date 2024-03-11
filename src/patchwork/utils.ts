@@ -356,6 +356,18 @@ export function getCursorPositionSafely(
   }
 }
 
+export function getCursorSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  position: number
+): A.Cursor | null {
+  try {
+    return A.getCursor(doc, path, position);
+  } catch (err) {
+    return null;
+  }
+}
+
 // this creates a copy of the document with only the changes up until the passed in heads
 // some functions like A.merge in automerge don't work with view documents
 // if you need to pass a document at a certain heads to these functions use copyDocAtHeads instead

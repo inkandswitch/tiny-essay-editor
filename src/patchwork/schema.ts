@@ -105,47 +105,49 @@ export type HasChangeGroupSummaries = {
   };
 };
 
+export type HighlightId = string & { __highlightId: true };
+
+export type Highlight<T> = {
+  id: HighlightId;
+};
+
+export type Highlightable<T> = {
+  highlights: Highlight<T>;
+};
+
 export type HasPatchworkMetadata = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
   Discussable;
 
-type AnnotationId = string & { __annotationId: true };
+export type AnnotationId = string & { __annotationId: true };
 
 interface AddAnnotation<T, V> {
-  id?: AnnotationId;
   type: "added";
-  target: AnnotationTarget<T>;
+  target: T;
   added: V;
 }
 
 interface DeleteAnnotation<T, V> {
-  id?: AnnotationId;
-  type: "delete";
-  target: AnnotationTarget<T>;
+  type: "deleted";
+  target: T;
   deleted: V;
 }
 
 interface ChangeAnnotation<T, V> {
-  id?: AnnotationId;
   type: "changed";
-  target: AnnotationTarget<T>;
+  target: T;
   before: V;
   after: V;
 }
 
-interface HighlightAnnotation<T, V> {
-  id?: AnnotationId;
-  type: "highlight";
-  target: AnnotationTarget<T>;
+interface HighlightAnnotation<T> {
+  type: "highlighted";
+  target: T;
 }
 
 export type Annotation<T, V> =
   | AddAnnotation<T, V>
   | DeleteAnnotation<T, V>
   | ChangeAnnotation<T, V>;
-
-interface AnnotationTarget<T> {
-  __annotationTarget: true;
-}

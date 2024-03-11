@@ -8,29 +8,35 @@ import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { DiffWithProvenance } from "@/patchwork/schema";
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { Discussion } from "@/patchwork/schema";
-export interface DataType<T> {
+import { Annotation } from "@/patchwork/schema";
+
+export interface DataType<D, T, V> {
   id: string;
   name: string;
   icon: any;
-  init: (doc: T, repo: Repo) => void;
-  getTitle: (doc: T, repo: Repo) => Promise<string>;
-  markCopy: (doc: T) => void; // TODO: this shouldn't be part of the interface
+  init: (doc: D, repo: Repo) => void;
+  getTitle: (doc: D, repo: Repo) => Promise<string>;
+  markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
 
   // version related functions
   includeChangeInHistory?: (
-    doc: T,
+    doc: D,
     change: DecodedChangeWithMetadata
   ) => boolean;
   includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
 
   // a textual representation of the document that can be used in prompts
-  getLLMSummary?: (doc: T) => string;
+  getLLMSummary?: (doc: D) => string;
+
+  patchesToAnnotations?: (doc: D, patches: A.Patch[]) => Annotation<T, V>[];
 }
 
-export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {
+export const docTypes: Record<
+  string,
+  DataType<HasPatchworkMetadata<unknown>, unknown, unknown>
+> = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
   datagrid: DataGridDatatype,
@@ -39,15 +45,15 @@ export const docTypes: Record<string, DataType<HasPatchworkMetadata>> = {
 
 export type DocType = keyof typeof docTypes;
 
-export interface DocEditorProps {
+export interface DocEditorProps<T, V> {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];
-  diff?: DiffWithProvenance;
+  annotations: Annotation<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
   // spatial comments interface
-  // todo: simplify, avoid passing size information up and down
+  // todo: simplify
   discussions?: Discussion[]; // todo: should be a list of anchors
   selectedDiscussionId?: string;
   hoveredDiscussionId?: string;

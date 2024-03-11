@@ -136,3 +136,13 @@ export type MarkdownDoc = HasPatchworkMetadata & {
   drafts: { [key: string]: PersistedDraft };
   users: User[];
 };
+
+export type MarkdownDocAnchor = {
+  from: A.Cursor;
+  to: A.Cursor;
+};
+
+export type ResolvedMarkdownDocAnchor = {
+  from: number;
+  to: number;
+};
