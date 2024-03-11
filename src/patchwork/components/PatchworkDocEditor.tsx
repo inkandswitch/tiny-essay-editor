@@ -728,7 +728,7 @@ const DocEditor = <T, V>({
     case "tldraw":
       return (
         <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} docHeads={docHeads} diff={mainDiff} />
+          <TLDraw docUrl={docUrl} docHeads={docHeads} />
         </div>
       );
     case "datagrid":
@@ -774,7 +774,6 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
             <DocEditor
               docType={docType}
               docUrl={mainDocUrl}
-              diff={mainDiff}
               actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
@@ -791,7 +790,6 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               docType={docType}
               docUrl={docUrl}
               docHeads={docHeads}
-              diff={diff}
               actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
