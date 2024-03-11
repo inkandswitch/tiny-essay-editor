@@ -16,7 +16,7 @@ const getTitle = (doc: any) => {
 };
 
 export const init = (doc: any) => {
-  doc.title = "A Data Grid";
+  doc.title = "Untitled Spreadsheet";
   const rows = 100;
   const cols = 26;
   const defaultValue = "";
@@ -29,11 +29,15 @@ export const includeChangeInHistory = (
   doc: DataGridDoc,
   decodedChange: DecodedChangeWithMetadata
 ) => {
-  const contentObjID = A.getObjectId(doc, "data");
+  const dataObjId = A.getObjectId(doc, "data");
+  const rowObjIds = doc.data.map((_, index) => A.getObjectId(doc.data, index));
   const commentsObjID = A.getObjectId(doc, "commentThreads");
 
   return decodedChange.ops.some(
-    (op) => op.obj === contentObjID || op.obj === commentsObjID
+    (op) =>
+      op.obj === dataObjId ||
+      rowObjIds.includes(op.obj) ||
+      op.obj === commentsObjID
   );
 };
 
