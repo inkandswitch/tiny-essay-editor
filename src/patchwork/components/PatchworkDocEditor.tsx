@@ -366,7 +366,7 @@ export const PatchworkDocEditor: React.FC<{
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
-  if (!doc || !doc.branchMetadata) return <div>Loading...</div>;
+  if (!doc || !docType || !doc.branchMetadata) return <div>Loading...</div>;
 
   // ---- ANYTHING RELYING ON doc SHOULD GO BELOW HERE ----
 

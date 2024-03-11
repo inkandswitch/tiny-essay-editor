@@ -221,7 +221,7 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && (
                 <PatchworkDocEditor
-                  docType={selectedDocLink.type}
+                  docType={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
                   selectedBranch={selectedBranch}
