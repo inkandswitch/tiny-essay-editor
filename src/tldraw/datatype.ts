@@ -4,6 +4,7 @@ import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
 import { TLDrawDoc } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
+import { pick } from "lodash";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -37,15 +38,59 @@ export const getLLMSummary = (doc: TLDrawDoc) => {
     .join("\n");
 };
 
-// we filter too agressively here, only edits that create new objects are counted
-// todo: figuring out edits of existing is harder
+// We filter conservatively with a deny-list because dealing with edits on a nested schema is annoying.
+// Would be better to filter with an allow-list but that's tricky with current Automerge APIs.
 export const includeChangeInHistory = (
   doc: TLDrawDoc,
   decodedChange: DecodedChangeWithMetadata
 ) => {
-  const storeObjId = A.getObjectId(doc, "store");
+  const metadataObjIds = [
+    "branchMetadata",
+    "tags",
+    "diffBase",
+    "discussions",
+    "changeGroupSummaries",
+  ].map((path) => A.getObjectId(doc, path));
 
-  return decodedChange.ops.some((op) => op.obj === storeObjId);
+  const result = decodedChange.ops.every(
+    (op) => !metadataObjIds.includes(op.obj)
+  );
+  console.log("includeChangeInHistory", decodedChange, result, metadataObjIds);
+  return result;
+};
+
+const promptForAutoChangeGroupDescription = ({
+  docBefore,
+  docAfter,
+}: {
+  docBefore: TLDrawDoc;
+  docAfter: TLDrawDoc;
+}) => {
+  return `
+Below are two versions of a drawing in TLDraw, stored as JSON.
+Summarize the changes in this diff in a few words.
+Only return a few words, not a full description. No bullet points.
+
+If possible, interpret the shapes in a meaningful semantic way, eg:
+
+drew mockup of simple UI
+edited text from "kitchen" to "bathroom"
+grew diagram of system architecture
+
+If not, fall back to general visual descriptions:
+
+drew some new rectangles
+moved some shapes to the left
+deleted shapes from the top-right corner
+recolored some shapes from red to blue
+
+## Doc before
+
+${JSON.stringify(pick(docBefore, ["store"]), null, 2)}
+
+## Doc after
+
+${JSON.stringify(pick(docAfter, ["store"]), null, 2)}`;
 };
 
 export const TLDrawDatatype: DataType<TLDrawDoc> = {
@@ -57,5 +102,5 @@ export const TLDrawDatatype: DataType<TLDrawDoc> = {
   markCopy,
   includePatchInChangeGroup,
   includeChangeInHistory,
-  //   getLLMSummary,
+  promptForAutoChangeGroupDescription,
 };

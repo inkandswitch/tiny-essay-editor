@@ -27,8 +27,10 @@ export interface DataType<D, T, V> {
   ) => boolean;
   includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
 
-  // a textual representation of the document that can be used in prompts
-  getLLMSummary?: (doc: D) => string;
+  promptForAutoChangeGroupDescription?: (args: {
+    docBefore: D;
+    docAfter: D;
+  }) => string;
 
   patchesToAnnotations?: (doc: D, patches: A.Patch[]) => Annotation<T, V>[];
 }

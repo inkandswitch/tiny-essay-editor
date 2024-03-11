@@ -3,6 +3,7 @@ import { DataGridDoc } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { next as A } from "@automerge/automerge";
 import { DataType } from "@/DocExplorer/doctypes";
+import { pick } from "lodash";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -47,6 +48,41 @@ export const includeChangeInHistory = (
 export const includePatchInChangeGroup = (patch: A.Patch) =>
   patch.path[0] === "data" || patch.path[0] === "commentThreads";
 
+const promptForAutoChangeGroupDescription = ({
+  docBefore,
+  docAfter,
+}: {
+  docBefore: DataGridDoc;
+  docAfter: DataGridDoc;
+}) => {
+  return `
+  Below are two versions of a spreadsheet document..
+  Summarize the changes in this diff in a few words.
+  Only return a few words, not a full description. No bullet points.
+
+  If possible, interpret the shapes in a meaningful semantic way, eg:
+
+  added column for emails
+  added rows for new participants
+  added revenue for March
+  removed 3 members from list
+  added formula calculating total
+
+  If not, fall back to general visual descriptions:
+
+  edited several cells
+  restructured data
+  added new rows and columns
+
+  ## Doc before
+
+  ${JSON.stringify(pick(docBefore, ["data"]), null, 2)}
+
+  ## Doc after
+
+  ${JSON.stringify(pick(docAfter, ["data"]), null, 2)}`;
+};
+
 export const DataGridDatatype: DataType<DataGridDoc> = {
   id: "datagrid",
   name: "DataGrid",
@@ -57,4 +93,6 @@ export const DataGridDatatype: DataType<DataGridDoc> = {
 
   includeChangeInHistory,
   includePatchInChangeGroup,
+
+  promptForAutoChangeGroupDescription,
 };

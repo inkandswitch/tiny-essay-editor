@@ -9,8 +9,13 @@ import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
 import { TextPatch } from "@/patchwork/utils";
-import { Annotation, AnnotationId } from "@/patchwork/schema";
+import {
+  Annotation,
+  AnnotationId,
+  DiffWithProvenance,
+} from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
+import { pick } from "lodash";
 
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
@@ -161,6 +166,38 @@ export const patchesToAnnotations = (doc: MarkdownDoc, patches: A.Patch[]) => {
   });
 };
 
+const promptForAutoChangeGroupDescription = ({
+  docBefore,
+  docAfter,
+}: {
+  docBefore: MarkdownDoc;
+  docAfter: MarkdownDoc;
+}) => {
+  return `
+Summarize the changes in this diff in a few words.
+
+Only return a few words, not a full description. No bullet points.
+
+Here are some good examples of descriptive summaries:
+
+wrote initial outline
+changed title
+small wording changes
+turned outline into prose
+lots of small edits
+total rewrite
+a few small tweaks
+reworded a paragraph
+
+## Doc before
+
+${JSON.stringify(pick(docBefore, ["content", "commentThreads"]), null, 2)}
+
+## Doc after
+
+${JSON.stringify(pick(docAfter, ["content", "commentThreads"]), null, 2)}`;
+};
+
 export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   id: "essay",
   name: "Essay",
@@ -171,4 +208,5 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   includeChangeInHistory,
   includePatchInChangeGroup,
   patchesToAnnotations,
+  promptForAutoChangeGroupDescription,
 };

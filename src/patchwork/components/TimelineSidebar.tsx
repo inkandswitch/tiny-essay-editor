@@ -1,4 +1,3 @@
-import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import CodeMirror from "@uiw/react-codemirror";
 import {
@@ -9,13 +8,12 @@ import {
 import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ByAuthorOrTime,
-  ChangeGroup,
   ChangelogItem,
   GenericChangeGroup,
   getChangelogItems,
   getMarkersForDoc,
 } from "../groupChanges";
-import { DataType, docTypes } from "@/DocExplorer/doctypes";
+import { docTypes } from "@/DocExplorer/doctypes";
 
 import {
   MilestoneIcon,
@@ -26,11 +24,10 @@ import {
   PencilIcon,
   MoreVerticalIcon,
 } from "lucide-react";
-import { Heads, Patch } from "@automerge/automerge/next";
+import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
 import {
   Branch,
-  Branchable,
   DiffWithProvenance,
   Discussion,
   HasChangeGroupSummaries,
@@ -38,7 +35,6 @@ import {
   Tag,
 } from "../schema";
 import { useSlots } from "@/patchwork/utils";
-import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -116,8 +112,11 @@ export const TimelineSidebar: React.FC<{
     [doc, handle, repo, mainDoc]
   );
 
-  const { includeChangeInHistory, includePatchInChangeGroup, getLLMSummary } =
-    docTypes[docType] ?? {};
+  const {
+    includeChangeInHistory,
+    includePatchInChangeGroup,
+    promptForAutoChangeGroupDescription,
+  } = docTypes[docType] ?? {};
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
@@ -182,8 +181,7 @@ export const TimelineSidebar: React.FC<{
   useAutoPopulateChangeGroupSummaries({
     changeGroups,
     handle,
-    getLLMSummary,
-    patchFilter: includePatchInChangeGroup,
+    promptForAutoChangeGroupDescription,
   });
 
   if (!doc) return null;
@@ -201,8 +199,7 @@ export const TimelineSidebar: React.FC<{
       groups: changelogItems.flatMap((item) =>
         item.type === "changeGroup" ? [item.changeGroup] : []
       ),
-      getLLMSummary,
-      patchFilter: includePatchInChangeGroup,
+      promptForAutoChangeGroupDescription,
       handle,
     });
 
