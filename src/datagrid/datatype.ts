@@ -17,8 +17,8 @@ const getTitle = (doc: any) => {
 
 export const init = (doc: any) => {
   doc.title = "A Data Grid";
-  const rows = 20;
-  const cols = 10;
+  const rows = 100;
+  const cols = 26;
   const defaultValue = "";
   doc.data = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => defaultValue)

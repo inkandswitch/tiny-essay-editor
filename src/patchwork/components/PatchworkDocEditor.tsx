@@ -379,8 +379,9 @@ export const PatchworkDocEditor: React.FC<{
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
   return (
-    <div className="flex h-full">
-      <div className="flex flex-col flex-1">
+    <div className="flex h-full overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Branch picker topbar */}
         <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
           <Select
             value={JSON.stringify(selectedBranch)}
@@ -568,7 +569,9 @@ export const PatchworkDocEditor: React.FC<{
             </div>
           )}
         </div>
-        <div className="h-full items-stretch justify-stretch relative flex flex-col">
+
+        {/* Main doc editor pane */}
+        <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
           {compareWithMainFlag && selectedBranchLink?.name && (
             <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
               <div className="flex-1 pl-4">
@@ -725,7 +728,7 @@ const DocEditor = <T, V>({
     case "tldraw":
       return (
         <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} docHeads={docHeads} diff={diff} />
+          <TLDraw docUrl={docUrl} docHeads={docHeads} diff={mainDiff} />
         </div>
       );
     case "datagrid":

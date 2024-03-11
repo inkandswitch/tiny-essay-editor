@@ -186,7 +186,7 @@ export const DocExplorer: React.FC = () => {
           />
         </div>
         <div
-          className={`flex-grow relative h-screen ${
+          className={`flex-grow relative h-screen overflow-hidden ${
             !selectedDocUrl ? "bg-gray-200" : ""
           }`}
         >

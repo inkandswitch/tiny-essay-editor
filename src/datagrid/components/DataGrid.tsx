@@ -79,19 +79,22 @@ export const DataGrid = ({
   };
 
   return (
-    <HotTable
-      ref={hotTableComponentRef}
-      beforeChange={onBeforeHotChange}
-      beforeCreateRow={onBeforeCreateRow}
-      beforeCreateCol={onBeforeCreateCol}
-      rowHeaders={true}
-      colHeaders={true}
-      contextMenu={true}
-      height="auto"
-      autoWrapRow={true}
-      autoWrapCol={true}
-      licenseKey="non-commercial-and-evaluation"
-      formulas={{ engine: HyperFormula }}
-    />
+    <div className="w-full h-full overflow-hidden">
+      <HotTable
+        ref={hotTableComponentRef}
+        beforeChange={onBeforeHotChange}
+        beforeCreateRow={onBeforeCreateRow}
+        beforeCreateCol={onBeforeCreateCol}
+        rowHeaders={true}
+        colHeaders={true}
+        contextMenu={true}
+        width="100%"
+        height="100%"
+        autoWrapRow={false}
+        autoWrapCol={false}
+        licenseKey="non-commercial-and-evaluation"
+        formulas={{ engine: HyperFormula }}
+      />
+    </div>
   );
 };
