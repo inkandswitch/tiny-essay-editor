@@ -27,18 +27,7 @@ import { Check, Reply } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
 
-interface SpatialCommentsListProps {
-  topDiscussion: Discussion;
-  discussions: Discussion[];
-  changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
-  onChangeCommentPositionMap: (map: PositionMap) => void;
-  setSelectedDiscussionId: (id: string) => void;
-  setHoveredDiscussionId: (id: string) => void;
-  selectedDiscussionId: string;
-  hoveredDiscussionId: string;
-}
-
-export const SpatialCommentsSidebar = React.memo(
+export const SpatialSidebar = React.memo(
   ({
     topDiscussion,
     discussions,
@@ -48,7 +37,16 @@ export const SpatialCommentsSidebar = React.memo(
     selectedDiscussionId,
     setHoveredDiscussionId,
     hoveredDiscussionId,
-  }: SpatialCommentsListProps) => {
+  }: {
+    topDiscussion: Discussion;
+    discussions: Discussion[];
+    changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
+    onChangeCommentPositionMap: (map: PositionMap) => void;
+    setSelectedDiscussionId: (id: string) => void;
+    setHoveredDiscussionId: (id: string) => void;
+    selectedDiscussionId: string;
+    hoveredDiscussionId: string;
+  }) => {
     const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
       useState<string>();
     const [scrollOffset, setScrollOffset] = useState(0);

@@ -203,8 +203,6 @@ export const TinyEssayEditor = ({
     selectedDiscussionId,
   ]);
 
-  console.log(annotations);
-
   const resolvedAnnotations = useMemo<
     Annotation<ResolvedMarkdownDocAnchor, string>[]
   >(() => {
@@ -225,8 +223,6 @@ export const TinyEssayEditor = ({
         : [{ ...annotation, target: { from: fromPos, to: toPos } }];
     });
   }, [doc, annotations]);
-
-  console.log(resolvedAnnotations);
 
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {

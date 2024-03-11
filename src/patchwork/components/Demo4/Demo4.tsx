@@ -55,7 +55,7 @@ import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { combinePatches } from "../../utils";
-import { ReviewSidebar } from "./ReviewSidebar";
+import { TimelineSidebar } from "./TimelineSidebar";
 import {
   createBranch,
   deleteBranch,
@@ -68,8 +68,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PositionMap,
   SpatialCommentsLinesLayer,
-  SpatialCommentsSidebar,
-} from "./SpatialComments";
+  SpatialSidebar,
+} from "./SpatialSidebar";
 import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
@@ -656,7 +656,7 @@ export const Demo4: React.FC<{
 
           <div className="min-h-0 flex-grow w-96">
             {reviewMode === "timeline" && (
-              <ReviewSidebar
+              <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranchLink?.url ?? mainDocUrl}
                 docType={docType}
@@ -668,7 +668,7 @@ export const Demo4: React.FC<{
               />
             )}
             {reviewMode === "comments" && (
-              <SpatialCommentsSidebar
+              <SpatialSidebar
                 topDiscussion={topDiscussion}
                 discussions={discussions}
                 changeDoc={changeDoc}

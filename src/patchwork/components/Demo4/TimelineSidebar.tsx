@@ -84,7 +84,7 @@ export type ChangelogSelection =
   | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
   | undefined;
 
-export const ReviewSidebar: React.FC<{
+export const TimelineSidebar: React.FC<{
   docType: DocType;
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;

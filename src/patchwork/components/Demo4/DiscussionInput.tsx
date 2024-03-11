@@ -28,7 +28,7 @@ import { uuid } from "@automerge/automerge";
 import { createBranch, mergeBranch } from "@/patchwork/branches";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { ChangelogSelection } from "./ReviewSidebar";
+import { ChangelogSelection } from "./TimelineSidebar";
 import { ChangelogItem } from "@/patchwork/groupChanges";
 import { toast } from "sonner";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
