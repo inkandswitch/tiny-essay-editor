@@ -48,9 +48,6 @@ export const TinyEssayEditor = ({
   const [isCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
-  const [annotationsPositions, setAnnotationsPositions] = useState<
-    AnnotationPosition<unknown, unknown>[]
-  >([]);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
@@ -224,14 +221,6 @@ export const TinyEssayEditor = ({
   return (
     <div
       className="h-full overflow-auto min-h-0 w-full"
-      onScroll={(event) => {
-        onUpdateAnnotationPositions(
-          annotationsPositions.map((position) => ({
-            ...position,
-            y: position.y - (event.target as HTMLElement).scrollTop,
-          }))
-        );
-      }}
       ref={setEditorContainer}
     >
       <div className="@container flex bg-gray-100 justify-center">
@@ -249,6 +238,7 @@ export const TinyEssayEditor = ({
             }`}
           >
             <MarkdownEditor
+              editorContainer={editorContainer}
               diffStyle="normal"
               handle={handle}
               path={["content"]}
@@ -258,15 +248,9 @@ export const TinyEssayEditor = ({
               setActiveThreadIds={setSelectedAnnotationIds}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              onUpdateAnnotationPositions={(positions) => {
-                setAnnotationsPositions(
-                  positions.map((position) => ({
-                    ...position,
-                    y: position.y + (editorContainer?.scrollTop ?? 0),
-                  }))
-                );
-                onUpdateAnnotationPositions(positions);
-              }}
+              onUpdateAnnotationPositions={(positions) =>
+                onUpdateAnnotationPositions(positions)
+              }
               isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>

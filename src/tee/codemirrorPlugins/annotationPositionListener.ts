@@ -7,17 +7,51 @@ interface AnnotationPositionListenerConfig {
   onUpdate: (
     discussionTargetPositions: AnnotationPosition<MarkdownDocAnchor, string>[]
   ) => void;
+  editorContainer: HTMLDivElement;
   estimatedLineHeight: number;
 }
 
-export const annotationTargetPositionListener = ({
+export const annotationsPositionListener = ({
   onUpdate,
+  editorContainer,
   estimatedLineHeight,
 }: AnnotationPositionListenerConfig) => {
+  console.log(editorContainer);
+
   return ViewPlugin.fromClass(
     class {
+      private resizeObserver = new ResizeObserver(() => {
+        this.updatePositions();
+      });
+
+      private view: EditorView;
+      private annotationPositions: AnnotationPosition<
+        MarkdownDocAnchor,
+        string
+      >[];
+
       constructor(view: EditorView) {
-        this.updatePositions(view);
+        this.view = view;
+        this.updatePositions();
+        this.onScroll = this.onScroll.bind(this);
+
+        this.resizeObserver.observe(editorContainer);
+        editorContainer.addEventListener("scroll", this.onScroll);
+      }
+
+      destroy() {
+        editorContainer.removeEventListener("scroll", this.onScroll);
+        this.resizeObserver.disconnect();
+      }
+
+      private onScroll() {
+        const scrollOffset = editorContainer.scrollTop;
+        onUpdate(
+          this.annotationPositions.map((position) => ({
+            ...position,
+            y: position.y - scrollOffset,
+          }))
+        );
       }
 
       update(update: ViewUpdate) {
@@ -28,20 +62,20 @@ export const annotationTargetPositionListener = ({
             tr.effects.some((e) => e.is(setPatchesEffect))
           )
         ) {
-          this.updatePositions(update.view);
+          this.updatePositions();
         }
       }
 
-      updatePositions(view: EditorView) {
-        const annotations = view.state.field(patchesField);
+      updatePositions() {
+        const annotations = this.view.state.field(patchesField);
 
         // todo: there is probably a better way to do this
         // the problem here is that during update we can't read the positions
         requestAnimationFrame(() => {
-          const annotationsTargetPostions = annotations.map((annotation) => {
+          const annotationPositions = annotations.map((annotation) => {
             const { fromPos, toPos, fromCursor, toCursor } = annotation.target;
 
-            const lastLineBreakIndex = view.state
+            const lastLineBreakIndex = this.view.state
               .sliceDoc(fromPos, toPos)
               .trimEnd() // trim to ignore line breaks at the end of the string
               .lastIndexOf("\n");
@@ -50,7 +84,7 @@ export const annotationTargetPositionListener = ({
                 ? fromPos
                 : fromPos + lastLineBreakIndex + 1;
 
-            const fromCoords = view.coordsAtPos(fromIndex);
+            const fromCoords = this.view.coordsAtPos(fromIndex);
 
             if (fromCoords) {
               return {
@@ -64,7 +98,8 @@ export const annotationTargetPositionListener = ({
             }
 
             // fallback: estimate position based on line number
-            const lineNumber = view.state.doc.lineAt(fromIndex).number;
+            // todo: make this work with line wrap
+            const lineNumber = this.view.state.doc.lineAt(fromIndex).number;
 
             return {
               annotation: {
@@ -76,9 +111,13 @@ export const annotationTargetPositionListener = ({
             };
           });
 
-          console.log("report", annotationsTargetPostions);
+          onUpdate(annotationPositions);
 
-          onUpdate(annotationsTargetPostions);
+          const scrollOffset = editorContainer?.scrollTop ?? 0;
+          this.annotationPositions = annotationPositions.map((position) => ({
+            ...position,
+            y: position.y + scrollOffset,
+          }));
         });
       }
     }

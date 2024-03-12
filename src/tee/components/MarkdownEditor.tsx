@@ -59,8 +59,7 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { getCursorPositionSafely, TextPatch } from "@/patchwork/utils";
-import { annotationTargetPositionListener } from "../codemirrorPlugins/annotationPositionListener";
+import { annotationsPositionListener } from "../codemirrorPlugins/annotationPositionListener";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 
 export type TextSelection = {
@@ -72,6 +71,7 @@ export type TextSelection = {
 export type DiffStyle = "normal" | "private";
 
 export type EditorProps = {
+  editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
   setSelection: (selection: TextSelection) => void;
@@ -93,6 +93,7 @@ export type EditorProps = {
 };
 
 export function MarkdownEditor({
+  editorContainer,
   handle,
   path,
   setSelection,
@@ -100,13 +101,10 @@ export function MarkdownEditor({
   readOnly,
   docHeads,
   annotations,
-  diffStyle,
   debugHighlights,
   onOpenSnippet,
   foldRanges,
-  discussionAnnotations,
   setEditorContainerElement,
-  isCommentBoxOpen,
   onUpdateAnnotationPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
@@ -138,7 +136,7 @@ export function MarkdownEditor({
   }, [annotations, editorRoot.current]);
 
   useEffect(() => {
-    if (!handleReady) {
+    if (!handleReady || !editorContainer) {
       return;
     }
     const doc = handle.docSync();
@@ -221,9 +219,10 @@ export function MarkdownEditor({
         }),
         ...(onUpdateAnnotationPositions
           ? [
-              annotationTargetPositionListener({
+              annotationsPositionListener({
                 onUpdate: onUpdateAnnotationPositions,
                 estimatedLineHeight: 24,
+                editorContainer,
               }),
             ]
           : []),
@@ -284,7 +283,7 @@ export function MarkdownEditor({
       handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [handle, handleReady, docHeads]);
+  }, [handle, handleReady, docHeads, editorContainer]);
 
   if (editorCrashed) {
     return (
