@@ -147,9 +147,8 @@ export const SideBySide = ({
   docUrl,
   mainDocUrl,
   docHeads,
-  diff,
   mainDiff,
-}: SideBySideProps) => {
+}: SideBySideProps<unknown, unknown>) => {
   const [camera, setCamera] = useState<TLCamera>();
 
   return (
@@ -168,7 +167,6 @@ export const SideBySide = ({
           docUrl={docUrl}
           key={docUrl}
           docHeads={docHeads}
-          diff={diff}
           camera={camera}
           onChangeCamera={setCamera}
         />

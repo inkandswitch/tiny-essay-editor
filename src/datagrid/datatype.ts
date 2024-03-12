@@ -83,7 +83,7 @@ const promptForAutoChangeGroupDescription = ({
   ${JSON.stringify(pick(docAfter, ["data"]), null, 2)}`;
 };
 
-export const DataGridDatatype: DataType<DataGridDoc> = {
+export const DataGridDatatype: DataType<DataGridDoc, never, never> = {
   id: "datagrid",
   name: "DataGrid",
   icon: Sheet,

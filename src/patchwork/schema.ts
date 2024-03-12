@@ -90,7 +90,7 @@ export type Discussion = {
    *  could be an object in the document (eg in a text doc, a range of chars)
    *  or possibly (not sure yet) an object in the meta discussion like a change group
    */
-  target?: Annotation;
+  target?: DiscussionTarget;
 };
 
 export type Discussable = {

@@ -93,7 +93,7 @@ ${JSON.stringify(pick(docBefore, ["store"]), null, 2)}
 ${JSON.stringify(pick(docAfter, ["store"]), null, 2)}`;
 };
 
-export const TLDrawDatatype: DataType<TLDrawDoc> = {
+export const TLDrawDatatype: DataType<TLDrawDoc, never, never> = {
   id: "tldraw",
   name: "Drawing",
   icon: PenLine,

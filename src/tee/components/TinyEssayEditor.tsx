@@ -25,11 +25,12 @@ import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isEqual } from "lodash";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { CommentsSidebar } from "./CommentsSidebar";
 
 export const TinyEssayEditor = ({
   docUrl,
   docHeads,
-  annotations,
+  annotations = [],
   actorIdToAuthor,
   hoveredAnnotation,
   selectedAnnotations,
@@ -37,11 +38,11 @@ export const TinyEssayEditor = ({
   onUpdateAnnotationsPositions: onUpdateAnnotationPositions,
 }: DocEditorProps<MarkdownDocAnchor, string>) => {
   const account = useCurrentAccount();
-  const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
   const [editorView, setEditorView] = useState<EditorView>();
-  const [isCommentBoxOpen] = useState(false);
+  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
 
@@ -250,27 +251,13 @@ export const TinyEssayEditor = ({
             />
           </div>
           <div className="ml-2 w-0">
-            {/*
-              <CommentsSidebar
-                handle={handle}
-                doc={docAtHeads}
-                changeDoc={changeDoc}
-                mainDocHandle={mainDocHandle}
-                branchDocHandle={branchDocHandle}
-                selection={selection}
-                reviewStateFilter={reviewStateFilter}
-                setReviewStateFilter={setReviewStateFilter}
-                selectedAnnotationIds={selectedAnnotationIds}
-                setSelectedAnnotationIds={setSelectedAnnotationIds}
-                annotationsWithPositions={annotations}
-                diff={diff}
-                visibleAuthorsForEdits={visibleAuthorsForEdits}
-                setVisibleAuthorsForEdits={setVisibleAuthorsForEdits}
-                authors={authors}
-                isCommentBoxOpen={isCommentBoxOpen}
-                setIsCommentBoxOpen={setIsCommentBoxOpen}
-              />
-            */}
+            <CommentsSidebar
+              doc={docAtHeads}
+              changeDoc={changeDoc}
+              selection={selection}
+              isCommentBoxOpen={isCommentBoxOpen}
+              setIsCommentBoxOpen={setIsCommentBoxOpen}
+            />
           </div>
         </div>
       </div>

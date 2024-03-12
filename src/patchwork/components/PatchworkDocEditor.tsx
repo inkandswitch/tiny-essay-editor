@@ -631,12 +631,7 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                discussions={discussions}
                 onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
-                hoveredDiscussionId={hoveredDiscussionId}
-                selectedDiscussionId={selectedDiscussionId}
-                setHoveredDiscussionId={setHoveredDiscussionId}
-                setSelectedDiscussionId={setSelectedDiscussionId}
               />
             )}
           </div>
@@ -706,12 +701,11 @@ const DocEditor = <T, V>({
   docHeads,
   annotations,
   actorIdToAuthor,
-  discussions,
   onUpdateAnnotationsPositions,
-  hoveredDiscussionId,
-  selectedDiscussionId,
-  setHoveredDiscussionId,
-  setSelectedDiscussionId,
+  hoveredAnnotation,
+  selectedAnnotations,
+  setHoveredAnnotation,
+  setSelectedAnnotations,
 }: DocEditorPropsWithDocType<T, V>) => {
   switch (docType) {
     case "bot":
@@ -723,12 +717,11 @@ const DocEditor = <T, V>({
           docHeads={docHeads}
           annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
           actorIdToAuthor={actorIdToAuthor}
-          onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
-          discussions={discussions}
+          /*onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
           hoveredDiscussionId={hoveredDiscussionId}
           selectedDiscussionId={selectedDiscussionId}
           setHoveredDiscussionId={setHoveredDiscussionId}
-          setSelectedDiscussionId={setSelectedDiscussionId}
+          setSelectedDiscussionId={setSelectedDiscussionId} */
         />
       );
     case "tldraw":
@@ -763,7 +756,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
         docUrl,
         mainDocUrl,
         docHeads,
-        diff,
+        /*diff,
         mainDiff,
         actorIdToAuthor,
         discussions,
@@ -771,7 +764,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
         hoveredDiscussionId,
         selectedDiscussionId,
         setHoveredDiscussionId,
-        setSelectedDiscussionId,
+        setSelectedDiscussionId, */
       } = props;
 
       return (
@@ -780,7 +773,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
             <DocEditor
               docType={docType}
               docUrl={mainDocUrl}
-              actorIdToAuthor={actorIdToAuthor}
+              /*actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
@@ -788,7 +781,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               hoveredDiscussionId={hoveredDiscussionId}
               selectedDiscussionId={selectedDiscussionId}
               setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId}
+              setSelectedDiscussionId={setSelectedDiscussionId} */
             />
           </div>
           <div className="h-full flex-1 overflow-auto">
@@ -796,7 +789,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               docType={docType}
               docUrl={docUrl}
               docHeads={docHeads}
-              actorIdToAuthor={actorIdToAuthor}
+              /*actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
@@ -804,7 +797,7 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               hoveredDiscussionId={hoveredDiscussionId}
               selectedDiscussionId={selectedDiscussionId}
               setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId}
+              setSelectedDiscussionId={setSelectedDiscussionId}*/
             />
           </div>
         </div>

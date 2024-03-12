@@ -363,7 +363,7 @@ const AnnotationWithDicussionView = forwardRef<
               ))*/}
           <div
             className={`overflow-hidden transition-all flex items-center ${
-              isSelected ? "h-[43px]" : "h-[0px]"
+              isSelected ? "h-[43px] opacity-100" : "h-[0px] opacity-0"
             }`}
           >
             <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>

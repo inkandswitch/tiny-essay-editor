@@ -49,7 +49,7 @@ export interface DocEditorProps<T, V> {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];
-  annotations: Annotation<T, V>[];
+  annotations?: Annotation<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
   // spatial comments interface

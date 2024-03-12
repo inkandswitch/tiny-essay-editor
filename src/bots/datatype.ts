@@ -13,7 +13,11 @@ export type EssayEditingBotDoc = HasPatchworkMetadata & {
   promptUrl: AutomergeUrl;
 };
 
-export const EssayEditingBotDatatype: DataType<EssayEditingBotDoc> = {
+export const EssayEditingBotDatatype: DataType<
+  EssayEditingBotDoc,
+  never,
+  never
+> = {
   id: "bot",
   name: "Bot",
   icon: Bot,
