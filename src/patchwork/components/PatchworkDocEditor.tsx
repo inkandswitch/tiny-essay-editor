@@ -70,7 +70,6 @@ import {
   SpatialCommentsLinesLayer,
   SpatialSidebar,
 } from "./SpatialSidebar";
-import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
 import {
@@ -325,17 +324,15 @@ export const PatchworkDocEditor: React.FC<{
     return ids;
   }, [selectedDiscussionId, hoveredDiscussionId]);
 
-  const onUpdateDiscussionTargetPositions = useStaticCallback(
-    (targetPositions) => {
-      setAnnotationsTargetPositions(
-        targetPositions.map((position) => ({
-          ...position,
-          y: position.y,
-          x: position.x,
-        }))
-      );
-    }
-  );
+  const onUpdateAnnotationsPositions = useStaticCallback((targetPositions) => {
+    setAnnotationsTargetPositions(
+      targetPositions.map((position) => ({
+        ...position,
+        y: position.y,
+        x: position.x,
+      }))
+    );
+  });
 
   const discussions = useMemo(() => {
     if (!activeDoc || !activeDoc.discussions) {
@@ -600,7 +597,7 @@ export const PatchworkDocEditor: React.FC<{
               />
             )}
             {selectedBranch.type === "branch" && compareWithMainFlag ? (
-              false && (
+              false /*false && (
                 <SideBySide
                   key={mainDocUrl}
                   mainDocUrl={mainDocUrl}
@@ -611,7 +608,7 @@ export const PatchworkDocEditor: React.FC<{
                   mainDiff={showDiff ? currentEditSessionDiff : undefined}
                   actorIdToAuthor={actorIdToAuthor}
                   discussions={discussions}
-                  onUpdateDiscussionTargetPositions={
+                  onUpdateAnnotationPositions={
                     onUpdateDiscussionTargetPositions
                   }
                   hoveredDiscussionId={hoveredDiscussionId}
@@ -619,7 +616,7 @@ export const PatchworkDocEditor: React.FC<{
                   setHoveredDiscussionId={setHoveredDiscussionId}
                   setSelectedDiscussionId={setSelectedDiscussionId}
                 />
-              )
+              )*/
             ) : (
               <DocEditor
                 key={selectedBranchLink?.url ?? mainDocUrl}
@@ -629,9 +626,7 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 discussions={discussions}
-                onUpdateDiscussionTargetPositions={
-                  onUpdateDiscussionTargetPositions
-                }
+                onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
                 hoveredDiscussionId={hoveredDiscussionId}
                 selectedDiscussionId={selectedDiscussionId}
                 setHoveredDiscussionId={setHoveredDiscussionId}
@@ -706,7 +701,7 @@ const DocEditor = <T, V>({
   annotations,
   actorIdToAuthor,
   discussions,
-  onUpdateDiscussionTargetPositions,
+  onUpdateAnnotationsPositions,
   hoveredDiscussionId,
   selectedDiscussionId,
   setHoveredDiscussionId,
@@ -722,7 +717,7 @@ const DocEditor = <T, V>({
           docHeads={docHeads}
           annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
           actorIdToAuthor={actorIdToAuthor}
-          onUpdateDiscussionTargetPositions={onUpdateDiscussionTargetPositions}
+          onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
           discussions={discussions}
           hoveredDiscussionId={hoveredDiscussionId}
           selectedDiscussionId={selectedDiscussionId}

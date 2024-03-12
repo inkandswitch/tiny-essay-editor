@@ -24,8 +24,7 @@ import { uniq } from "lodash";
 import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isEqual } from "lodash";
-import { AnnotationTargetPosition } from "../codemirrorPlugins/annotationTargetPositionListener";
-import { Annotation } from "@/patchwork/schema";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 
 export const TinyEssayEditor = ({
   docUrl,
@@ -36,7 +35,7 @@ export const TinyEssayEditor = ({
   selectedDiscussionId,
   hoveredDiscussionId,
   setSelectedDiscussionId,
-  onUpdateDiscussionTargetPositions,
+  onUpdateAnnotationsPositions: onUpdateAnnotationPositions,
 }: DocEditorProps<MarkdownDocAnchor, string>) => {
   const account = useCurrentAccount();
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -49,9 +48,9 @@ export const TinyEssayEditor = ({
   const [isCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
-  const [activeDiscussionTargetPositions, setActiveDiscussionTargetPositions] =
-    useState<AnnotationTargetPosition<unknown, unknown>[]>([]);
-  const [scrollOffset] = useState(0);
+  const [annotationsPositions, setAnnotationsPositions] = useState<
+    AnnotationPosition<unknown, unknown>[]
+  >([]);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
@@ -225,6 +224,14 @@ export const TinyEssayEditor = ({
   return (
     <div
       className="h-full overflow-auto min-h-0 w-full"
+      onScroll={(event) => {
+        onUpdateAnnotationPositions(
+          annotationsPositions.map((position) => ({
+            ...position,
+            y: position.y - (event.target as HTMLElement).scrollTop,
+          }))
+        );
+      }}
       ref={setEditorContainer}
     >
       <div className="@container flex bg-gray-100 justify-center">
@@ -251,9 +258,14 @@ export const TinyEssayEditor = ({
               setActiveThreadIds={setSelectedAnnotationIds}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              onUpdateDiscussionTargetPositions={(targetPositions) => {
-                setActiveDiscussionTargetPositions(targetPositions);
-                onUpdateDiscussionTargetPositions(targetPositions);
+              onUpdateAnnotationPositions={(positions) => {
+                setAnnotationsPositions(
+                  positions.map((position) => ({
+                    ...position,
+                    y: position.y + (editorContainer?.scrollTop ?? 0),
+                  }))
+                );
+                onUpdateAnnotationPositions(positions);
               }}
               isCommentBoxOpen={isCommentBoxOpen}
             />

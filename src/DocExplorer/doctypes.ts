@@ -8,9 +8,9 @@ import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
 import { Discussion } from "@/patchwork/schema";
 import { Annotation } from "@/patchwork/schema";
+import { AnnotationPosition } from "@/tee/schema";
 
 export interface DataType<D, T, V> {
   id: string;
@@ -61,7 +61,7 @@ export interface DocEditorProps<T, V> {
   hoveredDiscussionId?: string;
   setHoveredDiscussionId?: (id: string) => void;
   setSelectedDiscussionId?: (id: string) => void;
-  onUpdateDiscussionTargetPositions?: (
-    positions: DiscussionTargetPosition[]
+  onUpdateAnnotationsPositions?: (
+    positions: AnnotationPosition<T, V>[]
   ) => void;
 }

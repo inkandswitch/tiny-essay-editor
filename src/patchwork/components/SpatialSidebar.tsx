@@ -11,7 +11,7 @@ import {
   DiscussionComment,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
-import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
+import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
 import { useCurrentAccount } from "@/DocExplorer/account";

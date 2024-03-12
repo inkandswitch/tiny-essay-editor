@@ -60,8 +60,8 @@ import {
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
 import { getCursorPositionSafely, TextPatch } from "@/patchwork/utils";
-import { annotationTargetPositionListener } from "../codemirrorPlugins/annotationTargetPositionListener";
-import { Annotation } from "@/patchwork/schema";
+import { annotationTargetPositionListener } from "../codemirrorPlugins/annotationPositionListener";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 
 export type TextSelection = {
   from: number;
@@ -87,8 +87,8 @@ export type EditorProps = {
   foldRanges?: { from: number; to: number }[];
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateDiscussionTargetPositions?: (
-    positions: DiscussionTargetPosition[]
+  onUpdateAnnotationPositions?: (
+    positions: AnnotationPosition<MarkdownDocAnchor, string>[]
   ) => void;
 };
 
@@ -107,7 +107,7 @@ export function MarkdownEditor({
   discussionAnnotations,
   setEditorContainerElement,
   isCommentBoxOpen,
-  onUpdateDiscussionTargetPositions,
+  onUpdateAnnotationPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -219,10 +219,10 @@ export function MarkdownEditor({
             return placeholder;
           },
         }),
-        ...(onUpdateDiscussionTargetPositions
+        ...(onUpdateAnnotationPositions
           ? [
               annotationTargetPositionListener({
-                onUpdate: onUpdateDiscussionTargetPositions,
+                onUpdate: onUpdateAnnotationPositions,
                 estimatedLineHeight: 24,
               }),
             ]

@@ -1,16 +1,11 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
-import { setAnnotationsEffect, annotationsField } from "./annotations";
 import { patchesField, setPatchesEffect } from "./patchDecorations";
-
-import { Annotation } from "@/patchwork/schema";
+import { AnnotationPosition } from "@/patchwork/schema";
 import { MarkdownDocAnchor } from "../schema";
 
-interface AnnotationTargetPositionListenerConfig {
+interface AnnotationPositionListenerConfig {
   onUpdate: (
-    discussionTargetPositions: AnnotationTargetPosition<
-      MarkdownDocAnchor,
-      string
-    >[]
+    discussionTargetPositions: AnnotationPosition<MarkdownDocAnchor, string>[]
   ) => void;
   estimatedLineHeight: number;
 }
@@ -18,7 +13,7 @@ interface AnnotationTargetPositionListenerConfig {
 export const annotationTargetPositionListener = ({
   onUpdate,
   estimatedLineHeight,
-}: AnnotationTargetPositionListenerConfig) => {
+}: AnnotationPositionListenerConfig) => {
   return ViewPlugin.fromClass(
     class {
       constructor(view: EditorView) {
