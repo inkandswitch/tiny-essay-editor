@@ -31,19 +31,15 @@ export const TinyEssayEditor = ({
   docHeads,
   annotations,
   actorIdToAuthor,
-  discussions = [],
-  selectedDiscussionId,
-  hoveredDiscussionId,
-  setSelectedDiscussionId,
+  hoveredAnnotation,
+  selectedAnnotations,
+  setSelectedAnnotations,
   onUpdateAnnotationsPositions: onUpdateAnnotationPositions,
 }: DocEditorProps<MarkdownDocAnchor, string>) => {
   const account = useCurrentAccount();
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
-  const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>(
-    []
-  );
   const [editorView, setEditorView] = useState<EditorView>();
   const [isCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
@@ -245,7 +241,6 @@ export const TinyEssayEditor = ({
               setSelection={setSelection}
               setView={setEditorView}
               annotations={resolvedAnnotations}
-              setActiveThreadIds={setSelectedAnnotationIds}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
               onUpdateAnnotationPositions={(positions) =>

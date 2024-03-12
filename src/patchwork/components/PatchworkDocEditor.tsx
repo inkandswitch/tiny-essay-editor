@@ -80,6 +80,7 @@ import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
+import { AnnotationPosition } from "@/patchwork/schema";
 
 interface MakeBranchOptions {
   name?: string;
@@ -100,6 +101,11 @@ export const PatchworkDocEditor: React.FC<{
   const handle = useHandle<HasPatchworkMetadata>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
+  const [hoveredAnnotation, setHoveredAnnotation] =
+    useState<Annotation<unknown, unknown>>();
+  const [selectedAnnotations, setSelectedAnnotations] = useState<
+    Annotation<unknown, unknown>[]
+  >([]);
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
@@ -301,7 +307,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [annotationsTargetPositions, setAnnotationsTargetPositions] = useState<
-    AnnotationTargetPosition<unknown, unknown>[]
+    AnnotationPosition<unknown, unknown>[]
   >([]);
   const [
     annotationsPositionsInSidebarMap,
@@ -677,10 +683,10 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 changeDoc={changeDoc}
                 onChangeCommentPositionMap={setAnnotationsPositionsInSidebarMap}
-                setSelectedDiscussionId={setSelectedDiscussionId}
-                selectedDiscussionId={selectedDiscussionId}
-                setHoveredDiscussionId={setHoveredDiscussionId}
-                hoveredDiscussionId={hoveredDiscussionId}
+                setSelectedAnnotations={setSelectedAnnotations}
+                selectedAnnotations={selectedAnnotations}
+                setHoveredAnnotation={setHoveredAnnotation}
+                hoveredAnnotation={hoveredAnnotation}
               />
             )}
           </div>

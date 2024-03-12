@@ -8,9 +8,7 @@ import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { Discussion } from "@/patchwork/schema";
-import { Annotation } from "@/patchwork/schema";
-import { AnnotationPosition } from "@/tee/schema";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 
 export interface DataType<D, T, V> {
   id: string;
@@ -37,7 +35,7 @@ export interface DataType<D, T, V> {
 
 export const docTypes: Record<
   string,
-  DataType<HasPatchworkMetadata<unknown>, unknown, unknown>
+  DataType<HasPatchworkMetadata, unknown, unknown>
 > = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
@@ -56,11 +54,10 @@ export interface DocEditorProps<T, V> {
 
   // spatial comments interface
   // todo: simplify
-  discussions?: Discussion[]; // todo: should be a list of anchors
-  selectedDiscussionId?: string;
-  hoveredDiscussionId?: string;
-  setHoveredDiscussionId?: (id: string) => void;
-  setSelectedDiscussionId?: (id: string) => void;
+  selectedAnnotations?: Annotation<T, V>;
+  hoveredAnnotation?: Annotation<T, V>;
+  setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
+  setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
   onUpdateAnnotationsPositions?: (
     positions: AnnotationPosition<T, V>[]
   ) => void;

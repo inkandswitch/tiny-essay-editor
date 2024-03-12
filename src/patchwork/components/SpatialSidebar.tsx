@@ -11,7 +11,6 @@ import {
   DiscussionComment,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
-import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
@@ -23,36 +22,38 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Reply } from "lucide-react";
+import { Check, Reply, UndoIcon } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
-import { Annotation } from "@/patchwork/schema";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
 import { MarkdownDocAnchor } from "@/tee/schema";
 import { truncate } from "lodash";
+import { doAnnotationsOverlap } from "../utils";
+import { MessageCircleIcon } from "lucide-react";
 
-type SpatialSidebarProps<T, V> = {
+type SpatialSidebarProps = {
   docType: string;
-  annotations: Annotation<T, V>[];
+  annotations: Annotation<unknown, unknown>[];
   changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
-  setSelectedDiscussionId: (id: string) => void;
-  setHoveredDiscussionId: (id: string) => void;
-  selectedDiscussionId: string;
-  hoveredDiscussionId: string;
+  setSelectedAnnotations: (annotations: Annotation<unknown, unknown>[]) => void;
+  setHoveredAnnotation: (annotation: Annotation<unknown, unknown>) => void;
+  selectedAnnotations: Annotation<unknown, unknown>[];
+  hoveredAnnotation: Annotation<unknown, unknown>;
 };
 
 export const SpatialSidebar = React.memo(
-  <T, V>({
+  ({
     docType,
     annotations,
     changeDoc,
     onChangeCommentPositionMap,
-  }: /*  setSelectedDiscussionId,
-    selectedDiscussionId,
-    setHoveredDiscussionId,
-    hoveredDiscussionId, */
-  SpatialSidebarProps<T, V>) => {
+    setSelectedAnnotations,
+    selectedAnnotations,
+    setHoveredAnnotation,
+    hoveredAnnotation,
+  }: SpatialSidebarProps) => {
     const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
       useState<string>();
     const [scrollOffset, setScrollOffset] = useState(0);
@@ -166,28 +167,34 @@ export const SpatialSidebar = React.memo(
                 onReply={(content) => {
                   //replyToDiscussion(discussion, content)
                 }}
-                isHovered={/*hoveredDiscussionId === discussion.id */ false}
+                isHovered={doAnnotationsOverlap(hoveredAnnotation, annotation)}
                 setIsHovered={(isHovered) => {
-                  //setHoveredDiscussionId(isHovered ? discussion.id : undefined)
+                  setHoveredAnnotation(isHovered ? annotation : undefined);
                 }}
-                isSelected={/*selectedDiscussionId === discussion.id*/ false}
+                isSelected={selectedAnnotations.some((selectedAnnotation) =>
+                  doAnnotationsOverlap(selectedAnnotation, annotation)
+                )}
                 setIsSelected={(isSelected) => {
-                  //setSelectedDiscussionId(isSelected ? discussion.id : undefined);
+                  setSelectedAnnotations(isSelected ? [annotation] : []);
                 }}
                 ref={(element) =>
                   registerAnnotationElement(JSON.stringify(annotation), element)
                 }
                 onSelectNext={() => {
-                  /*         const nextAnnotation = annotations[index + 1];
-                if (nextAnnotation) {
-                  setSelectedDiscussionId(nextAnnotation.id);
-                } */
+                  if (selectedAnnotations.length > 1) {
+                    return;
+                  }
+
+                  const nextAnnotation = annotations[index + 1];
+                  if (nextAnnotation) {
+                    setSelectedAnnotations([nextAnnotation]);
+                  }
                 }}
                 onSelectPrev={() => {
-                  /* const prevAnnotation = annotations[index - 1];
-                if (prevAnnotation) {
-                  setSelectedDiscussionId(prevAnnotation.id);
-                } */
+                  const prevAnnotation = annotations[index - 1];
+                  if (prevAnnotation) {
+                    setSelectedAnnotations([prevAnnotation]);
+                  }
                 }}
               />
             );
@@ -197,9 +204,9 @@ export const SpatialSidebar = React.memo(
   }
 );
 
-interface AnnotationWithDiscussionViewProps<T, V> {
+interface AnnotationWithDiscussionViewProps {
   docType: string;
-  annotation: Annotation<T, V>;
+  annotation: Annotation<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolve: () => void;
@@ -214,7 +221,7 @@ interface AnnotationWithDiscussionViewProps<T, V> {
 
 const AnnotationWithDicussionView = forwardRef<
   HTMLDivElement,
-  AnnotationWithDiscussionViewProps<T, V>
+  AnnotationWithDiscussionViewProps
 >(
   <T, V>(
     {
@@ -230,7 +237,7 @@ const AnnotationWithDicussionView = forwardRef<
       setIsSelected,
       onSelectNext,
       onSelectPrev,
-    }: AnnotationWithDiscussionViewProps<T, V>,
+    }: AnnotationWithDiscussionViewProps,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -330,15 +337,19 @@ const AnnotationWithDicussionView = forwardRef<
           onMouseLeave={() => setIsHovered(false)}
           onClick={() => setIsSelected(true)}
           key={JSON.stringify(annotation)}
-          className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
-    ${
-      isSelected || isHovered ? "border-gray-400 shadow-xl" : "border-gray-200 "
-    }`}
+          className="flex flex-col gap-1"
         >
-          <div>
+          <div
+            className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
+              isSelected || isHovered
+                ? "border-gray-400 shadow-xl"
+                : "border-gray-200 "
+            }`}
+          >
             <AnnotationView docType={docType} annotation={annotation} />
+          </div>
 
-            {/*annotation.comments.map((comment, index) => (
+          {/*annotation.comments.map((comment, index) => (
               <div
                 key={comment.id}
                 className={
@@ -350,16 +361,16 @@ const AnnotationWithDicussionView = forwardRef<
                 <DiscusssionCommentView comment={comment} />
               </div>
               ))*/}
-          </div>
           <div
-            className={`overflow-hidden transition-all ${
-              isSelected ? "h-[43px] border-t border-gray-200 pt-2" : "h-[0px]"
+            className={`overflow-hidden transition-all flex items-center ${
+              isSelected ? "h-[43px]" : "h-[0px]"
             }`}
           >
             <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>
               <PopoverTrigger asChild>
-                <Button className="mr-2 px-2 h-8" variant="ghost">
-                  <Reply className="mr-2" /> Reply
+                <Button variant="ghost" className="flex gap-1 items-center">
+                  <MessageCircleIcon size={16} />
+                  Comment
                   <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
                 </Button>
               </PopoverTrigger>
@@ -394,13 +405,9 @@ const AnnotationWithDicussionView = forwardRef<
                 </PopoverClose>
               </PopoverContent>
             </Popover>
-            <Button
-              variant="ghost"
-              className="select-none h-8 px-2 "
-              onClick={() => onStartResolve()}
-            >
-              <Check className="mr-2" /> Resolve
-              <span className="text-gray-400 ml-2 text-xs">(⌘ + X)</span>
+            <Button variant="ghost" className="select-none h-8 px-2 ">
+              <UndoIcon className="mr-2" /> Revert
+              <span className="text-gray-400 ml-2 text-xs">(⌘ + Z)</span>
             </Button>
           </div>
         </div>
@@ -457,28 +464,33 @@ const AnnotationView = <T, V>({
   }
 };
 
+// Todo: move this to tee
 const EssayAnnotationView = ({
   annotation,
 }: {
   annotation: Annotation<MarkdownDocAnchor, string>;
 }) => {
-  return (
-    <div className="flex">
-      {annotation.type === "added" && (
-        <div className="text-sm">
+  switch (annotation.type) {
+    case "added":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
           <span className="font-serif bg-green-50 border-b border-green-400">
-            {truncate(annotation.added, { length: 45 })}
+            {annotation.added}
           </span>
         </div>
-      )}
-      {annotation.type === "deleted" && (
-        <div className="text-sm">
+      );
+
+    case "deleted":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
           <span className="font-serif bg-red-50 border-b border-red-400">
-            {truncate(annotation.deleted, { length: 45 })}
+            {annotation.deleted}
           </span>
         </div>
-      )}
-      {annotation.type === "changed" && (
+      );
+
+    case "changed":
+      return (
         <div className="text-sm">
           <span className="font-serif bg-red-50 border-b border-red-400">
             {truncate(annotation.before, { length: 45 })}
@@ -488,9 +500,8 @@ const EssayAnnotationView = ({
             {truncate(annotation.after, { length: 45 })}
           </span>
         </div>
-      )}
-    </div>
-  );
+      );
+  }
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
@@ -643,13 +654,13 @@ export const useSetScrollTarget = (
 
 const COMMENT_ANCHOR_OFFSET = 30;
 
-export const SpatialCommentsLinesLayer = <T, V>({
+export const SpatialCommentsLinesLayer = ({
   annotationsPositionsInSidebarMap,
   annotationsTargetPositions,
   activeDiscussionIds,
 }: {
   annotationsPositionsInSidebarMap: PositionMap;
-  annotationsTargetPositions: AnnotationTargetPosition<T, V>[];
+  annotationsTargetPositions: AnnotationPosition<unknown, unknown>[];
   activeDiscussionIds: string[];
 }) => {
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();

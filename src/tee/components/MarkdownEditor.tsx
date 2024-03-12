@@ -76,7 +76,6 @@ export type EditorProps = {
   path: A.Prop[];
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
-  setActiveThreadIds: (threadIds: string[]) => void;
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
