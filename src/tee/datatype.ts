@@ -119,8 +119,8 @@ export const patchesToAnnotations = (doc: MarkdownDoc, patches: A.Patch[]) => {
             type: "added",
             added: patch.value,
             target: {
-              from: fromCursor,
-              to: toCursor,
+              fromCursor: fromCursor,
+              toCursor: toCursor,
             },
           },
         ];
@@ -142,8 +142,8 @@ export const patchesToAnnotations = (doc: MarkdownDoc, patches: A.Patch[]) => {
               type: "deleted",
               deleted: patch.removed,
               target: {
-                from: fromCursor,
-                to: toCursor,
+                fromCursor: fromCursor,
+                toCursor: toCursor,
               },
             },
           ];

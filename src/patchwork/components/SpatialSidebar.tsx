@@ -11,7 +11,7 @@ import {
   DiscussionComment,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
-import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
 import { useCurrentAccount } from "@/DocExplorer/account";
@@ -433,6 +433,13 @@ const DiscusssionCommentView = ({
   );
 };
 
+export const getAnnotationId = (docType, annotation) => {
+  switch (docType) {
+    case "essay":
+      return `${annotation.type}-${annotation.target.fromCursor}`;
+  }
+};
+
 const AnnotationView = <T, V>({
   docType,
   annotation,
@@ -509,7 +516,7 @@ const useAnnotationsPositionMap = <T, V>({
 }: UseAnnotationPositionOptions<T, V>): UseAnnotationPositionMapResult => {
   const elementByAnnotationId = useRef(new Map<string, HTMLDivElement>());
   const annotationIdByElement = useRef(new Map<HTMLDivElement, string>());
-  const elementSizes = useRef<Record<string, number>>({});
+  const [elementSizes, setElementSizes] = useState<Record<string, number>>({});
   // create an artificial dependency that triggeres a re-eval of effects / memos
   // that depend on it when forceChange is called
   const [, forceChange] = useReducer(() => ({}), {});
@@ -517,10 +524,13 @@ const useAnnotationsPositionMap = <T, V>({
     () =>
       new ResizeObserver((events) => {
         for (const event of events) {
-          const discussionId = annotationIdByElement.current.get(
+          const annotationId = annotationIdByElement.current.get(
             event.target as HTMLDivElement
           );
-          elementSizes.current[discussionId] = event.borderBoxSize[0].blockSize;
+          setElementSizes((sizes) => ({
+            ...sizes,
+            [annotationId]: event.borderBoxSize[0].blockSize,
+          }));
         }
 
         forceChange();
@@ -559,7 +569,7 @@ const useAnnotationsPositionMap = <T, V>({
     for (const annotation of annotations) {
       const id = JSON.stringify(annotation);
       const top = currentPos;
-      const bottom = top + elementSizes.current[id];
+      const bottom = top + elementSizes[id];
 
       positionMap[id] = { top, bottom };
       currentPos = bottom;
@@ -569,7 +579,7 @@ const useAnnotationsPositionMap = <T, V>({
       onChangeCommentPositionMap(positionMap);
     }
     return positionMap;
-  }, [annotations, offset, onChangeCommentPositionMap]);
+  }, [annotations, offset, onChangeCommentPositionMap, elementSizes]);
 
   return { registerAnnotationElement, annotationsPositionMap };
 };
@@ -633,13 +643,13 @@ export const useSetScrollTarget = (
 
 const COMMENT_ANCHOR_OFFSET = 30;
 
-export const SpatialCommentsLinesLayer = ({
-  commentsPositionMap,
-  discussionTargetPositions,
+export const SpatialCommentsLinesLayer = <T, V>({
+  annotationsPositionsInSidebarMap,
+  annotationsTargetPositions,
   activeDiscussionIds,
 }: {
-  commentsPositionMap: PositionMap;
-  discussionTargetPositions: DiscussionTargetPosition[];
+  annotationsPositionsInSidebarMap: PositionMap;
+  annotationsTargetPositions: AnnotationTargetPosition<T, V>[];
   activeDiscussionIds: string[];
 }) => {
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
@@ -675,26 +685,30 @@ export const SpatialCommentsLinesLayer = ({
           width={bezierCurveLayerRect.width}
           height={bezierCurveLayerRect.height}
         >
-          {sortBy(discussionTargetPositions, (pos) =>
-            activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0
-          ).map((position) => {
-            const commentPosition = commentsPositionMap[position.discussion.id];
+          {sortBy(
+            annotationsTargetPositions,
+            (pos) => 0
+            /* activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0 */
+          ).map((position, index) => {
+            const id = JSON.stringify(position.annotation);
 
-            if (!commentPosition) {
+            const sidebarPosition = annotationsPositionsInSidebarMap[id];
+
+            if (!sidebarPosition) {
               return;
             }
 
             return (
               <BezierCurve
                 color={
-                  activeDiscussionIds.includes(position.discussion.id)
+                  false // activeDiscussionIds.includes(position.discussion.id)
                     ? "#facc15"
                     : "#d1d5db"
                 }
-                key={position.discussion.id}
+                key={index}
                 x1={bezierCurveLayerRect.width}
                 y1={
-                  commentsPositionMap[position.discussion.id].top +
+                  annotationsPositionsInSidebarMap[id].top +
                   COMMENT_ANCHOR_OFFSET -
                   bezierCurveLayerRect.top
                 }

@@ -151,3 +151,9 @@ export type Annotation<T, V> =
   | AddAnnotation<T, V>
   | DeleteAnnotation<T, V>
   | ChangeAnnotation<T, V>;
+
+export interface AnnotationPosition<T, V> {
+  x: number;
+  y: number;
+  annotation: Annotation<T, V>;
+}

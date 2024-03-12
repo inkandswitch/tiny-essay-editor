@@ -60,10 +60,7 @@ import {
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
 import { getCursorPositionSafely, TextPatch } from "@/patchwork/utils";
-import {
-  discussionTargetPositionListener,
-  DiscussionTargetPosition,
-} from "../codemirrorPlugins/discussionTargetPositionListener";
+import { annotationTargetPositionListener } from "../codemirrorPlugins/annotationTargetPositionListener";
 import { Annotation } from "@/patchwork/schema";
 
 export type TextSelection = {
@@ -224,7 +221,7 @@ export function MarkdownEditor({
         }),
         ...(onUpdateDiscussionTargetPositions
           ? [
-              discussionTargetPositionListener({
+              annotationTargetPositionListener({
                 onUpdate: onUpdateDiscussionTargetPositions,
                 estimatedLineHeight: 24,
               }),

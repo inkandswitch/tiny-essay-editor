@@ -70,7 +70,7 @@ import {
   SpatialCommentsLinesLayer,
   SpatialSidebar,
 } from "./SpatialSidebar";
-import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { AnnotationTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
 import {
@@ -301,10 +301,13 @@ export const PatchworkDocEditor: React.FC<{
   }, [activeDoc, diffForEditor]);
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
-  const [discussionTargetPositions, setDiscussionTargetPositions] = useState<
-    DiscussionTargetPosition[]
+  const [annotationsTargetPositions, setAnnotationsTargetPositions] = useState<
+    AnnotationTargetPosition<unknown, unknown>[]
   >([]);
-  const [commentsPositionMap, setCommentPositionMap] = useState<PositionMap>();
+  const [
+    annotationsPositionsInSidebarMap,
+    setAnnotationsPositionsInSidebarMap,
+  ] = useState<PositionMap>();
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
 
   const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
@@ -324,7 +327,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const onUpdateDiscussionTargetPositions = useStaticCallback(
     (targetPositions) => {
-      setDiscussionTargetPositions(
+      setAnnotationsTargetPositions(
         targetPositions.map((position) => ({
           ...position,
           y: position.y,
@@ -590,8 +593,10 @@ export const PatchworkDocEditor: React.FC<{
             {reviewMode === "comments" && isHistorySidebarOpen && (
               <SpatialCommentsLinesLayer
                 activeDiscussionIds={activeDiscussionIds}
-                discussionTargetPositions={discussionTargetPositions}
-                commentsPositionMap={commentsPositionMap}
+                annotationsTargetPositions={annotationsTargetPositions}
+                annotationsPositionsInSidebarMap={
+                  annotationsPositionsInSidebarMap
+                }
               />
             )}
             {selectedBranch.type === "branch" && compareWithMainFlag ? (
@@ -676,7 +681,7 @@ export const PatchworkDocEditor: React.FC<{
                 docType={docType}
                 annotations={annotations}
                 changeDoc={changeDoc}
-                onChangeCommentPositionMap={setCommentPositionMap}
+                onChangeCommentPositionMap={setAnnotationsPositionsInSidebarMap}
                 setSelectedDiscussionId={setSelectedDiscussionId}
                 selectedDiscussionId={selectedDiscussionId}
                 setHoveredDiscussionId={setHoveredDiscussionId}

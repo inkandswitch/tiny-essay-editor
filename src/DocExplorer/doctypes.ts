@@ -8,7 +8,7 @@ import { Repo } from "@automerge/automerge-repo";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/discussionTargetPositionListener";
+import { DiscussionTargetPosition } from "@/tee/codemirrorPlugins/annotationTargetPositionListener";
 import { Discussion } from "@/patchwork/schema";
 import { Annotation } from "@/patchwork/schema";
 

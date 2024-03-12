@@ -106,10 +106,10 @@ export const patchDecorations = EditorView.decorations.compute(
     const annotations = state.field(patchesField);
 
     const decorations = annotations.flatMap((annotation) => {
-      const { from, to } = annotation.target;
+      const { fromPos, toPos } = annotation.target;
       const isActive = activeAnnotations.some(
         (activeAnnotation) =>
-          from >= activeAnnotation.from && to <= activeAnnotation.to
+          fromPos >= activeAnnotation.from && toPos <= activeAnnotation.to
       );
 
       switch (annotation.type) {
@@ -117,11 +117,11 @@ export const patchDecorations = EditorView.decorations.compute(
           const decoration = isActive
             ? spliceDecorationActive
             : spliceDecoration;
-          return [decoration.range(from, to)];
+          return [decoration.range(fromPos, toPos)];
         }
         case "deleted": {
           return [
-            makeDeleteDecoration(annotation.deleted, isActive).range(from),
+            makeDeleteDecoration(annotation.deleted, isActive).range(fromPos),
           ];
         }
       }

@@ -24,7 +24,7 @@ import { uniq } from "lodash";
 import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isEqual } from "lodash";
-import { DiscussionTargetPosition } from "../codemirrorPlugins/discussionTargetPositionListener";
+import { AnnotationTargetPosition } from "../codemirrorPlugins/annotationTargetPositionListener";
 import { Annotation } from "@/patchwork/schema";
 
 export const TinyEssayEditor = ({
@@ -50,7 +50,7 @@ export const TinyEssayEditor = ({
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
   const [activeDiscussionTargetPositions, setActiveDiscussionTargetPositions] =
-    useState<DiscussionTargetPosition[]>([]);
+    useState<AnnotationTargetPosition<unknown, unknown>[]>([]);
   const [scrollOffset] = useState(0);
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
@@ -170,7 +170,7 @@ export const TinyEssayEditor = ({
 
   // update scroll position
   // scroll selectedDiscussion into view
-  useEffect(() => {
+  /*useEffect(() => {
     if (!editorContainer) {
       return;
     }
@@ -201,26 +201,19 @@ export const TinyEssayEditor = ({
     editorContainer,
     scrollOffset,
     selectedDiscussionId,
-  ]);
+  ]); */
 
   const resolvedAnnotations = useMemo<
     Annotation<ResolvedMarkdownDocAnchor, string>[]
   >(() => {
     return annotations.flatMap((annotation) => {
-      const fromPos = getCursorPositionSafely(
-        doc,
-        ["content"],
-        annotation.target.from
-      );
-      const toPos = getCursorPositionSafely(
-        doc,
-        ["content"],
-        annotation.target.to
-      );
+      const { fromCursor, toCursor } = annotation.target;
+      const fromPos = getCursorPositionSafely(doc, ["content"], fromCursor);
+      const toPos = getCursorPositionSafely(doc, ["content"], toCursor);
 
       return !fromPos || !toPos
         ? []
-        : [{ ...annotation, target: { from: fromPos, to: toPos } }];
+        : [{ ...annotation, target: { fromPos, toPos, fromCursor, toCursor } }];
     });
   }, [doc, annotations]);
 

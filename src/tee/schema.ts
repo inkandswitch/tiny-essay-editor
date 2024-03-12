@@ -138,11 +138,11 @@ export type MarkdownDoc = HasPatchworkMetadata & {
 };
 
 export type MarkdownDocAnchor = {
-  from: A.Cursor;
-  to: A.Cursor;
+  fromCursor: A.Cursor;
+  toCursor: A.Cursor;
 };
 
-export type ResolvedMarkdownDocAnchor = {
-  from: number;
-  to: number;
+export type ResolvedMarkdownDocAnchor = MarkdownDocAnchor & {
+  fromPos: number;
+  toPos: number;
 };
