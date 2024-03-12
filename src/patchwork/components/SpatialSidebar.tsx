@@ -26,27 +26,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, Reply } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
+import { Annotation } from "@/patchwork/schema";
+import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import { MarkdownDocAnchor } from "@/tee/schema";
+import { truncate } from "lodash";
+
+type SpatialSidebarProps<T, V> = {
+  docType: string;
+  annotations: Annotation<T, V>[];
+  changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
+  onChangeCommentPositionMap: (map: PositionMap) => void;
+  setSelectedDiscussionId: (id: string) => void;
+  setHoveredDiscussionId: (id: string) => void;
+  selectedDiscussionId: string;
+  hoveredDiscussionId: string;
+};
 
 export const SpatialSidebar = React.memo(
-  ({
-    topDiscussion,
-    discussions,
+  <T, V>({
+    docType,
+    annotations,
     changeDoc,
     onChangeCommentPositionMap,
-    setSelectedDiscussionId,
+  }: /*  setSelectedDiscussionId,
     selectedDiscussionId,
     setHoveredDiscussionId,
-    hoveredDiscussionId,
-  }: {
-    topDiscussion: Discussion;
-    discussions: Discussion[];
-    changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
-    onChangeCommentPositionMap: (map: PositionMap) => void;
-    setSelectedDiscussionId: (id: string) => void;
-    setHoveredDiscussionId: (id: string) => void;
-    selectedDiscussionId: string;
-    hoveredDiscussionId: string;
-  }) => {
+    hoveredDiscussionId, */
+  SpatialSidebarProps<T, V>) => {
     const [activeReplyDiscussionId, setActiveReplyDiscussionId] =
       useState<string>();
     const [scrollOffset, setScrollOffset] = useState(0);
@@ -58,7 +64,7 @@ export const SpatialSidebar = React.memo(
     );
 
     const replyToDiscussion = (discussion: Discussion, content: string) => {
-      setActiveReplyDiscussionId(null);
+      /*setActiveReplyDiscussionId(null);
 
       changeDoc((doc) => {
         doc.discussions[discussion.id].comments.push({
@@ -67,11 +73,11 @@ export const SpatialSidebar = React.memo(
           contactUrl: account.contactHandle.url,
           timestamp: Date.now(),
         });
-      });
+      }); */
     };
 
     const resolveDiscussion = (discussion: Discussion) => {
-      const index = discussions.findIndex((d) => d.id === discussion.id);
+      /*const index = discussions.findIndex((d) => d.id === discussion.id);
       const nextDiscussion = discussions[index + 1];
 
       if (nextDiscussion) {
@@ -83,12 +89,12 @@ export const SpatialSidebar = React.memo(
 
       changeDoc((doc) => {
         doc.discussions[discussion.id].resolved = true;
-      });
+      });*/
     };
 
-    const { registerDiscussionElement, discussionsPositionMap } =
-      useDiscussionsPositionMap({
-        discussions,
+    const { registerAnnotationElement, annotationsPositionMap } =
+      useAnnotationsPositionMap({
+        annotations,
         onChangeCommentPositionMap,
         offset: scrollContainerRect
           ? scrollContainerRect.top - scrollOffset
@@ -96,12 +102,12 @@ export const SpatialSidebar = React.memo(
       });
 
     const setScrollTarget = useSetScrollTarget(
-      discussionsPositionMap,
+      annotationsPositionMap,
       scrollContainer
     );
 
     // sync scrollPosition
-    useEffect(() => {
+    /*useEffect(() => {
       if (!scrollContainer || !topDiscussion) {
         return;
       }
@@ -125,13 +131,13 @@ export const SpatialSidebar = React.memo(
 
       setScrollTarget(topDiscussion.id);
     }, [
-      topDiscussion.id,
+      topDiscussion?.id,
       selectedDiscussionId,
       scrollContainer,
       topDiscussion,
       setScrollTarget,
       discussionsPositionMap,
-    ]);
+    ]);*/
 
     return (
       <div
@@ -141,49 +147,59 @@ export const SpatialSidebar = React.memo(
         }
         className="bg-gray-50 flex- h-full p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
       >
-        {discussions &&
-          discussions.map((discussion, index) => (
-            <DiscussionView
-              key={discussion.id}
-              discussion={discussion}
-              isReplyBoxOpen={activeReplyDiscussionId === discussion.id}
-              setIsReplyBoxOpen={(isOpen) =>
-                setActiveReplyDiscussionId(isOpen ? discussion.id : undefined)
-              }
-              onResolve={() => resolveDiscussion(discussion)}
-              onReply={(content) => replyToDiscussion(discussion, content)}
-              isHovered={hoveredDiscussionId === discussion.id}
-              setIsHovered={(isHovered) =>
-                setHoveredDiscussionId(isHovered ? discussion.id : undefined)
-              }
-              isSelected={selectedDiscussionId === discussion.id}
-              setIsSelected={(isSelected) => {
-                setSelectedDiscussionId(isSelected ? discussion.id : undefined);
-              }}
-              ref={(element) =>
-                registerDiscussionElement(discussion.id, element)
-              }
-              onSelectNext={() => {
-                const nextDiscussion = discussions[index + 1];
-                if (nextDiscussion) {
-                  setSelectedDiscussionId(nextDiscussion.id);
+        {annotations &&
+          annotations.map((annotation, index) => {
+            return (
+              <AnnotationWithDicussionView
+                docType={docType}
+                key={JSON.stringify(annotation)}
+                annotation={annotation}
+                isReplyBoxOpen={
+                  false /*activeReplyDiscussionId === discussion.id*/
                 }
-              }}
-              onSelectPrev={() => {
-                const prevDiscussion = discussions[index - 1];
-                if (prevDiscussion) {
-                  setSelectedDiscussionId(prevDiscussion.id);
+                setIsReplyBoxOpen={(isOpen) => {
+                  //  setActiveReplyDiscussionId(isOpen ? discussion.id : undefined)
+                }}
+                onResolve={() => {
+                  // resolveDiscussion(discussion)
+                }}
+                onReply={(content) => {
+                  //replyToDiscussion(discussion, content)
+                }}
+                isHovered={/*hoveredDiscussionId === discussion.id */ false}
+                setIsHovered={(isHovered) => {
+                  //setHoveredDiscussionId(isHovered ? discussion.id : undefined)
+                }}
+                isSelected={/*selectedDiscussionId === discussion.id*/ false}
+                setIsSelected={(isSelected) => {
+                  //setSelectedDiscussionId(isSelected ? discussion.id : undefined);
+                }}
+                ref={(element) =>
+                  registerAnnotationElement(JSON.stringify(annotation), element)
                 }
-              }}
-            />
-          ))}
+                onSelectNext={() => {
+                  /*         const nextAnnotation = annotations[index + 1];
+                if (nextAnnotation) {
+                  setSelectedDiscussionId(nextAnnotation.id);
+                } */
+                }}
+                onSelectPrev={() => {
+                  /* const prevAnnotation = annotations[index - 1];
+                if (prevAnnotation) {
+                  setSelectedDiscussionId(prevAnnotation.id);
+                } */
+                }}
+              />
+            );
+          })}
       </div>
     );
   }
 );
 
-interface DiscussionViewProps {
-  discussion: Discussion;
+interface AnnotationWithDiscussionViewProps<T, V> {
+  docType: string;
+  annotation: Annotation<T, V>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolve: () => void;
@@ -196,10 +212,14 @@ interface DiscussionViewProps {
   setIsSelected: (isSelected: boolean) => void;
 }
 
-const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
-  (
+const AnnotationWithDicussionView = forwardRef<
+  HTMLDivElement,
+  AnnotationWithDiscussionViewProps<T, V>
+>(
+  <T, V>(
     {
-      discussion,
+      docType,
+      annotation,
       isReplyBoxOpen,
       setIsReplyBoxOpen,
       onResolve,
@@ -210,7 +230,7 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
       setIsSelected,
       onSelectNext,
       onSelectPrev,
-    }: DiscussionViewProps,
+    }: AnnotationWithDiscussionViewProps<T, V>,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -309,14 +329,16 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={() => setIsSelected(true)}
-          key={discussion.id}
+          key={JSON.stringify(annotation)}
           className={`select-none mr-2 px-2 py-1 border rounded-sm  hover:border-gray-400 bg-white
     ${
       isSelected || isHovered ? "border-gray-400 shadow-xl" : "border-gray-200 "
     }`}
         >
           <div>
-            {discussion.comments.map((comment, index) => (
+            <AnnotationView docType={docType} annotation={annotation} />
+
+            {/*annotation.comments.map((comment, index) => (
               <div
                 key={comment.id}
                 className={
@@ -327,7 +349,7 @@ const DiscussionView = forwardRef<HTMLDivElement, DiscussionViewProps>(
               >
                 <DiscusssionCommentView comment={comment} />
               </div>
-            ))}
+              ))*/}
           </div>
           <div
             className={`overflow-hidden transition-all ${
@@ -411,29 +433,82 @@ const DiscusssionCommentView = ({
   );
 };
 
+const AnnotationView = <T, V>({
+  docType,
+  annotation,
+}: {
+  docType: DocType;
+  annotation: Annotation<T, V>;
+}) => {
+  switch (docType) {
+    case "essay":
+      return (
+        <EssayAnnotationView
+          annotation={annotation as Annotation<MarkdownDocAnchor, string>}
+        />
+      );
+  }
+};
+
+const EssayAnnotationView = ({
+  annotation,
+}: {
+  annotation: Annotation<MarkdownDocAnchor, string>;
+}) => {
+  return (
+    <div className="flex">
+      {annotation.type === "added" && (
+        <div className="text-sm">
+          <span className="font-serif bg-green-50 border-b border-green-400">
+            {truncate(annotation.added, { length: 45 })}
+          </span>
+        </div>
+      )}
+      {annotation.type === "deleted" && (
+        <div className="text-sm">
+          <span className="font-serif bg-red-50 border-b border-red-400">
+            {truncate(annotation.deleted, { length: 45 })}
+          </span>
+        </div>
+      )}
+      {annotation.type === "changed" && (
+        <div className="text-sm">
+          <span className="font-serif bg-red-50 border-b border-red-400">
+            {truncate(annotation.before, { length: 45 })}
+          </span>{" "}
+          →{" "}
+          <span className="font-serif bg-green-50 border-b border-green-400">
+            {truncate(annotation.after, { length: 45 })}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export type PositionMap = Record<string, { top: number; bottom: number }>;
 
-interface UseDiscussionsPositionMapResult {
-  registerDiscussionElement: (
+interface UseAnnotationPositionMapResult {
+  registerAnnotationElement: (
     discussionId: string,
     element: HTMLDivElement
   ) => void;
-  discussionsPositionMap: PositionMap;
+  annotationsPositionMap: PositionMap;
 }
 
-interface UseDiscussionPositionOptions {
-  discussions: Discussion[];
+interface UseAnnotationPositionOptions<T, V> {
+  annotations: Annotation<T, V>[];
   onChangeCommentPositionMap?: (map: PositionMap) => void;
   offset: number;
 }
 
-const useDiscussionsPositionMap = ({
-  discussions,
+const useAnnotationsPositionMap = <T, V>({
+  annotations,
   onChangeCommentPositionMap,
   offset,
-}: UseDiscussionPositionOptions): UseDiscussionsPositionMapResult => {
-  const elementByDiscussionId = useRef(new Map<HTMLDivElement, string>());
-  const discussionIdByElement = useRef(new Map<HTMLDivElement, string>());
+}: UseAnnotationPositionOptions<T, V>): UseAnnotationPositionMapResult => {
+  const elementByAnnotationId = useRef(new Map<string, HTMLDivElement>());
+  const annotationIdByElement = useRef(new Map<HTMLDivElement, string>());
   const elementSizes = useRef<Record<string, number>>({});
   // create an artificial dependency that triggeres a re-eval of effects / memos
   // that depend on it when forceChange is called
@@ -442,7 +517,7 @@ const useDiscussionsPositionMap = ({
     () =>
       new ResizeObserver((events) => {
         for (const event of events) {
-          const discussionId = discussionIdByElement.current.get(
+          const discussionId = annotationIdByElement.current.get(
             event.target as HTMLDivElement
           );
           elementSizes.current[discussionId] = event.borderBoxSize[0].blockSize;
@@ -459,33 +534,34 @@ const useDiscussionsPositionMap = ({
     };
   }, [resizeObserver]);
 
-  const registerDiscussionElement = (
+  const registerAnnotationElement = (
     discussionId: string,
     element?: HTMLDivElement
   ) => {
-    const prevElement = elementByDiscussionId.current[discussionId];
+    const prevElement = elementByAnnotationId.current[discussionId];
     if (prevElement) {
       resizeObserver.unobserve(prevElement);
-      discussionIdByElement.current.delete(prevElement);
-      delete elementByDiscussionId.current[discussionId];
+      annotationIdByElement.current.delete(prevElement);
+      delete elementByAnnotationId.current[discussionId];
     }
 
     if (element) {
       resizeObserver.observe(element);
-      elementByDiscussionId.current[discussionId];
-      discussionIdByElement.current.set(element, discussionId);
+      elementByAnnotationId.current[discussionId];
+      annotationIdByElement.current.set(element, discussionId);
     }
   };
 
-  const discussionsPositionMap = useMemo(() => {
+  const annotationsPositionMap = useMemo(() => {
     let currentPos = offset;
     const positionMap = {};
 
-    for (const discussion of discussions) {
+    for (const annotation of annotations) {
+      const id = JSON.stringify(annotation);
       const top = currentPos;
-      const bottom = top + elementSizes.current[discussion.id];
+      const bottom = top + elementSizes.current[id];
 
-      positionMap[discussion.id] = { top, bottom };
+      positionMap[id] = { top, bottom };
       currentPos = bottom;
     }
 
@@ -493,9 +569,9 @@ const useDiscussionsPositionMap = ({
       onChangeCommentPositionMap(positionMap);
     }
     return positionMap;
-  }, [discussions, offset, onChangeCommentPositionMap]);
+  }, [annotations, offset, onChangeCommentPositionMap]);
 
-  return { registerDiscussionElement, discussionsPositionMap };
+  return { registerAnnotationElement, annotationsPositionMap };
 };
 
 export const useSetScrollTarget = (

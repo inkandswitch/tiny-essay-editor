@@ -673,8 +673,8 @@ export const PatchworkDocEditor: React.FC<{
             )}
             {reviewMode === "comments" && (
               <SpatialSidebar
-                topDiscussion={topDiscussion}
-                discussions={discussions}
+                docType={docType}
+                annotations={annotations}
                 changeDoc={changeDoc}
                 onChangeCommentPositionMap={setCommentPositionMap}
                 setSelectedDiscussionId={setSelectedDiscussionId}
