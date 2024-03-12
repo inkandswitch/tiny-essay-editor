@@ -1,4 +1,4 @@
-import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import { DocType, toolsForDocTypes, docTypes } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
   EditRangeTarget,
@@ -691,10 +691,11 @@ export const PatchworkDocEditor: React.FC<{
   );
 };
 
-interface DocEditorPropsWithDocType<T, V> extends DocEditorProps<T, V> {
+export interface DocEditorPropsWithDocType<T, V> extends DocEditorProps<T, V> {
   docType: DocType;
 }
 
+/* Wrapper component that dispatches to the tool for the doc type */
 const DocEditor = <T, V>({
   docType,
   docUrl,
@@ -707,36 +708,23 @@ const DocEditor = <T, V>({
   setHoveredAnnotation,
   setSelectedAnnotations,
 }: DocEditorPropsWithDocType<T, V>) => {
-  switch (docType) {
-    case "bot":
-      return <BotEditor docUrl={docUrl} />;
-    case "essay":
-      return (
-        <TinyEssayEditor
-          docUrl={docUrl}
-          docHeads={docHeads}
-          annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
-          actorIdToAuthor={actorIdToAuthor}
-          /*onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
-          hoveredDiscussionId={hoveredDiscussionId}
-          selectedDiscussionId={selectedDiscussionId}
-          setHoveredDiscussionId={setHoveredDiscussionId}
-          setSelectedDiscussionId={setSelectedDiscussionId} */
-        />
-      );
-    case "tldraw":
-      return (
-        <div className="h-full w-full">
-          <TLDraw docUrl={docUrl} docHeads={docHeads} />
-        </div>
-      );
-    case "datagrid":
-      return (
-        <div className="h-full w-full">
-          <DataGrid docUrl={docUrl} docHeads={docHeads} />
-        </div>
-      );
-  }
+  // Currently we don't have a toolpicker so we just show the first tool for the doc type
+  const Component = toolsForDocTypes[docType][0];
+
+  return (
+    <Component
+      docUrl={docUrl}
+      docHeads={docHeads}
+      docType={docType}
+      annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
+      actorIdToAuthor={actorIdToAuthor}
+      /*onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
+  hoveredDiscussionId={hoveredDiscussionId}
+  selectedDiscussionId={selectedDiscussionId}
+  setHoveredDiscussionId={setHoveredDiscussionId}
+  setSelectedDiscussionId={setSelectedDiscussionId} */
+    />
+  );
 };
 
 export interface SideBySideProps<T, V> extends DocEditorPropsWithDocType<T, V> {

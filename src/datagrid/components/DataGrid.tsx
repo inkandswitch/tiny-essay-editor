@@ -18,7 +18,7 @@ export const DataGrid = ({
   docHeads,
 }: {
   docUrl: AutomergeUrl;
-  docHeads: Heads;
+  docHeads?: Heads;
 }) => {
   useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
