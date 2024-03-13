@@ -48,7 +48,7 @@ export const includeChangeInHistory = (
 export const includePatchInChangeGroup = (patch: A.Patch) =>
   patch.path[0] === "data" || patch.path[0] === "commentThreads";
 
-const promptForAutoChangeGroupDescription = ({
+const promptForAIChangeGroupSummary = ({
   docBefore,
   docAfter,
 }: {
@@ -94,5 +94,5 @@ export const DataGridDatatype: DataType<DataGridDoc, never, never> = {
   includeChangeInHistory,
   includePatchInChangeGroup,
 
-  promptForAutoChangeGroupDescription,
+  promptForAIChangeGroupSummary,
 };

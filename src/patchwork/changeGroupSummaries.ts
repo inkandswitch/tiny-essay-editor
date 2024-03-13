@@ -27,11 +27,8 @@ export const populateChangeGroupSummaries = async <
     }
   });
 
-  // We can't run the summary if we don't have a way to summarize the doc
+  // Can't AI-summarize if there's no prompt for it
   if (!promptForAutoChangeGroupDescription) {
-    console.info(
-      "skipping AI auto-summarization; no LLM prompt spec'd for datatype"
-    );
     return;
   }
 

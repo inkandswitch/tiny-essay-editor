@@ -160,7 +160,7 @@ export const patchesToAnnotations = (
   });
 };
 
-const promptForAutoChangeGroupDescription = ({
+const promptForAIChangeGroupSummary = ({
   docBefore,
   docAfter,
 }: {
@@ -202,5 +202,5 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   includeChangeInHistory,
   includePatchInChangeGroup,
   patchesToAnnotations,
-  promptForAutoChangeGroupDescription,
+  promptForAIChangeGroupSummary,
 };

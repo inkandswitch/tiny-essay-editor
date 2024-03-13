@@ -5,6 +5,7 @@ import {
   HasPatchworkMetadata,
   initPatchworkMetadata,
 } from "@/patchwork/schema";
+import { ChangeGroup } from "@/patchwork/groupChanges";
 
 export type Lane = {
   id: string;
@@ -51,6 +52,51 @@ export const KanbanBoardDatatype: DataType<KanbanBoardDoc, unknown, unknown> = {
   init,
   getTitle,
   markCopy,
+  fallbackSummaryForChangeGroup: (changeGroup: ChangeGroup<KanbanBoardDoc>) => {
+    const descriptions = {
+      addCard: { singular: "card added", plural: "cards added" },
+      deleteCard: { singular: "card deleted", plural: "cards deleted" },
+      moveCard: { singular: "card moved", plural: "cards moved" },
+      updateCard: { singular: "card updated", plural: "cards updated" },
+      addLane: { singular: "lane added", plural: "lanes added" },
+      deleteLane: { singular: "lane deleted", plural: "lanes deleted" },
+      updateLane: { singular: "lane updated", plural: "lanes updated" },
+    };
+
+    const actionKeys = Object.keys(KanbanBoardDatatype.actions);
+    const initialActionCounts: { [key: string]: number } = actionKeys.reduce(
+      (acc, key) => {
+        acc[key] = 0;
+        return acc;
+      },
+      {}
+    );
+    const actionCounts = changeGroup.changes.reduce(
+      (acc, { metadata: { action } }) => {
+        if (typeof action !== "string") return acc;
+        if (!actionKeys.includes(action)) {
+          console.error("weird action", action);
+          return acc;
+        }
+        acc[action] += 1;
+        return acc;
+      },
+      initialActionCounts
+    );
+
+    const summary = Object.entries(actionCounts)
+      .filter(([, count]) => count > 0)
+      .map(
+        ([action, count]) =>
+          `${count} ${
+            count === 1
+              ? descriptions[action].singular
+              : descriptions[action].plural
+          }`
+      )
+      .join(", ");
+    return summary;
+  },
   actions: {
     // TODO: there's other metadata we might want to track here:
     // - runtime checkable schema for the input arguments

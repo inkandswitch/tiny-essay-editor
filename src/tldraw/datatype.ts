@@ -101,7 +101,7 @@ export const patchesToAnnotations = (
   });
 };
 
-const promptForAutoChangeGroupDescription = ({
+const promptForAIChangeGroupSummary = ({
   docBefore,
   docAfter,
 }: {
@@ -145,5 +145,5 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   includePatchInChangeGroup,
   includeChangeInHistory,
   patchesToAnnotations,
-  promptForAutoChangeGroupDescription,
+  promptForAIChangeGroupSummary,
 };

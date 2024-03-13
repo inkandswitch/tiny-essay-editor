@@ -26,8 +26,7 @@ export const useDocumentWithActions = <D>(
           (doc: D) => {
             value(doc, args);
           },
-          // TODO: record action args here too? is that overkill?
-          { metadata: { action: key } }
+          { metadata: { action: key, actionArgs: JSON.stringify(args) } }
         );
       };
     }
