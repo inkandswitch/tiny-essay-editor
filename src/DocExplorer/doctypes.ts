@@ -16,6 +16,7 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
+import { RichTeeDatatype } from "@/richtee/datatype";
 
 export type CoreDataType<D, T, V> = {
   id: string;
@@ -61,6 +62,7 @@ export const docTypes: Record<
   datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
+  richtee: RichTeeDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;
