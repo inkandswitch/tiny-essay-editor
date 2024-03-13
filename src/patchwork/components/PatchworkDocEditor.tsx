@@ -279,9 +279,9 @@ export const PatchworkDocEditor: React.FC<{
     [mainDocUrl, repo]
   );
 
-  const [branchDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
-    selectedBranch.type === "branch" ? selectedBranch.url : undefined
-  );
+  const [branchDoc, changeBranchDoc] = useDocument<
+    HasPatchworkMetadata<unknown, unknown>
+  >(selectedBranch.type === "branch" ? selectedBranch.url : undefined);
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -298,6 +298,7 @@ export const PatchworkDocEditor: React.FC<{
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
 
   const activeDoc = branchDoc ?? doc;
+  const activeChangeDoc = changeBranchDoc ?? changeDoc;
 
   const annotations = useMemo(() => {
     if (!diffForEditor || !doc) {
@@ -307,8 +308,9 @@ export const PatchworkDocEditor: React.FC<{
     const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
 
     // todo: generalize to support discussions on edits as well
-    const highlightAnnotations = Object.values(activeDoc.discussions).map(
-      (discussion) => ({ ...discussion.annotation, discussion })
+    const highlightAnnotations = Object.values(activeDoc.discussions).flatMap(
+      (discussion) =>
+        discussion.resolved ? [] : [{ ...discussion.annotation, discussion }]
     );
 
     const editAnnotations = patchesToAnnotations
@@ -353,16 +355,6 @@ export const PatchworkDocEditor: React.FC<{
       }))
     );
   });
-
-  const discussions = useMemo(() => {
-    if (!activeDoc || !activeDoc.discussions) {
-      return;
-    }
-
-    return Object.values(activeDoc.discussions ?? {}).filter(
-      (discussion) => discussion.resolved === false
-    );
-  }, [activeDoc]);
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
@@ -670,7 +662,7 @@ export const PatchworkDocEditor: React.FC<{
               <SpatialSidebar
                 docType={docType}
                 annotations={annotations}
-                changeDoc={changeDoc}
+                changeDoc={activeChangeDoc}
                 onChangeCommentPositionMap={setAnnotationsPositionsInSidebarMap}
                 setSelectedAnnotations={setSelectedAnnotations}
                 selectedAnnotations={selectedAnnotations}
