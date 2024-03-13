@@ -17,10 +17,10 @@ import {
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { next as A, Patch } from "@automerge/automerge";
-import { DiffWithProvenance } from "@/patchwork/schema";
+import { AnnotationId, DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
-import { Annotation } from "@/patchwork/schema";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 
 export const TLDraw = ({
   docUrl,
@@ -28,12 +28,16 @@ export const TLDraw = ({
   annotations,
   camera,
   onChangeCamera,
+  onUpdateAnnotationPositions,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
-  annotations: Annotation<TLDrawDocAnchor, TLShape>;
+  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
+  onUpdateAnnotationPositions?: (
+    positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[]
+  ) => void;
 }) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -56,6 +60,12 @@ export const TLDraw = ({
 
     setLocalCamera(camera);
   };
+
+  useAnnotationsPositionListener({
+    camera: camera ?? localCamera,
+    annotations,
+    onUpdateAnnotationPositions,
+  });
 
   return (
     <div className="tldraw__editor h-full overflow-auto">
@@ -211,6 +221,35 @@ const useCameraSync = ({
       editor.off("change", onChange);
     };
   }, [editor, onChangeCamera]);
+};
+
+const useAnnotationsPositionListener = ({
+  camera,
+  annotations,
+  onUpdateAnnotationPositions,
+}: {
+  camera?: TLCamera;
+  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
+  onUpdateAnnotationPositions?: (
+    positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[]
+  ) => void;
+}) => {
+  useEffect(() => {
+    const positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[] = [];
+
+    for (const annotation of annotations) {
+      const element = document.getElementById(annotation.target.shapeId);
+
+      if (element) {
+        const { top, right } = element.getBoundingClientRect();
+        positions.push({ annotation, x: top, y: right });
+      }
+    }
+
+    console.log("udpate", positions);
+
+    onUpdateAnnotationPositions(positions);
+  }, [annotations, camera, onUpdateAnnotationPositions]);
 };
 
 const useDiffStyling = ({

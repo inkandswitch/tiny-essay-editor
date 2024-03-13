@@ -581,8 +581,6 @@ const TLDrawAnnotationView = ({
 }: {
   annotation: Annotation<TLDrawDocAnchor, TLShape>;
 }) => {
-  console.log(annotation);
-
   switch (annotation.type) {
     case "added":
       return (

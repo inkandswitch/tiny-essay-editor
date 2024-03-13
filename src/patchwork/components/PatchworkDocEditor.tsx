@@ -395,6 +395,8 @@ export const PatchworkDocEditor: React.FC<{
 
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
+  console.log(annotationPositions);
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -604,15 +606,6 @@ export const PatchworkDocEditor: React.FC<{
             </div>
           )}
           <div className="flex-1 min-h-0 relative">
-            {reviewMode === "comments" && isHistorySidebarOpen && (
-              <SpatialCommentsLinesLayer
-                activeDiscussionIds={activeDiscussionIds}
-                annotationsTargetPositions={annotationPositions}
-                annotationsPositionsInSidebarMap={
-                  annotationsPositionsInSidebarMap
-                }
-              />
-            )}
             {selectedBranch.type === "branch" && compareWithMainFlag ? (
               false /*false && (
                 <SideBySide
@@ -643,6 +636,15 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 onUpdateAnnotationPositions={onUpdateAnnotationPositions}
+              />
+            )}
+            {reviewMode === "comments" && isHistorySidebarOpen && (
+              <SpatialCommentsLinesLayer
+                activeDiscussionIds={activeDiscussionIds}
+                annotationsTargetPositions={annotationPositions}
+                annotationsPositionsInSidebarMap={
+                  annotationsPositionsInSidebarMap
+                }
               />
             )}
           </div>
