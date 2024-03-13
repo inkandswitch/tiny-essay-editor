@@ -1,11 +1,14 @@
-import { next as A } from "@automerge/automerge";
+import { next as A, Doc } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
 import { Repo } from "@automerge/automerge-repo";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
+import {
+  ChangeGroup,
+  DecodedChangeWithMetadata,
+} from "@/patchwork/groupChanges";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
@@ -17,14 +20,14 @@ import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
 
-export type CoreDataType<D, T, V> = {
+export type CoreDataType<D> = {
   id: string;
   name: string;
   icon: any;
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
-  methods?: Record<string, (handle: DocHandle<D>, ...args: unknown[]) => void>;
+  actions?: Record<string, (doc: Doc<D>, args: object) => void>;
 };
 
 export type PatchworkDataType<D, T, V> = {
@@ -39,8 +42,22 @@ export type PatchworkDataType<D, T, V> = {
   // Mark whether a given patch should be included in the history
   includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
 
-  /* Generate a prompt for an LLM to summarize a diff */
-  promptForAutoChangeGroupDescription?: (args: {
+  /** A datatype can define two ways of summarizing a change group.
+   *  - The first is a "fallback summary": computed deterministically based on the group contents,
+   *  and intended to be a cheap default summary.
+   *  - The second is a prompt for an AI summary. This lets an LLM (expensively) compute a string
+   *  that summarizes the contents of the change group.
+   *
+   *  Both are optional.
+   * - If a fallback summary isn't provided, Patchwork will fill in a generic summary.
+   * - If the AI prompt isn't provided, AI summarization won't run for this datatype.
+   */
+
+  /* Generate a summary of a change group based on its contents */
+  fallbackSummaryForChangeGroup?: (changeGroup: ChangeGroup<D>) => string;
+
+  /* Generate a prompt for an LLM to summarize a change group */
+  promptForAIChangeGroupSummary?: (args: {
     docBefore: D;
     docAfter: D;
   }) => string;
@@ -53,8 +70,7 @@ export type PatchworkDataType<D, T, V> = {
   ) => Annotation<T, V>[];
 };
 
-export type DataType<D, T, V> = CoreDataType<D, T, V> &
-  PatchworkDataType<D, T, V>;
+export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
 
 export const docTypes: Record<
   string,

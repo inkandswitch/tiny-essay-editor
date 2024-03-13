@@ -163,3 +163,13 @@ export interface AnnotationPosition<T, V> {
   y: number;
   annotation: Annotation<T, V>;
 }
+
+export const initPatchworkMetadata = (doc: any) => {
+  doc.branchMetadata = {
+    source: null,
+    branches: [],
+  };
+  doc.discussions = {};
+  doc.tags = [];
+  doc.changeGroupSummaries = {};
+};

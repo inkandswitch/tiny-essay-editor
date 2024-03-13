@@ -54,6 +54,14 @@ export type ChangeGroup<T> = {
   diff: DiffWithProvenance;
   markers: HeadsMarker<T>[];
   time?: number;
+
+  /** A simple summary of the contents of this change group, computed cheaply at grouping time
+   *  based on the contents of the change group.
+   *  This is used as a fallback when we don't have a manual summary provided by the user or AI.
+   *  NOTE: user-provided summaries are persisted elsewhere, this fallback is just computed
+   *  on the fly!
+   */
+  fallbackSummary: string;
 };
 
 export type GenericChangeGroup = ChangeGroup<unknown>;
@@ -97,6 +105,11 @@ type GroupingAlgorithm<T> = (
   currentGroup: ChangeGroup<T>,
   newChange: DecodedChangeWithMetadata
 ) => boolean;
+
+const defaultPopulateFallbackSummary = <D>(changeGroup: ChangeGroup<D>) => {
+  const { numberOfEdits } = changeGroup;
+  return `${numberOfEdits} edit${numberOfEdits === 1 ? "" : "s"}`;
+};
 
 export const groupingByActorAndNumChanges =
   (batchSize) => (currentGroup, newChange) => {
@@ -291,32 +304,37 @@ const getAllChangesWithMetadata = (doc: Doc<unknown>) => {
   });
 };
 
-export type ChangeGroupingOptions<T> = {
+export type ChangeGroupingOptions<D> = {
   /** The algorithm used to group changes (picking from presets defined in GROUPINGS) */
-  grouping: GroupingAlgorithm<T>;
+  grouping: GroupingAlgorithm<D>;
 
   /** Markers to display at certain heads in the history */
-  markers: HeadsMarker<T>[];
+  markers: HeadsMarker<D>[];
 
   /** Conditon to keep only certain changes */
-  changeFilter?: (doc: T, decodedChange: DecodedChangeWithMetadata) => boolean;
+  includeChangeInHistory?: (
+    doc: D,
+    decodedChange: DecodedChangeWithMetadata
+  ) => boolean;
 
   /** Condition to keep only certain patches in the change group
    * the number of kept patches is assigned as numberOfEdits
    */
-  patchFilter?: (patch: Patch | TextPatch) => boolean; // todo: can we not leak TextPatch to all datatypes?
+  includePatchInChangeGroup?: (patch: Patch | TextPatch) => boolean; // todo: can we not leak TextPatch to all datatypes?
+
+  fallbackSummaryForChangeGroup?: (changeGroup: ChangeGroup<D>) => string;
 };
 
 /** Returns a flat list of changelog items for display in the UI,
  *  based on a list of change groups.
  */
-export const getChangelogItems = <T extends Branchable>(
-  doc: Doc<T>,
-  options: ChangeGroupingOptions<T>
+export const getChangelogItems = <D extends Branchable>(
+  doc: Doc<D>,
+  options: ChangeGroupingOptions<D>
 ) => {
   const { changeGroups } = getGroupedChanges(doc, options);
 
-  const changelogItems: ChangelogItem<T>[] = [];
+  const changelogItems: ChangelogItem<D>[] = [];
   for (const changeGroup of changeGroups) {
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
@@ -359,7 +377,13 @@ export const getChangelogItems = <T extends Branchable>(
  */
 export const getGroupedChanges = <T extends Branchable>(
   doc: Doc<T>,
-  { grouping, markers, changeFilter, patchFilter }: ChangeGroupingOptions<T>
+  {
+    grouping,
+    markers,
+    includeChangeInHistory,
+    includePatchInChangeGroup,
+    fallbackSummaryForChangeGroup,
+  }: ChangeGroupingOptions<T>
 ) => {
   // TODO: we should sort this list in a stable way across devices.
   const changes = getAllChangesWithMetadata(doc);
@@ -377,11 +401,17 @@ export const getGroupedChanges = <T extends Branchable>(
     group.docAtEndOfChangeGroup = view(doc, [group.to]);
 
     group.numberOfEdits = group.diff.patches.filter(
-      (patch) => !patchFilter || patchFilter(patch)
+      (patch) => !includePatchInChangeGroup || includePatchInChangeGroup(patch)
     ).length;
 
     if (group.numberOfEdits === 0) {
       return;
+    }
+
+    if (fallbackSummaryForChangeGroup) {
+      group.fallbackSummary = fallbackSummaryForChangeGroup(group);
+    } else {
+      group.fallbackSummary = defaultPopulateFallbackSummary(group);
     }
 
     changeGroups.push(group);
@@ -414,6 +444,7 @@ export const getGroupedChanges = <T extends Branchable>(
           markers: [],
           numberOfEdits: 0,
           time: undefined,
+          fallbackSummary: "", // We'll fill this in when we finalize the group
         },
         changeHashes: getChangesFromMergedBranch({
           decodedChangesForDoc: changes,
@@ -433,8 +464,8 @@ export const getGroupedChanges = <T extends Branchable>(
 
     const skipChange =
       // See if the datatype wants this change to appear in the log
-      changeFilter &&
-      !changeFilter(doc, decodedChange) &&
+      includeChangeInHistory &&
+      !includeChangeInHistory(doc, decodedChange) &&
       // If a marker is present for this change, we have to include it so that the marker works.
       !markers.find((marker) => marker.heads.includes(decodedChange.hash));
 
@@ -576,6 +607,7 @@ export const getGroupedChanges = <T extends Branchable>(
           : [],
         numberOfEdits: 0,
         docAtEndOfChangeGroup: undefined, // We'll fill this in when we finalize the group
+        fallbackSummary: "", // We'll fill this in when we finalize the group
       };
     }
   }

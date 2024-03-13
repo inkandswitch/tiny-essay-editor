@@ -116,7 +116,8 @@ export const TimelineSidebar: React.FC<{
   const {
     includeChangeInHistory,
     includePatchInChangeGroup,
-    promptForAutoChangeGroupDescription,
+    promptForAIChangeGroupSummary: promptForAutoChangeGroupDescription,
+    fallbackSummaryForChangeGroup,
   } = docTypes[docType] ?? {};
 
   // todo: extract this as an interface that different doc types can implement
@@ -126,8 +127,9 @@ export const TimelineSidebar: React.FC<{
     return {
       grouping: ByAuthorOrTime(60),
       markers,
-      changeFilter: includeChangeInHistory,
-      patchFilter: includePatchInChangeGroup,
+      includeChangeInHistory,
+      includePatchInChangeGroup,
+      fallbackSummaryForChangeGroup,
     };
   }, [docType, markers, includeChangeInHistory, includePatchInChangeGroup]);
 
@@ -630,8 +632,7 @@ const ChangeGroupDescription = ({
 }) => {
   let summary;
   if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-    const { numberOfEdits } = changeGroup;
-    summary = `${numberOfEdits} edit${numberOfEdits === 1 ? "" : "s"}`;
+    summary = changeGroup.fallbackSummary;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   }

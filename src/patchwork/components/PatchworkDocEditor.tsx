@@ -395,8 +395,6 @@ export const PatchworkDocEditor: React.FC<{
 
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
-  console.log(annotationPositions);
-
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex flex-col flex-1 overflow-hidden">

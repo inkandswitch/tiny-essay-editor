@@ -9,11 +9,7 @@ import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
 import { TextPatch } from "@/patchwork/utils";
-import {
-  Annotation,
-  AnnotationId,
-  DiffWithProvenance,
-} from "@/patchwork/schema";
+import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { pick } from "lodash";
 
@@ -21,13 +17,7 @@ export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
 
-  // TODO: these init values should not be in the MarkdownDoc init;
-  // they should come from the other specific schemas.
-  doc.branchMetadata = {
-    source: null,
-    branches: [],
-  };
-  doc.discussions = {};
+  initPatchworkMetadata(doc);
 };
 
 // When a copy of the document has been made,
@@ -170,7 +160,7 @@ export const patchesToAnnotations = (
   });
 };
 
-const promptForAutoChangeGroupDescription = ({
+const promptForAIChangeGroupSummary = ({
   docBefore,
   docAfter,
 }: {
@@ -212,5 +202,5 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   includeChangeInHistory,
   includePatchInChangeGroup,
   patchesToAnnotations,
-  promptForAutoChangeGroupDescription,
+  promptForAIChangeGroupSummary,
 };
