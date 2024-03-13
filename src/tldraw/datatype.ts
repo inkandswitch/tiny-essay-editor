@@ -2,9 +2,11 @@ import { next as A } from "@automerge/automerge";
 import { DataType } from "@/DocExplorer/doctypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
-import { TLDrawDoc } from "./schema";
+import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { pick } from "lodash";
+import { TLShape, TLShapeId } from "@tldraw/tldraw";
+import { Annotation } from "@/patchwork/schema";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -59,6 +61,48 @@ export const includeChangeInHistory = (
   return result;
 };
 
+export const patchesToAnnotations = (
+  doc: TLDrawDoc,
+  docBefore: TLDrawDoc,
+  patches: A.Patch[]
+) => {
+  return patches.flatMap((patch) => {
+    if (patch.path.length !== 2 || patch.path[0] !== "store") {
+      return [];
+    }
+
+    const shapeId: TLShapeId = patch.path[1] as TLShapeId;
+
+    switch (patch.action) {
+      case "del":
+        return [
+          {
+            type: "deleted",
+            deleted: docBefore.store[shapeId],
+            target: {
+              shapeId,
+            },
+          } as Annotation<TLDrawDocAnchor, TLShape>,
+        ];
+
+      case "put":
+        return [
+          {
+            type: "added",
+            added: doc.store[shapeId],
+            target: {
+              shapeId,
+            },
+          } as Annotation<TLDrawDocAnchor, TLShape>,
+        ];
+
+      // todo: support changed
+    }
+
+    return [];
+  });
+};
+
 const promptForAutoChangeGroupDescription = ({
   docBefore,
   docAfter,
@@ -93,7 +137,7 @@ ${JSON.stringify(pick(docBefore, ["store"]), null, 2)}
 ${JSON.stringify(pick(docAfter, ["store"]), null, 2)}`;
 };
 
-export const TLDrawDatatype: DataType<TLDrawDoc, never, never> = {
+export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   id: "tldraw",
   name: "Drawing",
   icon: PenLine,
@@ -102,5 +146,6 @@ export const TLDrawDatatype: DataType<TLDrawDoc, never, never> = {
   markCopy,
   includePatchInChangeGroup,
   includeChangeInHistory,
+  patchesToAnnotations,
   promptForAutoChangeGroupDescription,
 };

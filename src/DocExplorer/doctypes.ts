@@ -46,7 +46,11 @@ export type PatchworkDataType<D, T, V> = {
   }) => string;
 
   /* Turn a list of patches into annotations to display in the UI */
-  patchesToAnnotations?: (doc: D, patches: A.Patch[]) => Annotation<T, V>[];
+  patchesToAnnotations?: (
+    doc: D,
+    docBefore: D,
+    patches: A.Patch[]
+  ) => Annotation<T, V>[];
 };
 
 export type DataType<D, T, V> = CoreDataType<D, T, V> &

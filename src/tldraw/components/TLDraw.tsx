@@ -3,7 +3,7 @@ import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { isEqual } from "lodash";
 
-import { TLDrawDoc } from "../schema";
+import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
 import {
   TLCamera,
@@ -12,6 +12,7 @@ import {
   Tldraw,
   Editor,
   Box2d,
+  TLShape,
 } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { useCurrentAccount } from "@/DocExplorer/account";
@@ -19,17 +20,18 @@ import { next as A, Patch } from "@automerge/automerge";
 import { DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
+import { Annotation } from "@/patchwork/schema";
 
 export const TLDraw = ({
   docUrl,
   docHeads,
-  diff,
+  annotations,
   camera,
   onChangeCamera,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
-  diff?: DiffWithProvenance;
+  annotations: Annotation<TLDrawDocAnchor, TLShape>;
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
 }) => {
@@ -63,7 +65,7 @@ export const TLDraw = ({
             key={JSON.stringify(docHeads)}
             userId={userId}
             doc={docAtHeads}
-            diff={diff}
+            annotations={annotations}
             handle={handle}
             camera={camera ?? localCamera}
             onChangeCamera={setCamera}
@@ -73,7 +75,7 @@ export const TLDraw = ({
         <EditableTLDraw
           userId={userId}
           doc={doc}
-          diff={diff}
+          annotations={annotations}
           handle={handle}
           camera={camera ?? localCamera}
           onChangeCamera={setCamera}
@@ -87,7 +89,7 @@ interface TlDrawProps {
   doc: TLDrawDoc;
   handle: DocHandle<TLDrawDoc>;
   userId: string;
-  diff?: DiffWithProvenance;
+  annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
 }
@@ -96,14 +98,14 @@ const EditableTLDraw = ({
   doc,
   handle,
   userId,
-  diff,
+  annotations,
   camera,
   onChangeCamera,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, diff, store, editor });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -117,14 +119,14 @@ const ReadOnlyTLDraw = ({
   doc,
   handle,
   userId,
-  diff,
+  annotations,
   onChangeCamera,
   camera,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, diff, store, editor });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -151,8 +153,9 @@ export const SideBySide = ({
 }: SideBySideProps<unknown, unknown>) => {
   const [camera, setCamera] = useState<TLCamera>();
 
-  return (
-    <div className="flex h-full w-full">
+  // todo: fix side by side
+  return null;
+  /*<div className="flex h-full w-full">
       <div className="h-full flex-1 overflow-auto">
         <TLDraw
           docUrl={mainDocUrl}
@@ -171,8 +174,7 @@ export const SideBySide = ({
           onChangeCamera={setCamera}
         />
       </div>
-    </div>
-  );
+    </div>*/
 };
 
 const useCameraSync = ({
@@ -213,12 +215,12 @@ const useCameraSync = ({
 
 const useDiffStyling = ({
   doc,
-  diff,
+  annotations,
   store,
   editor,
 }: {
   doc: TLDrawDoc;
-  diff: DiffWithProvenance;
+  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
   store: TLStoreWithStatus;
   editor: Editor;
 }) => {
@@ -245,7 +247,7 @@ const useDiffStyling = ({
       return;
     }
 
-    if (!diff) {
+    if (!annotations) {
       store.store.remove(Array.from(tempShapeIdsRef.current));
       highlightedElementsRef.current.forEach((element) => {
         element.style.filter = "";
@@ -257,49 +259,48 @@ const useDiffStyling = ({
     }
 
     setTimeout(() => {
-      const prevDoc = A.view(doc, diff.fromHeads);
-
       // track which temp shapes and highlighted elements are active in the current diff
       const activeHighlightedElements = new Set<HTMLElement>();
       const activeTempShapeIds = new Set<TLShapeId>();
 
-      const [toPut, toRemove] = translateAutomergePatchesToTLStoreUpdates(
-        diff.patches as Patch[],
-        store.store
-      );
+      annotations.forEach((annotation) => {
+        switch (annotation.type) {
+          case "added":
+            {
+              const shapeElem = document.getElementById(annotation.added.id);
+              if (!shapeElem) {
+                return;
+              }
 
-      toPut.forEach((obj) => {
-        const shapeElem = document.getElementById(obj.id);
-        if (!shapeElem) {
-          return;
+              activeHighlightedElements.add(shapeElem);
+              if (highlightedElementsRef.current.has(shapeElem)) {
+                return;
+              }
+
+              highlightedElementsRef.current.add(shapeElem);
+              shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
+            }
+            break;
+
+          case "deleted": {
+            activeTempShapeIds.add(annotation.deleted.id);
+            if (tempShapeIdsRef.current.has(annotation.deleted.id)) {
+              break;
+            }
+
+            const deletedShape = annotation.deleted;
+
+            deletedShape.opacity = 0.1;
+            deletedShape.isLocked = true;
+
+            activeTempShapeIds.add(deletedShape.id);
+            tempShapeIdsRef.current.add(deletedShape.id);
+            store.store.put([deletedShape]);
+
+            break;
+          }
         }
-
-        activeHighlightedElements.add(shapeElem);
-        if (highlightedElementsRef.current.has(shapeElem)) {
-          return;
-        }
-
-        highlightedElementsRef.current.add(shapeElem);
-        shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
-      });
-
-      toRemove.forEach((id) => {
-        activeTempShapeIds.add(id as TLShapeId);
-        if (tempShapeIdsRef.current.has(id as TLShapeId)) {
-          return;
-        }
-
-        const deletedShape = JSON.parse(
-          JSON.stringify(prevDoc.store[id])
-        ) as any;
-
-        deletedShape.opacity = 0.1;
-        deletedShape.isLocked = true;
-
-        activeTempShapeIds.add(deletedShape.id);
-        tempShapeIdsRef.current.add(deletedShape.id);
-        store.store.put([deletedShape]);
-      });
+      }, 100);
 
       // delete shapes that are not part of the current diff
       store.store.remove(
@@ -316,6 +317,6 @@ const useDiffStyling = ({
           element.style.filter = "";
         });
       highlightedElementsRef.current = activeHighlightedElements;
-    }, 100);
-  }, [diff, store, doc, camera]);
+    });
+  }, [annotations, store, doc, camera]);
 };

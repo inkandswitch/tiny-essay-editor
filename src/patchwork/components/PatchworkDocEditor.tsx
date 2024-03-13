@@ -310,7 +310,7 @@ export const PatchworkDocEditor: React.FC<{
     }
 
     const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
-    const discussions = Object.values(activeDoc.discussions);
+    const discussions = Object.values(activeDoc?.discussions ?? []);
 
     // highlight annotations only exist in discussions, so we need to get them separately
     const highlightAnnotations = discussions.flatMap((discussion) =>
@@ -324,6 +324,7 @@ export const PatchworkDocEditor: React.FC<{
     const editAnnotations = patchesToAnnotations
       ? patchesToAnnotations(
           activeDoc,
+          A.view(activeDoc, diffForEditor.fromHeads),
           diffForEditor.patches as A.Patch[]
         ).flatMap((annotation) => {
           // match up annotations with discussions

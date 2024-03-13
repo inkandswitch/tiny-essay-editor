@@ -91,7 +91,11 @@ export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   return !!typedDoc.content && !!typedDoc.commentThreads;
 };
 
-export const patchesToAnnotations = (doc: MarkdownDoc, patches: A.Patch[]) => {
+export const patchesToAnnotations = (
+  doc: MarkdownDoc,
+  docBefore: MarkdownDoc,
+  patches: A.Patch[]
+) => {
   return patches.flatMap((patch): Annotation<MarkdownDocAnchor, string>[] => {
     if (
       patch.path[0] !== "content" ||
