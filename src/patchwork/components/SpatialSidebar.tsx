@@ -345,40 +345,48 @@ const AnnotationWithDicussionView = forwardRef<
           className="flex flex-col gap-1"
         >
           <div
-            className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
-              isSelected || isHovered
-                ? "border-gray-400 shadow-xl"
-                : "border-gray-200 "
+            className={`flex flex-col gap-1 ${
+              annotation.discussion
+                ? isSelected || isHovered
+                  ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
+                  : "border bg-white rounded-sm p-2 border-gray-200 "
+                : ""
             }`}
           >
-            <AnnotationView docType={docType} annotation={annotation} />
+            <div
+              className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
+                (isSelected || isHovered) && !annotation.discussion
+                  ? "border-gray-400 shadow-xl"
+                  : "border-gray-200 "
+              }`}
+            >
+              <AnnotationView docType={docType} annotation={annotation} />
+            </div>
+
+            {annotation.discussion?.comments.map((comment, index) => (
+              <DiscusssionCommentView comment={comment} key={comment.id} />
+            ))}
           </div>
 
-          {/*annotation.comments.map((comment, index) => (
-              <div
-                key={comment.id}
-                className={
-                  index !== discussion.comments.length - 1
-                    ? "border-b border-gray-200"
-                    : ""
-                }
-              >
-                <DiscusssionCommentView comment={comment} />
-              </div>
-              ))*/}
           <div
-            className={`overflow-hidden transition-all flex items-center ${
-              isSelected ? "h-[43px] opacity-100" : "h-[0px] opacity-0"
+            className={`overflow-hidden transition-all flex items-center gap-2 ${
+              isSelected ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
             }`}
           >
+            <Button
+              variant="ghost"
+              className="select-none p-2 flex flex-col w-fit"
+              onClick={() => setIsReplyBoxOpen(true)}
+            >
+              <div className="flex gap-2 text-gray-600">
+                <MessageCircleIcon size={16} /> Comment
+              </div>
+              <span className="text-gray-400 text-xs w-full text-center">
+                (⌘ + ⏎)
+              </span>
+            </Button>
+
             <Popover open={isReplyBoxOpen} onOpenChange={setIsReplyBoxOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" className="flex gap-1 items-center">
-                  <MessageCircleIcon size={16} />
-                  Comment
-                  <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
-                </Button>
-              </PopoverTrigger>
               <PopoverContent>
                 <Textarea
                   className="mb-4"
@@ -410,10 +418,33 @@ const AnnotationWithDicussionView = forwardRef<
                 </PopoverClose>
               </PopoverContent>
             </Popover>
-            <Button variant="ghost" className="select-none h-8 px-2 ">
-              <UndoIcon className="mr-2" /> Revert
-              <span className="text-gray-400 ml-2 text-xs">(⌘ + Z)</span>
-            </Button>
+
+            {annotation.type === "highlighted" && (
+              <Button
+                variant="ghost"
+                className="select-none px-2 flex flex-col w-fi"
+              >
+                <div className="flex text-gray-600 gap-2">
+                  <Check size={16} /> Resolve
+                </div>
+                <span className="text-gray-400 text-xs w-full text-center">
+                  (⌘ + R)
+                </span>
+              </Button>
+            )}
+            {annotation.type !== "highlighted" && (
+              <Button
+                variant="ghost"
+                className="select-none px-2 flex flex-col w-fit"
+              >
+                <div className="flex text-gray-600 gap-2">
+                  <UndoIcon size={16} /> Revert
+                </div>
+                <span className="text-gray-400 text-center text-xs w-full">
+                  (⌘ + Z)
+                </span>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -503,6 +534,15 @@ const EssayAnnotationView = ({
           →{" "}
           <span className="font-serif bg-green-50 border-b border-green-400">
             {truncate(annotation.after, { length: 45 })}
+          </span>
+        </div>
+      );
+
+    case "highlighted":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
+          <span className="font-serif bg-yellow-50 border-b border-yellow-400">
+            {annotation.value}
           </span>
         </div>
       );

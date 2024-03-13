@@ -308,7 +308,7 @@ export const PatchworkDocEditor: React.FC<{
 
     // todo: generalize to support discussions on edits as well
     const highlightAnnotations = Object.values(activeDoc.discussions).map(
-      (discussion) => discussion.annotation
+      (discussion) => ({ ...discussion.annotation, discussion })
     );
 
     const editAnnotations = patchesToAnnotations

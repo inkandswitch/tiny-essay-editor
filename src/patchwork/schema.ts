@@ -127,12 +127,14 @@ interface AddAnnotation<T, V> {
   type: "added";
   target: T;
   added: V;
+  discussion?: Discussion<T, V>;
 }
 
 interface DeleteAnnotation<T, V> {
   type: "deleted";
   target: T;
   deleted: V;
+  discussion?: Discussion<T, V>;
 }
 
 interface ChangeAnnotation<T, V> {
@@ -140,18 +142,21 @@ interface ChangeAnnotation<T, V> {
   target: T;
   before: V;
   after: V;
+  discussion?: Discussion<T, V>;
 }
 
-interface HighlightAnnotation<T> {
+interface HighlightAnnotation<T, V> {
   type: "highlighted";
   target: T;
+  value: V;
+  discussion?: Discussion<T, V>;
 }
 
 export type Annotation<T, V> =
   | AddAnnotation<T, V>
   | DeleteAnnotation<T, V>
   | ChangeAnnotation<T, V>
-  | HighlightAnnotation<T>;
+  | HighlightAnnotation<T, V>;
 
 export interface AnnotationPosition<T, V> {
   x: number;

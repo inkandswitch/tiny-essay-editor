@@ -112,6 +112,7 @@ export const CommentsSidebar = ({
         comments: [comment],
         annotation: {
           type: "highlighted",
+          value: doc.content.slice(amRange.from, amRange.to),
           target: {
             fromCursor,
             toCursor,
