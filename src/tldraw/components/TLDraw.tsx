@@ -32,7 +32,7 @@ export const TLDraw = ({
 }: {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
-  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
+  annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
   onUpdateAnnotationPositions?: (
