@@ -31,7 +31,11 @@ import {
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
+import {
+  diffWithProvenance,
+  doAnnotationsOverlap,
+  useActorIdToAuthorMap,
+} from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -306,15 +310,35 @@ export const PatchworkDocEditor: React.FC<{
     }
 
     const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
+    const discussions = Object.values(activeDoc.discussions);
 
-    // todo: generalize to support discussions on edits as well
-    const highlightAnnotations = Object.values(activeDoc.discussions).flatMap(
-      (discussion) =>
-        discussion.resolved ? [] : [{ ...discussion.annotation, discussion }]
+    // highlight annotations only exist in discussions, so we need to get them separately
+    const highlightAnnotations = discussions.flatMap((discussion) =>
+      discussion.resolved ||
+      !discussion.annotation ||
+      discussion.annotation.type !== "highlighted"
+        ? []
+        : [{ ...discussion.annotation, discussion }]
     );
 
     const editAnnotations = patchesToAnnotations
-      ? patchesToAnnotations(activeDoc, diffForEditor.patches as A.Patch[])
+      ? patchesToAnnotations(
+          activeDoc,
+          diffForEditor.patches as A.Patch[]
+        ).flatMap((annotation) => {
+          // match up annotations with discussions
+          // it's possible that multiple discussions point to a single annotation (should occur rarely)
+          const discussionsOnAnnotation = discussions.filter((discussion) =>
+            doAnnotationsOverlap(discussion.annotation, annotation)
+          );
+
+          return discussionsOnAnnotation.length === 0
+            ? [annotation]
+            : discussionsOnAnnotation.map((discussion) => ({
+                ...annotation,
+                discussion,
+              }));
+        })
       : [];
 
     return editAnnotations.concat(highlightAnnotations);

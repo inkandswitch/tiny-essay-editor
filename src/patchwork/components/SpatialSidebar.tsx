@@ -1,3 +1,4 @@
+import { next as A } from "@automerge/automerge";
 import React, {
   forwardRef,
   useEffect,
@@ -72,13 +73,21 @@ export const SpatialSidebar = React.memo(
     ) => {
       setActiveReplyAnnotation(null);
 
-      if (!annotation.discussion) {
-        console.log("not implemented");
-        return;
-      }
-
       changeDoc((doc) => {
-        doc.discussions[annotation.discussion.id].comments.push({
+        let discussionId = annotation.discussion?.id;
+
+        if (!discussionId) {
+          discussionId = uuid();
+          doc.discussions[discussionId] = {
+            id: discussionId,
+            heads: A.getHeads(doc),
+            comments: [],
+            resolved: false,
+            annotation,
+          };
+        }
+
+        doc.discussions[discussionId].comments.push({
           id: uuid(),
           content,
           contactUrl: account.contactHandle.url,
