@@ -32,6 +32,8 @@ import { MarkdownDocAnchor } from "@/tee/schema";
 import { truncate } from "lodash";
 import { doAnnotationsOverlap } from "../utils";
 import { MessageCircleIcon } from "lucide-react";
+import { TLDrawDocAnchor } from "@/tldraw/schema";
+import { TLShape } from "@tldraw/tldraw";
 
 type SpatialSidebarProps = {
   docType: string;
@@ -500,13 +502,6 @@ const DiscusssionCommentView = ({
   );
 };
 
-export const getAnnotationId = (docType, annotation) => {
-  switch (docType) {
-    case "essay":
-      return `${annotation.type}-${annotation.target.fromCursor}`;
-  }
-};
-
 const AnnotationView = <T, V>({
   docType,
   annotation,
@@ -515,6 +510,13 @@ const AnnotationView = <T, V>({
   annotation: Annotation<T, V>;
 }) => {
   switch (docType) {
+    case "tldraw":
+      return (
+        <TLDrawAnnotationView
+          annotation={annotation as Annotation<TLDrawDocAnchor, TLShape>}
+        />
+      );
+
     case "essay":
       return (
         <EssayAnnotationView
@@ -572,6 +574,57 @@ const EssayAnnotationView = ({
       );
   }
 };
+
+// Todo: move this to tldraw
+const TLDrawAnnotationView = ({
+  annotation,
+}: {
+  annotation: Annotation<TLDrawDocAnchor, TLShape>;
+}) => {
+  console.log(annotation);
+
+  switch (annotation.type) {
+    case "added":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
+          added {getShapeName(annotation.added)}
+        </div>
+      );
+
+    case "deleted":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
+          deleted {getShapeName(annotation.deleted)}
+        </div>
+      );
+
+    case "changed":
+      return (
+        <div className="text-sm">changed {getShapeName(annotation.after)}</div>
+      );
+
+    case "highlighted":
+      return (
+        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
+          highlighted {getShapeName(annotation.value)}
+        </div>
+      );
+  }
+};
+
+function getShapeName(shape: TLShape) {
+  switch (shape.type) {
+    case "arrow":
+      return "arrow";
+    case "geo":
+      return (shape.props as any).geo.replaceAll("-", " ");
+    case "draw":
+      return "pencil line";
+
+    case "text":
+      return "text";
+  }
+}
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
 
