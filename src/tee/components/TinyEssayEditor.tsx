@@ -35,7 +35,7 @@ export const TinyEssayEditor = ({
   hoveredAnnotation,
   selectedAnnotations,
   setSelectedAnnotations,
-  onUpdateAnnotationsPositions: onUpdateAnnotationPositions,
+  onUpdateAnnotationPositions,
 }: DocEditorProps<MarkdownDocAnchor, string>) => {
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads

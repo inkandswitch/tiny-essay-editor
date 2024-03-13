@@ -62,7 +62,9 @@ type DiscussionInputProps<T> = {
   changelogItems: ChangelogItem<T>[];
   changelogSelection: ChangelogSelection;
 };
-export const DiscussionInput = function <T extends HasPatchworkMetadata>({
+export const DiscussionInput = function <
+  T extends HasPatchworkMetadata<unknown, unknown>
+>({
   doc,
   changeDoc,
   handle,

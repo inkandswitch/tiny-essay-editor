@@ -80,7 +80,7 @@ export type DiscussionComment = {
   timestamp: number;
 };
 
-export type Discussion = {
+export type Discussion<T, V> = {
   id: string;
   heads: A.Heads;
   resolved: boolean;
@@ -90,11 +90,11 @@ export type Discussion = {
    *  could be an object in the document (eg in a text doc, a range of chars)
    *  or possibly (not sure yet) an object in the meta discussion like a change group
    */
-  target?: DiscussionTarget;
+  annotation?: Annotation<T, V>;
 };
 
-export type Discussable = {
-  discussions: { [key: string]: Discussion };
+export type Discussable<T, V> = {
+  discussions: { [key: string]: Discussion<T, V> };
 };
 
 export type HasChangeGroupSummaries = {
@@ -115,11 +115,11 @@ export type Highlightable<T> = {
   highlights: Highlight<T>;
 };
 
-export type HasPatchworkMetadata = HasChangeGroupSummaries &
+export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable;
+  Discussable<T, V>;
 
 export type AnnotationId = string & { __annotationId: true };
 
@@ -150,7 +150,8 @@ interface HighlightAnnotation<T> {
 export type Annotation<T, V> =
   | AddAnnotation<T, V>
   | DeleteAnnotation<T, V>
-  | ChangeAnnotation<T, V>;
+  | ChangeAnnotation<T, V>
+  | HighlightAnnotation<T>;
 
 export interface AnnotationPosition<T, V> {
   x: number;

@@ -54,7 +54,7 @@ export type DataType<D, T, V> = CoreDataType<D, T, V> &
 
 export const docTypes: Record<
   string,
-  DataType<HasPatchworkMetadata, unknown, unknown>
+  DataType<HasPatchworkMetadata<unknown, unknown>, unknown, unknown>
 > = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
@@ -95,7 +95,5 @@ export interface DocEditorProps<T, V> {
   hoveredAnnotation?: Annotation<T, V>;
   setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
   setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
-  onUpdateAnnotationsPositions?: (
-    positions: AnnotationPosition<T, V>[]
-  ) => void;
+  onUpdateAnnotationPositions?: (positions: AnnotationPosition<T, V>[]) => void;
 }

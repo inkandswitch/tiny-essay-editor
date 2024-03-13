@@ -92,7 +92,7 @@ export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
 export type DiscussionAnnotation = {
   type: "discussion";
   id: string;
-  discussion: Discussion;
+  discussion: Discussion<unknown, unknown>;
 };
 
 export type TextAnnotation =
@@ -128,7 +128,7 @@ export type User = {
 // todo: split content of document and metadata
 // currently branches copy also global metadata
 // unclear if comments should be part of the doc or the content
-export type MarkdownDoc = HasPatchworkMetadata & {
+export type MarkdownDoc = HasPatchworkMetadata<MarkdownDocAnchor, string> & {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
 

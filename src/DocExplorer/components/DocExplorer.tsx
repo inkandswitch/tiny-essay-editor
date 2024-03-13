@@ -63,7 +63,7 @@ export const DocExplorer: React.FC = () => {
 
       const newDocHandle = repo.create();
       newDocHandle.change((doc) =>
-        docTypes[type].init(doc as HasPatchworkMetadata, repo)
+        docTypes[type].init(doc as HasPatchworkMetadata<unknown, unknown>, repo)
       );
 
       if (!rootFolderDoc) {
@@ -315,7 +315,8 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] = useDocument<HasPatchworkMetadata>(selectedDocUrl);
+  const [selectedDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectDoc = useCallback(
     (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {

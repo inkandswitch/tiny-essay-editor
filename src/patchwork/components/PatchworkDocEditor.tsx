@@ -97,8 +97,9 @@ export const PatchworkDocEditor: React.FC<{
   setSelectedBranch: (branch: SelectedBranch) => void;
 }> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
-  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(mainDocUrl);
-  const handle = useHandle<HasPatchworkMetadata>(mainDocUrl);
+  const [doc, changeDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [hoveredAnnotation, setHoveredAnnotation] =
@@ -233,8 +234,10 @@ export const PatchworkDocEditor: React.FC<{
 
   const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
-      const branchHandle = repo.find<HasPatchworkMetadata>(branchUrl);
-      const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
+      const branchHandle =
+        repo.find<HasPatchworkMetadata<unknown, unknown>>(branchUrl);
+      const docHandle =
+        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
       mergeBranch({
         docHandle,
         branchHandle,
@@ -247,8 +250,10 @@ export const PatchworkDocEditor: React.FC<{
   );
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
-    const draftHandle = repo.find<HasPatchworkMetadata>(draftUrl);
-    const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
+    const draftHandle =
+      repo.find<HasPatchworkMetadata<unknown, unknown>>(draftUrl);
+    const docHandle =
+      repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
@@ -259,7 +264,8 @@ export const PatchworkDocEditor: React.FC<{
 
   const renameBranch = useCallback(
     (draftUrl: AutomergeUrl, newName: string) => {
-      const docHandle = repo.find<HasPatchworkMetadata>(mainDocUrl);
+      const docHandle =
+        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
       docHandle.change((doc) => {
         const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
@@ -273,7 +279,7 @@ export const PatchworkDocEditor: React.FC<{
     [mainDocUrl, repo]
   );
 
-  const [branchDoc] = useDocument<HasPatchworkMetadata>(
+  const [branchDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
     selectedBranch.type === "branch" ? selectedBranch.url : undefined
   );
 
@@ -306,7 +312,7 @@ export const PatchworkDocEditor: React.FC<{
   }, [activeDoc, diffForEditor]);
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
-  const [annotationsTargetPositions, setAnnotationsTargetPositions] = useState<
+  const [annotationPositions, setAnnotationPositions] = useState<
     AnnotationPosition<unknown, unknown>[]
   >([]);
   const [
@@ -330,8 +336,8 @@ export const PatchworkDocEditor: React.FC<{
     return ids;
   }, [selectedDiscussionId, hoveredDiscussionId]);
 
-  const onUpdateAnnotationsPositions = useStaticCallback((targetPositions) => {
-    setAnnotationsTargetPositions(
+  const onUpdateAnnotationPositions = useStaticCallback((targetPositions) => {
+    setAnnotationPositions(
       targetPositions.map((position) => ({
         ...position,
         y: position.y,
@@ -345,20 +351,8 @@ export const PatchworkDocEditor: React.FC<{
       return;
     }
 
-    return sortBy(
-      Object.values(activeDoc.discussions ?? {}).filter(
-        (discussion) =>
-          discussion.target?.type === "editRange" &&
-          discussion.resolved === false
-      ),
-      (discussion) => {
-        const target = discussion.target as EditRangeTarget;
-        return A.getCursorPosition(
-          activeDoc,
-          ["content"],
-          target.value.fromCursor
-        );
-      }
+    return Object.values(activeDoc.discussions ?? {}).filter(
+      (discussion) => discussion.resolved === false
     );
   }, [activeDoc]);
 
@@ -596,7 +590,7 @@ export const PatchworkDocEditor: React.FC<{
             {reviewMode === "comments" && isHistorySidebarOpen && (
               <SpatialCommentsLinesLayer
                 activeDiscussionIds={activeDiscussionIds}
-                annotationsTargetPositions={annotationsTargetPositions}
+                annotationsTargetPositions={annotationPositions}
                 annotationsPositionsInSidebarMap={
                   annotationsPositionsInSidebarMap
                 }
@@ -631,7 +625,7 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
+                onUpdateAnnotationPositions={onUpdateAnnotationPositions}
               />
             )}
           </div>
@@ -702,7 +696,7 @@ const DocEditor = <T, V>({
   docHeads,
   annotations,
   actorIdToAuthor,
-  onUpdateAnnotationsPositions,
+  onUpdateAnnotationPositions,
   hoveredAnnotation,
   selectedAnnotations,
   setHoveredAnnotation,
@@ -718,11 +712,11 @@ const DocEditor = <T, V>({
       docType={docType}
       annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
       actorIdToAuthor={actorIdToAuthor}
-      /*onUpdateAnnotationsPositions={onUpdateAnnotationsPositions}
-  hoveredDiscussionId={hoveredDiscussionId}
-  selectedDiscussionId={selectedDiscussionId}
-  setHoveredDiscussionId={setHoveredDiscussionId}
-  setSelectedDiscussionId={setSelectedDiscussionId} */
+      onUpdateAnnotationPositions={onUpdateAnnotationPositions}
+      hoveredAnnotation={hoveredAnnotation}
+      selectedAnnotations={selectedAnnotations}
+      setHoveredAnnotation={setHoveredAnnotation}
+      setSelectedAnnotations={setSelectedAnnotations}
     />
   );
 };
@@ -795,8 +789,8 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
 };
 
 const BranchActions: React.FC<{
-  doc: HasPatchworkMetadata;
-  branchDoc: HasPatchworkMetadata;
+  doc: HasPatchworkMetadata<unknown, unknown>;
+  branchDoc: HasPatchworkMetadata<unknown, unknown>;
   branchUrl: AutomergeUrl;
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;

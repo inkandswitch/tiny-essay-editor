@@ -96,11 +96,12 @@ export const TimelineSidebar: React.FC<{
   setDocHeads,
   setDiff,
 }) => {
-  const [doc, changeDoc] = useDocument<HasPatchworkMetadata>(docUrl);
-  const [mainDoc] = useDocument<HasPatchworkMetadata>(
+  const [doc, changeDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(docUrl);
+  const [mainDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
     doc?.branchMetadata?.source?.url
   );
-  const handle = useHandle<HasPatchworkMetadata>(docUrl);
+  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
@@ -120,7 +121,7 @@ export const TimelineSidebar: React.FC<{
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
-    ChangeGroupingOptions<HasPatchworkMetadata>
+    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>
   >(() => {
     return {
       grouping: ByAuthorOrTime(60),

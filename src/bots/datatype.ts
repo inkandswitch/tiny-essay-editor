@@ -8,7 +8,7 @@ import { type DataType } from "@/DocExplorer/doctypes";
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 
-export type EssayEditingBotDoc = HasPatchworkMetadata & {
+export type EssayEditingBotDoc = HasPatchworkMetadata<never, never> & {
   contactUrl: AutomergeUrl;
   promptUrl: AutomergeUrl;
 };

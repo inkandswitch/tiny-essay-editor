@@ -4,8 +4,9 @@ import {
   TextAnnotationWithPosition,
   MarkdownDoc,
   DraftAnnotation,
+  MarkdownDocAnchor,
 } from "../schema";
-import { DiffWithProvenance } from "@/patchwork/schema";
+import { DiffWithProvenance, Discussion } from "@/patchwork/schema";
 
 import { groupBy, uniq } from "lodash";
 import { DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
@@ -101,7 +102,7 @@ export const CommentsSidebar = ({
         doc.discussions = {};
       }
 
-      doc.discussions[discussionId] = {
+      const discussion: Discussion<MarkdownDocAnchor, string> = {
         id: discussionId,
         // todo: this is wrong, we need to get the heads of the latest edit group / selected edit group
         // we only have that information in the ReviewSidebar and
@@ -109,11 +110,16 @@ export const CommentsSidebar = ({
         heads: A.getHeads(doc),
         resolved: false,
         comments: [comment],
-        target: {
-          type: "editRange",
-          value: { fromCursor, toCursor },
+        annotation: {
+          type: "highlighted",
+          target: {
+            fromCursor,
+            toCursor,
+          },
         },
       };
+
+      doc.discussions[discussionId] = discussion;
     });
 
     setPendingCommentText("");

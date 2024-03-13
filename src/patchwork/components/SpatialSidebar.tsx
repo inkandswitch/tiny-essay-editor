@@ -35,7 +35,9 @@ import { MessageCircleIcon } from "lucide-react";
 type SpatialSidebarProps = {
   docType: string;
   annotations: Annotation<unknown, unknown>[];
-  changeDoc: (changeFn: (doc: HasPatchworkMetadata) => void) => void;
+  changeDoc: (
+    changeFn: (doc: HasPatchworkMetadata<unknown, unknown>) => void
+  ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedAnnotations: (annotations: Annotation<unknown, unknown>[]) => void;
   setHoveredAnnotation: (annotation: Annotation<unknown, unknown>) => void;
@@ -64,7 +66,10 @@ export const SpatialSidebar = React.memo(
       [scrollContainer]
     );
 
-    const replyToDiscussion = (discussion: Discussion, content: string) => {
+    const replyToDiscussion = (
+      discussion: Discussion<unknown, unknown>,
+      content: string
+    ) => {
       /*setActiveReplyDiscussionId(null);
 
       changeDoc((doc) => {
@@ -77,7 +82,7 @@ export const SpatialSidebar = React.memo(
       }); */
     };
 
-    const resolveDiscussion = (discussion: Discussion) => {
+    const resolveDiscussion = (discussion: Discussion<unknown, unknown>) => {
       /*const index = discussions.findIndex((d) => d.id === discussion.id);
       const nextDiscussion = discussions[index + 1];
 
