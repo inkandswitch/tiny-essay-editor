@@ -91,6 +91,12 @@ const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
 const spliceDecorationActive = Decoration.mark({
   class: "cm-patch-splice active",
 });
+
+const highlightDecoration = Decoration.mark({ class: "cm-comment-thread" });
+const highlightDecorationActive = Decoration.mark({
+  class: "cm-comment-thread active",
+});
+
 const makeDeleteDecoration = (deletedText: string, isActive: boolean) =>
   Decoration.widget({
     widget: new DeletionMarker(deletedText, isActive),
@@ -123,6 +129,13 @@ export const patchDecorations = EditorView.decorations.compute(
           return [
             makeDeleteDecoration(annotation.deleted, isActive).range(fromPos),
           ];
+        }
+
+        case "highlighted": {
+          const decoration = isActive
+            ? highlightDecorationActive
+            : highlightDecoration;
+          return [decoration.range(fromPos, toPos)];
         }
       }
       return [];

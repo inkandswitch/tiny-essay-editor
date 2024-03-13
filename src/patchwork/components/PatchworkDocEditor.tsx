@@ -306,9 +306,16 @@ export const PatchworkDocEditor: React.FC<{
 
     const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
 
-    return patchesToAnnotations
+    // todo: generalize to support discussions on edits as well
+    const highlightAnnotations = Object.values(activeDoc.discussions).map(
+      (discussion) => discussion.annotation
+    );
+
+    const editAnnotations = patchesToAnnotations
       ? patchesToAnnotations(activeDoc, diffForEditor.patches as A.Patch[])
       : [];
+
+    return editAnnotations.concat(highlightAnnotations);
   }, [activeDoc, diffForEditor]);
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
@@ -355,14 +362,6 @@ export const PatchworkDocEditor: React.FC<{
       (discussion) => discussion.resolved === false
     );
   }, [activeDoc]);
-
-  // todo: make this generic
-
-  const topDiscussion = undefined; /* overlayContainer
-  ? activeDiscussionTargetPositions.find(
-      ({ y }) => y + overlayContainer.top > 0
-    )
-  : undefined; */
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
