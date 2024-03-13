@@ -206,7 +206,12 @@ export const TinyEssayEditor = ({
 
       return !fromPos || !toPos
         ? []
-        : [{ ...annotation, target: { fromPos, toPos, fromCursor, toCursor } }];
+        : [
+            {
+              ...annotation,
+              target: { fromPos, toPos, fromCursor, toCursor },
+            } as Annotation<ResolvedMarkdownDocAnchor, string>,
+          ];
     });
   }, [doc, annotations]);
 

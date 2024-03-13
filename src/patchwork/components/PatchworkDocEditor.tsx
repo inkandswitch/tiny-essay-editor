@@ -322,6 +322,7 @@ export const PatchworkDocEditor: React.FC<{
   const [annotationPositions, setAnnotationPositions] = useState<
     AnnotationPosition<unknown, unknown>[]
   >([]);
+
   const [
     annotationsPositionsInSidebarMap,
     setAnnotationsPositionsInSidebarMap,

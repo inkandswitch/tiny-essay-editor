@@ -594,7 +594,7 @@ const useChangelogSelection = function <T>({
 
 const ChangeGroupItem: React.FC<{
   group: GenericChangeGroup;
-  doc: HasPatchworkMetadata;
+  doc: HasPatchworkMetadata<unknown, unknown>;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (
@@ -771,7 +771,7 @@ const BranchOriginItem = ({
 const DiscussionThreadItem = ({
   discussion,
 }: {
-  discussion: Discussion;
+  discussion: Discussion<unknown, unknown>;
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];

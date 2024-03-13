@@ -17,4 +17,4 @@ export type KanbanBoardDoc = {
   title: string;
   lanes: Lane[];
   cards: Card[];
-} & HasPatchworkMetadata;
+} & HasPatchworkMetadata<never, never>;

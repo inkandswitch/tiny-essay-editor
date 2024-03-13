@@ -81,7 +81,7 @@ export type HeadsMarker<T> = {
       source: Branchable["branchMetadata"]["source"];
       branch: Branch;
     }
-  | { type: "discussionThread"; discussion: Discussion }
+  | { type: "discussionThread"; discussion: Discussion<unknown, unknown> }
 );
 
 // All ChangelogItems have a unique id, a heads, and some users asociated.
@@ -172,7 +172,9 @@ export const ByAuthorOrTime =
 // - use a manual grouping persisted somewhere?
 // - nonlinear: group by actor, out of this sorted order of changes
 
-export const getMarkersForDoc = <T extends Branchable & Taggable & Discussable>(
+export const getMarkersForDoc = <
+  T extends Branchable & Taggable & Discussable<unknown, unknown>
+>(
   handle: DocHandle<T>,
   repo: Repo
 ): HeadsMarker<T>[] => {
