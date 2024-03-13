@@ -68,8 +68,6 @@ const populateGroupSummary = async <T extends HasChangeGroupSummaries>({
     docAfter,
   });
 
-  console.log(prompt);
-
   const summary = await getStringCompletion(prompt);
 
   if (summary) {

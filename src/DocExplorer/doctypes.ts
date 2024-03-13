@@ -1,4 +1,4 @@
-import { next as A } from "@automerge/automerge";
+import { next as A, Doc } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
@@ -24,7 +24,7 @@ export type CoreDataType<D, T, V> = {
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
-  methods?: Record<string, (handle: DocHandle<D>, ...args: unknown[]) => void>;
+  actions?: Record<string, (doc: Doc<D>, args: object) => void>;
 };
 
 export type PatchworkDataType<D, T, V> = {

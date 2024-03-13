@@ -6,7 +6,7 @@ import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { pick } from "lodash";
 import { TLShape, TLShapeId } from "@tldraw/tldraw";
-import { Annotation } from "@/patchwork/schema";
+import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -22,6 +22,8 @@ const getTitle = (doc: TLDrawDoc) => {
 export const init = (doc: TLDrawDoc) => {
   tldrawinit(doc);
   doc.store["page:page"].name = "Drawing";
+
+  initPatchworkMetadata(doc);
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch) => {
@@ -54,11 +56,7 @@ export const includeChangeInHistory = (
     "changeGroupSummaries",
   ].map((path) => A.getObjectId(doc, path));
 
-  const result = decodedChange.ops.every(
-    (op) => !metadataObjIds.includes(op.obj)
-  );
-  console.log("includeChangeInHistory", decodedChange, result, metadataObjIds);
-  return result;
+  return decodedChange.ops.every((op) => !metadataObjIds.includes(op.obj));
 };
 
 export const patchesToAnnotations = (
