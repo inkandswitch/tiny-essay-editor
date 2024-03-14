@@ -242,11 +242,9 @@ const useAnnotationsPositionListener = ({
 
       if (element) {
         const { top, right } = element.getBoundingClientRect();
-        positions.push({ annotation, x: top, y: right });
+        positions.push({ annotation, x: right, y: top });
       }
     }
-
-    console.log("udpate", positions);
 
     onUpdateAnnotationPositions(positions);
   }, [annotations, camera, onUpdateAnnotationPositions]);
