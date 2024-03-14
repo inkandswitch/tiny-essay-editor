@@ -304,46 +304,11 @@ export const PatchworkDocEditor: React.FC<{
   const activeDoc = branchDoc ?? doc;
   const activeChangeDoc = changeBranchDoc ?? changeDoc;
 
-  const annotations = useMemo(() => {
-    if (!diffForEditor || !doc) {
-      return [];
-    }
-
-    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
-    const discussions = Object.values(activeDoc?.discussions ?? []);
-
-    // highlight annotations only exist in discussions, so we need to get them separately
-    const highlightAnnotations = discussions.flatMap((discussion) =>
-      discussion.resolved ||
-      !discussion.annotation ||
-      discussion.annotation.type !== "highlighted"
-        ? []
-        : [{ ...discussion.annotation, discussion }]
-    );
-
-    const editAnnotations = patchesToAnnotations
-      ? patchesToAnnotations(
-          activeDoc,
-          A.view(activeDoc, diffForEditor.fromHeads),
-          diffForEditor.patches as A.Patch[]
-        ).flatMap((annotation) => {
-          // match up annotations with discussions
-          // it's possible that multiple discussions point to a single annotation (should occur rarely)
-          const discussionsOnAnnotation = discussions.filter((discussion) =>
-            doAnnotationsOverlap(discussion.annotation, annotation)
-          );
-
-          return discussionsOnAnnotation.length === 0
-            ? [annotation]
-            : discussionsOnAnnotation.map((discussion) => ({
-                ...annotation,
-                discussion,
-              }));
-        })
-      : [];
-
-    return editAnnotations.concat(highlightAnnotations);
-  }, [activeDoc, diffForEditor]);
+  const annotations = useAnnotations({
+    doc: activeDoc,
+    docType,
+    diff: diffForEditor,
+  });
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
   const [annotationPositions, setAnnotationPositions] = useState<
@@ -929,4 +894,59 @@ const BranchActions: React.FC<{
       </DropdownMenuContent>
     </DropdownMenu>
   );
+};
+
+const useAnnotations = ({
+  doc,
+  docType,
+  diff,
+}: {
+  doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
+  docType: DocType;
+  diff?: DiffWithProvenance;
+}) => {
+  return useMemo(() => {
+    if (!doc) {
+      return [];
+    }
+
+    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
+    const discussions = Object.values(doc?.discussions ?? []);
+
+    // highlight annotations only exist in discussions, so we need to get them separately
+    const highlightAnnotations = discussions.flatMap((discussion) =>
+      discussion.resolved ||
+      !discussion.annotation ||
+      discussion.annotation.type !== "highlighted"
+        ? []
+        : [{ ...discussion.annotation, discussion }]
+    );
+
+    if (!diff) {
+      return highlightAnnotations;
+    }
+
+    const editAnnotations = patchesToAnnotations
+      ? patchesToAnnotations(
+          doc,
+          A.view(doc, diff.fromHeads),
+          diff.patches as A.Patch[]
+        ).flatMap((annotation) => {
+          // match up annotations with discussions
+          // it's possible that multiple discussions point to a single annotation (should occur rarely)
+          const discussionsOnAnnotation = discussions.filter((discussion) =>
+            doAnnotationsOverlap(discussion.annotation, annotation)
+          );
+
+          return discussionsOnAnnotation.length === 0
+            ? [annotation]
+            : discussionsOnAnnotation.map((discussion) => ({
+                ...annotation,
+                discussion,
+              }));
+        })
+      : [];
+
+    return editAnnotations.concat(highlightAnnotations);
+  }, [doc, diff]);
 };

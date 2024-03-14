@@ -76,6 +76,11 @@ export const SpatialSidebar = React.memo(
       setActiveReplyAnnotation(null);
 
       changeDoc((doc) => {
+        // convert docs without discussions
+        if (!doc.discussions) {
+          doc.discussions = {};
+        }
+
         let discussionId = annotation.discussion?.id;
 
         if (!discussionId) {
@@ -85,7 +90,7 @@ export const SpatialSidebar = React.memo(
             heads: A.getHeads(doc),
             comments: [],
             resolved: false,
-            annotation,
+            annotation: JSON.parse(JSON.stringify(annotation)), // turn automerge object into plain javascript
           };
         }
 
@@ -179,10 +184,10 @@ export const SpatialSidebar = React.memo(
                 docType={docType}
                 key={JSON.stringify(annotation)}
                 annotation={annotation}
-                isReplyBoxOpen={doAnnotationsOverlap(
-                  activeReplyAnnotation,
-                  annotation
-                )}
+                isReplyBoxOpen={
+                  activeReplyAnnotation &&
+                  doAnnotationsOverlap(activeReplyAnnotation, annotation)
+                }
                 setIsReplyBoxOpen={(isOpen) => {
                   setActiveReplyAnnotation(isOpen ? annotation : undefined);
                 }}
@@ -192,7 +197,10 @@ export const SpatialSidebar = React.memo(
                 onAddComment={(content) => {
                   addCommentToAnnotation(annotation, content);
                 }}
-                isHovered={doAnnotationsOverlap(hoveredAnnotation, annotation)}
+                isHovered={
+                  hoveredAnnotation &&
+                  doAnnotationsOverlap(hoveredAnnotation, annotation)
+                }
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotation(isHovered ? annotation : undefined);
                 }}
