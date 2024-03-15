@@ -185,32 +185,46 @@ export const SideBySide = ({
   docUrl,
   mainDocUrl,
   docHeads,
-  mainDiff,
+  annotations,
+  selection,
+  setSelection,
+  selectedAnnotations,
+  onUpdateAnnotationPositions,
 }: SideBySideProps<unknown, unknown>) => {
   const [camera, setCamera] = useState<TLCamera>();
 
-  // todo: fix side by side
-  return null;
-  /*<div className="flex h-full w-full">
+  return (
+    <div className="flex h-full w-full">
       <div className="h-full flex-1 overflow-auto">
         <TLDraw
           docUrl={mainDocUrl}
-          diff={mainDiff}
           key={mainDocUrl}
+          annotations={[]}
           camera={camera}
           onChangeCamera={setCamera}
+          selection={undefined}
+          setSelection={() => {}}
+          selectedAnnotations={[]}
         />
       </div>
       <div className="h-full flex-1 overflow-auto border-l border-l-gray-200">
         <TLDraw
           docUrl={docUrl}
-          key={docUrl}
           docHeads={docHeads}
+          key={mainDocUrl}
+          annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>[]}
           camera={camera}
           onChangeCamera={setCamera}
+          selection={selection as TLDrawDocAnchor}
+          setSelection={setSelection}
+          selectedAnnotations={
+            selectedAnnotations as Annotation<TLDrawDocAnchor, TLShape>[]
+          }
+          onUpdateAnnotationPositions={onUpdateAnnotationPositions}
         />
       </div>
-    </div>*/
+    </div>
+  );
 };
 
 const useCameraSync = ({
@@ -261,6 +275,10 @@ const useAnnotationsPositionListener = ({
   ) => void;
 }) => {
   useEffect(() => {
+    if (!onUpdateAnnotationPositions) {
+      return;
+    }
+
     const positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[] = [];
 
     for (const annotation of annotations) {

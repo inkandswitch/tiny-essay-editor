@@ -30,6 +30,7 @@ import {
   PlusIcon,
   SplitIcon,
   Trash2Icon,
+  Underline,
 } from "lucide-react";
 import {
   diffWithProvenance,
@@ -576,26 +577,15 @@ export const PatchworkDocEditor: React.FC<{
           )}
           <div className="flex-1 min-h-0 relative">
             {selectedBranch.type === "branch" && compareWithMainFlag ? (
-              false /*false && (
-                <SideBySide
-                  key={mainDocUrl}
-                  mainDocUrl={mainDocUrl}
-                  docType={docType}
-                  docUrl={selectedBranchLink?.url}
-                  docHeads={docHeads}
-                  annotations={annotations}
-                  mainDiff={showDiff ? currentEditSessionDiff : undefined}
-                  actorIdToAuthor={actorIdToAuthor}
-                  discussions={discussions}
-                  onUpdateAnnotationPositions={
-                    onUpdateDiscussionTargetPositions
-                  }
-                  hoveredDiscussionId={hoveredDiscussionId}
-                  selectedDiscussionId={selectedDiscussionId}
-                  setHoveredDiscussionId={setHoveredDiscussionId}
-                  setSelectedDiscussionId={setSelectedDiscussionId}
-                />
-              )*/
+              <SideBySide
+                key={mainDocUrl}
+                mainDocUrl={mainDocUrl}
+                docType={docType}
+                docUrl={selectedBranchLink?.url}
+                docHeads={docHeads}
+                annotations={annotations}
+                actorIdToAuthor={actorIdToAuthor}
+              />
             ) : (
               <DocEditor
                 key={selectedBranchLink?.url ?? mainDocUrl}
@@ -726,7 +716,6 @@ const DocEditor = <T, V>({
 };
 
 export interface SideBySideProps<T, V> extends DocEditorPropsWithDocType<T, V> {
-  mainDiff: DiffWithProvenance;
   mainDocUrl: AutomergeUrl;
 }
 
@@ -737,54 +726,22 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
     }
 
     default: {
-      const {
-        docType,
-        docUrl,
-        mainDocUrl,
-        docHeads,
-        /*diff,
-        mainDiff,
-        actorIdToAuthor,
-        discussions,
-        onUpdateDiscussionTargetPositions,
-        hoveredDiscussionId,
-        selectedDiscussionId,
-        setHoveredDiscussionId,
-        setSelectedDiscussionId, */
-      } = props;
+      const { mainDocUrl } = props;
 
       return (
         <div className="flex h-full w-full">
           <div className="h-full flex-1 overflow-auto">
-            {/*<DocEditor
-              docType={docType}
-              docUrl={mainDocUrl}
-              actorIdToAuthor={actorIdToAuthor}
-              discussions={discussions}
-              onUpdateDiscussionTargetPositions={
-                onUpdateDiscussionTargetPositions
-              }
-              hoveredDiscussionId={hoveredDiscussionId}
-              selectedDiscussionId={selectedDiscussionId}
-              setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId} 
-            />*/}
+            {
+              <DocEditor
+                {...props}
+                docUrl={mainDocUrl}
+                docHeads={undefined}
+                annotations={[]}
+              />
+            }
           </div>
           <div className="h-full flex-1 overflow-auto">
-            {/*<DocEditor
-              docType={docType}
-              docUrl={docUrl}
-              docHeads={docHeads}
-              actorIdToAuthor={actorIdToAuthor}
-              discussions={discussions}
-              onUpdateDiscussionTargetPositions={
-                onUpdateDiscussionTargetPositions
-              }
-              hoveredDiscussionId={hoveredDiscussionId}
-              selectedDiscussionId={selectedDiscussionId}
-              setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId}
-            />*/}
+            {<DocEditor {...props} />}
           </div>
         </div>
       );
