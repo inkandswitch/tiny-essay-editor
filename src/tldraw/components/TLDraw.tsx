@@ -257,7 +257,7 @@ const useAnnotationsPositionListener = ({
     const positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[] = [];
 
     for (const annotation of annotations) {
-      if (annotation.type === "highlighted") {
+      if (annotation.type !== "highlighted") {
         continue;
       }
 

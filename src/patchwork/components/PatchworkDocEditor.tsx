@@ -85,6 +85,7 @@ import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
 import { AnnotationPosition } from "@/patchwork/schema";
+import { isEqual } from "lodash";
 
 interface MakeBranchOptions {
   name?: string;
@@ -339,11 +340,14 @@ export const PatchworkDocEditor: React.FC<{
 
   const onUpdateAnnotationPositions = useStaticCallback((targetPositions) => {
     setAnnotationPositions(
-      targetPositions.map((position) => ({
-        ...position,
-        y: position.y,
-        x: position.x,
-      }))
+      sortBy(
+        targetPositions.map((position) => ({
+          ...position,
+          y: position.y,
+          x: position.x,
+        })),
+        ({ y }) => y
+      )
     );
   });
 
@@ -656,9 +660,16 @@ export const PatchworkDocEditor: React.FC<{
                 selection={selection}
                 resetSelection={() => setSelection(undefined)}
                 docType={docType}
-                annotations={annotations}
+                annotations={annotationPositions.map(
+                  ({ annotation }) => annotation
+                )}
                 changeDoc={activeChangeDoc}
-                onChangeCommentPositionMap={setAnnotationsPositionsInSidebarMap}
+                onChangeCommentPositionMap={(positions) => {
+                  // todo: without this condition there is an infinite loop
+                  if (!isEqual(positions, annotationsPositionsInSidebarMap)) {
+                    setAnnotationsPositionsInSidebarMap(positions);
+                  }
+                }}
                 setSelectedAnnotations={setSelectedAnnotations}
                 selectedAnnotations={selectedAnnotations}
                 setHoveredAnnotation={setHoveredAnnotation}

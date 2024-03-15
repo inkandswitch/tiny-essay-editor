@@ -198,6 +198,12 @@ export const SpatialSidebar = React.memo(
         >
           {annotations &&
             annotations.map((annotation, index) => {
+              // todo: replace this doc type specific condition with a generic filter that
+              // filters out annotations without a position
+              if (docType === "tldraw" && annotation.type !== "highlighted") {
+                return;
+              }
+
               return (
                 <AnnotationWithDicussionView
                   docType={docType}
@@ -231,7 +237,7 @@ export const SpatialSidebar = React.memo(
                   }}
                   ref={(element) =>
                     registerAnnotationElement(
-                      JSON.stringify(annotation),
+                      JSON.stringify(annotation.target),
                       element
                     )
                   }
@@ -399,12 +405,6 @@ const AnnotationWithDicussionView = forwardRef<
       };
     }, [isSelected, onSelectNext, onSelectPrev]);
 
-    // todo: replace this doc type specific condition with a generic filter that
-    // filters out annotations without a position
-    if (docType === "tldraw" && annotation.type !== "highlighted") {
-      return;
-    }
-
     return (
       <>
         <div
@@ -441,15 +441,17 @@ const AnnotationWithDicussionView = forwardRef<
                   : ""
               }`}
             >
-              <div
-                className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
-                  (isSelected || isHovered) && !annotation.discussion
-                    ? "border-gray-400 shadow-xl"
-                    : "border-gray-200 "
-                }`}
-              >
-                <AnnotationView docType={docType} annotation={annotation} />
-              </div>
+              {docType !== "tldraw" && (
+                <div
+                  className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
+                    (isSelected || isHovered) && !annotation.discussion
+                      ? "border-gray-400 shadow-xl"
+                      : "border-gray-200 "
+                  }`}
+                >
+                  <AnnotationView docType={docType} annotation={annotation} />
+                </div>
+              )}
 
               {annotation.discussion?.comments.map((comment, index) => (
                 <DiscusssionCommentView comment={comment} key={comment.id} />
@@ -766,7 +768,12 @@ const useAnnotationsPositionMap = <T, V>({
     const positionMap = {};
 
     for (const annotation of annotations) {
-      const id = JSON.stringify(annotation);
+      const id = JSON.stringify(annotation.target);
+
+      if (!elementSizes[id] || annotation.type !== "highlighted") {
+        continue;
+      }
+
       const top = currentPos;
       const bottom = top + elementSizes[id];
 
@@ -890,8 +897,10 @@ export const SpatialCommentsLinesLayer = ({
             (pos) => 0
             /* activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0 */
           ).map((position, index) => {
-            const id = JSON.stringify(position.annotation);
-            const sidebarPosition = annotationsPositionsInSidebarMap[id];
+            const id = JSON.stringify(position.annotation.target);
+            const sidebarPosition =
+              annotationsPositionsInSidebarMap &&
+              annotationsPositionsInSidebarMap[id];
 
             if (!sidebarPosition) {
               return;
