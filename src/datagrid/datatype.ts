@@ -85,7 +85,7 @@ const promptForAIChangeGroupSummary = ({
 
 export const DataGridDatatype: DataType<DataGridDoc, never, never> = {
   id: "datagrid",
-  name: "DataGrid",
+  name: "Spreadsheet",
   icon: Sheet,
   init,
   getTitle,

@@ -6,9 +6,10 @@ import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "handsontable/dist/handsontable.full.min.css";
-import { useEffect, useRef } from "react";
 import { Heads } from "@automerge/automerge";
-import { next as Automerge } from "@automerge/automerge";
+import { useMemo } from "react";
+
+import * as A from "@automerge/automerge/next";
 
 // register Handsontable's modules
 registerAllModules();
@@ -20,27 +21,13 @@ export const DataGrid = ({
   docUrl: AutomergeUrl;
   docHeads?: Heads;
 }) => {
-  useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [latestDoc] = useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
 
-  const hotTableComponentRef = useRef(null);
-
-  useEffect(() => {
-    const updateHotTable = ({ doc }) => {
-      if (docHeads) {
-        doc = Automerge.view(doc, docHeads);
-      }
-      // The Handsontable instance is stored under the `hotInstance` property of the wrapper component.
-      if (doc.data) {
-        hotTableComponentRef.current.hotInstance.updateData(doc.data);
-      }
-    };
-    handle.on("change", updateHotTable);
-    hotTableComponentRef.current.hotInstance.updateData(handle.docSync().data);
-    return () => {
-      handle.off("change", updateHotTable);
-    };
-  }, [handle, docHeads]);
+  const doc = useMemo(
+    () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
+    [latestDoc, docHeads]
+  );
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -77,10 +64,14 @@ export const DataGrid = ({
     return false;
   };
 
+  if (!doc) {
+    return null;
+  }
+
   return (
     <div className="w-full h-full overflow-hidden">
       <HotTable
-        ref={hotTableComponentRef}
+        data={doc.data}
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}
         beforeCreateCol={onBeforeCreateCol}
