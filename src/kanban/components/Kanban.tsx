@@ -18,7 +18,7 @@ export const KanbanBoard = ({
   docHeads?: A.Heads;
   readOnly?: boolean;
 }) => {
-  const [latestDoc, changeDoc, actions] =
+  const [latestDoc, _changeDoc, actions] =
     useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads
 
   const doc = useMemo(

@@ -7,7 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import { mount } from "./mount.js";
 import "./index.css";
-import { DataGridDoc } from "./schema.js";
+import { DataGridDoc } from "./datatype.js";
 
 const SYNC_SERVER_URL =
   import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";

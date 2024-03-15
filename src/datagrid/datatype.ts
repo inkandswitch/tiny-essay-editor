@@ -1,9 +1,26 @@
 import { Sheet } from "lucide-react";
-import { DataGridDoc } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { next as A } from "@automerge/automerge";
 import { DataType } from "@/DocExplorer/doctypes";
 import { pick } from "lodash";
+import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
+
+export type DataGridDoc = HasPatchworkMetadata<never, never> & {
+  title: string; // The title of the table
+
+  // NOTE: modeling the data this way does not result in reasonable merges.
+  // The correct technique is like this, but we need cursors for
+  // arbitrary lists to do that in Automerge:
+  // https://mattweidner.com/2022/02/10/collaborative-data-design.html#case-study-a-collaborative-spreadsheet
+  data: any[][]; // The data for the table
+};
+// These are bad unstable anchors but we don't have
+// anything better until we model the spreadsheet data in a better way (see above)
+
+export type DataGridDocAnchor = {
+  row: number;
+  column: number;
+};
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -83,7 +100,44 @@ const promptForAIChangeGroupSummary = ({
   ${JSON.stringify(pick(docAfter, ["data"]), null, 2)}`;
 };
 
-export const DataGridDatatype: DataType<DataGridDoc, never, never> = {
+const patchesToAnnotations = (
+  doc: DataGridDoc,
+  docBefore: DataGridDoc,
+  patches: A.Patch[]
+) => {
+  return patches.flatMap((patch): Annotation<DataGridDocAnchor, string>[] => {
+    const handledPatchActions = ["splice"];
+    if (patch.path[0] !== "data" || !handledPatchActions.includes(patch.action))
+      return [];
+
+    switch (patch.action) {
+      case "splice": {
+        return [
+          {
+            type: "added",
+            added: patch.value,
+            target: {
+              row: patch.path[1] as number,
+              column: patch.path[2] as number,
+            },
+          },
+        ];
+      }
+      case "del":
+        // TODO
+        return [];
+
+      default:
+        throw new Error("invalid patch");
+    }
+  });
+};
+
+export const DataGridDatatype: DataType<
+  DataGridDoc,
+  DataGridDocAnchor,
+  string
+> = {
   id: "datagrid",
   name: "Spreadsheet",
   icon: Sheet,
@@ -93,6 +147,8 @@ export const DataGridDatatype: DataType<DataGridDoc, never, never> = {
 
   includeChangeInHistory,
   includePatchInChangeGroup,
+
+  patchesToAnnotations,
 
   promptForAIChangeGroupSummary,
 };

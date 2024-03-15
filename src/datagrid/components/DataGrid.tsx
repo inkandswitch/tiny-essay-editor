@@ -1,26 +1,31 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { DataGridDoc } from "../schema";
+import { DataGridDoc, DataGridDocAnchor } from "../datatype";
 
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "handsontable/dist/handsontable.full.min.css";
-import { Heads } from "@automerge/automerge";
 import { useMemo } from "react";
 
 import * as A from "@automerge/automerge/next";
+import { registerRenderer, textRenderer } from "handsontable/renderers";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
 
 // register Handsontable's modules
 registerAllModules();
 
+registerRenderer("addedCell", (hotInstance, TD, ...rest) => {
+  textRenderer(hotInstance, TD, ...rest);
+
+  TD.style.outline = "solid 1px rgb(0 100 0 / 80%)";
+  TD.style.background = "rgb(0 255 0 / 10%)";
+});
+
 export const DataGrid = ({
   docUrl,
   docHeads,
-}: {
-  docUrl: AutomergeUrl;
-  docHeads?: Heads;
-}) => {
+  annotations = [],
+}: DocEditorProps<DataGridDocAnchor, string>) => {
   const [latestDoc] = useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
 
@@ -64,6 +69,12 @@ export const DataGrid = ({
     return false;
   };
 
+  const cellAnnotations = annotations.map((annotation) => ({
+    row: annotation.target.row,
+    col: annotation.target.column,
+    renderer: "addedCell",
+  }));
+
   if (!doc) {
     return null;
   }
@@ -84,6 +95,7 @@ export const DataGrid = ({
         autoWrapCol={false}
         licenseKey="non-commercial-and-evaluation"
         formulas={{ engine: HyperFormula }}
+        cell={cellAnnotations}
       />
     </div>
   );
