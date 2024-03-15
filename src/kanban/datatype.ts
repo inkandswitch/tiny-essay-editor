@@ -144,6 +144,10 @@ const fallbackSummaryForChangeGroup = (
         }`
     )
     .join(", ");
+
+  if (summary === "") {
+    return "No significant changes";
+  }
   return summary;
 };
 
