@@ -113,6 +113,7 @@ export const PatchworkDocEditor: React.FC<{
   const [selectedAnnotations, setSelectedAnnotations] = useState<
     Annotation<unknown, unknown>[]
   >([]);
+
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
@@ -606,6 +607,7 @@ export const PatchworkDocEditor: React.FC<{
                 onUpdateAnnotationPositions={onUpdateAnnotationPositions}
                 selection={selection}
                 setSelection={setSelection}
+                selectedAnnotations={selectedAnnotations}
               />
             )}
             {reviewMode === "comments" && isHistorySidebarOpen && (

@@ -32,6 +32,7 @@ export const TLDraw = ({
   onUpdateAnnotationPositions,
   selection,
   setSelection,
+  selectedAnnotations,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
@@ -43,6 +44,7 @@ export const TLDraw = ({
   ) => void;
   selection: TLDrawDocAnchor;
   setSelection: (selection: TLDrawDocAnchor) => void;
+  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
 }) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -86,6 +88,7 @@ export const TLDraw = ({
             onChangeCamera={setCamera}
             selection={selection}
             setSelection={setSelection}
+            selectedAnnotations={selectedAnnotations}
           />
         ) : null
       ) : (
@@ -98,6 +101,7 @@ export const TLDraw = ({
           onChangeCamera={setCamera}
           selection={selection}
           setSelection={setSelection}
+          selectedAnnotations={selectedAnnotations}
         />
       )}
     </div>
@@ -113,6 +117,7 @@ interface TlDrawProps {
   onChangeCamera?: (camera: TLCamera) => void;
   selection?: TLDrawDocAnchor;
   setSelection: (selection: TLDrawDocAnchor) => void;
+  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
 }
 
 const EditableTLDraw = ({
@@ -124,11 +129,12 @@ const EditableTLDraw = ({
   onChangeCamera,
   selection,
   setSelection,
+  selectedAnnotations,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor });
+  useDiffStyling({ doc, annotations, store, editor, selectedAnnotations });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -149,11 +155,12 @@ const ReadOnlyTLDraw = ({
   camera,
   selection,
   setSelection,
+  selectedAnnotations,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor });
+  useDiffStyling({ doc, annotations, store, editor, selectedAnnotations });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -278,11 +285,13 @@ const useDiffStyling = ({
   annotations,
   store,
   editor,
+  selectedAnnotations,
 }: {
   doc: TLDrawDoc;
   annotations: Annotation<TLDrawDocAnchor, TLShape>[];
   store: TLStoreWithStatus;
   editor: Editor;
+  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>;
 }) => {
   const tempShapeIdsRef = useRef(new Set<TLShapeId>());
   const highlightedElementsRef = useRef(new Set<HTMLElement>());
@@ -301,6 +310,12 @@ const useDiffStyling = ({
 
     return () => {};
   }, [editor]);
+
+  // todo: handle multi select
+  const selectedAnnotation: Annotation<TLDrawDocAnchor, TLShape> =
+    selectedAnnotations ? selectedAnnotations[0] : undefined;
+
+  console.log(selectedAnnotations);
 
   useEffect(() => {
     if (!store.store) {
@@ -327,6 +342,16 @@ const useDiffStyling = ({
         switch (annotation.type) {
           case "added":
             {
+              if (
+                selectedAnnotation &&
+                selectedAnnotation.type === "highlighted" &&
+                !selectedAnnotation.target.shapeIds.includes(
+                  annotation.target.shapeIds[0]
+                )
+              ) {
+                return;
+              }
+
               const shapeElem = document.getElementById(annotation.added.id);
               if (!shapeElem) {
                 return;
@@ -378,7 +403,7 @@ const useDiffStyling = ({
         });
       highlightedElementsRef.current = activeHighlightedElements;
     });
-  }, [annotations, store, doc, camera]);
+  }, [annotations, store, doc, camera, selectedAnnotation]);
 };
 
 const useSelectionListener = ({

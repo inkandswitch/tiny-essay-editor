@@ -188,7 +188,10 @@ export const SpatialSidebar = React.memo(
     ]);*/
 
     return (
-      <div className="h-full flex flex-col">
+      <div
+        className="h-full flex flex-col"
+        onClick={() => setSelectedAnnotations([])}
+      >
         <div
           ref={setScrollContainer}
           onScroll={(evt) =>
@@ -406,143 +409,140 @@ const AnnotationWithDicussionView = forwardRef<
     }, [isSelected, onSelectNext, onSelectPrev]);
 
     return (
-      <>
-        <div
-          ref={setRef}
-          className={`pt-2 transition-all ${
-            isBeingResolved ? "overflow-hidden" : ""
-          }`}
-          style={
-            height !== undefined
-              ? {
-                  height: isBeingResolved ? "0" : `${height}px`,
-                }
-              : undefined
+      <div
+        onClick={(event) => event.stopPropagation()}
+        ref={setRef}
+        className={`pt-2 transition-all ${
+          isBeingResolved ? "overflow-hidden" : ""
+        }`}
+        style={
+          height !== undefined
+            ? {
+                height: isBeingResolved ? "0" : `${height}px`,
+              }
+            : undefined
+        }
+        onTransitionEnd={() => {
+          if (isBeingResolved) {
+            onResolveDiscussion(annotation.discussion);
           }
-          onTransitionEnd={() => {
-            if (isBeingResolved) {
-              onResolveDiscussion(annotation.discussion);
-            }
-          }}
+        }}
+      >
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={() => setIsSelected(true)}
+          key={JSON.stringify(annotation)}
+          className="flex flex-col gap-1"
         >
           <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={() => setIsSelected(true)}
-            key={JSON.stringify(annotation)}
-            className="flex flex-col gap-1"
+            className={`flex flex-col gap-1 ${
+              annotation.discussion
+                ? isSelected || isHovered
+                  ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
+                  : "border bg-white rounded-sm p-2 border-gray-200 "
+                : ""
+            }`}
           >
-            <div
-              className={`flex flex-col gap-1 ${
-                annotation.discussion
-                  ? isSelected || isHovered
-                    ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
-                    : "border bg-white rounded-sm p-2 border-gray-200 "
-                  : ""
-              }`}
-            >
-              {docType !== "tldraw" && (
-                <div
-                  className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
-                    (isSelected || isHovered) && !annotation.discussion
-                      ? "border-gray-400 shadow-xl"
-                      : "border-gray-200 "
-                  }`}
-                >
-                  <AnnotationView docType={docType} annotation={annotation} />
-                </div>
-              )}
+            {docType !== "tldraw" && (
+              <div
+                className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
+                  (isSelected || isHovered) && !annotation.discussion
+                    ? "border-gray-400 shadow-xl"
+                    : "border-gray-200 "
+                }`}
+              >
+                <AnnotationView docType={docType} annotation={annotation} />
+              </div>
+            )}
 
-              {annotation.discussion?.comments.map((comment, index) => (
-                <DiscusssionCommentView comment={comment} key={comment.id} />
-              ))}
-            </div>
+            {annotation.discussion?.comments.map((comment, index) => (
+              <DiscusssionCommentView comment={comment} key={comment.id} />
+            ))}
+          </div>
 
-            <div
-              className={`overflow-hidden transition-all flex items-center gap-2 ${
-                isSelected ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
-              }`}
-            >
-              <Popover open={isReplyBoxOpen}>
-                <PopoverTrigger>
-                  <Button
-                    variant="ghost"
-                    className="select-none p-2 flex flex-col w-fit"
-                    onClick={() => setIsReplyBoxOpen(true)}
-                  >
-                    <div className="flex gap-2 text-gray-600">
-                      <MessageCircleIcon size={16} /> Comment
-                    </div>
-                    <span className="text-gray-400 text-xs w-full text-center">
-                      (⌘ + ⏎)
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Textarea
-                    className="mb-4"
-                    value={pendingCommentText}
-                    onChange={(event) =>
-                      setPendingCommentText(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                      event.stopPropagation();
-                      if (event.key === "Enter" && event.metaKey) {
-                        onReply(pendingCommentText);
-                        setPendingCommentText("");
-                        event.preventDefault();
-                      }
-                    }}
-                  />
-
-                  <PopoverClose>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        onReply(pendingCommentText);
-                        setPendingCommentText("");
-                      }}
-                    >
-                      Comment
-                      <span className="text-gray-400 ml-2 text-xs">
-                        (⌘ + ⏎)
-                      </span>
-                    </Button>
-                  </PopoverClose>
-                </PopoverContent>
-              </Popover>
-
-              {annotation.type === "highlighted" && (
+          <div
+            className={`overflow-hidden transition-all flex items-center gap-2 ${
+              isSelected ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
+            }`}
+          >
+            <Popover open={isReplyBoxOpen}>
+              <PopoverTrigger>
                 <Button
                   variant="ghost"
-                  className="select-none px-2 flex flex-col w-fi"
-                  onClick={onStartResolve}
+                  className="select-none p-2 flex flex-col w-fit"
+                  onClick={() => setIsReplyBoxOpen(true)}
                 >
-                  <div className="flex text-gray-600 gap-2">
-                    <Check size={16} /> Resolve
+                  <div className="flex gap-2 text-gray-600">
+                    <MessageCircleIcon size={16} /> Comment
                   </div>
                   <span className="text-gray-400 text-xs w-full text-center">
-                    (⌘ + R)
+                    (⌘ + ⏎)
                   </span>
                 </Button>
-              )}
-              {annotation.type !== "highlighted" && (
-                <Button
-                  variant="ghost"
-                  className="select-none px-2 flex flex-col w-fit"
-                >
-                  <div className="flex text-gray-600 gap-2">
-                    <UndoIcon size={16} /> Revert
-                  </div>
-                  <span className="text-gray-400 text-center text-xs w-full">
-                    (⌘ + Z)
-                  </span>
-                </Button>
-              )}
-            </div>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Textarea
+                  className="mb-4"
+                  value={pendingCommentText}
+                  onChange={(event) =>
+                    setPendingCommentText(event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter" && event.metaKey) {
+                      onReply(pendingCommentText);
+                      setPendingCommentText("");
+                      event.preventDefault();
+                    }
+                  }}
+                />
+
+                <PopoverClose>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onReply(pendingCommentText);
+                      setPendingCommentText("");
+                    }}
+                  >
+                    Comment
+                    <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
+                  </Button>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
+
+            {annotation.type === "highlighted" && (
+              <Button
+                variant="ghost"
+                className="select-none px-2 flex flex-col w-fi"
+                onClick={onStartResolve}
+              >
+                <div className="flex text-gray-600 gap-2">
+                  <Check size={16} /> Resolve
+                </div>
+                <span className="text-gray-400 text-xs w-full text-center">
+                  (⌘ + R)
+                </span>
+              </Button>
+            )}
+            {annotation.type !== "highlighted" && (
+              <Button
+                variant="ghost"
+                className="select-none px-2 flex flex-col w-fit"
+              >
+                <div className="flex text-gray-600 gap-2">
+                  <UndoIcon size={16} /> Revert
+                </div>
+                <span className="text-gray-400 text-center text-xs w-full">
+                  (⌘ + Z)
+                </span>
+              </Button>
+            )}
           </div>
         </div>
-      </>
+      </div>
     );
   }
 );

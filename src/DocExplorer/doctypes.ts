@@ -111,7 +111,7 @@ export interface DocEditorProps<T, V> {
 
   // spatial comments interface
   // todo: simplify
-  selectedAnnotations?: Annotation<T, V>;
+  selectedAnnotations?: Annotation<T, V>[];
   hoveredAnnotation?: Annotation<T, V>;
   setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
   setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
