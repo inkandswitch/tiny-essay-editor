@@ -2,22 +2,21 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 
 import * as A from "@automerge/automerge/next";
 
-import { KanbanBoardDoc } from "../datatype";
+import { KanbanBoardDoc, KanbanBoardDocAnchor } from "../datatype";
 import { KanbanBoardDatatype } from "../datatype";
 
 import Board from "react-trello";
 import { useMemo } from "react";
 import { useDocumentWithActions } from "@/useDocumentWithActions";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
 
 export const KanbanBoard = ({
   docUrl,
   docHeads,
   readOnly,
-}: {
-  docUrl: AutomergeUrl;
-  docHeads?: A.Heads;
-  readOnly?: boolean;
-}) => {
+  annotations,
+}: DocEditorProps<KanbanBoardDocAnchor, string> & { readOnly?: boolean }) => {
+  console.log({ annotations });
   const [latestDoc, _changeDoc, actions] =
     useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads
 
@@ -31,15 +30,40 @@ export const KanbanBoard = ({
       return { lanes: [] };
     }
     return {
-      lanes: doc.lanes.map((lane) => ({
-        ...lane,
-        cards: lane.cardIds.flatMap((cardId) => {
-          const card = doc.cards.find((c) => c.id === cardId);
-          return card ? [card] : [];
-        }),
-      })),
+      lanes: doc.lanes.map((lane) => {
+        const showAsAdded = annotations.find(
+          (a) =>
+            a.type === "added" &&
+            a.target.type === "lane" &&
+            a.target.id === lane.id
+        );
+        return {
+          ...lane,
+          style: {
+            backgroundColor: showAsAdded ? "#dcffe0" : "",
+          },
+          cards: lane.cardIds.flatMap((cardId) => {
+            const card = doc.cards.find((c) => c.id === cardId);
+            if (!card) return [];
+            const showAsAdded = annotations.find(
+              (a) =>
+                a.type === "added" &&
+                a.target.type === "card" &&
+                a.target.id === cardId
+            );
+            return {
+              ...card,
+              style: {
+                backgroundColor: showAsAdded ? "rgb(200 255 200)" : "",
+              },
+            };
+          }),
+        };
+      }),
     };
   }, [doc]);
+
+  console.log({ dataForBoard });
 
   return (
     <div className="h-full overflow-auto">

@@ -110,6 +110,7 @@ const patchesToAnnotations = (
     if (patch.path[0] !== "data" || !handledPatchActions.includes(patch.action))
       return [];
 
+    // TODO: find a way to show the old value in the annotation
     switch (patch.action) {
       case "splice": {
         return [
