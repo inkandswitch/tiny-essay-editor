@@ -145,7 +145,7 @@ interface ChangeAnnotation<T, V> {
   discussion?: Discussion<T, V>;
 }
 
-interface HighlightAnnotation<T, V> {
+export interface HighlightAnnotation<T, V> {
   type: "highlighted";
   target: T;
   value: V;

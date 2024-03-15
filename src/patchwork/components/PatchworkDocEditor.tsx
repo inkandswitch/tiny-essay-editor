@@ -106,6 +106,7 @@ export const PatchworkDocEditor: React.FC<{
   const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
+  const [selection, setSelection] = useState<any>(); // todo: type properly
   const [hoveredAnnotation, setHoveredAnnotation] =
     useState<Annotation<unknown, unknown>>();
   const [selectedAnnotations, setSelectedAnnotations] = useState<
@@ -599,6 +600,8 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 onUpdateAnnotationPositions={onUpdateAnnotationPositions}
+                selection={selection}
+                setSelection={setSelection}
               />
             )}
             {reviewMode === "comments" && isHistorySidebarOpen && (
@@ -650,6 +653,8 @@ export const PatchworkDocEditor: React.FC<{
             )}
             {reviewMode === "comments" && (
               <SpatialSidebar
+                selection={selection}
+                resetSelection={() => setSelection(undefined)}
                 docType={docType}
                 annotations={annotations}
                 changeDoc={activeChangeDoc}
@@ -683,6 +688,8 @@ const DocEditor = <T, V>({
   selectedAnnotations,
   setHoveredAnnotation,
   setSelectedAnnotations,
+  selection,
+  setSelection,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = toolsForDocTypes[docType][0];
@@ -699,6 +706,8 @@ const DocEditor = <T, V>({
       selectedAnnotations={selectedAnnotations}
       setHoveredAnnotation={setHoveredAnnotation}
       setSelectedAnnotations={setSelectedAnnotations}
+      selection={selection}
+      setSelection={setSelection}
     />
   );
 };
@@ -734,10 +743,10 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
       return (
         <div className="flex h-full w-full">
           <div className="h-full flex-1 overflow-auto">
-            <DocEditor
+            {/*<DocEditor
               docType={docType}
               docUrl={mainDocUrl}
-              /*actorIdToAuthor={actorIdToAuthor}
+              actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
@@ -745,15 +754,15 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               hoveredDiscussionId={hoveredDiscussionId}
               selectedDiscussionId={selectedDiscussionId}
               setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId} */
-            />
+              setSelectedDiscussionId={setSelectedDiscussionId} 
+            />*/}
           </div>
           <div className="h-full flex-1 overflow-auto">
-            <DocEditor
+            {/*<DocEditor
               docType={docType}
               docUrl={docUrl}
               docHeads={docHeads}
-              /*actorIdToAuthor={actorIdToAuthor}
+              actorIdToAuthor={actorIdToAuthor}
               discussions={discussions}
               onUpdateDiscussionTargetPositions={
                 onUpdateDiscussionTargetPositions
@@ -761,8 +770,8 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
               hoveredDiscussionId={hoveredDiscussionId}
               selectedDiscussionId={selectedDiscussionId}
               setHoveredDiscussionId={setHoveredDiscussionId}
-              setSelectedDiscussionId={setSelectedDiscussionId}*/
-            />
+              setSelectedDiscussionId={setSelectedDiscussionId}
+            />*/}
           </div>
         </div>
       );
@@ -797,8 +806,10 @@ const BranchActions: React.FC<{
   // compute new name suggestions anytime the branch heads change
   useEffect(() => {
     if (!dropdownOpen || !doc || !branchDoc) return;
-    if (!isMarkdownDoc(doc) || !isMarkdownDoc(branchDoc))
-      throw new Error("This only works for MarkdownDoc now");
+    if (!isMarkdownDoc(doc) || !isMarkdownDoc(branchDoc)) {
+      console.warn("suggestions only work for markdown docs");
+      return;
+    }
     setNameSuggestions([]);
     (async () => {
       const suggestions = (

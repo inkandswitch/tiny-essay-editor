@@ -116,4 +116,7 @@ export interface DocEditorProps<T, V> {
   setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
   setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
   onUpdateAnnotationPositions?: (positions: AnnotationPosition<T, V>[]) => void;
+
+  selection: T;
+  setSelection: (target: T) => void;
 }

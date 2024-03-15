@@ -21,6 +21,7 @@ import { AnnotationId, DiffWithProvenance } from "@/patchwork/schema";
 import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { edit } from "react-arborist/dist/module/state/edit-slice";
 
 export const TLDraw = ({
   docUrl,
@@ -29,6 +30,8 @@ export const TLDraw = ({
   camera,
   onChangeCamera,
   onUpdateAnnotationPositions,
+  selection,
+  setSelection,
 }: {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
@@ -38,6 +41,8 @@ export const TLDraw = ({
   onUpdateAnnotationPositions?: (
     positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[]
   ) => void;
+  selection: TLDrawDocAnchor;
+  setSelection: (selection: TLDrawDocAnchor) => void;
 }) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -79,6 +84,8 @@ export const TLDraw = ({
             handle={handle}
             camera={camera ?? localCamera}
             onChangeCamera={setCamera}
+            selection={selection}
+            setSelection={setSelection}
           />
         ) : null
       ) : (
@@ -89,6 +96,8 @@ export const TLDraw = ({
           handle={handle}
           camera={camera ?? localCamera}
           onChangeCamera={setCamera}
+          selection={selection}
+          setSelection={setSelection}
         />
       )}
     </div>
@@ -102,6 +111,8 @@ interface TlDrawProps {
   annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
+  selection?: TLDrawDocAnchor;
+  setSelection: (selection: TLDrawDocAnchor) => void;
 }
 
 const EditableTLDraw = ({
@@ -111,6 +122,8 @@ const EditableTLDraw = ({
   annotations,
   camera,
   onChangeCamera,
+  selection,
+  setSelection,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
@@ -122,6 +135,8 @@ const EditableTLDraw = ({
     camera,
   });
 
+  useSelectionListener({ editor, selection, setSelection });
+
   return <Tldraw autoFocus store={store} onMount={setEditor} />;
 };
 
@@ -132,6 +147,8 @@ const ReadOnlyTLDraw = ({
   annotations,
   onChangeCamera,
   camera,
+  selection,
+  setSelection,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
@@ -142,6 +159,8 @@ const ReadOnlyTLDraw = ({
     onChangeCamera,
     camera,
   });
+
+  useSelectionListener({ editor, selection, setSelection });
 
   return (
     <Tldraw
@@ -238,7 +257,11 @@ const useAnnotationsPositionListener = ({
     const positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[] = [];
 
     for (const annotation of annotations) {
-      const element = document.getElementById(annotation.target.shapeId);
+      if (annotation.type === "highlighted") {
+        continue;
+      }
+
+      const element = document.getElementById(annotation.target.shapeIds[0]);
 
       if (element) {
         const { top, right } = element.getBoundingClientRect();
@@ -356,4 +379,32 @@ const useDiffStyling = ({
       highlightedElementsRef.current = activeHighlightedElements;
     });
   }, [annotations, store, doc, camera]);
+};
+
+const useSelectionListener = ({
+  editor,
+  selection,
+  setSelection,
+}: {
+  editor: Editor;
+  selection: TLDrawDocAnchor;
+  setSelection: (selection: TLDrawDocAnchor) => void;
+}) => {
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.on("update", () => {
+      if (!isEqual(editor?.selectedShapeIds, selection?.shapeIds)) {
+        console.log(editor.selectedShapeIds);
+
+        setSelection(
+          editor.selectedShapeIds.length > 0
+            ? { shapeIds: editor.selectedShapeIds }
+            : undefined
+        );
+      }
+    });
+  }, [editor]);
 };

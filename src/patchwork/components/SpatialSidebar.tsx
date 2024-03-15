@@ -46,6 +46,8 @@ type SpatialSidebarProps = {
   setHoveredAnnotation: (annotation: Annotation<unknown, unknown>) => void;
   selectedAnnotations: Annotation<unknown, unknown>[];
   hoveredAnnotation: Annotation<unknown, unknown>;
+  selection: any; // todo: type this
+  resetSelection: () => void;
 };
 
 export const SpatialSidebar = React.memo(
@@ -58,7 +60,10 @@ export const SpatialSidebar = React.memo(
     selectedAnnotations,
     setHoveredAnnotation,
     hoveredAnnotation,
+    selection,
+    resetSelection,
   }: SpatialSidebarProps) => {
+    const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyAnnotation, setActiveReplyAnnotation] =
       useState<Annotation<unknown, unknown>>();
     const [scrollOffset, setScrollOffset] = useState(0);
@@ -101,6 +106,19 @@ export const SpatialSidebar = React.memo(
           timestamp: Date.now(),
         });
       });
+    };
+
+    const addCommentToCurrentSelection = (content: string) => {
+      resetSelection();
+      setPendingCommentText("");
+      addCommentToAnnotation(
+        {
+          type: "highlighted",
+          target: selection,
+          value: undefined,
+        },
+        content
+      );
     };
 
     const resolveDiscussion = (discussion: Discussion<unknown, unknown>) => {
@@ -170,68 +188,102 @@ export const SpatialSidebar = React.memo(
     ]);*/
 
     return (
-      <div
-        ref={setScrollContainer}
-        onScroll={(evt) =>
-          setScrollOffset((evt.target as HTMLDivElement).scrollTop)
-        }
-        className="bg-gray-50 flex- h-full p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
-      >
-        {annotations &&
-          annotations.map((annotation, index) => {
-            return (
-              <AnnotationWithDicussionView
-                docType={docType}
-                key={JSON.stringify(annotation)}
-                annotation={annotation}
-                isReplyBoxOpen={
-                  activeReplyAnnotation &&
-                  doAnnotationsOverlap(activeReplyAnnotation, annotation)
-                }
-                setIsReplyBoxOpen={(isOpen) => {
-                  setActiveReplyAnnotation(isOpen ? annotation : undefined);
-                }}
-                onResolveDiscussion={(discussion) =>
-                  resolveDiscussion(discussion)
-                }
-                onAddComment={(content) => {
-                  addCommentToAnnotation(annotation, content);
-                }}
-                isHovered={
-                  hoveredAnnotation &&
-                  doAnnotationsOverlap(hoveredAnnotation, annotation)
-                }
-                setIsHovered={(isHovered) => {
-                  setHoveredAnnotation(isHovered ? annotation : undefined);
-                }}
-                isSelected={selectedAnnotations.some((selectedAnnotation) =>
-                  doAnnotationsOverlap(selectedAnnotation, annotation)
-                )}
-                setIsSelected={(isSelected) => {
-                  setSelectedAnnotations(isSelected ? [annotation] : []);
-                }}
-                ref={(element) =>
-                  registerAnnotationElement(JSON.stringify(annotation), element)
-                }
-                onSelectNext={() => {
-                  if (selectedAnnotations.length > 1) {
-                    return;
+      <div className="h-full flex flex-col">
+        <div
+          ref={setScrollContainer}
+          onScroll={(evt) =>
+            setScrollOffset((evt.target as HTMLDivElement).scrollTop)
+          }
+          className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
+        >
+          {annotations &&
+            annotations.map((annotation, index) => {
+              return (
+                <AnnotationWithDicussionView
+                  docType={docType}
+                  key={JSON.stringify(annotation)}
+                  annotation={annotation}
+                  isReplyBoxOpen={
+                    activeReplyAnnotation &&
+                    doAnnotationsOverlap(activeReplyAnnotation, annotation)
                   }
+                  setIsReplyBoxOpen={(isOpen) => {
+                    setActiveReplyAnnotation(isOpen ? annotation : undefined);
+                  }}
+                  onResolveDiscussion={(discussion) =>
+                    resolveDiscussion(discussion)
+                  }
+                  onAddComment={(content) => {
+                    addCommentToAnnotation(annotation, content);
+                  }}
+                  isHovered={
+                    hoveredAnnotation &&
+                    doAnnotationsOverlap(hoveredAnnotation, annotation)
+                  }
+                  setIsHovered={(isHovered) => {
+                    setHoveredAnnotation(isHovered ? annotation : undefined);
+                  }}
+                  isSelected={selectedAnnotations.some((selectedAnnotation) =>
+                    doAnnotationsOverlap(selectedAnnotation, annotation)
+                  )}
+                  setIsSelected={(isSelected) => {
+                    setSelectedAnnotations(isSelected ? [annotation] : []);
+                  }}
+                  ref={(element) =>
+                    registerAnnotationElement(
+                      JSON.stringify(annotation),
+                      element
+                    )
+                  }
+                  onSelectNext={() => {
+                    if (selectedAnnotations.length > 1) {
+                      return;
+                    }
 
-                  const nextAnnotation = annotations[index + 1];
-                  if (nextAnnotation) {
-                    setSelectedAnnotations([nextAnnotation]);
-                  }
-                }}
-                onSelectPrev={() => {
-                  const prevAnnotation = annotations[index - 1];
-                  if (prevAnnotation) {
-                    setSelectedAnnotations([prevAnnotation]);
-                  }
-                }}
-              />
-            );
-          })}
+                    const nextAnnotation = annotations[index + 1];
+                    if (nextAnnotation) {
+                      setSelectedAnnotations([nextAnnotation]);
+                    }
+                  }}
+                  onSelectPrev={() => {
+                    const prevAnnotation = annotations[index - 1];
+                    if (prevAnnotation) {
+                      setSelectedAnnotations([prevAnnotation]);
+                    }
+                  }}
+                />
+              );
+            })}
+        </div>
+        {selection && (
+          <div className="bg-gray-50 z-10 p-2 flex flex-col gap-2">
+            <Textarea
+              value={pendingCommentText}
+              onChange={(event) => setPendingCommentText(event.target.value)}
+              // GL Nov: figure out how to close the popover upon cmd-enter submit
+              // GL 12/14: the answer here is going to be to control Popover open
+              // state ourselves as we now do elsewhere in the codebase
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && event.metaKey) {
+                  /* startDiscusssionAtSelection(pendingCommentText);
+                setSuppressButton(true);
+                setIsCommentBoxOpen(false);
+                event.preventDefault(); */
+                }
+              }}
+            />
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                addCommentToCurrentSelection(pendingCommentText);
+              }}
+            >
+              Comment
+              <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -347,6 +399,12 @@ const AnnotationWithDicussionView = forwardRef<
       };
     }, [isSelected, onSelectNext, onSelectPrev]);
 
+    // todo: replace this doc type specific condition with a generic filter that
+    // filters out annotations without a position
+    if (docType === "tldraw" && annotation.type !== "highlighted") {
+      return;
+    }
+
     return (
       <>
         <div
@@ -456,6 +514,7 @@ const AnnotationWithDicussionView = forwardRef<
                 <Button
                   variant="ghost"
                   className="select-none px-2 flex flex-col w-fi"
+                  onClick={onStartResolve}
                 >
                   <div className="flex text-gray-600 gap-2">
                     <Check size={16} /> Resolve
@@ -610,6 +669,7 @@ const TLDrawAnnotationView = ({
       );
 
     case "highlighted":
+      return null;
       return (
         <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
           highlighted {getShapeName(annotation.value)}
@@ -831,7 +891,6 @@ export const SpatialCommentsLinesLayer = ({
             /* activeDiscussionIds.includes(pos.discussion.id) ? 1 : 0 */
           ).map((position, index) => {
             const id = JSON.stringify(position.annotation);
-
             const sidebarPosition = annotationsPositionsInSidebarMap[id];
 
             if (!sidebarPosition) {

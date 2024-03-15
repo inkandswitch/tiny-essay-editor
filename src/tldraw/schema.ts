@@ -12,5 +12,5 @@ export type TLDrawDoc = HasPatchworkMetadata<never, never> & {
 };
 
 export type TLDrawDocAnchor = {
-  shapeId: TLShapeId;
+  shapeIds: TLShapeId[];
 };
