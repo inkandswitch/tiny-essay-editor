@@ -1,7 +1,7 @@
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
+import { MarkdownEditor } from "./MarkdownEditor";
 
 import { useEffect, useMemo, useState } from "react";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
@@ -13,38 +13,43 @@ import {
 
 import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
-import { ReviewStateFilter, useAnnotationsWithPositions } from "../utils";
+import { ReviewStateFilter } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
-import { Patch, getCursorPosition, view } from "@automerge/automerge/next";
-import { uniq } from "lodash";
-import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { isEqual } from "lodash";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
-import { CommentsSidebar } from "./CommentsSidebar";
+import { Annotation } from "@/patchwork/schema";
+import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
+import { Patch, view } from "@automerge/automerge/next";
+import { isEqual, uniq } from "lodash";
+import "../../tee/index.css";
 
-export const TinyEssayEditor = ({
-  docUrl,
-  docHeads,
-  annotations = [],
-  actorIdToAuthor,
-  hoveredAnnotation,
-  selectedAnnotations,
-  setSelectedAnnotations,
-  onUpdateAnnotationPositions,
-}: DocEditorProps<MarkdownDocAnchor, string>) => {
+export const TinyEssayEditor = (
+  props: DocEditorProps<MarkdownDocAnchor, string>
+) => {
+  const {
+    docUrl,
+    docHeads,
+    annotations = [],
+    actorIdToAuthor,
+    hoveredAnnotation,
+    selectedAnnotations,
+    setSelectedAnnotations,
+    onUpdateAnnotationPositions,
+  } = props;
+
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, setSelection] = useState<TextSelection>();
+  const [localSelection, setLocalSelection] = useState<MarkdownDocAnchor>();
   const [editorView, setEditorView] = useState<EditorView>();
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
+
+  const setSelection = props.setSelection ?? setLocalSelection;
+  const selection = props.setSelection ? props.selection : localSelection;
 
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
@@ -253,15 +258,6 @@ export const TinyEssayEditor = ({
                 onUpdateAnnotationPositions(positions)
               }
               isCommentBoxOpen={isCommentBoxOpen}
-            />
-          </div>
-          <div className="ml-2 w-0">
-            <CommentsSidebar
-              doc={docAtHeads}
-              changeDoc={changeDoc}
-              selection={selection}
-              isCommentBoxOpen={isCommentBoxOpen}
-              setIsCommentBoxOpen={setIsCommentBoxOpen}
             />
           </div>
         </div>

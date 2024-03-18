@@ -287,9 +287,10 @@ export const PatchworkDocEditor: React.FC<{
     [mainDocUrl, repo]
   );
 
-  const [branchDoc, changeBranchDoc] = useDocument<
-    HasPatchworkMetadata<unknown, unknown>
-  >(selectedBranch.type === "branch" ? selectedBranch.url : undefined);
+  const selectedBranchUrl =
+    selectedBranch.type === "branch" ? selectedBranch.url : undefined;
+  const [branchDoc, changeBranchDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -305,8 +306,8 @@ export const PatchworkDocEditor: React.FC<{
     diffFromHistorySidebar ??
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
 
-  const activeDoc = branchDoc ?? doc;
-  const activeChangeDoc = changeBranchDoc ?? changeDoc;
+  const activeDoc = selectedBranchUrl ? branchDoc : doc;
+  const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
 
   const annotations = useAnnotations({
     doc: activeDoc,

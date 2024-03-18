@@ -81,16 +81,19 @@ export const SpatialSidebar = React.memo(
       setActiveReplyAnnotation(null);
 
       changeDoc((doc) => {
+        let discussions = doc.discussions;
+
         // convert docs without discussions
-        if (!doc.discussions) {
+        if (!discussions) {
           doc.discussions = {};
+          discussions = doc.discussions;
         }
 
         let discussionId = annotation.discussion?.id;
 
         if (!discussionId) {
           discussionId = uuid();
-          doc.discussions[discussionId] = {
+          discussions[discussionId] = {
             id: discussionId,
             heads: A.getHeads(doc),
             comments: [],
@@ -99,7 +102,7 @@ export const SpatialSidebar = React.memo(
           };
         }
 
-        doc.discussions[discussionId].comments.push({
+        discussions[discussionId].comments.push({
           id: uuid(),
           content,
           contactUrl: account.contactHandle.url,

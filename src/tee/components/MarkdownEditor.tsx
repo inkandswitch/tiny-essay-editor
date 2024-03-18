@@ -61,6 +61,8 @@ import {
 } from "../codemirrorPlugins/DebugHighlight";
 import { annotationsPositionListener } from "../codemirrorPlugins/annotationPositionListener";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { getCursorSafely } from "@/patchwork/utils";
+import { getCursor } from "@tldraw/tldraw";
 
 export type TextSelection = {
   from: number;
@@ -74,7 +76,8 @@ export type EditorProps = {
   editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
-  setSelection: (selection: TextSelection) => void;
+  selection?: MarkdownDocAnchor;
+  setSelection: (selection: MarkdownDocAnchor) => void;
   setView: (view: EditorView) => void;
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
@@ -233,14 +236,13 @@ export function MarkdownEditor({
 
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          if (selection) {
+          if (selection && selection.from !== selection.to) {
             setSelection({
-              from: selection.from,
-              to: selection.to,
-              yCoord:
-                -1 * view.scrollDOM.getBoundingClientRect().top +
-                  view.coordsAtPos(selection.from)?.top ?? 0,
+              fromCursor: getCursorSafely(doc, ["content"], selection.from),
+              toCursor: getCursorSafely(doc, ["content"], selection.to),
             });
+          } else {
+            setSelection(undefined);
           }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
