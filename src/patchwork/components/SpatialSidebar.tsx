@@ -672,11 +672,11 @@ const TLDrawAnnotationView = ({
 
     case "highlighted":
       return null;
-      return (
+    /*return (
         <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
           highlighted {getShapeName(annotation.value)}
         </div>
-      );
+      );*/
   }
 };
 

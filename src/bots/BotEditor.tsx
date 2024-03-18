@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { EssayEditingBotDoc } from "./datatype";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Bot } from "lucide-react";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
-import { MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/tee/schema";
 import { setUrlHashForDoc } from "@/DocExplorer/utils";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {

@@ -1,27 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { isEqual } from "lodash";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
-import { useAutomergeStore } from "../vendor/automerge-tldraw";
+import { useCurrentAccount } from "@/DocExplorer/account";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { next as A } from "@automerge/automerge";
 import {
+  Editor,
   TLCamera,
+  TLShape,
   TLShapeId,
   TLStoreWithStatus,
   Tldraw,
-  Editor,
-  Box2d,
-  TLShape,
 } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { next as A, Patch } from "@automerge/automerge";
-import { AnnotationId, DiffWithProvenance } from "@/patchwork/schema";
-import { translateAutomergePatchesToTLStoreUpdates } from "../vendor/automerge-tldraw/AutomergeToTLStore";
-import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
-import { edit } from "react-arborist/dist/module/state/edit-slice";
+import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
+import { useAutomergeStore } from "../vendor/automerge-tldraw";
+
+interface TLDrawProps extends DocEditorProps<TLDrawDocAnchor, TLShape> {
+  camera?: TLCamera;
+  onChangeCamera?: (camera: TLCamera) => void;
+}
 
 export const TLDraw = ({
   docUrl,
@@ -33,19 +35,7 @@ export const TLDraw = ({
   selection,
   setSelection,
   selectedAnnotations,
-}: {
-  docUrl: AutomergeUrl;
-  docHeads?: A.Heads;
-  annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
-  camera?: TLCamera;
-  onChangeCamera?: (camera: TLCamera) => void;
-  onUpdateAnnotationPositions?: (
-    positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[]
-  ) => void;
-  selection: TLDrawDocAnchor;
-  setSelection: (selection: TLDrawDocAnchor) => void;
-  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
-}) => {
+}: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
   const account = useCurrentAccount();
@@ -309,7 +299,7 @@ const useDiffStyling = ({
   annotations: Annotation<TLDrawDocAnchor, TLShape>[];
   store: TLStoreWithStatus;
   editor: Editor;
-  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>;
+  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
 }) => {
   const tempShapeIdsRef = useRef(new Set<TLShapeId>());
   const highlightedElementsRef = useRef(new Set<HTMLElement>());
@@ -332,8 +322,6 @@ const useDiffStyling = ({
   // todo: handle multi select
   const selectedAnnotation: Annotation<TLDrawDocAnchor, TLShape> =
     selectedAnnotations ? selectedAnnotations[0] : undefined;
-
-  console.log(selectedAnnotations);
 
   useEffect(() => {
     if (!store.store) {
