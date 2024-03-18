@@ -18,6 +18,7 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
+import { RawView } from "@/raw/components/RawView";
 
 export type Tool = {
   id: string;
@@ -38,6 +39,13 @@ const TOOLS = {
       id: "tldraw",
       name: "Drawing",
       component: TLDraw,
+    },
+  ],
+  raw: [
+    {
+      id: "raw",
+      name: "Raw",
+      component: RawView,
     },
   ],
 };
