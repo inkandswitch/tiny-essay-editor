@@ -195,17 +195,15 @@ export const getMarkersForDoc = <
   if (!doc) return [];
   let markers: HeadsMarker<T>[] = [];
 
-  const discussions = Object.values(doc.discussions ?? {}).map(
-    (discussion) => ({
+  const discussions = Object.values(doc.discussions ?? {})
+    .filter((discussion) => discussion.annotation === undefined)
+    .map((discussion) => ({
       type: "discussionThread" as const,
       id: `discussion-${discussion.id}`,
       heads: discussion.heads,
-      users: discussion.comments
-        .map((comment) => comment.contactUrl)
-        .filter(Boolean),
+      users: discussion.comments.map((comment) => comment.contactUrl),
       discussion,
-    })
-  );
+    }));
 
   // Sorting by timestamp is a bit bad and not-local-firsty...
   // The problem is that we don't currently store an ordering on
