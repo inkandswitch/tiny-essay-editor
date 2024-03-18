@@ -24,6 +24,7 @@ import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Patch, view } from "@automerge/automerge/next";
 import { isEqual, uniq } from "lodash";
 import "../../tee/index.css";
+import { DebugHighlight } from "../codemirrorPlugins/DebugHighlight";
 
 export const TinyEssayEditor = (
   props: DocEditorProps<MarkdownDocAnchor, string>
@@ -220,6 +221,27 @@ export const TinyEssayEditor = (
     });
   }, [doc, annotations]);
 
+  const selectionHiglight = useMemo<DebugHighlight[]>(() => {
+    if (!selection) {
+      return [];
+    }
+
+    const from = getCursorPositionSafely(
+      doc,
+      ["content"],
+      selection.fromCursor
+    );
+    const to = getCursorPositionSafely(doc, ["content"], selection.toCursor);
+
+    return [
+      {
+        from,
+        to,
+        class: "bg-gray-300",
+      },
+    ];
+  }, [selection]);
+
   // todo: remove from this component and move up to DocExplorer?
   if (!doc) {
     return <LoadingScreen docUrl={docUrl} handle={handle} />;
@@ -258,6 +280,7 @@ export const TinyEssayEditor = (
                 onUpdateAnnotationPositions(positions)
               }
               isCommentBoxOpen={isCommentBoxOpen}
+              debugHighlights={selectionHiglight}
             />
           </div>
         </div>

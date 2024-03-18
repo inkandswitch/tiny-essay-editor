@@ -63,6 +63,7 @@ import { annotationsPositionListener } from "../codemirrorPlugins/annotationPosi
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { getCursor } from "@tldraw/tldraw";
+import { isEqual } from "lodash";
 
 export type TextSelection = {
   from: number;
@@ -147,6 +148,9 @@ export function MarkdownEditor({
 
     const automergePlugin = amgPlugin(doc, path);
     const semaphore = new PatchSemaphore(automergePlugin);
+
+    let prevSelection;
+
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -228,22 +232,34 @@ export function MarkdownEditor({
               }),
             ]
           : []),
+        EditorView.updateListener.of((update) => {
+          if (update.selectionSet) {
+            // for some reason even if this is true selection might be the same
+            const selection = update.state.selection.main;
+            if (!isEqual(prevSelection, selection)) {
+              prevSelection = selection;
+              setSelection(
+                selection.from !== selection.to
+                  ? {
+                      fromCursor: getCursorSafely(
+                        doc,
+                        ["content"],
+                        selection.from
+                      ),
+                      toCursor: getCursorSafely(doc, ["content"], selection.to),
+                    }
+                  : undefined
+              );
+            }
+          }
+        }),
       ],
+
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           view.update([transaction]);
-
           semaphore.reconcile(handle, view);
-          const selection = view.state.selection.ranges[0];
-          if (selection && selection.from !== selection.to) {
-            setSelection({
-              fromCursor: getCursorSafely(doc, ["content"], selection.from),
-              toCursor: getCursorSafely(doc, ["content"], selection.to),
-            });
-          } else {
-            setSelection(undefined);
-          }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.
