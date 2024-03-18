@@ -1,17 +1,23 @@
 import { ContactDoc, RegisteredContactDoc } from "@/DocExplorer/account";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { EssayDatatype } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Bot } from "lucide-react";
+import { type DataType } from "@/DocExplorer/doctypes";
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 
-export type EssayEditingBotDoc = {
+export type EssayEditingBotDoc = HasPatchworkMetadata<never, never> & {
   contactUrl: AutomergeUrl;
   promptUrl: AutomergeUrl;
 };
 
-export const EssayEditingBotDatatype = {
+export const EssayEditingBotDatatype: DataType<
+  EssayEditingBotDoc,
+  never,
+  never
+> = {
   id: "bot",
   name: "Bot",
   icon: Bot,
@@ -25,7 +31,7 @@ export const EssayEditingBotDatatype = {
       contactDoc.avatarUrl = BOT_AVATAR_URL;
     });
 
-    promptHandle.change((doc) => EssayDatatype.init(doc));
+    promptHandle.change((doc) => EssayDatatype.init(doc, repo));
     promptHandle.change((promptDoc) => {
       promptDoc.content = "Replace all spelling errors in the document.";
     });

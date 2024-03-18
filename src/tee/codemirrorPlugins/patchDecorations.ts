@@ -1,13 +1,18 @@
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import * as A from "@automerge/automerge/next";
 import { StateEffect, StateField } from "@codemirror/state";
-import { DiffStyle } from "../components/MarkdownEditor";
+
 import { annotationsField } from "./annotations";
+import { Annotation } from "@/patchwork/schema";
+import { MarkdownDocAnchor, ResolvedMarkdownDocAnchor } from "../schema";
 
 // Stuff for patches decoration
 // TODO: move this into a separate file
-export const setPatchesEffect = StateEffect.define<A.Patch[]>();
-export const patchesField = StateField.define<A.Patch[]>({
+export const setPatchesEffect =
+  StateEffect.define<Annotation<ResolvedMarkdownDocAnchor, string>[]>();
+export const patchesField = StateField.define<
+  Annotation<ResolvedMarkdownDocAnchor, string>[]
+>({
   create() {
     return [];
   },
@@ -82,68 +87,60 @@ class DeletionMarker extends WidgetType {
   }
 }
 
-const privateDecoration = Decoration.mark({ class: "cm-patch-private" });
-const privateDecorationActive = Decoration.mark({
-  class: "cm-patch-private active",
-});
 const spliceDecoration = Decoration.mark({ class: "cm-patch-splice" });
 const spliceDecorationActive = Decoration.mark({
   class: "cm-patch-splice active",
 });
+
+const highlightDecoration = Decoration.mark({ class: "cm-comment-thread" });
+const highlightDecorationActive = Decoration.mark({
+  class: "cm-comment-thread active",
+});
+
 const makeDeleteDecoration = (deletedText: string, isActive: boolean) =>
   Decoration.widget({
     widget: new DeletionMarker(deletedText, isActive),
     side: 1,
   });
-export const patchDecorations = (diffStyle: DiffStyle) =>
-  EditorView.decorations.compute([patchesField, annotationsField], (state) => {
+export const patchDecorations = EditorView.decorations.compute(
+  [patchesField, annotationsField],
+  (state) => {
     const activeAnnotations = state
       .field(annotationsField)
       .filter((annotationsField) => annotationsField.active);
 
-    const patches = state
-      .field(patchesField)
-      .filter(
-        (patch) =>
-          patch.path[0] === "content" &&
-          ["splice", "del"].includes(patch.action)
+    const annotations = state.field(patchesField);
+
+    const decorations = annotations.flatMap((annotation) => {
+      const { fromPos, toPos } = annotation.target;
+      const isActive = activeAnnotations.some(
+        (activeAnnotation) =>
+          fromPos >= activeAnnotation.from && toPos <= activeAnnotation.to
       );
 
-    const decorations = patches.flatMap((patch) => {
-      switch (patch.action) {
-        case "splice": {
-          const from = patch.path[1] as number;
-          const length = patch.value.length;
-          const isActive = activeAnnotations.some(
-            (annotation) =>
-              from >= annotation.from && from + length <= annotation.to
-          );
-
-          const decoration =
-            diffStyle === "private"
-              ? isActive
-                ? privateDecorationActive
-                : privateDecoration
-              : isActive
-              ? spliceDecorationActive
-              : spliceDecoration;
-          return [decoration.range(from, from + length)];
+      switch (annotation.type) {
+        case "added": {
+          const decoration = isActive
+            ? spliceDecorationActive
+            : spliceDecoration;
+          return [decoration.range(fromPos, toPos)];
         }
-        case "del": {
-          if (patch.path.length < 2) {
-            console.error("this is so weird! why??");
-            return [];
-          }
-          const from = patch.path[1] as number;
-          const isActive = activeAnnotations.some(
-            (annotation) => from >= annotation.from && from <= annotation.to
-          );
+        case "deleted": {
+          return [
+            makeDeleteDecoration(annotation.deleted, isActive).range(fromPos),
+          ];
+        }
 
-          return [makeDeleteDecoration(patch.removed, isActive).range(from)];
+        case "highlighted": {
+          const decoration = isActive
+            ? highlightDecorationActive
+            : highlightDecoration;
+          return [decoration.range(fromPos, toPos)];
         }
       }
       return [];
     });
 
     return Decoration.set(decorations, true);
-  });
+  }
+);

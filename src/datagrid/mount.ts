@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDom from "react-dom/client";
-import { TLDraw } from "./components/TLDraw.js";
+import { DataGrid } from "./components/DataGrid.js";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 
 export function mount(node, params) {
@@ -14,9 +14,10 @@ export function mount(node, params) {
     // this is set by either our standalone entrypoint or trailrunner
     React.createElement(
       RepoContext.Provider,
+      // eslint-disable-next-line no-undef
       // @ts-expect-error - repo is on window
       { value: repo },
-      React.createElement(TLDraw, Object.assign({}, params))
+      React.createElement(DataGrid, Object.assign({}, params))
     )
   );
 }

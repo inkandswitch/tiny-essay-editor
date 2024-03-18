@@ -2,16 +2,7 @@ import * as A from "@automerge/automerge/next";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { TextPatch } from "@/patchwork/utils";
-import {
-  Branchable,
-  Taggable,
-  Diffable,
-  SpatialBranchable,
-  Discussable,
-  Discussion,
-  HasChangeGroupSummaries,
-  HasPatchworkMetadata,
-} from "@/patchwork/schema";
+import { Discussion, HasPatchworkMetadata } from "@/patchwork/schema";
 
 export type Comment = {
   id: string;
@@ -101,7 +92,7 @@ export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
 export type DiscussionAnnotation = {
   type: "discussion";
   id: string;
-  discussion: Discussion;
+  discussion: Discussion<unknown, unknown>;
 };
 
 export type TextAnnotation =
@@ -137,7 +128,7 @@ export type User = {
 // todo: split content of document and metadata
 // currently branches copy also global metadata
 // unclear if comments should be part of the doc or the content
-type _MarkdownDoc = {
+export type MarkdownDoc = HasPatchworkMetadata<MarkdownDocAnchor, string> & {
   content: string;
   commentThreads: { [key: string]: ThreadAnnotation };
 
@@ -146,5 +137,12 @@ type _MarkdownDoc = {
   users: User[];
 };
 
-// Our final MarkdownDoc type has the Markdown stuff and the patchwork metadata
-export type MarkdownDoc = _MarkdownDoc & HasPatchworkMetadata;
+export type MarkdownDocAnchor = {
+  fromCursor: A.Cursor;
+  toCursor: A.Cursor;
+};
+
+export type ResolvedMarkdownDocAnchor = MarkdownDocAnchor & {
+  fromPos: number;
+  toPos: number;
+};

@@ -17,94 +17,26 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { HistoryPlayground } from "@/patchwork/components/HistoryPlayground";
-import { DraftsPlayground } from "@/patchwork/components/Drafts";
-import { SpatialHistoryPlayground } from "@/patchwork/components/Spatial";
-import { EditGroupsPlayground } from "@/patchwork/components/EditGroups";
-import { SpatialBranchesPlayground } from "@/patchwork/components/SpatialBranches";
-import { SideBySidePlayground } from "@/patchwork/components/SideBySide";
-import { Demo3 } from "@/patchwork/components/Demo3/Demo3";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
 import { Toaster } from "@/components/ui/sonner";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
-import { BotEditor } from "@/bots/BotEditor";
-import { Demo4 } from "@/patchwork/components/Demo4/Demo4";
-
-export type Tool = {
-  id: string;
-  name: string;
-  component: React.FC;
-};
-
-const TOOLS = {
-  essay: [
-    {
-      id: "demo4",
-      name: "Demo 4",
-      component: Demo4,
-    },
-    {
-      id: "demo3",
-      name: "Demo 3",
-      component: Demo3,
-    },
-    {
-      id: "editGroups",
-      name: "Edit Groups",
-      component: EditGroupsPlayground,
-    },
-    {
-      id: "tee",
-      name: "Editor",
-      component: TinyEssayEditor,
-    },
-    {
-      id: "history",
-      name: "🛠️ History",
-      component: HistoryPlayground,
-    },
-    {
-      id: "spatial",
-      name: "🛠️ Spatial",
-      component: SpatialHistoryPlayground,
-    },
-    {
-      id: "drafts",
-      name: "🛠️ Drafts",
-      component: DraftsPlayground,
-    },
-    {
-      id: "spatialBranches",
-      name: "🛠️ Spatial Branches",
-      component: SpatialBranchesPlayground,
-    },
-    {
-      id: "sideBySide",
-      name: "🛠️ Side by Side",
-      component: SideBySidePlayground,
-    },
-  ],
-  tldraw: [
-    {
-      id: "tldraw",
-      name: "Drawing",
-      component: TLDraw,
-    },
-  ],
-  bot: [{ id: "bot", name: "Bot Editor", component: BotEditor }],
-};
+import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { useStaticCallback } from "@/tee/utils";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
+  const [rootFolderDoc, _changeRootFolderDoc] = useCurrentRootFolderDoc();
+
+  // we need to wrap _changeRootFolderDoc with useStaticCallback, otherwise changeRootFolderDoc will be a differen instance on each render
+  // which triggers an infinite rerender loop because we pass it to useSelectedDoc as a dependency
+  // probably we should push this down into automerge-repo that useDocument returns the same callback if the url hasn't changed
+  const changeRootFolderDoc = useStaticCallback(_changeRootFolderDoc);
 
   const [showSidebar, setShowSidebar] = useState(false);
-  const [showToolPicker, setShowToolPicker] = useState(false);
 
   const {
     selectedDoc,
@@ -123,17 +55,6 @@ export const DocExplorer: React.FC = () => {
 
   const selectedDocName = selectedDocLink?.name;
 
-  const availableTools = useMemo(
-    () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
-    [selectedDocLink]
-  );
-  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
-  useEffect(() => {
-    setActiveTool(availableTools[0]);
-  }, [availableTools]);
-
-  const ToolComponent = activeTool?.component;
-
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
       if (!docTypes[type]) {
@@ -141,7 +62,9 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create();
-      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
+      newDocHandle.change((doc) =>
+        docTypes[type].init(doc as HasPatchworkMetadata<unknown, unknown>, repo)
+      );
 
       if (!rootFolderDoc) {
         return;
@@ -208,11 +131,6 @@ export const DocExplorer: React.FC = () => {
         setShowSidebar((prev) => !prev);
       }
 
-      // Toggle the tool picker visibility when the user types cmd-backtick
-      if (event.key === "`" && event.ctrlKey) {
-        setShowToolPicker((prev) => !prev);
-      }
-
       // if there's no document selected and the user hits enter, make a new document
       if (!selectedDocUrl && event.key === "Enter") {
         addNewDocument({ type: "essay" });
@@ -268,7 +186,7 @@ export const DocExplorer: React.FC = () => {
           />
         </div>
         <div
-          className={`flex-grow relative h-screen ${
+          className={`flex-grow relative h-screen overflow-hidden ${
             !selectedDocUrl ? "bg-gray-200" : ""
           }`}
         >
@@ -301,11 +219,11 @@ export const DocExplorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent
+              {selectedDocUrl && selectedDoc && (
+                <PatchworkDocEditor
+                  docType={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
-                  // @ts-expect-error not all tools understand branching yet... but they probably will eventually..?
                   selectedBranch={selectedBranch}
                   setSelectedBranch={selectBranch}
                 />
@@ -314,22 +232,7 @@ export const DocExplorer: React.FC = () => {
           </div>
         </div>
       </div>
-      {showToolPicker && selectedDocLink && (
-        <div className="flex  absolute top-1 px-2 py-1 left-[30%] bg-black bg-opacity-30  rounded-lg font-mono font-bold border">
-          <img src="/construction.png" className="h-6 mr-2"></img>
-          {TOOLS[selectedDocLink.type].map((tool) => (
-            <div
-              key={tool.id}
-              className={`inline-block px-2 py-1 mr-1 text-xs  hover:bg-gray-200 cursor-pointer ${
-                tool.id === activeTool?.id ? "bg-yellow-100 bg-opacity-70" : ""
-              } rounded-full`}
-              onClick={() => setActiveTool(tool)}
-            >
-              {tool.name}
-            </div>
-          ))}
-        </div>
-      )}
+
       <Toaster />
     </div>
   );
@@ -412,7 +315,8 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] = useDocument(selectedDocUrl);
+  const [selectedDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectDoc = useCallback(
     (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {
@@ -467,12 +371,15 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
         setSelectedBranch({ type: "main" });
       }
     },
-    // [rootFolderDoc, changeRootFolderDoc, selectDoc, setSelectedBranch]
-    [rootFolderDoc]
+    [changeRootFolderDoc, rootFolderDoc]
   );
 
   // observe the URL hash to change the selected document
   useEffect(() => {
+    if (rootFolderDoc === undefined) {
+      return;
+    }
+
     const hashChangeHandler = () => {
       const urlParams = parseCurrentUrlHash();
       if (!urlParams) return;
@@ -488,7 +395,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     return () => {
       window.removeEventListener("hashchange", hashChangeHandler, false);
     };
-  }, [openDocFromUrl]);
+  }, [openDocFromUrl, rootFolderDoc !== undefined]);
 
   return {
     selectedDocUrl,

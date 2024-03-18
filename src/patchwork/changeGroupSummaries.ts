@@ -1,25 +1,36 @@
 import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGroup } from "./groupChanges";
-import { DiffWithProvenance, HasChangeGroupSummaries } from "./schema";
-import { Doc } from "@automerge/automerge";
+import { HasChangeGroupSummaries } from "./schema";
 import { getStringCompletion } from "@/llm";
-import { debounce, pick } from "lodash";
+import { debounce } from "lodash";
 import { useCallback, useEffect } from "react";
 
-export const populateChangeGroupSummaries = async ({
+export const populateChangeGroupSummaries = async <
+  T extends HasChangeGroupSummaries
+>({
   groups,
   handle,
   force,
+  promptForAutoChangeGroupDescription,
 }: {
-  groups: ChangeGroup[];
-  handle: DocHandle<HasChangeGroupSummaries>;
+  groups: ChangeGroup<T>[];
+  handle: DocHandle<T>;
   force?: boolean;
+  promptForAutoChangeGroupDescription: (args: {
+    docBefore: T;
+    docAfter: T;
+  }) => string;
 }) => {
   handle.change((doc) => {
     if (!doc.changeGroupSummaries) {
       doc.changeGroupSummaries = {};
     }
   });
+
+  // Can't AI-summarize if there's no prompt for it
+  if (!promptForAutoChangeGroupDescription) {
+    return;
+  }
 
   for (const [index, group] of groups.entries()) {
     if (!force && handle.docSync().changeGroupSummaries[group.id]) {
@@ -29,94 +40,66 @@ export const populateChangeGroupSummaries = async ({
       group,
       docBefore: groups[index - 1]?.docAtEndOfChangeGroup ?? {},
       handle,
+      promptForAutoChangeGroupDescription,
     });
   }
 };
 
-const populateGroupSummary = async ({
+const populateGroupSummary = async <T extends HasChangeGroupSummaries>({
   group,
   docBefore,
   handle,
+  promptForAutoChangeGroupDescription,
 }: {
-  group: ChangeGroup;
+  group: ChangeGroup<T>;
   docBefore: any;
-  handle: DocHandle<HasChangeGroupSummaries>;
+  handle: DocHandle<T>;
+  promptForAutoChangeGroupDescription: (args: {
+    docBefore: T;
+    docAfter: T;
+  }) => string;
 }) => {
   const docAfter = group.docAtEndOfChangeGroup;
-  const summary = await autoSummarizeGroup({
+  const prompt = promptForAutoChangeGroupDescription({
     docBefore,
     docAfter,
-    diff: group.diff,
   });
-  handle.change((doc) => {
-    doc.changeGroupSummaries[group.id] = {
-      title: summary,
-    };
-  });
+
+  const summary = await getStringCompletion(prompt);
+
+  if (summary) {
+    handle.change((doc) => {
+      doc.changeGroupSummaries[group.id] = {
+        title: summary,
+      };
+    });
+  }
 };
 
-// TODO: This thing hardcodes logic specific to TEE docs;
-// move that stuff to the TEE datatype somehow...
-
-const autoSummarizeGroup = async ({
-  docBefore,
-  docAfter,
-  diff,
-}: {
-  docBefore: Doc<unknown>;
-  docAfter: Doc<unknown>;
-  diff: DiffWithProvenance;
-}): Promise<string> => {
-  const prompt = `
-Summarize the changes in this diff in a few words.
-
-Only return a few words, not a full description. No bullet points.
-
-Here are some good examples of descriptive summaries:
-
-wrote initial outline
-changed title
-small wording changes
-turned outline into prose
-lots of small edits
-total rewrite
-a few small tweaks
-reworded a paragraph
-
-## Doc before
-
-${JSON.stringify(pick(docBefore, ["content", "commentThreads"]), null, 2)}
-
-## Doc after
-
-${JSON.stringify(pick(docAfter, ["content", "commentThreads"]), null, 2)}
-
-## Diff
-
-${JSON.stringify(
-  diff.patches.filter(
-    (p) => p.path[0] === "content" || p.path[0] === "commentThreads"
-  ),
-  null,
-  2
-)}
-`;
-
-  return getStringCompletion(prompt);
-};
-
-export const useAutoPopulateChangeGroupSummaries = ({
+export const useAutoPopulateChangeGroupSummaries = <
+  T extends HasChangeGroupSummaries
+>({
   changeGroups,
   handle,
   msBetween = 10000,
+  promptForAutoChangeGroupDescription,
 }: {
-  changeGroups: ChangeGroup[];
-  handle: DocHandle<HasChangeGroupSummaries>;
+  changeGroups: ChangeGroup<T>[];
+  handle: DocHandle<T>;
   msBetween?: number;
+  promptForAutoChangeGroupDescription: (args: {
+    docBefore: T;
+    docAfter: T;
+  }) => string;
 }) => {
   const debouncedPopulate = useCallback(
     debounce(({ groups, handle, force }) => {
-      populateChangeGroupSummaries({ groups, handle, force });
+      populateChangeGroupSummaries({
+        groups,
+        handle,
+        force,
+        promptForAutoChangeGroupDescription,
+      });
     }, msBetween),
     []
   );
@@ -131,5 +114,10 @@ export const useAutoPopulateChangeGroupSummaries = ({
     return () => {
       debouncedPopulate.cancel();
     };
-  }, [changeGroups, handle, debouncedPopulate]);
+  }, [
+    changeGroups,
+    handle,
+    debouncedPopulate,
+    promptForAutoChangeGroupDescription,
+  ]);
 };

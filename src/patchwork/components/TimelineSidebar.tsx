@@ -1,4 +1,3 @@
-import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import CodeMirror from "@uiw/react-codemirror";
 import {
@@ -8,11 +7,13 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
-  ChangeGroup,
+  ByAuthorOrTime,
   ChangelogItem,
+  GenericChangeGroup,
   getChangelogItems,
   getMarkersForDoc,
-} from "../../groupChanges";
+} from "../groupChanges";
+import { docTypes } from "@/DocExplorer/doctypes";
 
 import {
   MilestoneIcon,
@@ -23,11 +24,17 @@ import {
   PencilIcon,
   MoreVerticalIcon,
 } from "lucide-react";
-import { Heads, Patch } from "@automerge/automerge/next";
+import { Heads } from "@automerge/automerge/next";
 import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
-import { Branch, DiffWithProvenance, Discussion, Tag } from "../../schema";
+import {
+  Branch,
+  DiffWithProvenance,
+  Discussion,
+  HasChangeGroupSummaries,
+  HasPatchworkMetadata,
+  Tag,
+} from "../schema";
 import { useSlots } from "@/patchwork/utils";
-import { TextSelection } from "@/tee/components/MarkdownEditor";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -44,8 +51,9 @@ import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
 } from "@/patchwork/changeGroupSummaries";
-import { ContactDoc } from "@/DocExplorer/account";
-import { includePatch } from "@/tee/statsForChangeGroup";
+
+import { DocType } from "@/DocExplorer/doctypes";
+import { ChangeGroupingOptions } from "../groupChanges";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -68,30 +76,32 @@ type ChangelogSelectionAnchor = {
   /* The pixel position of the anchor */
   yPos: number;
 };
+
 export type ChangelogSelection =
   | { from: ChangelogSelectionAnchor; to: ChangelogSelectionAnchor }
   | undefined;
 
-export const ReviewSidebar: React.FC<{
+export const TimelineSidebar: React.FC<{
+  docType: DocType;
   docUrl: AutomergeUrl;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
-  textSelection: TextSelection;
-  onClearTextSelection: () => void;
 }> = ({
+  docType,
   docUrl,
   selectedBranch,
   setSelectedBranch,
   setDocHeads,
   setDiff,
-  textSelection,
-  onClearTextSelection,
 }) => {
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl);
-  const [mainDoc] = useDocument<MarkdownDoc>(doc?.branchMetadata?.source?.url);
-  const handle = useHandle<MarkdownDoc>(docUrl);
+  const [doc, changeDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(docUrl);
+  const [mainDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
+    doc?.branchMetadata?.source?.url
+  );
+  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
@@ -103,16 +113,32 @@ export const ReviewSidebar: React.FC<{
     [doc, handle, repo, mainDoc]
   );
 
+  const {
+    includeChangeInHistory,
+    includePatchInChangeGroup,
+    promptForAIChangeGroupSummary: promptForAutoChangeGroupDescription,
+    fallbackSummaryForChangeGroup,
+  } = docTypes[docType] ?? {};
+
+  // todo: extract this as an interface that different doc types can implement
+  const changeGroupingOptions = useMemo<
+    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>
+  >(() => {
+    return {
+      grouping: ByAuthorOrTime(60),
+      markers,
+      includeChangeInHistory,
+      includePatchInChangeGroup,
+      fallbackSummaryForChangeGroup,
+    };
+  }, [docType, markers, includeChangeInHistory, includePatchInChangeGroup]);
+
   // The grouping function returns change groups starting from the latest change.
   const changelogItems = useMemo(() => {
     if (!doc) return [];
 
-    return getChangelogItems(doc, {
-      algorithm: "ByAuthorOrTime",
-      numericParameter: 60,
-      markers,
-    });
-  }, [doc, markers]);
+    return getChangelogItems(doc, changeGroupingOptions);
+  }, [doc, markers, changeGroupingOptions]);
 
   const hiddenItemBoundary = changelogItems.findIndex(
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
@@ -158,6 +184,7 @@ export const ReviewSidebar: React.FC<{
   useAutoPopulateChangeGroupSummaries({
     changeGroups,
     handle,
+    promptForAutoChangeGroupDescription,
   });
 
   if (!doc) return null;
@@ -175,6 +202,7 @@ export const ReviewSidebar: React.FC<{
       groups: changelogItems.flatMap((item) =>
         item.type === "changeGroup" ? [item.changeGroup] : []
       ),
+      promptForAutoChangeGroupDescription,
       handle,
     });
 
@@ -320,10 +348,10 @@ export const ReviewSidebar: React.FC<{
                       case "otherBranchMergedIntoThisDoc":
                         return (
                           <BranchMergedItem
+                            doc={doc}
                             branch={item.branch}
                             selected={selected}
                             changeGroups={item.changeGroups}
-                            doc={doc}
                           />
                         );
                       default: {
@@ -430,8 +458,6 @@ export const ReviewSidebar: React.FC<{
           handle={handle}
           selectedBranch={selectedBranch}
           setSelectedBranch={setSelectedBranch}
-          textSelection={textSelection}
-          onClearTextSelection={onClearTextSelection}
         />
       </div>
     </div>
@@ -441,12 +467,12 @@ export const ReviewSidebar: React.FC<{
 // Manage the selection state for changelog items.
 // Supports multi-select interaction.
 // Returns pixel coordinates for the selection to help w/ drawing a selection box.
-const useChangelogSelection = ({
+const useChangelogSelection = function <T>({
   items,
   setDiff,
   setDocHeads,
 }: {
-  items: ChangelogItem[];
+  items: ChangelogItem<T>[];
   setDiff: (diff: DiffWithProvenance) => void;
   setDocHeads: (heads: Heads) => void;
 }): {
@@ -458,7 +484,7 @@ const useChangelogSelection = ({
   itemsContainerRef: React.RefObject<HTMLDivElement>;
   // Callback to clear the selection
   clearSelection: () => void;
-} => {
+} {
   // Internally we track selection using item IDs.
   // Once we return it out of the hook, we'll also tack on numbers, to help out in the view.
   const [selection, setSelection] = useState<{ from: string; to: string }>(
@@ -569,8 +595,8 @@ const useChangelogSelection = ({
 };
 
 const ChangeGroupItem: React.FC<{
-  group: ChangeGroup;
-  doc: MarkdownDoc;
+  group: GenericChangeGroup;
+  doc: HasPatchworkMetadata<unknown, unknown>;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (
@@ -601,16 +627,12 @@ const ChangeGroupDescription = ({
   changeGroup,
   doc,
 }: {
-  changeGroup: ChangeGroup;
-  doc: MarkdownDoc;
+  changeGroup: GenericChangeGroup;
+  doc: HasChangeGroupSummaries;
 }) => {
   let summary;
   if (!doc.changeGroupSummaries || !doc.changeGroupSummaries[changeGroup.id]) {
-    const patchesCount = changeGroup.diff.patches.filter((p) =>
-      includePatch(p as Patch)
-    ).length;
-
-    summary = `${patchesCount} edit${patchesCount === 1 ? "" : "s"}`;
+    summary = changeGroup.fallbackSummary;
   } else {
     summary = doc.changeGroupSummaries[changeGroup.id].title;
   }
@@ -622,11 +644,11 @@ const ChangeGroupDescription = ({
 };
 
 const BranchMergedItem: React.FC<{
+  doc: HasChangeGroupSummaries;
   branch: Branch;
-  changeGroups: ChangeGroup[];
+  changeGroups: GenericChangeGroup[];
   selected: boolean;
-  doc: MarkdownDoc;
-}> = ({ branch, changeGroups, selected, doc }) => {
+}> = ({ doc, branch, changeGroups, selected }) => {
   return (
     <ItemView selected={selected} color="purple">
       <ItemActionMessage>branch merged</ItemActionMessage>
@@ -750,7 +772,7 @@ const BranchOriginItem = ({
 const DiscussionThreadItem = ({
   discussion,
 }: {
-  discussion: Discussion;
+  discussion: Discussion<unknown, unknown>;
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];

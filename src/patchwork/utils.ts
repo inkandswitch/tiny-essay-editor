@@ -2,12 +2,13 @@ import React from "react";
 import { DiffWithProvenance } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { lastIndexOf, sortBy } from "lodash";
-import { useDebounce } from "./components/Spatial";
+import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
+import { Annotation } from "./schema";
+import { isEqual } from "lodash";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -59,7 +60,9 @@ export const useActorIdToAuthorMap = (
         let metadata;
         try {
           metadata = JSON.parse(decodedChange.message);
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
 
         actorIdToAuthorRef.current[decodedChange.actor] = metadata?.author;
       });
@@ -87,7 +90,7 @@ export const useActorIdToAuthorMap = (
     return () => {
       handle.off("change", onChange);
     };
-  }, []);
+  }, [forceUpdate, handle]);
 
   return actorIdToAuthorRef.current;
 };
@@ -135,8 +138,8 @@ export const combinePatches = (
   // 1. combine redundant pathces
 
   for (let i = 0; i < patches.length; i++) {
-    let currentPatch = patches[i];
-    let nextPatch = patches[i + 1];
+    const currentPatch = patches[i];
+    const nextPatch = patches[i + 1];
 
     // filter out non text patches
     if (currentPatch.action !== "splice" && currentPatch.action !== "del") {
@@ -241,8 +244,8 @@ export const combinePatches = (
   const patchesWithReplaces: TextPatch[] = [];
 
   for (let i = 0; i < combinedPatches.length; i++) {
-    let currentPatch = combinedPatches[i];
-    let nextPatch = combinedPatches[i + 1];
+    const currentPatch = combinedPatches[i];
+    const nextPatch = combinedPatches[i + 1];
 
     if (
       nextPatch &&
@@ -355,6 +358,18 @@ export function getCursorPositionSafely(
   }
 }
 
+export function getCursorSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  position: number
+): A.Cursor | null {
+  try {
+    return A.getCursor(doc, path, position);
+  } catch (err) {
+    return null;
+  }
+}
+
 // this creates a copy of the document with only the changes up until the passed in heads
 // some functions like A.merge in automerge don't work with view documents
 // if you need to pass a document at a certain heads to these functions use copyDocAtHeads instead
@@ -370,8 +385,8 @@ export const copyDocAtHeads = <T>(doc: A.Doc<T>, heads: A.Heads): A.Doc<T> => {
     .filter((change) => !extraneousChanges.has(change.hash))
     .map((change) => A.encodeChange(change));
 
-  let cloned = A.init<T>();
-  let [resultDoc] = A.applyChanges(cloned, desiredChanges);
+  const cloned = A.init<T>();
+  const [resultDoc] = A.applyChanges(cloned, desiredChanges);
 
   return resultDoc;
 };
@@ -482,3 +497,27 @@ function mapValues<T extends Record<string, unknown>, V>(
     return result;
   }, {} as Record<keyof T, V>);
 }
+
+export function useDebounce<T>(value: T, delay?: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay || 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// annotations are fuzzy things, because they are derived from diff they don't have a stable identity
+// right now we just compare if they are identical
+// todo: check if there is overlap
+export const doAnnotationsOverlap = <T, V>(
+  a: Annotation<T, V>,
+  b: Annotation<T, V>
+) => {
+  return isEqual(a, b);
+};

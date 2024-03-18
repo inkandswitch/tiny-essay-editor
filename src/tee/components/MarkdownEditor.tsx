@@ -44,6 +44,8 @@ import {
   TextAnnotationForUI,
   MarkdownDoc,
   DiscussionAnotationForUI,
+  MarkdownDocAnchor,
+  ResolvedMarkdownDocAnchor,
 } from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 import {
@@ -57,14 +59,10 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { TextPatch } from "@/patchwork/utils";
-import {
-  discussionTargetPositionListener,
-  DiscussionTargetPosition,
-  overlayContainerField,
-  OverlayContainer,
-  setOverlayContainerEffect,
-} from "../codemirrorPlugins/discussionTargetPositionListener";
+import { annotationsPositionListener } from "../codemirrorPlugins/annotationPositionListener";
+import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { getCursorSafely } from "@/patchwork/utils";
+import { getCursor } from "@tldraw/tldraw";
 
 export type TextSelection = {
   from: number;
@@ -75,47 +73,41 @@ export type TextSelection = {
 export type DiffStyle = "normal" | "private";
 
 export type EditorProps = {
+  editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
-  setSelection: (selection: TextSelection) => void;
+  selection?: MarkdownDocAnchor;
+  setSelection: (selection: MarkdownDocAnchor) => void;
   setView: (view: EditorView) => void;
-  setActiveThreadIds: (threadIds: string[]) => void;
-  threadsWithPositions: TextAnnotationForUI[];
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  diff?: (A.Patch | TextPatch)[];
+  annotations?: Annotation<ResolvedMarkdownDocAnchor, string>[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
-  overlayContainer?: OverlayContainer;
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateDiscussionTargetPositions?: (
-    positions: DiscussionTargetPosition[]
+  onUpdateAnnotationPositions?: (
+    positions: AnnotationPosition<MarkdownDocAnchor, string>[]
   ) => void;
 };
 
 export function MarkdownEditor({
+  editorContainer,
   handle,
   path,
   setSelection,
   setView,
-  setActiveThreadIds,
-  threadsWithPositions: annotationsWithPositions,
   readOnly,
   docHeads,
-  diff,
-  diffStyle,
+  annotations,
   debugHighlights,
   onOpenSnippet,
   foldRanges,
-  discussionAnnotations,
-  overlayContainer,
   setEditorContainerElement,
-  isCommentBoxOpen,
-  onUpdateDiscussionTargetPositions,
+  onUpdateAnnotationPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -128,83 +120,25 @@ export function MarkdownEditor({
     editorRoot.current?.dispatch({
       effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
     });
-  }, [debugHighlights, editorRoot.current]);
-
-  // Propagate overlayContainer into codemirror
-  useEffect(() => {
-    editorRoot.current?.dispatch({
-      effects: setOverlayContainerEffect.of(overlayContainer),
-    });
-  }, [overlayContainer]);
+  }, [debugHighlights]);
 
   // propagate fold ranges into codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
       effects: (foldRanges ?? []).map((range) => foldEffect.of(range)),
     });
-  }, [foldRanges, editorRoot.current]);
+  }, [foldRanges]);
 
-  // Propagate patches into the codemirror
+  // Propagate annotations into codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
       // split up replaces
-      effects: setPatchesEffect.of(
-        (diff ?? []).flatMap(
-          (patch) =>
-            patch.action === "replace"
-              ? [patch.raw.splice, patch.raw.delete]
-              : [patch] // unpack replaces
-        )
-      ),
+      effects: setPatchesEffect.of(annotations),
     });
-  }, [diff, editorRoot.current]);
-
-  // Propagate comments and edit group annotations into the codemirror
-  useEffect(() => {
-    const annotations = annotationsWithPositions
-      .flatMap((annotation) => {
-        switch (annotation.type) {
-          case "thread": {
-            return annotation;
-          }
-          case "patch": {
-            return annotation;
-          }
-          case "draft": {
-            return annotation.editRangesWithComments.map((range) => ({
-              id: annotation.id,
-              from: range.editRange.from,
-              to: range.editRange.to,
-              active: annotation.active,
-            }));
-          }
-          default: {
-            return [];
-          }
-        }
-      })
-      .concat(discussionAnnotations);
-
-    // create fake comment annotation on current selection while comment box is open
-    if (isCommentBoxOpen) {
-      const selection = editorRoot.current.state.selection.main;
-      annotations.push({
-        //@ts-ignore
-        type: "discussion",
-        id: "PENDING_COMMENT",
-        from: selection.from,
-        to: selection.to,
-        active: true,
-      });
-    }
-
-    editorRoot.current?.dispatch({
-      effects: setAnnotationsEffect.of(annotations),
-    });
-  }, [annotationsWithPositions, discussionAnnotations, isCommentBoxOpen]);
+  }, [annotations, editorRoot.current]);
 
   useEffect(() => {
-    if (!handleReady) {
+    if (!handleReady || !editorContainer) {
       return;
     }
     const doc = handle.docSync();
@@ -261,7 +195,7 @@ export function MarkdownEditor({
         annotationsField,
         annotationDecorations,
         patchesField,
-        patchDecorations(diffStyle ?? "normal"),
+        patchDecorations,
         previewFiguresPlugin,
         previewImagesPlugin,
         highlightKeywordsPlugin,
@@ -270,7 +204,6 @@ export function MarkdownEditor({
         lineWrappingPlugin,
         debugHighlightsField,
         debugHighlightsDecorations,
-        overlayContainerField,
         codeFolding({
           placeholderDOM: () => {
             // TODO use a nicer API for creating these elements?
@@ -286,11 +219,12 @@ export function MarkdownEditor({
             return placeholder;
           },
         }),
-        ...(onUpdateDiscussionTargetPositions
+        ...(onUpdateAnnotationPositions
           ? [
-              discussionTargetPositionListener({
-                onUpdate: onUpdateDiscussionTargetPositions,
+              annotationsPositionListener({
+                onUpdate: onUpdateAnnotationPositions,
                 estimatedLineHeight: 24,
+                editorContainer,
               }),
             ]
           : []),
@@ -302,14 +236,13 @@ export function MarkdownEditor({
 
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          if (selection) {
+          if (selection && selection.from !== selection.to) {
             setSelection({
-              from: selection.from,
-              to: selection.to,
-              yCoord:
-                -1 * view.scrollDOM.getBoundingClientRect().top +
-                  view.coordsAtPos(selection.from)?.top ?? 0,
+              fromCursor: getCursorSafely(doc, ["content"], selection.from),
+              toCursor: getCursorSafely(doc, ["content"], selection.to),
             });
+          } else {
+            setSelection(undefined);
           }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
@@ -351,7 +284,7 @@ export function MarkdownEditor({
       handle.removeListener("change", handleChange);
       view.destroy();
     };
-  }, [handle, handleReady, docHeads]);
+  }, [handle, handleReady, docHeads, editorContainer]);
 
   if (editorCrashed) {
     return (

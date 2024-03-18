@@ -7,7 +7,7 @@ import { next as Automerge } from "@automerge/automerge";
 
 import { mount } from "./mount.js";
 import "./index.css";
-import { TLDrawDoc } from "./schema.js";
+import { DataGridDoc } from "./datatype.js";
 
 const SYNC_SERVER_URL =
   import.meta.env?.VITE_SYNC_SERVER_URL ?? "wss://sync.automerge.org";
@@ -25,11 +25,12 @@ let handle;
 if (isValidAutomergeUrl(rootDocUrl)) {
   handle = repo.find(rootDocUrl);
 } else {
-  handle = repo.create<TLDrawDoc>();
+  handle = repo.create<DataGridDoc>();
   const { init } = await import("./datatype.js");
   handle.change(init);
 }
 
+// eslint-disable-next-line
 const docUrl = (document.location.hash = handle.url);
 
 // @ts-expect-error - adding property to window

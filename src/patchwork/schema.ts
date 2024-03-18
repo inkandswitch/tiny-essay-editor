@@ -4,10 +4,6 @@ import { TextPatch } from "./utils";
 import * as A from "@automerge/automerge/next";
 import { EditRange } from "@/tee/schema";
 
-export type SpatialBranchable = {
-  spatialBranches: SpatialBranch[];
-};
-
 export type Branch = {
   name: string;
   /** URL pointing to the clone doc */
@@ -84,7 +80,7 @@ export type DiscussionComment = {
   timestamp: number;
 };
 
-export type Discussion = {
+export type Discussion<T, V> = {
   id: string;
   heads: A.Heads;
   resolved: boolean;
@@ -94,11 +90,11 @@ export type Discussion = {
    *  could be an object in the document (eg in a text doc, a range of chars)
    *  or possibly (not sure yet) an object in the meta discussion like a change group
    */
-  target?: DiscussionTarget;
+  annotation?: Annotation<T, V>;
 };
 
-export type Discussable = {
-  discussions: { [key: string]: Discussion };
+export type Discussable<T, V> = {
+  discussions: { [key: string]: Discussion<T, V> };
 };
 
 export type HasChangeGroupSummaries = {
@@ -109,9 +105,71 @@ export type HasChangeGroupSummaries = {
   };
 };
 
-export type HasPatchworkMetadata = HasChangeGroupSummaries &
+export type HighlightId = string & { __highlightId: true };
+
+export type Highlight<T> = {
+  id: HighlightId;
+};
+
+export type Highlightable<T> = {
+  highlights: Highlight<T>;
+};
+
+export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable &
-  SpatialBranchable;
+  Discussable<T, V>;
+
+export type AnnotationId = string & { __annotationId: true };
+
+interface AddAnnotation<T, V> {
+  type: "added";
+  target: T;
+  added: V;
+  discussion?: Discussion<T, V>;
+}
+
+interface DeleteAnnotation<T, V> {
+  type: "deleted";
+  target: T;
+  deleted: V;
+  discussion?: Discussion<T, V>;
+}
+
+interface ChangeAnnotation<T, V> {
+  type: "changed";
+  target: T;
+  before: V;
+  after: V;
+  discussion?: Discussion<T, V>;
+}
+
+export interface HighlightAnnotation<T, V> {
+  type: "highlighted";
+  target: T;
+  value: V;
+  discussion?: Discussion<T, V>;
+}
+
+export type Annotation<T, V> =
+  | AddAnnotation<T, V>
+  | DeleteAnnotation<T, V>
+  | ChangeAnnotation<T, V>
+  | HighlightAnnotation<T, V>;
+
+export interface AnnotationPosition<T, V> {
+  x: number;
+  y: number;
+  annotation: Annotation<T, V>;
+}
+
+export const initPatchworkMetadata = (doc: any) => {
+  doc.branchMetadata = {
+    source: null,
+    branches: [],
+  };
+  doc.discussions = {};
+  doc.tags = [];
+  doc.changeGroupSummaries = {};
+};

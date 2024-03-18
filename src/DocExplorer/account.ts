@@ -5,8 +5,7 @@ import {
   isValidAutomergeUrl,
   parseAutomergeUrl,
 } from "@automerge/automerge-repo";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { useDocument } from "@/useDocumentVendored";
+import { useRepo, useDocument } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
 import { useEffect, useState } from "react";

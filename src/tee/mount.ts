@@ -14,7 +14,6 @@ export function mount(node, params) {
     // this is set by either our standalone entrypoint or trailrunner
     React.createElement(
       RepoContext.Provider,
-      // eslint-disable-next-line no-undef
       // @ts-expect-error - repo is on window
       { value: repo },
       React.createElement(TinyEssayEditor, Object.assign({}, params))

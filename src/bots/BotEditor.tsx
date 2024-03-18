@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { EssayEditingBotDoc } from "./datatype";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Bot } from "lucide-react";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
-import { MarkdownDoc } from "@/tee/schema";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/tee/schema";
 import { setUrlHashForDoc } from "@/DocExplorer/utils";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
@@ -16,7 +17,7 @@ export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
 
   if (!doc || !contactDoc || !promptDoc) return <div>Loading...</div>;
   return (
-    <div className="p-4">
+    <div className="p-4 w-full">
       <div className="font-mono mb-6">
         <div className="mb-2 text-gray-600 uppercase font-mono">Identity</div>
         <div className="flex items-center">
