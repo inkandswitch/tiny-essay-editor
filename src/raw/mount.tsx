@@ -5,7 +5,8 @@ import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 
 export function mount(node, params) {
   ReactDom.createRoot(node).render(
-  <RepoContext.Provider value={repo}> 
+    // @ts-expect-error -- the repo is set as a project-level global; we should clean this up but... later
+    <RepoContext.Provider value={repo}> 
       <RawView {...params}/>
     </RepoContext.Provider>
   ) 

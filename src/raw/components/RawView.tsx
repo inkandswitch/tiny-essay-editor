@@ -90,11 +90,12 @@ export function RawView({ docUrl: originalDocumentUrl }) {
   }
 
   return (<>
-    <h2 style={{fontWeight: "bold"}}>Current Document URL: ${documentUrl}</h2>
+    <h2 style={{fontWeight: "bold"}}>Current Document: {documentUrl}</h2>
     <button onClick={goBack} disabled={history.length === 0}>Back</button>
     <ReactJson 
       collapsed={3}
       src={doc}
+      // @ts-expect-error - onEdit is doing something weird here
       onEdit={onEdit}
       onAdd={onAdd}
       onDelete={onDelete}

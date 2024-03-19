@@ -252,7 +252,7 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   // heads change listener
   useEffect(() => {
     if (machine.matches("sync.unknown")) {
-      const syncServerHeads = handle.getRemoteHeads(SYNC_SERVER_STORAGE_ID);
+      const syncServerHeads = handle.getRemoteHeads(SYNC_SERVER_STORAGE_ID) as A.Heads;
       setSyncServerHeads(syncServerHeads ?? []); // initialize to empty heads if we have no state
 
       handle.doc().then((doc) => {
