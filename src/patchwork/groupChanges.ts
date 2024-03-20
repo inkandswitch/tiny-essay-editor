@@ -313,9 +313,8 @@ export type ChangeGroupingOptions<D> = {
 
   /** Conditon to keep only certain changes */
   includeChangeInHistory?: (
-    doc: D,
-    decodedChange: DecodedChangeWithMetadata
-  ) => boolean;
+    doc: D
+  ) => (decodedChange: DecodedChangeWithMetadata) => boolean;
 
   /** Condition to keep only certain patches in the change group
    * the number of kept patches is assigned as numberOfEdits
@@ -328,11 +327,16 @@ export type ChangeGroupingOptions<D> = {
 /** Returns a flat list of changelog items for display in the UI,
  *  based on a list of change groups.
  */
-export const getChangelogItems = <D extends Branchable>(
-  doc: Doc<D>,
-  options: ChangeGroupingOptions<D>
-) => {
-  const { changeGroups } = getGroupedChanges(doc, options);
+export const getChangelogItems = <D extends Branchable>({
+  doc,
+  changes,
+  options,
+}: {
+  doc: Doc<D>;
+  changes: DecodedChangeWithMetadata[];
+  options: ChangeGroupingOptions<D>;
+}) => {
+  const { changeGroups } = getGroupedChanges({ doc, changes, options });
 
   const changelogItems: ChangelogItem<D>[] = [];
   for (const changeGroup of changeGroups) {
@@ -375,18 +379,22 @@ export const getChangelogItems = <D extends Branchable>(
  *  with markers attached; if you want a flat list of changelog items
  *  for display, use getChangelogItems.
  */
-export const getGroupedChanges = <T extends Branchable>(
-  doc: Doc<T>,
-  {
+export const getGroupedChanges = <T extends Branchable>({
+  doc,
+  changes,
+  options: {
     grouping,
     markers,
     includeChangeInHistory,
     includePatchInChangeGroup,
     fallbackSummaryForChangeGroup,
-  }: ChangeGroupingOptions<T>
-) => {
+  },
+}: {
+  doc: Doc<T>;
+  changes: DecodedChangeWithMetadata[];
+  options: ChangeGroupingOptions<T>;
+}) => {
   // TODO: we should sort this list in a stable way across devices.
-  const changes = getAllChangesWithMetadata(doc);
   const changeGroups: ChangeGroup<T>[] = [];
 
   let currentGroup: ChangeGroup<T> | null = null;
@@ -459,13 +467,17 @@ export const getGroupedChanges = <T extends Branchable>(
 
   // Now we loop over the changes and make our groups.
 
+  const includeChangeInHistoryForThisDoc = includeChangeInHistory
+    ? includeChangeInHistory(doc)
+    : undefined;
+
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
 
     const skipChange =
       // See if the datatype wants this change to appear in the log
-      includeChangeInHistory &&
-      !includeChangeInHistory(doc, decodedChange) &&
+      includeChangeInHistoryForThisDoc &&
+      !includeChangeInHistoryForThisDoc(decodedChange) &&
       // If a marker is present for this change, we have to include it so that the marker works.
       !markers.find((marker) => marker.heads.includes(decodedChange.hash));
 

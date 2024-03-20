@@ -106,9 +106,7 @@ export const DiscussionInput = function <
             ?.heads
         )
       )
-    : JSON.parse(
-        JSON.stringify(changelogItems[changelogItems.length - 1]?.heads)
-      );
+    : A.getHeads(doc);
 
   const createDiscussion = () => {
     if (commentBoxContent === "") {
