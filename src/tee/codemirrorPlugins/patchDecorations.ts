@@ -113,6 +113,9 @@ export const patchDecorations = EditorView.decorations.compute(
 
     const decorations = annotations.flatMap((annotation) => {
       const { fromPos, toPos } = annotation.target;
+      if (fromPos >= toPos) {
+        return [];
+      }
       const isActive = activeAnnotations.some(
         (activeAnnotation) =>
           fromPos >= activeAnnotation.from && toPos <= activeAnnotation.to
