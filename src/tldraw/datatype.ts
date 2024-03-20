@@ -44,10 +44,7 @@ export const getLLMSummary = (doc: TLDrawDoc) => {
 
 // We filter conservatively with a deny-list because dealing with edits on a nested schema is annoying.
 // Would be better to filter with an allow-list but that's tricky with current Automerge APIs.
-export const includeChangeInHistory = (
-  doc: TLDrawDoc,
-  decodedChange: DecodedChangeWithMetadata
-) => {
+export const includeChangeInHistory = (doc: TLDrawDoc) => {
   const metadataObjIds = [
     "branchMetadata",
     "tags",
@@ -56,7 +53,9 @@ export const includeChangeInHistory = (
     "changeGroupSummaries",
   ].map((path) => A.getObjectId(doc, path));
 
-  return decodedChange.ops.every((op) => !metadataObjIds.includes(op.obj));
+  return (decodedChange: DecodedChangeWithMetadata) => {
+    return decodedChange.ops.every((op) => !metadataObjIds.includes(op.obj));
+  };
 };
 
 export const patchesToAnnotations = (

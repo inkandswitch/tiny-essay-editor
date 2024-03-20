@@ -43,10 +43,7 @@ export const init = (doc: any) => {
   );
 };
 
-export const includeChangeInHistory = (
-  doc: DataGridDoc,
-  decodedChange: DecodedChangeWithMetadata
-) => {
+export const includeChangeInHistory = (doc: DataGridDoc) => {
   const dataObjId = A.getObjectId(doc, "data");
   // GL 3/11/24: this is miserable, we need to collect a whole bunch of object ids
   // for the rows inside the data object in order to filter changes.
@@ -54,12 +51,14 @@ export const includeChangeInHistory = (
   const rowObjIds = doc.data.map((_, index) => A.getObjectId(doc.data, index));
   const commentsObjID = A.getObjectId(doc, "commentThreads");
 
-  return decodedChange.ops.some(
-    (op) =>
-      op.obj === dataObjId ||
-      rowObjIds.includes(op.obj) ||
-      op.obj === commentsObjID
-  );
+  return (decodedChange: DecodedChangeWithMetadata) => {
+    return decodedChange.ops.some(
+      (op) =>
+        op.obj === dataObjId ||
+        rowObjIds.includes(op.obj) ||
+        op.obj === commentsObjID
+    );
+  };
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch) =>

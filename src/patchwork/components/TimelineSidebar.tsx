@@ -10,8 +10,6 @@ import {
   ByAuthorOrTime,
   ChangelogItem,
   GenericChangeGroup,
-  getChangelogItems,
-  getMarkersForDoc,
 } from "../groupChanges";
 import { docTypes } from "@/DocExplorer/doctypes";
 
@@ -54,6 +52,7 @@ import {
 
 import { DocType } from "@/DocExplorer/doctypes";
 import { ChangeGroupingOptions } from "../groupChanges";
+import { ChangeGrouper } from "../ChangeGrouper";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +74,37 @@ type ChangelogSelectionAnchor = {
 
   /* The pixel position of the anchor */
   yPos: number;
+};
+
+/** A React hook that returns the changelog items for a handle */
+const useChangelogItems = (
+  handle,
+  options: Omit<
+    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
+    "markers"
+  >
+) => {
+  const repo = useRepo();
+  const [items, setItems] = useState<
+    ChangelogItem<HasPatchworkMetadata<unknown, unknown>>[]
+  >([]);
+  useEffect(() => {
+    const grouper = new ChangeGrouper(handle, repo, options);
+    if (grouper.items) {
+      setItems(grouper.items);
+    }
+
+    const listener = (items) => {
+      setItems(items);
+    };
+
+    grouper.on("change", listener);
+    return () => {
+      grouper.off("change", listener);
+      grouper.teardown();
+    };
+  }, [handle, options]);
+  return items;
 };
 
 export type ChangelogSelection =
@@ -106,13 +136,6 @@ export const TimelineSidebar: React.FC<{
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
 
-  // TODO: technically this should also update when the "source doc" for this branch updates
-  const markers = useMemo(
-    () => getMarkersForDoc(handle, repo),
-    // Important to have doc as a dependency here even though the linter says not needed
-    [doc, handle, repo, mainDoc]
-  );
-
   const {
     includeChangeInHistory,
     includePatchInChangeGroup,
@@ -122,23 +145,25 @@ export const TimelineSidebar: React.FC<{
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
-    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>
+    Omit<
+      ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
+      "markers"
+    >
   >(() => {
     return {
       grouping: ByAuthorOrTime(60),
-      markers,
       includeChangeInHistory,
       includePatchInChangeGroup,
       fallbackSummaryForChangeGroup,
     };
-  }, [docType, markers, includeChangeInHistory, includePatchInChangeGroup]);
+  }, [
+    docType,
+    includeChangeInHistory,
+    includePatchInChangeGroup,
+    fallbackSummaryForChangeGroup,
+  ]);
 
-  // The grouping function returns change groups starting from the latest change.
-  const changelogItems = useMemo(() => {
-    if (!doc) return [];
-
-    return getChangelogItems(doc, changeGroupingOptions);
-  }, [doc, markers, changeGroupingOptions]);
+  const changelogItems = useChangelogItems(handle, changeGroupingOptions);
 
   const hiddenItemBoundary = changelogItems.findIndex(
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
