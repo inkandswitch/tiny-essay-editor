@@ -855,11 +855,11 @@ const COMMENT_ANCHOR_OFFSET = 30;
 export const SpatialCommentsLinesLayer = ({
   annotationsPositionsInSidebarMap,
   annotationsTargetPositions,
-  activeDiscussionIds,
+  selectedAnnotations,
 }: {
   annotationsPositionsInSidebarMap: PositionMap;
   annotationsTargetPositions: AnnotationPosition<unknown, unknown>[];
-  activeDiscussionIds: string[];
+  selectedAnnotations: Annotation<unknown, unknown>[];
 }) => {
   const [bezierCurveLayerRect, setBezierCurveLayerRect] = useState<DOMRect>();
   const [bezierCurveLayerElement, setBezierCurveLayerElement] =
@@ -909,12 +909,14 @@ export const SpatialCommentsLinesLayer = ({
               return;
             }
 
+            console.log(position.annotation, selectedAnnotations);
+
             return (
               <BezierCurve
                 color={
-                  false // activeDiscussionIds.includes(position.discussion.id)
-                    ? "#facc15"
-                    : "#d1d5db"
+                  selectedAnnotations.includes(position.annotation)
+                    ? "rgb(37 99 235)"
+                    : "transparent"
                 }
                 key={index}
                 x1={bezierCurveLayerRect.width}

@@ -341,6 +341,8 @@ export const PatchworkDocEditor: React.FC<{
     return ids;
   }, [selectedDiscussionId, hoveredDiscussionId]);
 
+  console.log({ activeDiscussionIds });
+
   const onUpdateAnnotationPositions = useStaticCallback((targetPositions) => {
     setAnnotationPositions(
       sortBy(
@@ -603,7 +605,7 @@ export const PatchworkDocEditor: React.FC<{
             )}
             {reviewMode === "comments" && isHistorySidebarOpen && (
               <SpatialCommentsLinesLayer
-                activeDiscussionIds={activeDiscussionIds}
+                selectedAnnotations={selectedAnnotations}
                 annotationsTargetPositions={annotationPositions}
                 annotationsPositionsInSidebarMap={
                   annotationsPositionsInSidebarMap
