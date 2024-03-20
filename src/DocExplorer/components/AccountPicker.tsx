@@ -33,6 +33,28 @@ import {
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
 
+import Circle from '@uiw/react-color-circle';
+export const USER_COLORS = {
+  // RUST: '#D96767',
+  // ENGINEER: '#FFE283',
+  // KEYLIME: '#A1E991',
+  // PINE: '#63D2A5',
+  // SOFT: '#64BCDF',
+  // BIGBLUE: '#3A66A3',
+  // ROYAL: '#A485E2',
+  // KAWAII: '#ED77AB',
+  // BLACK: '#2b2b2b',
+  RED: '#F87060',
+  VORANGE: '#FFC919',
+  DARKGRE: '#6CCB44',
+  PINETO: '#00CA7B',
+  VBLAU: '#3395E8',
+  CHILBLAU: '#004098',
+  OPTIROYA: '#4700D8',
+  MAGEGENTA: '#E80FA7',
+  GRAU: '#626262',
+}
+
 // 1MB in bytes
 const MAX_AVATAR_SIZE = 1024 * 1024;
 
@@ -54,6 +76,8 @@ export const AccountPicker = ({
 
   const self = useSelf();
   const [name, setName] = useState<string>("");
+  const [color, setColor] = useState<string>("#F44E3B");
+  
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
     AccountPickerTab.SignUp
@@ -95,7 +119,7 @@ export const AccountPicker = ({
         break;
 
       case AccountPickerTab.SignUp:
-        currentAccount.signUp({ name, avatar });
+        currentAccount.signUp({ name, avatar, color });
         break;
     }
   };
@@ -183,6 +207,17 @@ export const AccountPicker = ({
                 />
               </div>
 
+              <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+                <Label htmlFor="name">Presence Color</Label>
+                <Circle
+                  colors={Object.values(USER_COLORS)}
+                  color={color}
+                  onChange={(color) => {
+                    setColor(color.hex);
+                  }}
+                />
+              </div>
+
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="picture">Avatar</Label>
                 <Input
@@ -249,6 +284,17 @@ export const AccountPicker = ({
                 value={name}
                 onChange={(evt) => setName(evt.target.value)}
               />
+            </div>
+            
+            <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+                <Label htmlFor="name">Presence Color</Label>
+                <Circle
+                  colors={Object.values(USER_COLORS)}
+                  color={color}
+                  onChange={(color) => {
+                    setColor(color.hex);
+                  }}
+                />
             </div>
 
             <div className="grid w-full max-w-sm items-center gap-1.5">
