@@ -1,9 +1,13 @@
 import OpenAI from "openai";
 
-export const openaiClient = new OpenAI({
-  apiKey: import.meta.env["VITE_OPENAI_API_KEY"],
-  dangerouslyAllowBrowser: true,
-});
+export const isLLMActive = import.meta.env["VITE_OPENAI_API_KEY"] !== undefined;
+
+export const openaiClient = isLLMActive
+  ? new OpenAI({
+      apiKey: import.meta.env["VITE_OPENAI_API_KEY"],
+      dangerouslyAllowBrowser: true,
+    })
+  : undefined;
 
 export const DEFAULT_MODEL = "gpt-4-turbo-preview";
 

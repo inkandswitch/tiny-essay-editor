@@ -87,6 +87,7 @@ import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
 import { AnnotationPosition } from "@/patchwork/schema";
 import { isEqual } from "lodash";
+import { isLLMActive } from "@/llm";
 
 interface MakeBranchOptions {
   name?: string;
@@ -781,6 +782,7 @@ const BranchActions: React.FC<{
       console.warn("suggestions only work for markdown docs");
       return;
     }
+    if (!isLLMActive) return;
     setNameSuggestions([]);
     (async () => {
       const suggestions = (
@@ -857,22 +859,24 @@ const BranchActions: React.FC<{
           Delete branch
         </DropdownMenuItem>
         <DropdownMenuSeparator></DropdownMenuSeparator>
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Suggested renames:</DropdownMenuLabel>
-          {nameSuggestions.length === 0 && (
-            <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
-          )}
-          {nameSuggestions.map((suggestion) => (
-            <DropdownMenuItem
-              key={suggestion}
-              onClick={() => {
-                handleRenameBranch(branchUrl, suggestion);
-              }}
-            >
-              {suggestion}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
+        {isLLMActive && (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Suggested renames:</DropdownMenuLabel>
+            {nameSuggestions.length === 0 && (
+              <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+            )}
+            {nameSuggestions.map((suggestion) => (
+              <DropdownMenuItem
+                key={suggestion}
+                onClick={() => {
+                  handleRenameBranch(branchUrl, suggestion);
+                }}
+              >
+                {suggestion}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,7 +1,7 @@
 import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGroup } from "./groupChanges";
 import { HasChangeGroupSummaries } from "./schema";
-import { getStringCompletion } from "@/llm";
+import { getStringCompletion, isLLMActive } from "@/llm";
 import { debounce } from "lodash";
 import { useCallback, useEffect } from "react";
 
@@ -27,8 +27,7 @@ export const populateChangeGroupSummaries = async <
     }
   });
 
-  // Can't AI-summarize if there's no prompt for it
-  if (!promptForAutoChangeGroupDescription) {
+  if (!isLLMActive || !promptForAutoChangeGroupDescription) {
     return;
   }
 
