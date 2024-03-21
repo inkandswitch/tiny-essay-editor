@@ -372,6 +372,44 @@ export const getChangelogItems = <D extends Branchable>({
   return changelogItems;
 };
 
+// Fill in aggregate details on a change group
+const finalizeChangeGroup = <D>({
+  group,
+  doc,
+  allGroups,
+  options: { includePatchInChangeGroup, fallbackSummaryForChangeGroup },
+}: {
+  group: ChangeGroup<D>;
+  doc: Doc<D>;
+  allGroups: ChangeGroup<D>[];
+  options: ChangeGroupingOptions<D>;
+}): ChangeGroup<D> | null => {
+  const finalized = { ...group };
+
+  finalized.id = `${group.from}-${group.to}`;
+
+  const diffHeads =
+    allGroups.length > 0 ? [allGroups[allGroups.length - 1].to] : [];
+  finalized.diff = diffWithProvenance(doc, diffHeads, [finalized.to]);
+  finalized.docAtEndOfChangeGroup = view(doc, [finalized.to]);
+
+  finalized.numberOfEdits = finalized.diff.patches.filter(
+    (patch) => !includePatchInChangeGroup || includePatchInChangeGroup(patch)
+  ).length;
+
+  if (finalized.numberOfEdits === 0) {
+    return null;
+  }
+
+  if (fallbackSummaryForChangeGroup) {
+    finalized.fallbackSummary = fallbackSummaryForChangeGroup(finalized);
+  } else {
+    finalized.fallbackSummary = defaultPopulateFallbackSummary(finalized);
+  }
+
+  return finalized;
+};
+
 /** Returns a list of change groups using the specified algorithm.
  *  Markers for specific moments in the history can be passed in;
  *  these automatically split the groups at the marker.
@@ -401,28 +439,22 @@ export const getGroupedChanges = <T extends Branchable>({
 
   // define a helper for pushing a new group onto the list
   const pushGroup = (group: ChangeGroup<T>) => {
-    group.id = `${group.from}-${group.to}`;
+    const finalized = finalizeChangeGroup({
+      group,
+      doc,
+      allGroups: changeGroups,
+      options: {
+        grouping,
+        markers,
+        includeChangeInHistory,
+        includePatchInChangeGroup,
+        fallbackSummaryForChangeGroup,
+      },
+    });
 
-    const diffHeads =
-      changeGroups.length > 0 ? [changeGroups[changeGroups.length - 1].to] : [];
-    group.diff = diffWithProvenance(doc, diffHeads, [group.to]);
-    group.docAtEndOfChangeGroup = view(doc, [group.to]);
-
-    group.numberOfEdits = group.diff.patches.filter(
-      (patch) => !includePatchInChangeGroup || includePatchInChangeGroup(patch)
-    ).length;
-
-    if (group.numberOfEdits === 0) {
-      return;
+    if (finalized) {
+      changeGroups.push(finalized);
     }
-
-    if (fallbackSummaryForChangeGroup) {
-      group.fallbackSummary = fallbackSummaryForChangeGroup(group);
-    } else {
-      group.fallbackSummary = defaultPopulateFallbackSummary(group);
-    }
-
-    changeGroups.push(group);
   };
 
   // for each merged branch in the doc, we need to start a change group for that branch.
