@@ -1,6 +1,7 @@
 import { DocHandle, Repo } from "@automerge/automerge-repo";
 import { EventEmitter } from "eventemitter3";
 import {
+  ChangeGroup,
   ChangeGroupingOptions,
   ChangelogItem,
   DecodedChangeWithMetadata,
@@ -20,13 +21,16 @@ export class ChangeGrouper<
   private handle: DocHandle<D>;
   private repo: Repo;
   private groupingOptions: Omit<ChangeGroupingOptions<D>, "markers">;
-
   // An array of decoded changes on the doc.
   private decodedChanges: DecodedChangeWithMetadata[];
-
   private listener = () => this.populateItems();
-
   items: ChangelogItem<D>[];
+
+  private memoizedGroups: {
+    changeGroups: ChangeGroup<D>[];
+    changeCount: number;
+    options: ChangeGroupingOptions<D>;
+  };
 
   constructor(
     handle: DocHandle<D>,
@@ -64,11 +68,14 @@ export class ChangeGrouper<
       this.decodedChanges = this.decodedChanges.concat(newDecodedChanges);
       const markers = getMarkersForDoc(this.handle, this.repo);
 
-      this.items = getChangelogItems({
+      const { items, memoizedGroups } = getChangelogItems({
         doc: this.handle.docSync(),
         changes: this.decodedChanges,
         options: { ...this.groupingOptions, markers },
+        memoizedGroups: this.memoizedGroups,
       });
+      this.items = items;
+      this.memoizedGroups = memoizedGroups;
       this.emit("change", this.items);
     }
   }

@@ -331,12 +331,30 @@ export const getChangelogItems = <D extends Branchable>({
   doc,
   changes,
   options,
+  memoizedGroups,
 }: {
   doc: Doc<D>;
   changes: DecodedChangeWithMetadata[];
   options: ChangeGroupingOptions<D>;
-}) => {
-  const { changeGroups } = getGroupedChanges({ doc, changes, options });
+  memoizedGroups?: {
+    changeGroups: ChangeGroup<D>[];
+    changeCount: number;
+    options: ChangeGroupingOptions<D>;
+  };
+}): {
+  items: ChangelogItem<D>[];
+  memoizedGroups: {
+    changeGroups: ChangeGroup<D>[];
+    changeCount: number;
+    options: ChangeGroupingOptions<D>;
+  };
+} => {
+  const { changeGroups, changeCount } = getGroupedChangesMemo({
+    doc,
+    changes,
+    options,
+    memoizedGroups,
+  });
 
   const changelogItems: ChangelogItem<D>[] = [];
   for (const changeGroup of changeGroups) {
@@ -369,27 +387,32 @@ export const getChangelogItems = <D extends Branchable>({
       }
     }
   }
-  return changelogItems;
+  return {
+    items: changelogItems,
+    memoizedGroups: {
+      changeGroups,
+      changeCount,
+      options,
+    },
+  };
 };
 
 // Fill in aggregate details on a change group
 const finalizeChangeGroup = <D>({
   group,
   doc,
-  allGroups,
+  diffHeads,
   options: { includePatchInChangeGroup, fallbackSummaryForChangeGroup },
 }: {
   group: ChangeGroup<D>;
   doc: Doc<D>;
-  allGroups: ChangeGroup<D>[];
+  diffHeads: Heads;
   options: ChangeGroupingOptions<D>;
 }): ChangeGroup<D> | null => {
   const finalized = { ...group };
 
   finalized.id = `${group.from}-${group.to}`;
 
-  const diffHeads =
-    allGroups.length > 0 ? [allGroups[allGroups.length - 1].to] : [];
   finalized.diff = diffWithProvenance(doc, diffHeads, [finalized.to]);
   finalized.docAtEndOfChangeGroup = view(doc, [finalized.to]);
 
@@ -408,6 +431,115 @@ const finalizeChangeGroup = <D>({
   }
 
   return finalized;
+};
+
+// Given previous cached results for change grouping, returns new groupings
+// either by incrementally adding to the memoized result or by restarting from scratch.
+const getGroupedChangesMemo = <T extends Branchable>({
+  doc,
+  changes,
+  options,
+  memoizedGroups,
+}: {
+  doc: Doc<T>;
+  changes: DecodedChangeWithMetadata[];
+  options: ChangeGroupingOptions<T>;
+  memoizedGroups?: {
+    changeGroups: ChangeGroup<T>[];
+    changeCount: number;
+    options: ChangeGroupingOptions<T>;
+  };
+}) => {
+  if (!memoizedGroups || !isEqual(options, memoizedGroups.options)) {
+    // recompute from scratch
+    console.log("cache miss, recompute groups from scratch");
+    return getGroupedChanges({
+      doc,
+      changes,
+      options,
+    });
+  }
+  const newChanges = changes.slice(memoizedGroups.changeCount);
+  // incrementally update the previous groups
+  const lastGroup =
+    memoizedGroups.changeGroups[memoizedGroups.changeGroups.length - 1];
+  let revisedLastGroup = { ...lastGroup };
+
+  // Check that all the new changes belong to the last group.
+  for (const change of newChanges) {
+    if (!options.grouping(revisedLastGroup, change)) {
+      console.log("cache miss, recompute groups from scratch");
+      return getGroupedChanges({
+        doc,
+        changes,
+        options,
+      });
+    } else {
+      revisedLastGroup = addChangeToGroup({
+        group: revisedLastGroup,
+        change: change,
+      });
+    }
+  }
+
+  console.log({ revisedLastGroup });
+
+  const finalizedLastGroup = finalizeChangeGroup({
+    group: revisedLastGroup,
+    diffHeads:
+      memoizedGroups.changeGroups.length > 1
+        ? [
+            memoizedGroups.changeGroups[memoizedGroups.changeGroups.length - 2]
+              .to,
+          ]
+        : [],
+    doc,
+    options,
+  });
+
+  console.log({ finalizedLastGroup });
+
+  if (finalizedLastGroup === null) {
+    return memoizedGroups;
+  }
+
+  const newGroups = [
+    ...memoizedGroups.changeGroups.slice(0, -1),
+    finalizedLastGroup,
+  ];
+  return {
+    changeGroups: newGroups,
+    changeCount: changes.length,
+  };
+};
+
+// Add a change to an existing group, and maintain stats for the
+// group that need to be updated as we go.
+// Returns a new group without mutating the one passed in.
+const addChangeToGroup = <D>({
+  group: originalGroup,
+  change,
+}: {
+  group: ChangeGroup<D>;
+  change: DecodedChangeWithMetadata;
+}) => {
+  const group = { ...originalGroup };
+  group.changes.push(change);
+  group.to = change.hash;
+  if (change.time && change.time > 0) {
+    group.time = change.time;
+  }
+  if (!group.actorIds.includes(change.actor)) {
+    group.actorIds.push(change.actor);
+  }
+  if (
+    change.metadata?.author &&
+    !group.authorUrls.includes(change.metadata.author as AutomergeUrl)
+  ) {
+    group.authorUrls.push(change.metadata.author as AutomergeUrl);
+  }
+
+  return group;
 };
 
 /** Returns a list of change groups using the specified algorithm.
@@ -442,7 +574,10 @@ export const getGroupedChanges = <T extends Branchable>({
     const finalized = finalizeChangeGroup({
       group,
       doc,
-      allGroups: changeGroups,
+      diffHeads:
+        changeGroups.length > 0
+          ? [changeGroups[changeGroups.length - 1].to]
+          : [],
       options: {
         grouping,
         markers,
@@ -497,12 +632,13 @@ export const getGroupedChanges = <T extends Branchable>({
     }
   }
 
-  // Now we loop over the changes and make our groups.
-
+  // Initialize an inclusion function specialized to this doc
+  // (does some upfront doc-global work to avoid heavy work in the loop.)
   const includeChangeInHistoryForThisDoc = includeChangeInHistory
     ? includeChangeInHistory(doc)
     : undefined;
 
+  // Now we loop over the changes and make our groups.
   for (let i = 0; i < changes.length; i++) {
     const decodedChange = changes[i];
 
@@ -531,27 +667,10 @@ export const getGroupedChanges = <T extends Branchable>({
 
         // we'll use this to break out of the main loop
         changeCameFromMergedBranch = true;
-        branchChangeGroup.changeGroup.changes.push(decodedChange);
-
-        // TODO: DRY the logic for updating these fields
-        if (decodedChange.time && decodedChange.time > 0) {
-          branchChangeGroup.changeGroup.time = decodedChange.time;
-        }
-        if (
-          !branchChangeGroup.changeGroup.actorIds.includes(decodedChange.actor)
-        ) {
-          branchChangeGroup.changeGroup.actorIds.push(decodedChange.actor);
-        }
-        if (
-          decodedChange.metadata?.author &&
-          !branchChangeGroup.changeGroup.authorUrls.includes(
-            decodedChange.metadata.author as AutomergeUrl
-          )
-        ) {
-          branchChangeGroup.changeGroup.authorUrls.push(
-            decodedChange.metadata.author as AutomergeUrl
-          );
-        }
+        branchChangeGroup.changeGroup = addChangeToGroup({
+          group: branchChangeGroup.changeGroup,
+          change: decodedChange,
+        });
 
         // If this is the change that was the last one for the branch
         // pre-merged, then it's time to add the change group for this branch
@@ -595,24 +714,10 @@ export const getGroupedChanges = <T extends Branchable>({
 
     // Choose whether to add this change to the existing group or start a new group depending on the algorithm.
     if (currentGroup && grouping(currentGroup, decodedChange)) {
-      currentGroup.changes.push(decodedChange);
-      currentGroup.to = decodedChange.hash;
-      if (decodedChange.time && decodedChange.time > 0) {
-        currentGroup.time = decodedChange.time;
-      }
-      if (!currentGroup.actorIds.includes(decodedChange.actor)) {
-        currentGroup.actorIds.push(decodedChange.actor);
-      }
-      if (
-        decodedChange.metadata?.author &&
-        !currentGroup.authorUrls.includes(
-          decodedChange.metadata.author as AutomergeUrl
-        )
-      ) {
-        currentGroup.authorUrls.push(
-          decodedChange.metadata.author as AutomergeUrl
-        );
-      }
+      currentGroup = addChangeToGroup({
+        group: currentGroup,
+        change: decodedChange,
+      });
 
       // If this change is tagged, then we should end the current group.
       // This ensures we have a group boundary corresponding to the tag in the changelog.
@@ -631,10 +736,6 @@ export const getGroupedChanges = <T extends Branchable>({
         pushGroup(currentGroup);
       }
       currentGroup = {
-        // the "ID" is the hash of the latest change in the group.
-        // TODO: revisit whether this makes sense as an identifier for the group?
-        // It's a bit dangerous to store this separately from the changes since they
-        // might get out of sync, but it's super convenient in the view...
         id: `${decodedChange.hash}-${decodedChange.hash}`,
         from: decodedChange.hash,
         to: decodedChange.hash,
