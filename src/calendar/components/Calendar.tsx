@@ -58,10 +58,14 @@ export const MyCalendar = ({
   }
 
   const onDoubleClickEvent = event => {
-    const title = prompt('What is the new title of the new Event?', event.title)
+    const title = prompt('What is the new title of the new Event? (enter "delete" to delete it)', event.title)
     if (title) {
-      event.title = title
-      actions.updateEvent({event})
+      if (title === 'delete') {
+        actions.deleteEvent({event})
+      } else {
+        event.title = title
+        actions.updateEvent({event})
+      }
     }
   }
 

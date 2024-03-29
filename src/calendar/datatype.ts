@@ -62,9 +62,9 @@ const actions = {
   addEvent: (doc, { event }: { event: Event }) => {
     doc.events.push({ ...event });
   },
-  deleteEvent: (doc, { id }: { id: string }) => {
+  deleteEvent: (doc, { event }: { event: Event }) => {
     doc.events.splice(
-      doc.events.findIndex((event) => event.id === id),
+      doc.events.findIndex((ev) => event.id === ev.id),
       1
     );
   },
