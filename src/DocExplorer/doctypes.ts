@@ -13,11 +13,13 @@ import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
+import { CalendarDatatype } from "@/calendar/datatype";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { BotEditor } from "@/bots/BotEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
+import { MyCalendar } from "@/calendar/components/Calendar";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
 
 export type CoreDataType<D> = {
@@ -81,6 +83,7 @@ export const docTypes: Record<
   datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
+  calendar: CalendarDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;
@@ -100,6 +103,7 @@ export const toolsForDocTypes: Record<
   tldraw: [TLDraw],
   datagrid: [DataGrid],
   kanban: [KanbanBoard],
+  calendar: [MyCalendar],
 };
 
 export interface DocEditorProps<T, V> {
