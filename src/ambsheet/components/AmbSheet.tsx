@@ -9,6 +9,8 @@ import { useMemo } from "react";
 import * as A from "@automerge/automerge/next";
 import { registerRenderer, textRenderer } from "handsontable/renderers";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { evaluateSheet, isFormula } from "../eval";
+import { FormulaEditor } from "../formulaEditor";
 
 // register Handsontable's modules
 registerAllModules();
@@ -19,6 +21,11 @@ registerRenderer("addedCell", (hotInstance, TD, ...rest) => {
   TD.style.outline = "solid 1px rgb(0 100 0 / 80%)";
   TD.style.background = "rgb(0 255 0 / 10%)";
 });
+
+// Here's an overview of how formula evaluation works:
+// - The raw document stores cells as text, including formulas
+// - The data we pass into HOT contains evaluated formula results
+// - We also pass in formula text as secondary cell metadata
 
 export const AmbSheet = ({
   docUrl,
@@ -31,6 +38,11 @@ export const AmbSheet = ({
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
     [latestDoc, docHeads]
+  );
+
+  const evaluatedSheet = useMemo(
+    () => (doc ? evaluateSheet(doc.data) : []),
+    [doc]
   );
 
   const onBeforeHotChange = (changes) => {
@@ -72,6 +84,7 @@ export const AmbSheet = ({
     row: annotation.target.row,
     col: annotation.target.column,
     renderer: "addedCell",
+    formula: `=${annotation.target.row}+${annotation.target.column}`,
   }));
 
   if (!doc) {
@@ -81,7 +94,8 @@ export const AmbSheet = ({
   return (
     <div className="w-full h-full overflow-hidden">
       <HotTable
-        data={doc.data}
+        data={evaluatedSheet}
+        editor={FormulaEditor}
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}
         beforeCreateCol={onBeforeCreateCol}
@@ -94,6 +108,13 @@ export const AmbSheet = ({
         autoWrapCol={false}
         licenseKey="non-commercial-and-evaluation"
         cell={cellAnnotations}
+        // Attach raw formula results to the cell metadata
+        cells={(row, col) => {
+          const rawContents = doc.data[row][col];
+          if (isFormula(rawContents)) {
+            return { formula: rawContents };
+          }
+        }}
       />
     </div>
   );
