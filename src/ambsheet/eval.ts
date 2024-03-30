@@ -153,18 +153,6 @@ function evaluateAST(ast) {
   return results;
 }
 
-const p1_str = "{1, 3} * 5";
-const match = g.match(p1_str);
-const p1_ast = semantics(match).toAst();
-console.log("p1 ast", JSON.stringify(p1_ast, null, 2));
-console.log("Program 1:", JSON.stringify(evaluateAST(p1_ast), null, 2));
-
-const p2_str = "2 + {}";
-const match2 = g.match(p2_str);
-const p2_ast = semantics(match2).toAst();
-console.log("p2 ast", JSON.stringify(p2_ast, null, 2));
-console.log("Program 2:", JSON.stringify(evaluateAST(p2_ast), null, 2));
-
 export const isFormula = (cell: string) => cell && cell[0] === "=";
 
 export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
@@ -184,3 +172,24 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
     });
   });
 };
+
+export const evaluateFormula = (formula: string) => {
+  const match = g.match(formula);
+  const ast = semantics(match).toAst();
+  const result = evaluateAST(ast);
+  return result;
+};
+
+// tests
+
+// const p1_str = "{1, 3} * 5";
+// const match = g.match(p1_str);
+// const p1_ast = semantics(match).toAst();
+// console.log("p1 ast", JSON.stringify(p1_ast, null, 2));
+// console.log("Program 1:", JSON.stringify(evaluateAST(p1_ast), null, 2));
+
+// const p2_str = "2 + {}";
+// const match2 = g.match(p2_str);
+// const p2_ast = semantics(match2).toAst();
+// console.log("p2 ast", JSON.stringify(p2_ast, null, 2));
+// console.log("Program 2:", JSON.stringify(evaluateAST(p2_ast), null, 2));
