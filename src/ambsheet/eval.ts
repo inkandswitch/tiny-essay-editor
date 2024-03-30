@@ -176,7 +176,7 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
         if (result.length === 1) {
           return result[0].raw;
         } else {
-          return result.map((r) => r.raw).join(",");
+          return "{" + result.map((r) => r.raw).join(",") + "}";
         }
       } else {
         return cell;
