@@ -106,7 +106,6 @@ export const AmbSheet = ({
         height="100%"
         autoWrapRow={false}
         autoWrapCol={false}
-        manualColumnResize
         licenseKey="non-commercial-and-evaluation"
         cell={cellAnnotations}
         // Attach raw formula results to the cell metadata
