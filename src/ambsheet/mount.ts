@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDom from "react-dom/client";
-import { DataGrid } from "./components/DataGrid.js";
+import { AmbSheet } from "./components/AmbSheet.js";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 
 export function mount(node, params) {
@@ -17,7 +17,7 @@ export function mount(node, params) {
       // eslint-disable-next-line no-undef
       // @ts-expect-error - repo is on window
       { value: repo },
-      React.createElement(DataGrid, Object.assign({}, params))
+      React.createElement(AmbSheet, Object.assign({}, params))
     )
   );
 }
