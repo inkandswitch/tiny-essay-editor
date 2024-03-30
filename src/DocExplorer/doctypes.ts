@@ -19,6 +19,8 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
+import { AmbSheetDatatype } from "@/ambsheet/datatype";
+import { AmbSheet } from "@/ambsheet/components/AmbSheet";
 
 export type CoreDataType<D> = {
   id: string;
@@ -79,6 +81,7 @@ export const docTypes: Record<
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
   datagrid: DataGridDatatype,
+  ambsheet: AmbSheetDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
 } as const;
@@ -99,6 +102,7 @@ export const toolsForDocTypes: Record<
   bot: [BotEditor],
   tldraw: [TLDraw],
   datagrid: [DataGrid],
+  ambsheet: [AmbSheet],
   kanban: [KanbanBoard],
 };
 

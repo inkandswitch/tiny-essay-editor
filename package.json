@@ -67,6 +67,7 @@
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
     "next-themes": "^0.2.1",
+    "ohm-js": "^17.1.0",
     "openai": "^4.11.0",
     "query-string": "^8.2.0",
     "react": "^18.2.0",
