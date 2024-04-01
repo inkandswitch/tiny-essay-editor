@@ -1,9 +1,10 @@
 import assert from "assert";
 import { describe, it } from "vitest";
-import { evaluateFormula } from "@/ambsheet/eval.js";
+import { Env, evaluateFormula } from "@/ambsheet/eval.js";
 
 const getFormulaResult = (formula: string) => {
-  const result = evaluateFormula(formula);
+  const env = new Env([[]]);
+  const result = evaluateFormula(env, formula);
   if (result.length === 1) {
     return result[0].raw;
   } else {

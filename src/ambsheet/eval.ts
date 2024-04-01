@@ -1,11 +1,20 @@
 import { AmbSheetDoc } from "./datatype";
 import * as ohm from "ohm-js";
 
-type Value = {
+type Node =
+  | { type: "NumberNode"; value: number }
+  | { type: "AmbNode"; values: Node[] }
+  | { type: "CellRefNode"; name: string }
+  | { type: "PlusNode"; arg1: Node; arg2: Node }
+  | { type: "MinusNode"; arg1: Node; arg2: Node }
+  | { type: "TimesNode"; arg1: Node; arg2: Node }
+  | { type: "DivideNode"; arg1: Node; arg2: Node };
+
+interface Value {
   raw: number;
   node: Node;
   operands: Value[];
-};
+}
 
 const grammarSource = String.raw`
   Arithmetic {
@@ -25,6 +34,7 @@ const grammarSource = String.raw`
     PriExp = number -- number
           | "{" ListOf<Exp, ","> "}" -- amb
           | "(" Exp ")" -- paren
+          | letter+ digit+ -- cellRef
 
     number = digit+
   }
@@ -87,6 +97,12 @@ const semantics = g.createSemantics().addOperation("toAst", {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
+  PriExp_cellRef(_row, _col) {
+    return {
+      type: "CellRefNode",
+      name: this.sourceString,
+    };
+  },
   NonemptyListOf(x, _sep, xs) {
     return [x.toAst()].concat(xs.toAst());
   },
@@ -98,56 +114,74 @@ const semantics = g.createSemantics().addOperation("toAst", {
   },
 });
 
-function interpretBinaryOp(node, cont, op) {
-  interpret(node.arg1, (val1) => {
-    interpret(node.arg2, (val2) => {
-      const raw = op(val1.raw, val2.raw);
-      cont({
-        raw,
+type Cont = (env: Env, value: Value) => void;
+
+function interpretBinaryOp(
+  env: Env,
+  node: Node & { arg1: Node; arg2: Node },
+  cont: Cont,
+  op: (x: number, y: number) => number
+) {
+  interpret(env, node.arg1, (env, val1: Value) =>
+    interpret(env, node.arg2, (env, val2: Value) =>
+      cont(env, {
+        raw: op(val1.raw, val2.raw),
         node: node,
         operands: [val1, val2],
-      });
-    });
-  });
+      })
+    )
+  );
 }
 
-function interpret(node, cont) {
+const NOT_READY = {};
+
+function interpret(env: Env, node: Node, cont: Cont) {
   switch (node.type) {
     case "NumberNode":
-      cont({
+      cont(env, {
         raw: node.value,
         node,
         operands: [],
       });
       break;
+    case "CellRefNode": {
+      const value = env.getValue(node.name);
+      if (value === NOT_READY) {
+        throw NOT_READY;
+      }
+      cont(env, value);
+      break;
+    }
     case "PlusNode":
-      interpretBinaryOp(node, cont, (a, b) => a + b);
+      interpretBinaryOp(env, node, cont, (a, b) => a + b);
       break;
     case "TimesNode":
-      interpretBinaryOp(node, cont, (a, b) => a * b);
+      interpretBinaryOp(env, node, cont, (a, b) => a * b);
       break;
     case "MinusNode":
-      interpretBinaryOp(node, cont, (a, b) => a - b);
+      interpretBinaryOp(env, node, cont, (a, b) => a - b);
       break;
     case "DivideNode":
-      interpretBinaryOp(node, cont, (a, b) => a / b);
+      interpretBinaryOp(env, node, cont, (a, b) => a / b);
       break;
     // Run the continuation for each value in the AmbNode.
     case "AmbNode":
       for (const expr of node.values) {
-        interpret(expr, cont);
+        interpret(env, expr, cont);
       }
       break;
-    default:
-      throw new Error(`Unknown node type: ${node.type}`);
+    default: {
+      const exhaustiveCheck: never = node;
+      throw new Error(`Unhandled node type: ${exhaustiveCheck}`);
+    }
   }
 }
 
 // The outermost continuation just collects up all results
 // from the sub-paths of execution
-function evaluateAST(ast) {
+function evaluateAST(env: Env, ast: Node) {
   const results = [];
-  interpret(ast, (value) => {
+  interpret(env, ast, (_env, value) => {
     results.push(value);
   });
   return results;
@@ -155,12 +189,28 @@ function evaluateAST(ast) {
 
 export const isFormula = (cell: string) => cell && cell[0] === "=";
 
+// An evaluation environment tracking results of evaluated cells
+// during the course of an evaluation pass.
+export class Env {
+  constructor(private data: AmbSheetDoc["data"]) {}
+
+  getValue(_name: string): Value {
+    // stub
+    return {
+      raw: 1,
+      node: { type: "NumberNode", value: 1 },
+      operands: [],
+    };
+  }
+}
+
 export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
+  const env = new Env(data);
   return data.map((row) => {
     return row.map((cell) => {
       if (isFormula(cell)) {
         const ast = semantics(g.match(cell.slice(1))).toAst();
-        const result = evaluateAST(ast);
+        const result = evaluateAST(env, ast);
         if (result.length === 1) {
           return result[0].raw;
         } else {
@@ -173,10 +223,10 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
   });
 };
 
-export const evaluateFormula = (formula: string) => {
+export const evaluateFormula = (env: Env, formula: string) => {
   const match = g.match(formula);
   const ast = semantics(match).toAst();
-  const result = evaluateAST(ast);
+  const result = evaluateAST(env, ast);
   return result;
 };
 
