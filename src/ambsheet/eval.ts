@@ -146,7 +146,7 @@ function interpret(env: Env, node: Node, cont: Cont) {
       });
       break;
     case "CellRefNode": {
-      const values = env.getValuesOfCell(node.col, node.row);
+      const values = env.getValuesOfCell(node);
       if (!isReady(values)) {
         throw NOT_READY;
       }
@@ -214,7 +214,7 @@ export class Env {
     );
   }
 
-  getValuesOfCell(col: number, row: number): Value[] | typeof NOT_READY {
+  getValuesOfCell({ row, col }: { row: number, col: number }): Value[] | typeof NOT_READY {
     console.log({ results: this.results, row, col });
     return this.results[row][col];
   }
@@ -234,7 +234,7 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]): Env => {
     for (let row = 0; row < data.length; row++) {
       for (let col = 0; col < data[row].length; col++) {
         const cell = data[row][col];
-        if (env.getValuesOfCell(col, row) === NOT_READY && isFormula(cell)) {
+        if (env.getValuesOfCell({ row, col }) === NOT_READY && isFormula(cell)) {
           try {
             const result = evaluateFormula(env, cell.slice(1));
             env.setValuesOfCell(col, row, result);
