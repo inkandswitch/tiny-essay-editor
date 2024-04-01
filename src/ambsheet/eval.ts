@@ -5,7 +5,11 @@ type Node =
   | { type: "NumberNode"; value: number }
   | { type: "AmbNode"; values: Node[] }
   | { type: "CellRefNode"; col: number; row: number }
+  | { type: "EqualsNode"; arg1: Node; arg2: Node }
   | { type: "GreaterThanNode"; arg1: Node; arg2: Node }
+  | { type: "GreaterThanOrEqualsNode"; arg1: Node; arg2: Node }
+  | { type: "LessThanNode"; arg1: Node; arg2: Node }
+  | { type: "LessThanOrEqualsNode"; arg1: Node; arg2: Node }
   | { type: "PlusNode"; arg1: Node; arg2: Node }
   | { type: "MinusNode"; arg1: Node; arg2: Node }
   | { type: "TimesNode"; arg1: Node; arg2: Node }
@@ -22,7 +26,11 @@ const grammarSource = String.raw`
   AmbSheets {
     Exp = RelExp
   
-    RelExp = AddExp ">" AddExp -- gt
+    RelExp = AddExp "="  AddExp -- eq
+           | AddExp ">=" AddExp -- ge
+           | AddExp ">"  AddExp -- gt
+           | AddExp "<=" AddExp -- le
+           | AddExp "<"  AddExp -- lt
            | AddExp
 
     AddExp = AddExp "+" MulExp  -- plus
@@ -55,9 +63,37 @@ const g = ohm.grammar(grammarSource);
 // console.log("match", g.match("1 + {2, (3 + 4)}").succeeded());
 
 const semantics = g.createSemantics().addOperation("toAst", {
+  RelExp_eq(left, _op, right) {
+    return {
+      type: "EqualsNode",
+      arg1: left.toAst(),
+      arg2: right.toAst(),
+    };
+  },
+  RelExp_ge(left, _op, right) {
+    return {
+      type: "GreaterThanOrEqualsNode",
+      arg1: left.toAst(),
+      arg2: right.toAst(),
+    };
+  },
   RelExp_gt(left, _op, right) {
     return {
       type: "GreaterThanNode",
+      arg1: left.toAst(),
+      arg2: right.toAst(),
+    };
+  },
+  RelExp_le(left, _op, right) {
+    return {
+      type: "LessThanOrEqualsNode",
+      arg1: left.toAst(),
+      arg2: right.toAst(),
+    };
+  },
+  RelExp_lt(left, _op, right) {
+    return {
+      type: "LessThanNode",
       arg1: left.toAst(),
       arg2: right.toAst(),
     };
@@ -178,8 +214,20 @@ function interpret(env: Env, node: Node, cont: Cont) {
       }
       break;
     }
+    case "EqualsNode":
+      interpretBinaryOp(env, node, cont, (a, b) => a == b ? 1 : 0);
+      break;
     case "GreaterThanNode":
       interpretBinaryOp(env, node, cont, (a, b) => a > b ? 1 : 0);
+      break;
+    case "GreaterThanOrEqualsNode":
+      interpretBinaryOp(env, node, cont, (a, b) => a >= b ? 1 : 0);
+      break;
+    case "LessThanNode":
+      interpretBinaryOp(env, node, cont, (a, b) => a < b ? 1 : 0);
+      break;
+    case "LessThanOrEqualsNode":
+      interpretBinaryOp(env, node, cont, (a, b) => a <= b ? 1 : 0);
       break;
     case "PlusNode":
       interpretBinaryOp(env, node, cont, (a, b) => a + b);
