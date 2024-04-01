@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import * as A from "@automerge/automerge/next";
 import { registerRenderer, textRenderer } from "handsontable/renderers";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { evaluateSheet, isFormula } from "../eval";
+import { evaluateSheet, isFormula, printEnv } from "../eval";
 import { FormulaEditor } from "../formulaEditor";
 
 // register Handsontable's modules
@@ -41,7 +41,7 @@ export const AmbSheet = ({
   );
 
   const evaluatedSheet = useMemo(
-    () => (doc ? evaluateSheet(doc.data) : []),
+    () => (doc ? printEnv(evaluateSheet(doc.data)) : []),
     [doc]
   );
 

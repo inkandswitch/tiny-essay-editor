@@ -4,7 +4,7 @@ import * as ohm from "ohm-js";
 type Node =
   | { type: "NumberNode"; value: number }
   | { type: "AmbNode"; values: Node[] }
-  | { type: "CellRefNode"; name: string }
+  | { type: "CellRefNode"; col: number; row: number }
   | { type: "PlusNode"; arg1: Node; arg2: Node }
   | { type: "MinusNode"; arg1: Node; arg2: Node }
   | { type: "TimesNode"; arg1: Node; arg2: Node }
@@ -34,7 +34,7 @@ const grammarSource = String.raw`
     PriExp = number -- number
           | "{" ListOf<Exp, ","> "}" -- amb
           | "(" Exp ")" -- paren
-          | letter+ digit+ -- cellRef
+          | upper digit+ -- cellRef
 
     number = digit+
   }
@@ -97,10 +97,11 @@ const semantics = g.createSemantics().addOperation("toAst", {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
-  PriExp_cellRef(_row, _col) {
+  PriExp_cellRef(col, row) {
     return {
       type: "CellRefNode",
-      name: this.sourceString,
+      col: col.sourceString.charCodeAt(0) - "A".charCodeAt(0),
+      row: parseInt(row.sourceString) - 1,
     };
   },
   NonemptyListOf(x, _sep, xs) {
@@ -145,11 +146,13 @@ function interpret(env: Env, node: Node, cont: Cont) {
       });
       break;
     case "CellRefNode": {
-      const value = env.getValue(node.name);
-      if (value === NOT_READY) {
+      const values = env.getValuesOfCell(node.col, node.row);
+      if (!isReady(values)) {
         throw NOT_READY;
       }
-      cont(env, value);
+      for (const value of values) {
+        cont(env, value);
+      }
       break;
     }
     case "PlusNode":
@@ -179,9 +182,9 @@ function interpret(env: Env, node: Node, cont: Cont) {
 
 // The outermost continuation just collects up all results
 // from the sub-paths of execution
-function evaluateAST(env: Env, ast: Node) {
-  const results = [];
-  interpret(env, ast, (_env, value) => {
+function evaluateAST(env: Env, ast: Node): Value[] {
+  const results: Value[] = [];
+  interpret(env, ast, (_env, value: Value) => {
     results.push(value);
   });
   return results;
@@ -192,35 +195,82 @@ export const isFormula = (cell: string) => cell && cell[0] === "=";
 // An evaluation environment tracking results of evaluated cells
 // during the course of an evaluation pass.
 export class Env {
-  constructor(private data: AmbSheetDoc["data"]) {}
+  // track whether we've already eval'd the cell at the given location
+  public results: (Value[] | typeof NOT_READY)[][];
 
-  getValue(_name: string): Value {
-    // stub
-    return {
-      raw: 1,
-      node: { type: "NumberNode", value: 1 },
-      operands: [],
-    };
+  constructor(private data: AmbSheetDoc["data"]) {
+    this.results = data.map((row) =>
+      row.map((cell) =>
+        isFormula(cell)
+          ? NOT_READY
+          : [
+              {
+                raw: parseFloat(cell),
+                node: { type: "NumberNode", value: parseFloat(cell) },
+                operands: [],
+              },
+            ]
+      )
+    );
+  }
+
+  getValuesOfCell(col: number, row: number): Value[] | typeof NOT_READY {
+    console.log({ results: this.results, row, col });
+    return this.results[row][col];
+  }
+
+  setValuesOfCell(col: number, row: number, values: Value[]) {
+    this.results[row][col] = values;
   }
 }
 
-export const evaluateSheet = (data: AmbSheetDoc["data"]) => {
+const isReady = (cell: Value[] | typeof NOT_READY): cell is Value[] =>
+  cell !== NOT_READY;
+
+export const evaluateSheet = (data: AmbSheetDoc["data"]): Env => {
   const env = new Env(data);
-  return data.map((row) => {
-    return row.map((cell) => {
-      if (isFormula(cell)) {
-        const ast = semantics(g.match(cell.slice(1))).toAst();
-        const result = evaluateAST(env, ast);
-        if (result.length === 1) {
-          return result[0].raw;
-        } else {
-          return "{" + result.map((r) => r.raw).join(",") + "}";
+  while (true) {
+    let didSomething = false;
+    for (let row = 0; row < data.length; row++) {
+      for (let col = 0; col < data[row].length; col++) {
+        const cell = data[row][col];
+        if (env.getValuesOfCell(col, row) === NOT_READY && isFormula(cell)) {
+          try {
+            const result = evaluateFormula(env, cell.slice(1));
+            env.setValuesOfCell(col, row, result);
+            didSomething = true;
+          } catch (error) {
+            if (error === NOT_READY) {
+              // if NOT_READY, just continue to the next cell
+              console.log("not ready, skip");
+            } else {
+              throw error; // rethrow unexpected errors
+            }
+          }
         }
-      } else {
-        return cell;
       }
-    });
-  });
+    }
+    if (!didSomething) {
+      break;
+    }
+  }
+
+  return env;
+};
+
+export const printEnv = (env: Env) => {
+  return env.results.map((row) =>
+    row.map((cell) => {
+      if (!isReady(cell)) {
+        throw new Error("can't print an env with NOT_READY cells");
+      }
+
+      if (cell.length === 1) {
+        return "" + cell[0].raw;
+      }
+      return "{" + cell.map((v) => v.raw).join(",") + "}";
+    })
+  );
 };
 
 export const evaluateFormula = (env: Env, formula: string) => {
@@ -229,17 +279,3 @@ export const evaluateFormula = (env: Env, formula: string) => {
   const result = evaluateAST(env, ast);
   return result;
 };
-
-// tests
-
-// const p1_str = "{1, 3} * 5";
-// const match = g.match(p1_str);
-// const p1_ast = semantics(match).toAst();
-// console.log("p1 ast", JSON.stringify(p1_ast, null, 2));
-// console.log("Program 1:", JSON.stringify(evaluateAST(p1_ast), null, 2));
-
-// const p2_str = "2 + {}";
-// const match2 = g.match(p2_str);
-// const p2_ast = semantics(match2).toAst();
-// console.log("p2 ast", JSON.stringify(p2_ast, null, 2));
-// console.log("Program 2:", JSON.stringify(evaluateAST(p2_ast), null, 2));
