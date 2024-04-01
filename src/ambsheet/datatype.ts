@@ -1,4 +1,4 @@
-import { BoxesIcon, Sheet } from "lucide-react";
+import { BoxesIcon } from "lucide-react";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { next as A } from "@automerge/automerge";
 import { DataType } from "@/DocExplorer/doctypes";
