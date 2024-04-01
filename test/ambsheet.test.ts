@@ -36,7 +36,7 @@ describe("ambsheet evaluator", () => {
   });
 
   it("can do a cell ref where deps are not in order of naive eval", () => {
-    assert.deepStrictEqual(printEnv(evaluateSheet([["5", "=A3+1", "=A1+2"]])), [
+    assert.deepStrictEqual(printEnv(evaluateSheet([["5", "=C1+1", "=A1+2"]])), [
       ["5", "8", "7"],
     ]);
   });
