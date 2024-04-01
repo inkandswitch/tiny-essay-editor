@@ -5,10 +5,12 @@ type Node =
   | { type: "NumberNode"; value: number }
   | { type: "AmbNode"; values: Node[] }
   | { type: "CellRefNode"; col: number; row: number }
+  | { type: "GreaterThanNode"; arg1: Node; arg2: Node }
   | { type: "PlusNode"; arg1: Node; arg2: Node }
   | { type: "MinusNode"; arg1: Node; arg2: Node }
   | { type: "TimesNode"; arg1: Node; arg2: Node }
-  | { type: "DivideNode"; arg1: Node; arg2: Node };
+  | { type: "DivideNode"; arg1: Node; arg2: Node }
+  | { type: "IfNode"; cond: Node; trueBranch: Node; falseBranch: Node };
 
 interface Value {
   raw: number;
@@ -17,16 +19,22 @@ interface Value {
 }
 
 const grammarSource = String.raw`
-  Arithmetic {
-    Exp = AddExp
+  AmbSheets {
+    Exp = RelExp
+  
+    RelExp = AddExp ">" AddExp -- gt
+           | AddExp
 
     AddExp = AddExp "+" MulExp  -- plus
           | AddExp "-" MulExp  -- minus
           | MulExp
 
-    MulExp = MulExp "*" UnExp  -- times
-          | MulExp "/" UnExp  -- div
-          | UnExp
+    MulExp = MulExp "*" CallExp  -- times
+          | MulExp "/" CallExp  -- div
+          | CallExp
+
+    CallExp = "if" "(" Exp "," Exp "," Exp ")" -- if
+            | UnExp
 
     UnExp = "-" PriExp -- neg
           | PriExp
@@ -47,6 +55,13 @@ const g = ohm.grammar(grammarSource);
 // console.log("match", g.match("1 + {2, (3 + 4)}").succeeded());
 
 const semantics = g.createSemantics().addOperation("toAst", {
+  RelExp_gt(left, _op, right) {
+    return {
+      type: "GreaterThanNode",
+      arg1: left.toAst(),
+      arg2: right.toAst(),
+    };
+  },
   AddExp_plus(left, _op, right) {
     return {
       type: "PlusNode",
@@ -74,6 +89,14 @@ const semantics = g.createSemantics().addOperation("toAst", {
       arg1: left.toAst(),
       arg2: right.toAst(),
     };
+  },
+  CallExp_if(_if, _lparen, cond, _c1, trueBranch, _c2, falseBranch, _rparen) {
+    return {
+      type: "IfNode",
+      cond: cond.toAst(),
+      trueBranch: trueBranch.toAst(),
+      falseBranch: falseBranch.toAst()
+    }
   },
   UnExp_neg(_op, exp) {
     return {
@@ -155,6 +178,9 @@ function interpret(env: Env, node: Node, cont: Cont) {
       }
       break;
     }
+    case "GreaterThanNode":
+      interpretBinaryOp(env, node, cont, (a, b) => a > b ? 1 : 0);
+      break;
     case "PlusNode":
       interpretBinaryOp(env, node, cont, (a, b) => a + b);
       break;
@@ -166,6 +192,9 @@ function interpret(env: Env, node: Node, cont: Cont) {
       break;
     case "DivideNode":
       interpretBinaryOp(env, node, cont, (a, b) => a / b);
+      break;
+    case "IfNode":
+      interpret(env, node.cond, (env, cond) => interpret(env, cond.raw !== 0 ? node.trueBranch : node.falseBranch, cont));
       break;
     // Run the continuation for each value in the AmbNode.
     case "AmbNode":

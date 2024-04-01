@@ -47,4 +47,18 @@ describe("ambsheet evaluator", () => {
       [["5", "6", "12"], ["23"]]
     );
   });
+
+  it("can do simple if, v1", () => {
+    assert.deepStrictEqual(
+      printEnv(evaluateSheet([["={1,2,3}", "=if(A1>1, 111, {})"]])),
+      [["{1,2,3}", "{111,111}"]]
+    );
+  });
+
+  it("can do simple if, v2", () => {
+    assert.deepStrictEqual(
+      printEnv(evaluateSheet([["={1,2,3}", "=if(A1>1, 111, 222)"]])),
+      [["{1,2,3}", "{222,111,111}"]]
+    );
+  });
 });
