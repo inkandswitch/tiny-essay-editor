@@ -55,7 +55,6 @@ const patchesToAnnotations = (
   docBefore: KanbanBoardDoc,
   patches: A.Patch[]
 ) => {
-  console.log(patches.map((p) => `${p.action} -- ${p.path}`));
   return patches.flatMap(
     (patch): Annotation<KanbanBoardDocAnchor, undefined>[] => {
       // GL 3/15/24 This is a weird hack to detect newly added lanes.
@@ -174,12 +173,20 @@ const actions = {
     );
   },
   updateCard: (doc, { newCard }: { newCard: Card }) => {
-    const card = doc.cards.find((card) => card.id === newCard.id);
+    const cardIndex = doc.cards.findIndex((card) => card.id === newCard.id);
+    const card = doc.cards[cardIndex];
     if (newCard.title && newCard.title !== card.title) {
-      card.title = newCard.title;
+      A.updateText(doc, ["cards", cardIndex, "title"], newCard.title);
     }
     if (newCard.description && newCard.description !== card.description) {
-      card.description = newCard.description;
+      A.updateText(
+        doc,
+        ["cards", cardIndex, "description"],
+        newCard.description
+      );
+    }
+    if (newCard.label && newCard.label !== card.label) {
+      A.updateText(doc, ["cards", cardIndex, "label"], newCard.label);
     }
   },
   moveCard: (
@@ -212,13 +219,17 @@ const actions = {
     }
     doc.lanes.splice(doc.lanes.indexOf(lane), 1);
   },
-  updateLane: (doc, { lane }: { lane: Lane }) => {
-    const oldLane = doc.lanes.find((l) => l.id === lane.id);
+  updateLane: (doc, { laneId, newLane }: { laneId: string; newLane: Lane }) => {
+    const oldLane = doc.lanes.find((l) => l.id === laneId);
     if (!oldLane) {
       return;
     }
-    if (lane.title && lane.title !== oldLane.title) {
-      oldLane.title = lane.title;
+    if (newLane.title && newLane.title !== oldLane.title) {
+      A.updateText(
+        doc,
+        ["lanes", doc.lanes.indexOf(oldLane), "title"],
+        newLane.title
+      );
     }
   },
 };
