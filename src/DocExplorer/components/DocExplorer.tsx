@@ -13,8 +13,7 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
+import { toolsForDocTypes } from "../doctypes";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
@@ -23,23 +22,6 @@ export type Tool = {
   id: string;
   name: string;
   component: React.FC;
-};
-
-const TOOLS = {
-  essay: [
-    {
-      id: "essay",
-      name: "Editor",
-      component: TinyEssayEditor,
-    },
-  ],
-  tldraw: [
-    {
-      id: "tldraw",
-      name: "Drawing",
-      component: TLDraw,
-    },
-  ],
 };
 
 export const DocExplorer: React.FC = () => {
@@ -61,16 +43,10 @@ export const DocExplorer: React.FC = () => {
 
   const selectedDocName = selectedDocLink?.name;
 
-  const availableTools = useMemo(
-    () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
-    [selectedDocLink]
-  );
-  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
-  useEffect(() => {
-    setActiveTool(availableTools[0]);
-  }, [availableTools]);
-
-  const ToolComponent = activeTool?.component;
+  // Currently we don't have a toolpicker so we just show the first tool for the doc type
+  const ToolComponent = selectedDocLink
+    ? toolsForDocTypes[selectedDocLink.type][0]
+    : null;
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
@@ -228,7 +204,12 @@ export const DocExplorer: React.FC = () => {
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+                <ToolComponent
+                  docUrl={selectedDocUrl}
+                  key={selectedDocUrl}
+                  setActiveEditGroupIds={() => {}}
+                  activeEditGroupIds={[]}
+                />
               )}
             </div>
           </div>

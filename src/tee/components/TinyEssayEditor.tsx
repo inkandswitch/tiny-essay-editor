@@ -13,8 +13,9 @@ import { useThreadsWithPositions } from "../utils";
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
+import { DocEditorProps } from "@/DocExplorer/doctypes";
 
-export const TinyEssayEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
+export const TinyEssayEditor = ({ docUrl }: DocEditorProps<MarkdownDoc>) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [selection, setSelection] = useState<TextSelection>();
