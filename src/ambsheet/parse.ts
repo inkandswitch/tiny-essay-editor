@@ -1,5 +1,7 @@
 import * as ohm from 'ohm-js';
 
+export const isFormula = (cell: string) => cell && cell[0] === '=';
+
 export type Node =
   | { type: 'num'; value: number }
   | { type: 'amb'; values: Node[] }

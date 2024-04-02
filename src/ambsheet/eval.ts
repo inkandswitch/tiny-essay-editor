@@ -1,101 +1,24 @@
 import { AmbSheetDoc } from './datatype';
-import { parseFormula, Node } from './parse';
+import { isFormula, parseFormula, Node } from './parse';
 
 export interface Value {
-  raw: number;
+  rawValue: number;
   node: Node;
   childValues: Value[];
 }
 
-type Cont = (env: Env, value: Value) => void;
-
-function interpretBinaryOp(
-  env: Env,
-  node: Node & { left: Node; right: Node },
-  cont: Cont,
-  op: (x: number, y: number) => number
-) {
-  interpret(env, node.left, (env, val1: Value) =>
-    interpret(env, node.right, (env, val2: Value) =>
-      cont(env, {
-        raw: op(val1.raw, val2.raw),
-        node,
-        childValues: [val1, val2],
-      })
-    )
-  );
-}
+type Cont = (value: Value) => void;
 
 const NOT_READY = {};
 
-function interpret(env: Env, node: Node, cont: Cont) {
-  switch (node.type) {
-    case 'num':
-      cont(env, {
-        raw: node.value,
-        node,
-        childValues: [],
-      });
-      break;
-    case 'ref': {
-      const values = env.getValuesOfCell(node);
-      if (!isReady(values)) {
-        throw NOT_READY;
-      }
-      for (const value of values) {
-        cont(env, value);
-      }
-      break;
-    }
-    case '=':
-      interpretBinaryOp(env, node, cont, (a, b) => (a == b ? 1 : 0));
-      break;
-    case '>':
-      interpretBinaryOp(env, node, cont, (a, b) => (a > b ? 1 : 0));
-      break;
-    case '>=':
-      interpretBinaryOp(env, node, cont, (a, b) => (a >= b ? 1 : 0));
-      break;
-    case '<':
-      interpretBinaryOp(env, node, cont, (a, b) => (a < b ? 1 : 0));
-      break;
-    case '<=':
-      interpretBinaryOp(env, node, cont, (a, b) => (a <= b ? 1 : 0));
-      break;
-    case '+':
-      interpretBinaryOp(env, node, cont, (a, b) => a + b);
-      break;
-    case '*':
-      interpretBinaryOp(env, node, cont, (a, b) => a * b);
-      break;
-    case '-':
-      interpretBinaryOp(env, node, cont, (a, b) => a - b);
-      break;
-    case '/':
-      interpretBinaryOp(env, node, cont, (a, b) => a / b);
-      break;
-    case 'if':
-      interpret(env, node.cond, (env, cond) =>
-        interpret(env, cond.raw !== 0 ? node.then : node.else, cont)
-      );
-      break;
-    // Run the continuation for each value in the AmbNode.
-    case 'amb':
-      for (const expr of node.values) {
-        interpret(env, expr, cont);
-      }
-      break;
-    default: {
-      const exhaustiveCheck: never = node;
-      throw new Error(`Unhandled node type: ${exhaustiveCheck}`);
-    }
-  }
-}
+const isReady = (
+  cellValues: Value[] | typeof NOT_READY
+): cellValues is Value[] => cellValues !== NOT_READY;
 
-export const isFormula = (cell: string) => cell && cell[0] === '=';
-
-// An evaluation environment tracking results of evaluated cells
-// during the course of an evaluation pass.
+/**
+ * An evaluation environment tracking results of evaluated cells
+ * during the course of an evaluation pass.
+ */
 export class Env {
   // accumulate evaluation results at each point in the sheet
   public results: (Value[] | typeof NOT_READY | null)[][];
@@ -111,9 +34,9 @@ export class Env {
           const value = parseFloat(cell);
           return [
             {
-              raw: value,
+              rawValue: value,
               node: { type: 'num', value },
-              operands: [],
+              childValues: [],
             },
           ];
         }
@@ -121,27 +44,94 @@ export class Env {
     );
   }
 
-  getValuesOfCell({
+  getCellValues({
     row,
     col,
   }: {
     row: number;
     col: number;
   }): Value[] | typeof NOT_READY {
-    console.log({ results: this.results, row, col });
+    // console.log({ results: this.results, row, col });
     return this.results[row][col];
   }
 
-  setValuesOfCell(col: number, row: number, values: Value[]) {
+  setCellValues(col: number, row: number, values: Value[]) {
     this.results[row][col] = values;
+  }
+
+  interp(node: Node, cont: Cont) {
+    switch (node.type) {
+      case 'num':
+        return cont({
+          rawValue: node.value,
+          node,
+          childValues: [],
+        });
+      case 'ref': {
+        const values = this.getCellValues(node);
+        if (!isReady(values)) {
+          throw NOT_READY;
+        }
+        for (const value of values) {
+          cont(value);
+        }
+        return;
+      }
+      case '=':
+        return this.interpBinOp(node, cont, (a, b) => (a == b ? 1 : 0));
+      case '>':
+        return this.interpBinOp(node, cont, (a, b) => (a > b ? 1 : 0));
+      case '>=':
+        return this.interpBinOp(node, cont, (a, b) => (a >= b ? 1 : 0));
+      case '<':
+        return this.interpBinOp(node, cont, (a, b) => (a < b ? 1 : 0));
+      case '<=':
+        return this.interpBinOp(node, cont, (a, b) => (a <= b ? 1 : 0));
+      case '+':
+        return this.interpBinOp(node, cont, (a, b) => a + b);
+      case '*':
+        return this.interpBinOp(node, cont, (a, b) => a * b);
+      case '-':
+        return this.interpBinOp(node, cont, (a, b) => a - b);
+      case '/':
+        return this.interpBinOp(node, cont, (a, b) => a / b);
+      case 'if':
+        return this.interp(node.cond, (cond) =>
+          this.interp(cond.rawValue !== 0 ? node.then : node.else, cont)
+        );
+      case 'amb':
+        // call the continuation for each value in the amb node
+        for (const expr of node.values) {
+          this.interp(expr, cont);
+        }
+        return;
+      default: {
+        const exhaustiveCheck: never = node;
+        throw new Error(`Unhandled node type: ${exhaustiveCheck}`);
+      }
+    }
+  }
+
+  interpBinOp(
+    node: Node & { left: Node; right: Node },
+    cont: Cont,
+    op: (x: number, y: number) => number
+  ) {
+    this.interp(node.left, (left) =>
+      this.interp(node.right, (right) =>
+        cont({
+          rawValue: op(left.rawValue, right.rawValue),
+          node,
+          childValues: [left, right],
+        })
+      )
+    );
   }
 
   // The outermost continuation just collects up all results from the sub-paths of execution
   evalNode(node: Node) {
     const results: Value[] = [];
-    interpret(this, node, (_env, value: Value) => {
-      results.push(value);
-    });
+    this.interp(node, (value) => results.push(value));
     return results;
   }
 
@@ -158,17 +148,14 @@ export class Env {
         } else if (cell === null) {
           return '';
         } else if (cell.length === 1) {
-          return '' + cell[0].raw;
+          return '' + cell[0].rawValue;
         } else {
-          return '{' + cell.map((v) => v.raw).join(',') + '}';
+          return '{' + cell.map((v) => v.rawValue).join(',') + '}';
         }
       })
     );
   }
 }
-
-const isReady = (cell: Value[] | typeof NOT_READY): cell is Value[] =>
-  cell !== NOT_READY;
 
 export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
   const env = new Env(data);
@@ -177,13 +164,10 @@ export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
     for (let row = 0; row < data.length; row++) {
       for (let col = 0; col < data[row].length; col++) {
         const cell = data[row][col];
-        if (
-          env.getValuesOfCell({ row, col }) === NOT_READY &&
-          isFormula(cell)
-        ) {
+        if (env.getCellValues({ row, col }) === NOT_READY && isFormula(cell)) {
           try {
             const result = env.evalFormula(cell.slice(1));
-            env.setValuesOfCell(col, row, result);
+            env.setCellValues(col, row, result);
             didSomething = true;
           } catch (error) {
             if (error === NOT_READY) {
