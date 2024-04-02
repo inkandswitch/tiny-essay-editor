@@ -53,7 +53,9 @@ const grammarSource = String.raw`
       | "(" Exp ")"              -- paren
       | upper digit+             -- cellRef
 
-    number = digit+
+    number  (a number)
+      = digit* "." digit+  -- fract
+      | digit+             -- whole
   }
 `;
 

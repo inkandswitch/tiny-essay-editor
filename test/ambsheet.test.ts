@@ -4,7 +4,7 @@ import { evalSheet } from '@/ambsheet/eval.js';
 
 describe('ambsheet evaluator', () => {
   it('handles basic addition', () => {
-    assert.deepStrictEqual(evalSheet([['=1 + 1']]).print(), [['2']]);
+    assert.deepStrictEqual(evalSheet([['=1 + 1.5']]).print(), [['2.5']]);
   });
 
   it('handles paren expressions', () => {
