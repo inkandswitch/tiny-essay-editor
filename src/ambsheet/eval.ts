@@ -2,19 +2,19 @@ import { AmbSheetDoc } from "./datatype";
 import * as ohm from "ohm-js";
 
 type Node =
-  | { type: "NumberNode"; value: number }
-  | { type: "AmbNode"; values: Node[] }
-  | { type: "CellRefNode"; col: number; row: number }
-  | { type: "EqualsNode"; arg1: Node; arg2: Node }
-  | { type: "GreaterThanNode"; arg1: Node; arg2: Node }
-  | { type: "GreaterThanOrEqualsNode"; arg1: Node; arg2: Node }
-  | { type: "LessThanNode"; arg1: Node; arg2: Node }
-  | { type: "LessThanOrEqualsNode"; arg1: Node; arg2: Node }
-  | { type: "PlusNode"; arg1: Node; arg2: Node }
-  | { type: "MinusNode"; arg1: Node; arg2: Node }
-  | { type: "TimesNode"; arg1: Node; arg2: Node }
-  | { type: "DivideNode"; arg1: Node; arg2: Node }
-  | { type: "IfNode"; cond: Node; trueBranch: Node; falseBranch: Node };
+  | { type: "num"; value: number }
+  | { type: "amb"; values: Node[] }
+  | { type: "ref"; row: number; col: number }
+  | { type: "="; left: Node; right: Node }
+  | { type: ">"; left: Node; right: Node }
+  | { type: ">="; left: Node; right: Node }
+  | { type: "<"; left: Node; right: Node }
+  | { type: "<="; left: Node; right: Node }
+  | { type: "+"; left: Node; right: Node }
+  | { type: "-"; left: Node; right: Node }
+  | { type: "*"; left: Node; right: Node }
+  | { type: "/"; left: Node; right: Node }
+  | { type: "if"; cond: Node; then: Node; else: Node };
 
 interface Value {
   raw: number;
@@ -25,32 +25,38 @@ interface Value {
 const grammarSource = String.raw`
   AmbSheets {
     Exp = RelExp
+  
+    RelExp
+      = AddExp "="  AddExp  -- eq
+      | AddExp ">=" AddExp  -- ge
+      | AddExp ">"  AddExp  -- gt
+      | AddExp "<=" AddExp  -- le
+      | AddExp "<"  AddExp  -- lt
+      | AddExp
 
-    RelExp = AddExp "="  AddExp -- eq
-           | AddExp ">=" AddExp -- ge
-           | AddExp ">"  AddExp -- gt
-           | AddExp "<=" AddExp -- le
-           | AddExp "<"  AddExp -- lt
-           | AddExp
+    AddExp
+      = AddExp "+" MulExp  -- plus
+      | AddExp "-" MulExp  -- minus
+      | MulExp
 
-    AddExp = AddExp "+" MulExp  -- plus
-          | AddExp "-" MulExp  -- minus
-          | MulExp
+    MulExp
+      = MulExp "*" CallExp  -- times
+      | MulExp "/" CallExp  -- div
+      | CallExp
 
-    MulExp = MulExp "*" CallExp  -- times
-          | MulExp "/" CallExp  -- div
-          | CallExp
+    CallExp
+      = "if" "(" Exp "," Exp "," Exp ")"  -- if
+      | UnExp
 
-    CallExp = "if" "(" Exp "," Exp "," Exp ")" -- if
-            | UnExp
+    UnExp
+      = "-" PriExp  -- neg
+      | PriExp
 
-    UnExp = "-" PriExp -- neg
-          | PriExp
-
-    PriExp = number -- number
-          | "{" ListOf<Exp, ","> "}" -- amb
-          | "(" Exp ")" -- paren
-          | upper digit+ -- cellRef
+    PriExp
+      = number                   -- number
+      | "{" ListOf<Exp, ","> "}" -- amb
+      | "(" Exp ")"              -- paren
+      | upper digit+             -- cellRef
 
     number = digit+
   }
@@ -65,91 +71,91 @@ const g = ohm.grammar(grammarSource);
 const semantics = g.createSemantics().addOperation("toAst", {
   RelExp_eq(left, _op, right) {
     return {
-      type: "EqualsNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "=",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   RelExp_ge(left, _op, right) {
     return {
-      type: "GreaterThanOrEqualsNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: ">=",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   RelExp_gt(left, _op, right) {
     return {
-      type: "GreaterThanNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: ">",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   RelExp_le(left, _op, right) {
     return {
-      type: "LessThanOrEqualsNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "<=",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   RelExp_lt(left, _op, right) {
     return {
-      type: "LessThanNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "<",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   AddExp_plus(left, _op, right) {
     return {
-      type: "PlusNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "+",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   AddExp_minus(left, _op, right) {
     return {
-      type: "MinusNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "-",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   MulExp_times(left, _op, right) {
     return {
-      type: "TimesNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "*",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
   MulExp_div(left, _op, right) {
     return {
-      type: "DivideNode",
-      arg1: left.toAst(),
-      arg2: right.toAst(),
+      type: "/",
+      left: left.toAst(),
+      right: right.toAst(),
     };
   },
-  CallExp_if(_if, _lparen, cond, _c1, trueBranch, _c2, falseBranch, _rparen) {
+  CallExp_if(_if, _lparen, cond, _c1, thenExp, _c2, elseExp, _rparen) {
     return {
-      type: "IfNode",
+      type: "if",
       cond: cond.toAst(),
-      trueBranch: trueBranch.toAst(),
-      falseBranch: falseBranch.toAst(),
-    };
+      then: thenExp.toAst(),
+      else: elseExp.toAst()
+    }
   },
   UnExp_neg(_op, exp) {
     return {
-      type: "MinusNode",
-      arg1: { type: "NumberNode", value: 0 },
-      arg2: exp.toAst(),
+      type: "-",
+      left: { type: "num", value: 0 },
+      right: exp.toAst(),
     };
   },
   PriExp_number(number) {
     return {
-      type: "NumberNode",
+      type: "num",
       value: parseFloat(number.sourceString),
     };
   },
   PriExp_amb(_lbrace, list, _rbrace) {
     return {
-      type: "AmbNode",
+      type: "amb",
       values: list.toAst(),
     };
   },
@@ -158,7 +164,7 @@ const semantics = g.createSemantics().addOperation("toAst", {
   },
   PriExp_cellRef(col, row) {
     return {
-      type: "CellRefNode",
+      type: "ref",
       col: col.sourceString.charCodeAt(0) - "A".charCodeAt(0),
       row: parseInt(row.sourceString) - 1,
     };
@@ -178,12 +184,12 @@ type Cont = (env: Env, value: Value) => void;
 
 function interpretBinaryOp(
   env: Env,
-  node: Node & { arg1: Node; arg2: Node },
+  node: Node & { left: Node; right: Node },
   cont: Cont,
   op: (x: number, y: number) => number
 ) {
-  interpret(env, node.arg1, (env, val1: Value) =>
-    interpret(env, node.arg2, (env, val2: Value) =>
+  interpret(env, node.left, (env, val1: Value) =>
+    interpret(env, node.right, (env, val2: Value) =>
       cont(env, {
         raw: op(val1.raw, val2.raw),
         node: node,
@@ -197,14 +203,14 @@ const NOT_READY = {};
 
 function interpret(env: Env, node: Node, cont: Cont) {
   switch (node.type) {
-    case "NumberNode":
+    case "num":
       cont(env, {
         raw: node.value,
         node,
         operands: [],
       });
       break;
-    case "CellRefNode": {
+    case "ref": {
       const values = env.getValuesOfCell(node);
       if (!isReady(values)) {
         throw NOT_READY;
@@ -214,44 +220,38 @@ function interpret(env: Env, node: Node, cont: Cont) {
       }
       break;
     }
-    case "EqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => (a == b ? 1 : 0));
+    case "=":
+      interpretBinaryOp(env, node, cont, (a, b) => a == b ? 1 : 0);
       break;
-    case "GreaterThanNode":
-      interpretBinaryOp(env, node, cont, (a, b) => (a > b ? 1 : 0));
+    case ">":
+      interpretBinaryOp(env, node, cont, (a, b) => a > b ? 1 : 0);
       break;
-    case "GreaterThanOrEqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => (a >= b ? 1 : 0));
+    case ">=":
+      interpretBinaryOp(env, node, cont, (a, b) => a >= b ? 1 : 0);
       break;
-    case "LessThanNode":
-      interpretBinaryOp(env, node, cont, (a, b) => (a < b ? 1 : 0));
+    case "<":
+      interpretBinaryOp(env, node, cont, (a, b) => a < b ? 1 : 0);
       break;
-    case "LessThanOrEqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => (a <= b ? 1 : 0));
+    case "<=":
+      interpretBinaryOp(env, node, cont, (a, b) => a <= b ? 1 : 0);
       break;
-    case "PlusNode":
+    case "+":
       interpretBinaryOp(env, node, cont, (a, b) => a + b);
       break;
-    case "TimesNode":
+    case "*":
       interpretBinaryOp(env, node, cont, (a, b) => a * b);
       break;
-    case "MinusNode":
+    case "-":
       interpretBinaryOp(env, node, cont, (a, b) => a - b);
       break;
-    case "DivideNode":
+    case "/":
       interpretBinaryOp(env, node, cont, (a, b) => a / b);
       break;
-    case "IfNode":
-      interpret(env, node.cond, (env, cond) =>
-        interpret(
-          env,
-          cond.raw !== 0 ? node.trueBranch : node.falseBranch,
-          cont
-        )
-      );
+    case "if":
+      interpret(env, node.cond, (env, cond) => interpret(env, cond.raw !== 0 ? node.then : node.else, cont));
       break;
     // Run the continuation for each value in the AmbNode.
-    case "AmbNode":
+    case "amb":
       for (const expr of node.values) {
         interpret(env, expr, cont);
       }
@@ -283,21 +283,17 @@ export class Env {
 
   constructor(private data: AmbSheetDoc["data"]) {
     this.results = data.map((row) =>
-      row.map((cell) => {
-        if (cell === "" || cell === null) {
-          return null;
-        } else if (isFormula(cell)) {
-          return NOT_READY;
-        } else {
-          return [
-            {
-              raw: parseFloat(cell),
-              node: { type: "NumberNode", value: parseFloat(cell) },
-              operands: [],
-            },
-          ];
-        }
-      })
+      row.map((cell) =>
+        isFormula(cell)
+          ? NOT_READY
+          : [
+              {
+                raw: parseFloat(cell),
+                node: { type: "num", value: parseFloat(cell) },
+                operands: [],
+              },
+            ]
+      )
     );
   }
 
