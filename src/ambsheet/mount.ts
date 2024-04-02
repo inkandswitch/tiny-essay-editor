@@ -1,7 +1,7 @@
-import React from "react";
-import ReactDom from "react-dom/client";
-import { AmbSheet } from "./components/AmbSheet.js";
-import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import React from 'react';
+import ReactDom from 'react-dom/client';
+import { AmbSheet } from './components/AmbSheet.js';
+import { RepoContext } from '@automerge/automerge-repo-react-hooks';
 
 export function mount(node, params) {
   // workaround different conventions for documentUrl

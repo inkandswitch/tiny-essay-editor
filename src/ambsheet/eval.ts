@@ -1,20 +1,20 @@
-import { AmbSheetDoc } from "./datatype";
-import * as ohm from "ohm-js";
+import { AmbSheetDoc } from './datatype';
+import * as ohm from 'ohm-js';
 
 type Node =
-  | { type: "num"; value: number }
-  | { type: "amb"; values: Node[] }
-  | { type: "ref"; row: number; col: number }
-  | { type: "="; left: Node; right: Node }
-  | { type: ">"; left: Node; right: Node }
-  | { type: ">="; left: Node; right: Node }
-  | { type: "<"; left: Node; right: Node }
-  | { type: "<="; left: Node; right: Node }
-  | { type: "+"; left: Node; right: Node }
-  | { type: "-"; left: Node; right: Node }
-  | { type: "*"; left: Node; right: Node }
-  | { type: "/"; left: Node; right: Node }
-  | { type: "if"; cond: Node; then: Node; else: Node };
+  | { type: 'num'; value: number }
+  | { type: 'amb'; values: Node[] }
+  | { type: 'ref'; row: number; col: number }
+  | { type: '='; left: Node; right: Node }
+  | { type: '>'; left: Node; right: Node }
+  | { type: '>='; left: Node; right: Node }
+  | { type: '<'; left: Node; right: Node }
+  | { type: '<='; left: Node; right: Node }
+  | { type: '+'; left: Node; right: Node }
+  | { type: '-'; left: Node; right: Node }
+  | { type: '*'; left: Node; right: Node }
+  | { type: '/'; left: Node; right: Node }
+  | { type: 'if'; cond: Node; then: Node; else: Node };
 
 interface Value {
   raw: number;
@@ -68,94 +68,94 @@ const g = ohm.grammar(grammarSource);
 // console.log("match", g.match("-1 + {2, 3}").succeeded());
 // console.log("match", g.match("1 + {2, (3 + 4)}").succeeded());
 
-const semantics = g.createSemantics().addOperation("toAst", {
+const semantics = g.createSemantics().addOperation('toAst', {
   RelExp_eq(left, _op, right) {
     return {
-      type: "=",
+      type: '=',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   RelExp_ge(left, _op, right) {
     return {
-      type: ">=",
+      type: '>=',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   RelExp_gt(left, _op, right) {
     return {
-      type: ">",
+      type: '>',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   RelExp_le(left, _op, right) {
     return {
-      type: "<=",
+      type: '<=',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   RelExp_lt(left, _op, right) {
     return {
-      type: "<",
+      type: '<',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   AddExp_plus(left, _op, right) {
     return {
-      type: "+",
+      type: '+',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   AddExp_minus(left, _op, right) {
     return {
-      type: "-",
+      type: '-',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   MulExp_times(left, _op, right) {
     return {
-      type: "*",
+      type: '*',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   MulExp_div(left, _op, right) {
     return {
-      type: "/",
+      type: '/',
       left: left.toAst(),
       right: right.toAst(),
     };
   },
   CallExp_if(_if, _lparen, cond, _c1, thenExp, _c2, elseExp, _rparen) {
     return {
-      type: "if",
+      type: 'if',
       cond: cond.toAst(),
       then: thenExp.toAst(),
-      else: elseExp.toAst()
-    }
+      else: elseExp.toAst(),
+    };
   },
   UnExp_neg(_op, exp) {
     return {
-      type: "-",
-      left: { type: "num", value: 0 },
+      type: '-',
+      left: { type: 'num', value: 0 },
       right: exp.toAst(),
     };
   },
   PriExp_number(number) {
     return {
-      type: "num",
+      type: 'num',
       value: parseFloat(number.sourceString),
     };
   },
   PriExp_amb(_lbrace, list, _rbrace) {
     return {
-      type: "amb",
+      type: 'amb',
       values: list.toAst(),
     };
   },
@@ -164,8 +164,8 @@ const semantics = g.createSemantics().addOperation("toAst", {
   },
   PriExp_cellRef(col, row) {
     return {
-      type: "ref",
-      col: col.sourceString.charCodeAt(0) - "A".charCodeAt(0),
+      type: 'ref',
+      col: col.sourceString.charCodeAt(0) - 'A'.charCodeAt(0),
       row: parseInt(row.sourceString) - 1,
     };
   },
@@ -203,14 +203,14 @@ const NOT_READY = {};
 
 function interpret(env: Env, node: Node, cont: Cont) {
   switch (node.type) {
-    case "num":
+    case 'num':
       cont(env, {
         raw: node.value,
         node,
         operands: [],
       });
       break;
-    case "ref": {
+    case 'ref': {
       const values = env.getValuesOfCell(node);
       if (!isReady(values)) {
         throw NOT_READY;
@@ -220,38 +220,40 @@ function interpret(env: Env, node: Node, cont: Cont) {
       }
       break;
     }
-    case "=":
-      interpretBinaryOp(env, node, cont, (a, b) => a == b ? 1 : 0);
+    case '=':
+      interpretBinaryOp(env, node, cont, (a, b) => (a == b ? 1 : 0));
       break;
-    case ">":
-      interpretBinaryOp(env, node, cont, (a, b) => a > b ? 1 : 0);
+    case '>':
+      interpretBinaryOp(env, node, cont, (a, b) => (a > b ? 1 : 0));
       break;
-    case ">=":
-      interpretBinaryOp(env, node, cont, (a, b) => a >= b ? 1 : 0);
+    case '>=':
+      interpretBinaryOp(env, node, cont, (a, b) => (a >= b ? 1 : 0));
       break;
-    case "<":
-      interpretBinaryOp(env, node, cont, (a, b) => a < b ? 1 : 0);
+    case '<':
+      interpretBinaryOp(env, node, cont, (a, b) => (a < b ? 1 : 0));
       break;
-    case "<=":
-      interpretBinaryOp(env, node, cont, (a, b) => a <= b ? 1 : 0);
+    case '<=':
+      interpretBinaryOp(env, node, cont, (a, b) => (a <= b ? 1 : 0));
       break;
-    case "+":
+    case '+':
       interpretBinaryOp(env, node, cont, (a, b) => a + b);
       break;
-    case "*":
+    case '*':
       interpretBinaryOp(env, node, cont, (a, b) => a * b);
       break;
-    case "-":
+    case '-':
       interpretBinaryOp(env, node, cont, (a, b) => a - b);
       break;
-    case "/":
+    case '/':
       interpretBinaryOp(env, node, cont, (a, b) => a / b);
       break;
-    case "if":
-      interpret(env, node.cond, (env, cond) => interpret(env, cond.raw !== 0 ? node.then : node.else, cont));
+    case 'if':
+      interpret(env, node.cond, (env, cond) =>
+        interpret(env, cond.raw !== 0 ? node.then : node.else, cont)
+      );
       break;
     // Run the continuation for each value in the AmbNode.
-    case "amb":
+    case 'amb':
       for (const expr of node.values) {
         interpret(env, expr, cont);
       }
@@ -273,7 +275,7 @@ function evaluateAST(env: Env, ast: Node): Value[] {
   return results;
 }
 
-export const isFormula = (cell: string) => cell && cell[0] === "=";
+export const isFormula = (cell: string) => cell && cell[0] === '=';
 
 // An evaluation environment tracking results of evaluated cells
 // during the course of an evaluation pass.
@@ -281,10 +283,10 @@ export class Env {
   // accumulate evaluation results at each point in the sheet
   public results: (Value[] | typeof NOT_READY | null)[][];
 
-  constructor(private data: AmbSheetDoc["data"]) {
+  constructor(private data: AmbSheetDoc['data']) {
     this.results = data.map((row) =>
       row.map((cell) => {
-        if (cell === "" || cell === null) {
+        if (cell === '' || cell === null) {
           return null;
         } else if (isFormula(cell)) {
           return NOT_READY;
@@ -292,7 +294,7 @@ export class Env {
           return [
             {
               raw: parseFloat(cell),
-              node: { type: "num", value: parseFloat(cell) },
+              node: { type: 'num', value: parseFloat(cell) },
               operands: [],
             },
           ];
@@ -319,7 +321,7 @@ export class Env {
 const isReady = (cell: Value[] | typeof NOT_READY): cell is Value[] =>
   cell !== NOT_READY;
 
-export const evaluateSheet = (data: AmbSheetDoc["data"]): Env => {
+export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
   const env = new Env(data);
   while (true) {
     let didSomething = false;
@@ -337,7 +339,7 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]): Env => {
           } catch (error) {
             if (error === NOT_READY) {
               // if NOT_READY, just continue to the next cell
-              console.log("not ready, skip");
+              console.log('not ready, skip');
             } else {
               throw error; // rethrow unexpected errors
             }
@@ -361,13 +363,13 @@ export const printEnv = (env: Env) => {
       }
 
       if (cell === null) {
-        return "";
+        return '';
       }
 
       if (cell.length === 1) {
-        return "" + cell[0].raw;
+        return '' + cell[0].raw;
       }
-      return "{" + cell.map((v) => v.raw).join(",") + "}";
+      return '{' + cell.map((v) => v.raw).join(',') + '}';
     })
   );
 };

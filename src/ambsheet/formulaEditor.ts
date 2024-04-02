@@ -1,4 +1,4 @@
-import Handsontable from "handsontable";
+import Handsontable from 'handsontable';
 
 class FormulaEditor extends Handsontable.editors.TextEditor {
   formula: string;

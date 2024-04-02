@@ -1,9 +1,9 @@
-import { BoxesIcon } from "lucide-react";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { next as A } from "@automerge/automerge";
-import { DataType } from "@/DocExplorer/doctypes";
-import { pick } from "lodash";
-import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
+import { BoxesIcon } from 'lucide-react';
+import { DecodedChangeWithMetadata } from '@/patchwork/groupChanges';
+import { next as A } from '@automerge/automerge';
+import { DataType } from '@/DocExplorer/doctypes';
+import { pick } from 'lodash';
+import { Annotation, HasPatchworkMetadata } from '@/patchwork/schema';
 
 export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table
@@ -26,18 +26,18 @@ export type AmbSheetDocAnchor = {
 // update the title so it's more clear which one is the copy vs original.
 // (this mechanism needs to be thought out more...)
 export const markCopy = (doc: any) => {
-  doc.title = "Copy of " + doc.title;
+  doc.title = 'Copy of ' + doc.title;
 };
 
 const getTitle = (doc: any) => {
-  return doc.title || "Mystery Data Grid";
+  return doc.title || 'Mystery Data Grid';
 };
 
 export const init = (doc: any) => {
-  doc.title = "Untitled AmbSheet";
+  doc.title = 'Untitled AmbSheet';
   const rows = 100;
   const cols = 26;
-  const defaultValue = "";
+  const defaultValue = '';
   doc.data = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => defaultValue)
   );
@@ -47,12 +47,12 @@ export const includeChangeInHistory = (
   doc: AmbSheetDoc,
   decodedChange: DecodedChangeWithMetadata
 ) => {
-  const dataObjId = A.getObjectId(doc, "data");
+  const dataObjId = A.getObjectId(doc, 'data');
   // GL 3/11/24: this is miserable, we need to collect a whole bunch of object ids
   // for the rows inside the data object in order to filter changes.
   // It'd be much nicer to check "is this change working somewhere within this path".
   const rowObjIds = doc.data.map((_, index) => A.getObjectId(doc.data, index));
-  const commentsObjID = A.getObjectId(doc, "commentThreads");
+  const commentsObjID = A.getObjectId(doc, 'commentThreads');
 
   return decodedChange.ops.some(
     (op) =>
@@ -63,7 +63,7 @@ export const includeChangeInHistory = (
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch) =>
-  patch.path[0] === "data" || patch.path[0] === "commentThreads";
+  patch.path[0] === 'data' || patch.path[0] === 'commentThreads';
 
 const promptForAIChangeGroupSummary = ({
   docBefore,
@@ -93,11 +93,11 @@ const promptForAIChangeGroupSummary = ({
 
   ## Doc before
 
-  ${JSON.stringify(pick(docBefore, ["data"]), null, 2)}
+  ${JSON.stringify(pick(docBefore, ['data']), null, 2)}
 
   ## Doc after
 
-  ${JSON.stringify(pick(docAfter, ["data"]), null, 2)}`;
+  ${JSON.stringify(pick(docAfter, ['data']), null, 2)}`;
 };
 
 const patchesToAnnotations = (
@@ -106,16 +106,16 @@ const patchesToAnnotations = (
   patches: A.Patch[]
 ) => {
   return patches.flatMap((patch): Annotation<AmbSheetDocAnchor, string>[] => {
-    const handledPatchActions = ["splice"];
-    if (patch.path[0] !== "data" || !handledPatchActions.includes(patch.action))
+    const handledPatchActions = ['splice'];
+    if (patch.path[0] !== 'data' || !handledPatchActions.includes(patch.action))
       return [];
 
     // TODO: find a way to show the old value in the annotation
     switch (patch.action) {
-      case "splice": {
+      case 'splice': {
         return [
           {
-            type: "added",
+            type: 'added',
             added: patch.value,
             target: {
               row: patch.path[1] as number,
@@ -124,12 +124,12 @@ const patchesToAnnotations = (
           },
         ];
       }
-      case "del":
+      case 'del':
         // TODO
         return [];
 
       default:
-        throw new Error("invalid patch");
+        throw new Error('invalid patch');
     }
   });
 };
@@ -139,8 +139,8 @@ export const AmbSheetDatatype: DataType<
   AmbSheetDocAnchor,
   string
 > = {
-  id: "ambsheet",
-  name: "AmbSheet",
+  id: 'ambsheet',
+  name: 'AmbSheet',
   icon: BoxesIcon,
   init,
   getTitle,
