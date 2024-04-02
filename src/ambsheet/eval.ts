@@ -140,6 +140,39 @@ export class Env {
     return this.evalNode(node);
   }
 
+  eval(): Env {
+    while (true) {
+      let didSomething = false;
+      for (let row = 0; row < this.data.length; row++) {
+        for (let col = 0; col < this.data[row].length; col++) {
+          const cell = this.data[row][col];
+          if (
+            this.getCellValues({ row, col }) === NOT_READY &&
+            isFormula(cell)
+          ) {
+            try {
+              const result = this.evalFormula(cell.slice(1));
+              this.setCellValues(col, row, result);
+              didSomething = true;
+            } catch (error) {
+              if (error === NOT_READY) {
+                // if NOT_READY, just continue to the next cell
+                // console.log('not ready, skip');
+              } else {
+                throw error; // rethrow unexpected errors
+              }
+            }
+          }
+        }
+      }
+      if (!didSomething) {
+        break;
+      }
+    }
+
+    return this;
+  }
+
   print() {
     return this.results.map((row) =>
       row.map((cell) => {
@@ -157,33 +190,4 @@ export class Env {
   }
 }
 
-export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
-  const env = new Env(data);
-  while (true) {
-    let didSomething = false;
-    for (let row = 0; row < data.length; row++) {
-      for (let col = 0; col < data[row].length; col++) {
-        const cell = data[row][col];
-        if (env.getCellValues({ row, col }) === NOT_READY && isFormula(cell)) {
-          try {
-            const result = env.evalFormula(cell.slice(1));
-            env.setCellValues(col, row, result);
-            didSomething = true;
-          } catch (error) {
-            if (error === NOT_READY) {
-              // if NOT_READY, just continue to the next cell
-              console.log('not ready, skip');
-            } else {
-              throw error; // rethrow unexpected errors
-            }
-          }
-        }
-      }
-    }
-    if (!didSomething) {
-      break;
-    }
-  }
-
-  return env;
-};
+export const evalSheet = (data: AmbSheetDoc['data']) => new Env(data).eval();

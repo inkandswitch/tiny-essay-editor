@@ -1,25 +1,25 @@
-import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { AmbSheetDoc, AmbSheetDocAnchor } from "../datatype";
+import { useDocument, useHandle } from '@automerge/automerge-repo-react-hooks';
+import { AmbSheetDoc, AmbSheetDocAnchor } from '../datatype';
 
-import { HotTable } from "@handsontable/react";
-import { registerAllModules } from "handsontable/registry";
-import "handsontable/dist/handsontable.full.min.css";
-import { useMemo } from "react";
+import { HotTable } from '@handsontable/react';
+import { registerAllModules } from 'handsontable/registry';
+import 'handsontable/dist/handsontable.full.min.css';
+import { useMemo } from 'react';
 
-import * as A from "@automerge/automerge/next";
-import { registerRenderer, textRenderer } from "handsontable/renderers";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { evaluateSheet, isFormula, printEnv } from "../eval";
-import { FormulaEditor } from "../formulaEditor";
+import * as A from '@automerge/automerge/next';
+import { registerRenderer, textRenderer } from 'handsontable/renderers';
+import { DocEditorProps } from '@/DocExplorer/doctypes';
+import { evalSheet, isFormula, printEnv } from '../eval';
+import { FormulaEditor } from '../formulaEditor';
 
 // register Handsontable's modules
 registerAllModules();
 
-registerRenderer("addedCell", (hotInstance, TD, ...rest) => {
+registerRenderer('addedCell', (hotInstance, TD, ...rest) => {
   textRenderer(hotInstance, TD, ...rest);
 
-  TD.style.outline = "solid 1px rgb(0 100 0 / 80%)";
-  TD.style.background = "rgb(0 255 0 / 10%)";
+  TD.style.outline = 'solid 1px rgb(0 100 0 / 80%)';
+  TD.style.background = 'rgb(0 255 0 / 10%)';
 });
 
 // Here's an overview of how formula evaluation works:
@@ -41,7 +41,7 @@ export const AmbSheet = ({
   );
 
   const evaluatedSheet = useMemo(
-    () => (doc ? printEnv(evaluateSheet(doc.data)) : []),
+    () => (doc ? printEnv(evalSheet(doc.data)) : []),
     [doc]
   );
 
@@ -49,7 +49,7 @@ export const AmbSheet = ({
     handle.change((doc) => {
       changes.forEach(([row, column, , newValue]) => {
         if (column > doc.data[0].length) {
-          doc.data[0][column] = "";
+          doc.data[0][column] = '';
         }
         if (!doc.data[row]) {
           doc.data[row] = new Array(column).fill(null);
@@ -83,7 +83,7 @@ export const AmbSheet = ({
   const cellAnnotations = annotations.map((annotation) => ({
     row: annotation.target.row,
     col: annotation.target.column,
-    renderer: "addedCell",
+    renderer: 'addedCell',
     formula: `=${annotation.target.row}+${annotation.target.column}`,
   }));
 
