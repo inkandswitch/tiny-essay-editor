@@ -4,7 +4,7 @@ import { parseFormula, Node } from './parse';
 export interface Value {
   raw: number;
   node: Node;
-  operands: Value[];
+  childValues: Value[];
 }
 
 type Cont = (env: Env, value: Value) => void;
@@ -20,7 +20,7 @@ function interpretBinaryOp(
       cont(env, {
         raw: op(val1.raw, val2.raw),
         node,
-        operands: [val1, val2],
+        childValues: [val1, val2],
       })
     )
   );
@@ -34,7 +34,7 @@ function interpret(env: Env, node: Node, cont: Cont) {
       cont(env, {
         raw: node.value,
         node,
-        operands: [],
+        childValues: [],
       });
       break;
     case 'ref': {
@@ -92,16 +92,6 @@ function interpret(env: Env, node: Node, cont: Cont) {
   }
 }
 
-// The outermost continuation just collects up all results
-// from the sub-paths of execution
-function evaluateAST(env: Env, ast: Node): Value[] {
-  const results: Value[] = [];
-  interpret(env, ast, (_env, value: Value) => {
-    results.push(value);
-  });
-  return results;
-}
-
 export const isFormula = (cell: string) => cell && cell[0] === '=';
 
 // An evaluation environment tracking results of evaluated cells
@@ -146,6 +136,20 @@ export class Env {
     this.results[row][col] = values;
   }
 
+  // The outermost continuation just collects up all results from the sub-paths of execution
+  evalNode(node: Node) {
+    const results: Value[] = [];
+    interpret(this, node, (_env, value: Value) => {
+      results.push(value);
+    });
+    return results;
+  }
+
+  evalFormula(formula: string) {
+    const node = parseFormula(formula);
+    return this.evalNode(node);
+  }
+
   print() {
     return this.results.map((row) =>
       row.map((cell) => {
@@ -178,7 +182,7 @@ export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
           isFormula(cell)
         ) {
           try {
-            const result = evaluateFormula(env, cell.slice(1));
+            const result = env.evalFormula(cell.slice(1));
             env.setValuesOfCell(col, row, result);
             didSomething = true;
           } catch (error) {
@@ -198,10 +202,4 @@ export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
   }
 
   return env;
-};
-
-export const evaluateFormula = (env: Env, formula: string) => {
-  const ast = parseFormula(formula);
-  const result = evaluateAST(env, ast);
-  return result;
 };
