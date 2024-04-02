@@ -151,7 +151,7 @@ export class Env {
             isFormula(cell)
           ) {
             try {
-              const result = this.evalFormula(cell.slice(1));
+              const result = this.evalFormula(cell);
               this.setCellValues(col, row, result);
               didSomething = true;
             } catch (error) {

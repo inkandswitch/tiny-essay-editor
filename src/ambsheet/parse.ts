@@ -19,6 +19,8 @@ export type Node =
 
 const grammarSource = String.raw`
   AmbSheets {
+    Formula = "=" Exp
+
     Exp = RelExp
   
     RelExp
@@ -61,11 +63,15 @@ const grammarSource = String.raw`
 
 const g = ohm.grammar(grammarSource);
 
-// console.log("match", g.match("1 + {2, 3}").succeeded());
-// console.log("match", g.match("-1 + {2, 3}").succeeded());
-// console.log("match", g.match("1 + {2, (3 + 4)}").succeeded());
+// console.log("match", g.match("=1 + {2, 3}").succeeded());
+// console.log("match", g.match("=-1 + {2, 3}").succeeded());
+// console.log("match", g.match("=1 + {2, (3 + 4)}").succeeded());
 
 const semantics = g.createSemantics().addOperation('toAst', {
+  Formula(_eq, exp) {
+    return exp.toAst();
+  },
+
   RelExp_eq(left, _op, right) {
     return {
       type: '=',
