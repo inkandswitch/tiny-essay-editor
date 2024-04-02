@@ -283,20 +283,23 @@ export class Env {
 
   constructor(private data: AmbSheetDoc["data"]) {
     this.results = data.map((row) =>
-      row.map((cell) =>
-        isFormula(cell)
-          ? NOT_READY
-          : [
-              {
-                raw: parseFloat(cell),
-                node: { type: "num", value: parseFloat(cell) },
-                operands: [],
-              },
-            ]
-      )
+      row.map((cell) => {
+        if (cell === "" || cell === null) {
+          return null;
+        } else if (isFormula(cell)) {
+          return NOT_READY;
+        } else {
+          return [
+            {
+              raw: parseFloat(cell),
+              node: { type: "num", value: parseFloat(cell) },
+              operands: [],
+            },
+          ];
+        }
+      })
     );
   }
-
   getValuesOfCell({
     row,
     col,
