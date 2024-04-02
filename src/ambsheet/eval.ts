@@ -25,7 +25,7 @@ interface Value {
 const grammarSource = String.raw`
   AmbSheets {
     Exp = RelExp
-  
+
     RelExp = AddExp "="  AddExp -- eq
            | AddExp ">=" AddExp -- ge
            | AddExp ">"  AddExp -- gt
@@ -131,8 +131,8 @@ const semantics = g.createSemantics().addOperation("toAst", {
       type: "IfNode",
       cond: cond.toAst(),
       trueBranch: trueBranch.toAst(),
-      falseBranch: falseBranch.toAst()
-    }
+      falseBranch: falseBranch.toAst(),
+    };
   },
   UnExp_neg(_op, exp) {
     return {
@@ -215,19 +215,19 @@ function interpret(env: Env, node: Node, cont: Cont) {
       break;
     }
     case "EqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => a == b ? 1 : 0);
+      interpretBinaryOp(env, node, cont, (a, b) => (a == b ? 1 : 0));
       break;
     case "GreaterThanNode":
-      interpretBinaryOp(env, node, cont, (a, b) => a > b ? 1 : 0);
+      interpretBinaryOp(env, node, cont, (a, b) => (a > b ? 1 : 0));
       break;
     case "GreaterThanOrEqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => a >= b ? 1 : 0);
+      interpretBinaryOp(env, node, cont, (a, b) => (a >= b ? 1 : 0));
       break;
     case "LessThanNode":
-      interpretBinaryOp(env, node, cont, (a, b) => a < b ? 1 : 0);
+      interpretBinaryOp(env, node, cont, (a, b) => (a < b ? 1 : 0));
       break;
     case "LessThanOrEqualsNode":
-      interpretBinaryOp(env, node, cont, (a, b) => a <= b ? 1 : 0);
+      interpretBinaryOp(env, node, cont, (a, b) => (a <= b ? 1 : 0));
       break;
     case "PlusNode":
       interpretBinaryOp(env, node, cont, (a, b) => a + b);
@@ -242,7 +242,13 @@ function interpret(env: Env, node: Node, cont: Cont) {
       interpretBinaryOp(env, node, cont, (a, b) => a / b);
       break;
     case "IfNode":
-      interpret(env, node.cond, (env, cond) => interpret(env, cond.raw !== 0 ? node.trueBranch : node.falseBranch, cont));
+      interpret(env, node.cond, (env, cond) =>
+        interpret(
+          env,
+          cond.raw !== 0 ? node.trueBranch : node.falseBranch,
+          cont
+        )
+      );
       break;
     // Run the continuation for each value in the AmbNode.
     case "AmbNode":
@@ -272,26 +278,36 @@ export const isFormula = (cell: string) => cell && cell[0] === "=";
 // An evaluation environment tracking results of evaluated cells
 // during the course of an evaluation pass.
 export class Env {
-  // track whether we've already eval'd the cell at the given location
-  public results: (Value[] | typeof NOT_READY)[][];
+  // accumulate evaluation results at each point in the sheet
+  public results: (Value[] | typeof NOT_READY | null)[][];
 
   constructor(private data: AmbSheetDoc["data"]) {
     this.results = data.map((row) =>
-      row.map((cell) =>
-        isFormula(cell)
-          ? NOT_READY
-          : [
-              {
-                raw: parseFloat(cell),
-                node: { type: "NumberNode", value: parseFloat(cell) },
-                operands: [],
-              },
-            ]
-      )
+      row.map((cell) => {
+        if (cell === "" || cell === null) {
+          return null;
+        } else if (isFormula(cell)) {
+          return NOT_READY;
+        } else {
+          return [
+            {
+              raw: parseFloat(cell),
+              node: { type: "NumberNode", value: parseFloat(cell) },
+              operands: [],
+            },
+          ];
+        }
+      })
     );
   }
 
-  getValuesOfCell({ row, col }: { row: number, col: number }): Value[] | typeof NOT_READY {
+  getValuesOfCell({
+    row,
+    col,
+  }: {
+    row: number;
+    col: number;
+  }): Value[] | typeof NOT_READY {
     console.log({ results: this.results, row, col });
     return this.results[row][col];
   }
@@ -311,7 +327,10 @@ export const evaluateSheet = (data: AmbSheetDoc["data"]): Env => {
     for (let row = 0; row < data.length; row++) {
       for (let col = 0; col < data[row].length; col++) {
         const cell = data[row][col];
-        if (env.getValuesOfCell({ row, col }) === NOT_READY && isFormula(cell)) {
+        if (
+          env.getValuesOfCell({ row, col }) === NOT_READY &&
+          isFormula(cell)
+        ) {
           try {
             const result = evaluateFormula(env, cell.slice(1));
             env.setValuesOfCell(col, row, result);
@@ -340,6 +359,10 @@ export const printEnv = (env: Env) => {
     row.map((cell) => {
       if (!isReady(cell)) {
         throw new Error("can't print an env with NOT_READY cells");
+      }
+
+      if (cell === null) {
+        return "";
       }
 
       if (cell.length === 1) {
