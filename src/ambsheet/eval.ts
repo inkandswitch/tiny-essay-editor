@@ -291,10 +291,11 @@ export class Env {
         } else if (isFormula(cell)) {
           return NOT_READY;
         } else {
+          const value = parseFloat(cell);
           return [
             {
-              raw: parseFloat(cell),
-              node: { type: 'num', value: parseFloat(cell) },
+              raw: value,
+              node: { type: 'num', value },
               operands: [],
             },
           ];
@@ -302,6 +303,7 @@ export class Env {
       })
     );
   }
+
   getValuesOfCell({
     row,
     col,
@@ -315,6 +317,22 @@ export class Env {
 
   setValuesOfCell(col: number, row: number, values: Value[]) {
     this.results[row][col] = values;
+  }
+
+  print() {
+    return this.results.map((row) =>
+      row.map((cell) => {
+        if (!isReady(cell)) {
+          throw new Error("can't print an env with NOT_READY cells");
+        } else if (cell === null) {
+          return '';
+        } else if (cell.length === 1) {
+          return '' + cell[0].raw;
+        } else {
+          return '{' + cell.map((v) => v.raw).join(',') + '}';
+        }
+      })
+    );
   }
 }
 
@@ -353,25 +371,6 @@ export const evaluateSheet = (data: AmbSheetDoc['data']): Env => {
   }
 
   return env;
-};
-
-export const printEnv = (env: Env) => {
-  return env.results.map((row) =>
-    row.map((cell) => {
-      if (!isReady(cell)) {
-        throw new Error("can't print an env with NOT_READY cells");
-      }
-
-      if (cell === null) {
-        return '';
-      }
-
-      if (cell.length === 1) {
-        return '' + cell[0].raw;
-      }
-      return '{' + cell.map((v) => v.raw).join(',') + '}';
-    })
-  );
 };
 
 export const evaluateFormula = (env: Env, formula: string) => {
