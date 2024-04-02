@@ -1,6 +1,11 @@
 import { AmbSheetDoc } from './datatype';
-import { parseFormula } from './parse';
-import { Node, Value } from './types';
+import { parseFormula, Node } from './parse';
+
+export interface Value {
+  raw: number;
+  node: Node;
+  operands: Value[];
+}
 
 type Cont = (env: Env, value: Value) => void;
 
@@ -14,7 +19,7 @@ function interpretBinaryOp(
     interpret(env, node.right, (env, val2: Value) =>
       cont(env, {
         raw: op(val1.raw, val2.raw),
-        node: node,
+        node,
         operands: [val1, val2],
       })
     )

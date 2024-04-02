@@ -1,5 +1,19 @@
-import { Node } from './types';
 import * as ohm from 'ohm-js';
+
+export type Node =
+  | { type: 'num'; value: number }
+  | { type: 'amb'; values: Node[] }
+  | { type: 'ref'; row: number; col: number }
+  | { type: '='; left: Node; right: Node }
+  | { type: '>'; left: Node; right: Node }
+  | { type: '>='; left: Node; right: Node }
+  | { type: '<'; left: Node; right: Node }
+  | { type: '<='; left: Node; right: Node }
+  | { type: '+'; left: Node; right: Node }
+  | { type: '-'; left: Node; right: Node }
+  | { type: '*'; left: Node; right: Node }
+  | { type: '/'; left: Node; right: Node }
+  | { type: 'if'; cond: Node; then: Node; else: Node };
 
 const grammarSource = String.raw`
   AmbSheets {
