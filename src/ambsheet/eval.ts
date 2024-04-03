@@ -217,7 +217,7 @@ export class Env {
     return this.results.map((row) =>
       row.map((cell) => {
         if (!isReady(cell)) {
-          throw new Error("can't print an env with NOT_READY cells");
+          return 'ERROR!';
         } else if (cell === null) {
           return '';
         } else if (cell.length === 1) {
