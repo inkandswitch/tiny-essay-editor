@@ -34,7 +34,6 @@ export const DocExplorer: React.FC = () => {
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showReviewSidebar, setShowReviewSidebar] = useState(false);
   const [isDiscussionSidebarOpen, setIsDiscussionSidebarOpen] = useState(false);
   const [selectedDocAnchors, setSelectedDocAnchors] = useState([]);
   const [hoveredDocAnchors, setHoveredDocAnchors] = useState([]);

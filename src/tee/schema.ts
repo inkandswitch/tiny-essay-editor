@@ -1,3 +1,5 @@
+import { next as A } from "@automerge/automerge";
+import { HasDocMetadata } from "@/DocExplorer/doctypes";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export type Comment = {
@@ -33,8 +35,18 @@ export type User = {
   name: string;
 };
 
-export type MarkdownDoc = {
+export type MarkdownDoc = HasDocMetadata<MarkdownDocAnchor> & {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
+};
+
+export type MarkdownDocAnchor = {
+  fromCursor: A.Cursor;
+  toCursor: A.Cursor;
+};
+
+export type ResolvedMarkdownDocAnchor = MarkdownDocAnchor & {
+  fromPos: number;
+  toPos: number;
 };

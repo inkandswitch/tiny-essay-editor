@@ -91,13 +91,3 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   markCopy, // TODO: this shouldn't be here
   getAnnotations,
 };
-
-export type MarkdownDocAnchor = {
-  fromCursor: A.Cursor;
-  toCursor: A.Cursor;
-};
-
-export type ResolvedMarkdownDocAnchor = MarkdownDocAnchor & {
-  fromPos: number;
-  toPos: number;
-};

@@ -34,11 +34,15 @@ import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords"
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
-  setThreadsEffect,
-  threadDecorations,
-  threadsField,
-} from "../codemirrorPlugins/commentThreads";
+  DocAnchorHiglight,
+  setDocAnchorHighlightsEffect,
+  docAnchorDecorations,
+  docAnchorHighlightsField,
+} from "../codemirrorPlugins/docAnchors";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { Discussion } from "@/DocExplorer/doctypes";
+import { MarkdownDocAnchor } from "../datatype";
+import { getCursorPositionSafely, getCursorSafely } from "../utils";
 
 export type TextSelection = {
   from: number;
@@ -49,6 +53,9 @@ export type TextSelection = {
 export type EditorProps = {
   handle: DocHandle<MarkdownDoc>;
   path: Prop[];
+  selection: TextSelection;
+  docAnchorHighlights: DocAnchorHiglight[];
+  setSelectedDocAnchors: (anchors: MarkdownDocAnchor[]) => void;
   setSelection: (selection: TextSelection) => void;
   setView: (view: EditorView) => void;
   setActiveThreadId: (threadId: string | null) => void;
@@ -60,8 +67,8 @@ export function MarkdownEditor({
   path,
   setSelection,
   setView,
-  setActiveThreadId,
-  threadsWithPositions,
+  docAnchorHighlights,
+  setSelectedDocAnchors,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -69,12 +76,12 @@ export function MarkdownEditor({
 
   const handleReady = handle.isReady();
 
-  // Propagate activeThreadId into the codemirror
+  // Propagate docAnchors into codemirror
   useEffect(() => {
     editorRoot.current?.dispatch({
-      effects: setThreadsEffect.of(threadsWithPositions),
+      effects: setDocAnchorHighlightsEffect.of(docAnchorHighlights),
     });
-  }, [threadsWithPositions]);
+  }, [JSON.stringify(docAnchorHighlights), editorRoot.current]); // todo: fix, json stringify causes loop
 
   useEffect(() => {
     if (!handleReady) {
@@ -118,8 +125,8 @@ export function MarkdownEditor({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
         frontmatterPlugin,
-        threadsField,
-        threadDecorations,
+        docAnchorHighlightsField,
+        docAnchorDecorations,
         previewFiguresPlugin,
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
@@ -131,28 +138,53 @@ export function MarkdownEditor({
         try {
           const newSelection = transaction.newSelection.ranges[0];
           if (transaction.newSelection !== view.state.selection) {
-            // set the active thread id if our selection is in a thread
-            for (const thread of view.state.field(threadsField)) {
-              if (
-                thread.from <= newSelection.from &&
-                thread.to >= newSelection.to
-              ) {
-                setActiveThreadId(thread.id);
-                break;
-              }
-              setActiveThreadId(null);
+            const selectedAnchor: MarkdownDocAnchor = view.state
+              .field(docAnchorHighlightsField)
+              .find(
+                (highlight) =>
+                  highlight.fromPos <= newSelection.from &&
+                  highlight.toPos >= newSelection.to
+              );
+
+            if (selectedAnchor) {
+              setSelectedDocAnchors([selectedAnchor]);
+            } else {
+              const doc = handle.docSync();
+              const fromCursor = getCursorSafely(
+                doc,
+                path.slice(),
+                newSelection.from
+              );
+              const toCursor = getCursorSafely(
+                doc,
+                path.slice(),
+                newSelection.to
+              );
+
+              setSelectedDocAnchors(
+                fromCursor && toCursor
+                  ? [
+                      {
+                        fromCursor,
+                        toCursor,
+                      },
+                    ]
+                  : []
+              );
             }
           }
           view.update([transaction]);
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          setSelection({
-            from: selection.from,
-            to: selection.to,
-            yCoord:
-              -1 * view.scrollDOM.getBoundingClientRect().top +
-              view.coordsAtPos(selection.from).top,
-          });
+          const coords = view.coordsAtPos(selection.from);
+          if (coords) {
+            setSelection({
+              from: selection.from,
+              to: selection.to,
+              yCoord:
+                -1 * view.scrollDOM.getBoundingClientRect().top + coords.top,
+            });
+          }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.

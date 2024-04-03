@@ -4,7 +4,7 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
@@ -14,39 +14,31 @@ import { getCursorSafely, useThreadsWithPositions } from "../utils";
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { MarkdownDocAnchor } from "../datatype";
+import { MarkdownDocAnchor } from "../schema";
+import { getCursorPositionSafely } from "../utils";
 
 export const TinyEssayEditor = ({
   docUrl,
   setSelectedDocAnchors,
+  hoveredDocAnchors,
+  selectedDocAnchors,
 }: DocEditorProps<MarkdownDocAnchor>) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, _setSelection] = useState<TextSelection>();
+  const [selection, setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+  const discussions = useMemo(
+    () => (doc?.discussions ? Object.values(doc.discussions) : []),
+    [doc?.discussions]
+  );
 
-  const setSelection = (selection: TextSelection) => {
-    _setSelection(selection);
-
-    if (selection.from == selection.to) {
-      setSelectedDocAnchors([]);
-      return;
-    }
-
-    const fromCursor = getCursorSafely(doc, ["content"], selection.from);
-    const toCursor = getCursorSafely(doc, ["content"], selection.to);
-
-    if (fromCursor && toCursor) {
-      setSelectedDocAnchors([
-        {
-          fromCursor,
-          toCursor,
-        },
-      ]);
-    }
-  };
+  const docAnchorHighlights = useDocAnchorHighlights({
+    doc,
+    hoveredDocAnchors,
+    selectedDocAnchors,
+  });
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,
@@ -72,10 +64,13 @@ export const TinyEssayEditor = ({
           <MarkdownEditor
             handle={handle}
             path={["content"]}
+            selection={selection}
             setSelection={setSelection}
             setView={setView}
             threadsWithPositions={threadsWithPositions}
             setActiveThreadId={setActiveThreadId}
+            docAnchorHighlights={docAnchorHighlights}
+            setSelectedDocAnchors={setSelectedDocAnchors}
           />
         </div>
         <div className="w-0">
@@ -92,3 +87,59 @@ export const TinyEssayEditor = ({
     </div>
   );
 };
+
+const useDocAnchorHighlights = ({
+  doc,
+  hoveredDocAnchors,
+  selectedDocAnchors,
+}: {
+  doc: MarkdownDoc;
+  hoveredDocAnchors: MarkdownDocAnchor[];
+  selectedDocAnchors: MarkdownDocAnchor[];
+}) => {
+  return useMemo(() => {
+    if (!doc) {
+      return [];
+    }
+
+    const highlightedDocAnchors = selectedDocAnchors.concat(hoveredDocAnchors);
+
+    return Object.values(doc.discussions).flatMap((discussion) =>
+      (discussion.target ?? []).flatMap((anchor) => {
+        const fromPos = getCursorPositionSafely(
+          doc,
+          ["content"],
+          anchor.fromCursor
+        );
+        const toPos = getCursorPositionSafely(
+          doc,
+          ["content"],
+          anchor.toCursor
+        );
+
+        if (fromPos === null || toPos === null) {
+          return [];
+        }
+
+        return [
+          {
+            ...anchor,
+            isActive: highlightedDocAnchors.some((highlighted) =>
+              areAnchorsEqual(highlighted, anchor)
+            ),
+            toPos,
+            fromPos,
+          },
+        ];
+      })
+    );
+  }, [doc?.content, doc?.discussions, hoveredDocAnchors, selectedDocAnchors]);
+};
+
+function areAnchorsEqual(
+  anchor1: MarkdownDocAnchor,
+  anchor2: MarkdownDocAnchor
+) {
+  anchor1.fromCursor === anchor2.fromCursor &&
+    anchor1.toCursor === anchor2.toCursor;
+}
