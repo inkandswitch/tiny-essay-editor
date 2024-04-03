@@ -125,10 +125,10 @@ export class Env {
       case '/':
         return this.interpBinOp(node, context, cont, (a, b) => a / b);
       case 'if':
-        return this.interp(node.cond, context, (cond) =>
+        return this.interp(node.cond, context, (cond, contextAfterCond) =>
           this.interp(
             cond.rawValue !== 0 ? node.then : node.else,
-            context,
+            contextAfterCond,
             cont
           )
         );

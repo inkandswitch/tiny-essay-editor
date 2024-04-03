@@ -97,4 +97,11 @@ describe('ambsheet evaluator', () => {
       [['{1,2}', '{4,5,10,12}']]
     );
   });
+
+  it('reuses amb choices from conditionals', () => {
+    assert.deepStrictEqual(
+      evalSheet([['={1, 2}', '=if(A1>1, A1, 5)']]).print(),
+      [['{1,2}', '{5,2}']]
+    );
+  });
 });
