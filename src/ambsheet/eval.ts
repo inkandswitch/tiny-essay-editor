@@ -1,13 +1,28 @@
 import { AmbSheetDoc } from './datatype';
-import { isFormula, parseFormula, Node } from './parse';
+import { isFormula, parseFormula, Node, AmbNode } from './parse';
 
 export interface Value {
+  context: AmbContext;
   rawValue: number;
-  node: Node;
-  childValues: Value[];
 }
 
-type Cont = (value: Value) => void;
+type Cont = (value: Value, context: AmbContext) => void;
+
+/** a mapping that tracks which value we've chosen for a given amb node
+ *  within the current subtree of the evaluation. (using a numeric index
+ *  into the list of values, so that we can disambiguate equivalent values)
+ */
+type AmbContext = Map<AmbNode, number>;
+
+// Two contexts are "compatible" if they contain no overlapping keys with differing values
+const contextsAreCompatible = (a: AmbContext, b: AmbContext) => {
+  for (const [node, value] of a) {
+    if (b.has(node) && b.get(node) !== value) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const NOT_READY = {};
 
@@ -35,8 +50,7 @@ export class Env {
           return [
             {
               rawValue: value,
-              node: { type: 'num', value },
-              childValues: [],
+              context: new Map(),
             },
           ];
         }
@@ -59,50 +73,71 @@ export class Env {
     this.results[row][col] = values;
   }
 
-  interp(node: Node, cont: Cont) {
+  interp(node: Node, context: AmbContext, cont: Cont) {
     switch (node.type) {
       case 'num':
-        return cont({
-          rawValue: node.value,
-          node,
-          childValues: [],
-        });
+        return cont(
+          {
+            rawValue: node.value,
+            context,
+          },
+          context
+        );
       case 'ref': {
         const values = this.getCellValues(node);
         if (!isReady(values)) {
           throw NOT_READY;
         }
         for (const value of values) {
-          cont(value);
+          // This is important: if the current execution context is not compatible
+          // with this value we're trying to iterate over, we skip executing it.
+          // This ensures that we respect any previous amb choices from this execution.
+          if (!contextsAreCompatible(context, value.context)) {
+            continue;
+          }
+          const newContext = new Map([...context, ...value.context]);
+          cont(value, newContext);
         }
         return;
       }
       case '=':
-        return this.interpBinOp(node, cont, (a, b) => (a == b ? 1 : 0));
+        return this.interpBinOp(node, context, cont, (a, b) =>
+          a == b ? 1 : 0
+        );
       case '>':
-        return this.interpBinOp(node, cont, (a, b) => (a > b ? 1 : 0));
+        return this.interpBinOp(node, context, cont, (a, b) => (a > b ? 1 : 0));
       case '>=':
-        return this.interpBinOp(node, cont, (a, b) => (a >= b ? 1 : 0));
+        return this.interpBinOp(node, context, cont, (a, b) =>
+          a >= b ? 1 : 0
+        );
       case '<':
-        return this.interpBinOp(node, cont, (a, b) => (a < b ? 1 : 0));
+        return this.interpBinOp(node, context, cont, (a, b) => (a < b ? 1 : 0));
       case '<=':
-        return this.interpBinOp(node, cont, (a, b) => (a <= b ? 1 : 0));
+        return this.interpBinOp(node, context, cont, (a, b) =>
+          a <= b ? 1 : 0
+        );
       case '+':
-        return this.interpBinOp(node, cont, (a, b) => a + b);
+        return this.interpBinOp(node, context, cont, (a, b) => a + b);
       case '*':
-        return this.interpBinOp(node, cont, (a, b) => a * b);
+        return this.interpBinOp(node, context, cont, (a, b) => a * b);
       case '-':
-        return this.interpBinOp(node, cont, (a, b) => a - b);
+        return this.interpBinOp(node, context, cont, (a, b) => a - b);
       case '/':
-        return this.interpBinOp(node, cont, (a, b) => a / b);
+        return this.interpBinOp(node, context, cont, (a, b) => a / b);
       case 'if':
-        return this.interp(node.cond, (cond) =>
-          this.interp(cond.rawValue !== 0 ? node.then : node.else, cont)
+        return this.interp(node.cond, context, (cond) =>
+          this.interp(
+            cond.rawValue !== 0 ? node.then : node.else,
+            context,
+            cont
+          )
         );
       case 'amb':
-        // call the continuation for each value in the amb node
-        for (const expr of node.values) {
-          this.interp(expr, cont);
+        // call the continuation for each value in the amb node,
+        // tracking which value we've chosen in the context.
+        for (const [i, expr] of node.values.entries()) {
+          const newContext = new Map([...context, [node, i]]);
+          this.interp(expr, newContext, cont);
         }
         return;
       default: {
@@ -114,16 +149,20 @@ export class Env {
 
   interpBinOp(
     node: Node & { left: Node; right: Node },
+    context: AmbContext,
     cont: Cont,
     op: (x: number, y: number) => number
   ) {
-    this.interp(node.left, (left) =>
-      this.interp(node.right, (right) =>
-        cont({
-          rawValue: op(left.rawValue, right.rawValue),
-          node,
-          childValues: [left, right],
-        })
+    this.interp(node.left, context, (left, contextAfterLeft) =>
+      // Any amb choices made by the left side are used to constrain the right side
+      this.interp(node.right, contextAfterLeft, (right, contextAfterRight) =>
+        cont(
+          {
+            rawValue: op(left.rawValue, right.rawValue),
+            context: contextAfterRight,
+          },
+          contextAfterRight
+        )
       )
     );
   }
@@ -131,7 +170,8 @@ export class Env {
   // The outermost continuation just collects up all results from the sub-paths of execution
   evalNode(node: Node) {
     const results: Value[] = [];
-    this.interp(node, (value) => results.push(value));
+    const context = new Map(); // init an empty amb context -- we haven't made any choices yet
+    this.interp(node, context, (value, _context) => results.push(value));
     return results;
   }
 

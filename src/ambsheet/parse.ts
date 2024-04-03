@@ -2,9 +2,11 @@ import * as ohm from 'ohm-js';
 
 export const isFormula = (cell: string) => cell && cell[0] === '=';
 
+export type AmbNode = { type: 'amb'; values: Node[] };
+
 export type Node =
   | { type: 'num'; value: number }
-  | { type: 'amb'; values: Node[] }
+  | AmbNode
   | { type: 'ref'; row: number; col: number }
   | { type: '='; left: Node; right: Node }
   | { type: '>'; left: Node; right: Node }
@@ -22,7 +24,7 @@ const grammarSource = String.raw`
     Formula = "=" Exp
 
     Exp = RelExp
-  
+
     RelExp
       = AddExp "="  AddExp  -- eq
       | AddExp ">=" AddExp  -- ge

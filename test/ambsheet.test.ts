@@ -57,4 +57,44 @@ describe('ambsheet evaluator', () => {
       [['{1,2,3}', '{222,111,111}']]
     );
   });
+
+  it('reuses the same choice for a given amb within a cell', () => {
+    assert.deepStrictEqual(evalSheet([['={1, 2, 3}', '=A1 * A1']]).print(), [
+      ['{1,2,3}', '{1,4,9}'],
+    ]);
+  });
+
+  it('reuses the same choice for a given amb across cell boundaries', () => {
+    // All the results are only 1-dimensional (with 3 values) because there's
+    // only 1 amb literal in the entire sheet.
+    assert.deepStrictEqual(
+      evalSheet([['={1, 2, 3}', '=A1 * A1', '=B1 + A1']]).print(),
+      [['{1,2,3}', '{1,4,9}', '{2,6,12}']]
+    );
+  });
+
+  it('does not reuse the amb choice given a fresh amb', () => {
+    assert.deepStrictEqual(
+      evalSheet([['={1, 2, 3}', '=A1 * A1', '=B1 + {1, 2, 3}']]).print(),
+      [['{1,2,3}', '{1,4,9}', '{2,3,4,5,6,7,10,11,12}']]
+    );
+  });
+
+  it('reuses amb choices across cell refs', () => {
+    assert.deepStrictEqual(
+      evalSheet([['={1, 2}', '={5, 6}', '=A1+1', '=B1+1', '=C1+D1']]).print(),
+      [['{1,2}', '{5,6}', '{2,3}', '{6,7}', '{8,9,9,10}']]
+    );
+  });
+
+  it('handles a case where RHS of a binop contains both an existing amb choice and a fresh amb', () => {
+    assert.deepStrictEqual(
+      // There are two amb literals in this spreadsheet, each with two values --
+      // so we end up with 4 values (2x2) in the final result.
+      // Notably, in cell B1, we reuse amb choices for A1, but we create fresh
+      // amb choices for the new amb literal.
+      evalSheet([['={1, 2}', '=A1*(A1+{3, 4})']]).print(),
+      [['{1,2}', '{4,5,10,12}']]
+    );
+  });
 });
