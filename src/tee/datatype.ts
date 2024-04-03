@@ -61,16 +61,14 @@ export const getTitle = async (doc: MarkdownDoc) => {
   return `${title} ${subtitle && `: ${subtitle}`}`;
 };
 
-export const includeChangeInHistory = (
-  doc: MarkdownDoc,
-  decodedChange: DecodedChangeWithMetadata
-) => {
+export const includeChangeInHistory = (doc: MarkdownDoc) => {
   const contentObjID = A.getObjectId(doc, "content");
   const commentsObjID = A.getObjectId(doc, "commentThreads");
-
-  return decodedChange.ops.some(
-    (op) => op.obj === contentObjID || op.obj === commentsObjID
-  );
+  return (decodedChange: DecodedChangeWithMetadata) => {
+    return decodedChange.ops.some(
+      (op) => op.obj === contentObjID || op.obj === commentsObjID
+    );
+  };
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>

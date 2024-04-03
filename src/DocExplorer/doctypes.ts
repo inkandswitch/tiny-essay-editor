@@ -34,11 +34,16 @@ export type PatchworkDataType<D, T, V> = {
   // TODO (GL 3/12/24): we'd like to unify these two filter methods
   // and possibly combine them with grouping logic soon.
 
-  // Mark whether a given change should be included in the history
+  // Mark whether a given change should be included in the history.
+  // Note: This function has a strange signature that takes in a doc and a change
+  // independently in a curried way. This is because we want to do doc-global
+  // stuff just once up front for performance, and then reuse when checking each change.
+  // (See the implementation for Markdown docs as one example.)
+  // If Automerge had more ergonomic APIs for observing what ops did, this wouldn't be needed.
   includeChangeInHistory?: (
-    doc: D,
-    change: DecodedChangeWithMetadata
-  ) => boolean;
+    doc: D
+  ) => (change: DecodedChangeWithMetadata) => boolean;
+
   // Mark whether a given patch should be included in the history
   includePatchInChangeGroup?: (patch: A.Patch | TextPatch) => boolean; // todo: can we get rid of TextPatch here?
 
