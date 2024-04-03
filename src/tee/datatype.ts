@@ -4,7 +4,9 @@
 
 import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
-import { splice } from "@automerge/automerge/next";
+import { next as A } from "@automerge/automerge";
+import { Annotation, DataType, Discussion } from "@/DocExplorer/doctypes";
+import { getCursorPositionSafely } from "./utils";
 
 export const init = (doc: any) => {
   doc.content = "# Untitled\n\n";
@@ -17,7 +19,7 @@ export const init = (doc: any) => {
 export const markCopy = (doc: MarkdownDoc) => {
   const firstHeadingIndex = doc.content.search(/^#\s.*$/m);
   if (firstHeadingIndex !== -1) {
-    splice(doc, ["content"], firstHeadingIndex + 2, 0, "Copy of ");
+    A.splice(doc, ["content"], firstHeadingIndex + 2, 0, "Copy of ");
   }
 };
 
@@ -52,11 +54,50 @@ export const getTitle = (doc: any) => {
   return `${title} ${subtitle && `: ${subtitle}`}`;
 };
 
-export const EssayDatatype = {
+export const getAnnotations = (
+  doc: MarkdownDoc,
+  docBefore: MarkdownDoc,
+  patches: A.Patch[],
+  discussions: Discussion<MarkdownDocAnchor>[]
+) => {
+  const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
+
+  for (const discussion of discussions) {
+    for (const anchor of discussion.target) {
+      const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
+      const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+      if (from === null || to === null) {
+        continue;
+      }
+
+      annotations.push({
+        type: "highlighted",
+        target: anchor,
+        value: doc.content.slice(from, to),
+      });
+    }
+  }
+
+  return annotations;
+};
+
+export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   id: "essay",
   name: "Essay",
   icon: Text,
   init,
   getTitle,
   markCopy, // TODO: this shouldn't be here
+  getAnnotations,
+};
+
+export type MarkdownDocAnchor = {
+  fromCursor: A.Cursor;
+  toCursor: A.Cursor;
+};
+
+export type ResolvedMarkdownDocAnchor = MarkdownDocAnchor & {
+  fromPos: number;
+  toPos: number;
 };

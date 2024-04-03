@@ -2,6 +2,7 @@ import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FolderDoc,
   useCurrentAccount,
@@ -13,10 +14,12 @@ import { DocType, docTypes } from "../doctypes";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
+
 import { toolsForDocTypes } from "../doctypes";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
+import { ChevronsRight } from "lucide-react";
 
 export type Tool = {
   id: string;
@@ -29,8 +32,8 @@ export const DocExplorer: React.FC = () => {
   const currentAccount = useCurrentAccount();
   const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showReviewSidebar, setShowReviewSidebar] = useState(false);
 
   const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({
     rootFolderDoc,
@@ -204,15 +207,14 @@ export const DocExplorer: React.FC = () => {
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent
-                  docUrl={selectedDocUrl}
-                  key={selectedDocUrl}
-                  setActiveEditGroupIds={() => {}}
-                  activeEditGroupIds={[]}
-                />
+                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
               )}
             </div>
           </div>
+        </div>
+
+        <div className="border-l border-gray-400 py-2 h-full flex flex-col relative bg-gray-50">
+          <div className="min-h-0 flex-grow w-96"></div>
         </div>
       </div>
     </div>

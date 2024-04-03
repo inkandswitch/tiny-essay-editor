@@ -46,7 +46,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocUrl,
   selectDoc,
   deleteFromAccountDocList,
-  addNewDocument,
+  showComments,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();

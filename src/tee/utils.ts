@@ -289,3 +289,16 @@ export const useThreadsWithPositions = ({
 
   return threadsWithPositions;
 };
+
+// Resolve cursor, but instead of throwing an error return null if cursor can't be resolved
+export const getCursorPositionSafely = (
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  cursor: A.Cursor
+): number | null => {
+  try {
+    return A.getCursorPosition(doc, path, cursor);
+  } catch (err) {
+    return null;
+  }
+};
