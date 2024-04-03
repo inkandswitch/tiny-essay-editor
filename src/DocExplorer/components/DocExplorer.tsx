@@ -9,7 +9,7 @@ import {
   useCurrentAccountDoc,
   useCurrentRootFolderDoc,
 } from "../account";
-import { DocType, docTypes } from "../doctypes";
+import { DocType, docTypes, HasDocMetadata } from "../doctypes";
 
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -19,7 +19,8 @@ import { toolsForDocTypes } from "../doctypes";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
-import { ChevronsRight } from "lucide-react";
+import { MessageSquareIcon, ChevronsRight } from "lucide-react";
+import { DiscussionSidebar } from "./DiscussionSidebar";
 
 export type Tool = {
   id: string;
@@ -34,11 +35,15 @@ export const DocExplorer: React.FC = () => {
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
   const [showSidebar, setShowSidebar] = useState(true);
   const [showReviewSidebar, setShowReviewSidebar] = useState(false);
+  const [isDiscussionSidebarOpen, setIsDiscussionSidebarOpen] = useState(false);
+  const [selectedDocAnchors, setSelectedDocAnchors] = useState([]);
+  const [hoveredDocAnchors, setHoveredDocAnchors] = useState([]);
 
-  const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({
-    rootFolderDoc,
-    changeRootFolderDoc,
-  });
+  const { selectedDoc, changeSelectedDoc, selectDoc, selectedDocUrl } =
+    useSelectedDoc<HasDocMetadata<unknown>>({
+      rootFolderDoc,
+      changeRootFolderDoc,
+    });
 
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -186,6 +191,7 @@ export const DocExplorer: React.FC = () => {
               deleteFromAccountDocList={deleteFromRootFolder}
               addNewDocument={addNewDocument}
             />
+
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
                 <div className="flex items-center justify-center h-full text-gray-500">
@@ -207,14 +213,57 @@ export const DocExplorer: React.FC = () => {
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+                <div className="flex items-stretch">
+                  <div className="flex flex-col w-full">
+                    <div className="bg-gray-100 p-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
+                      <div className="ml-auto">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() =>
+                              setIsDiscussionSidebarOpen(
+                                !isDiscussionSidebarOpen
+                              )
+                            }
+                            variant="outline"
+                            className="h-8 text-x"
+                          >
+                            {isDiscussionSidebarOpen ? (
+                              <ChevronsRight size={20} />
+                            ) : (
+                              <MessageSquareIcon size={20} />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ToolComponent
+                      docUrl={selectedDocUrl}
+                      key={selectedDocUrl}
+                      selectedDocAnchors={selectedDocAnchors}
+                      hoveredDocAnchors={hoveredDocAnchors}
+                      setSelectedDocAnchors={setSelectedDocAnchors}
+                      setHoveredDocAnchors={setHoveredDocAnchors}
+                    />
+                  </div>
+
+                  {isDiscussionSidebarOpen && (
+                    <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50 w-96">
+                      <DiscussionSidebar
+                        docType={selectedDocLink.type}
+                        doc={selectedDoc}
+                        changeDoc={changeSelectedDoc}
+                        selectedDocAnchors={selectedDocAnchors}
+                        hoveredDocAnchors={hoveredDocAnchors}
+                        setSelectedDocAnchors={setSelectedDocAnchors}
+                        setHoveredDocAnchors={setHoveredDocAnchors}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
-        </div>
-
-        <div className="border-l border-gray-400 py-2 h-full flex flex-col relative bg-gray-50">
-          <div className="min-h-0 flex-grow w-96"></div>
         </div>
       </div>
     </div>
@@ -270,15 +319,15 @@ const parseCurrentUrlHash = (): UrlHashParams => {
 // Drive the currently selected doc using the URL hash
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
-const useSelectedDoc = ({
+export function useSelectedDoc<T>({
   rootFolderDoc,
   changeRootFolderDoc,
 }: {
   rootFolderDoc: FolderDoc;
   changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
-}) => {
+}) {
   const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
-  const [selectedDoc] = useDocument(selectedDocUrl);
+  const [selectedDoc, changeSelectedDoc] = useDocument<T>(selectedDocUrl);
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
     const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
@@ -338,7 +387,8 @@ const useSelectedDoc = ({
   return {
     selectedDocUrl,
     selectedDoc,
+    changeSelectedDoc,
     selectDoc,
     openDocFromUrl,
   };
-};
+}

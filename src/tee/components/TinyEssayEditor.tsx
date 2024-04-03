@@ -4,24 +4,49 @@ import { MarkdownEditor, TextSelection } from "./MarkdownEditor";
 
 import { MarkdownDoc } from "../schema";
 import { LoadingScreen } from "../../DocExplorer/components/LoadingScreen";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 import { CommentsSidebar } from "./CommentsSidebar";
-import { useThreadsWithPositions } from "../utils";
+import { getCursorSafely, useThreadsWithPositions } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import "../../tee/index.css";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { MarkdownDocAnchor } from "../datatype";
 
-export const TinyEssayEditor = ({ docUrl }: DocEditorProps<MarkdownDoc>) => {
+export const TinyEssayEditor = ({
+  docUrl,
+  setSelectedDocAnchors,
+}: DocEditorProps<MarkdownDocAnchor>) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [selection, setSelection] = useState<TextSelection>();
+  const [selection, _setSelection] = useState<TextSelection>();
   const [activeThreadId, setActiveThreadId] = useState<string | null>();
   const [view, setView] = useState<EditorView>();
   const editorRef = useRef<HTMLDivElement>(null);
+
+  const setSelection = (selection: TextSelection) => {
+    _setSelection(selection);
+
+    if (selection.from == selection.to) {
+      setSelectedDocAnchors([]);
+      return;
+    }
+
+    const fromCursor = getCursorSafely(doc, ["content"], selection.from);
+    const toCursor = getCursorSafely(doc, ["content"], selection.to);
+
+    if (fromCursor && toCursor) {
+      setSelectedDocAnchors([
+        {
+          fromCursor,
+          toCursor,
+        },
+      ]);
+    }
+  };
 
   const threadsWithPositions = useThreadsWithPositions({
     doc,

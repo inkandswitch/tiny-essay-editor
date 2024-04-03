@@ -302,3 +302,16 @@ export const getCursorPositionSafely = (
     return null;
   }
 };
+
+// Get cursor, but instead of throwing an error return null if cursor can't be created
+export function getCursorSafely(
+  doc: A.Doc<unknown>,
+  path: A.Prop[],
+  position: number
+): A.Cursor | null {
+  try {
+    return A.getCursor(doc, path, position);
+  } catch (err) {
+    return null;
+  }
+}
