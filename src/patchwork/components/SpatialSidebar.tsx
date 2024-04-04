@@ -34,6 +34,7 @@ import { truncate } from "lodash";
 import { MessageCircleIcon } from "lucide-react";
 import { TLDrawDocAnchor } from "@/tldraw/schema";
 import { TLShape } from "@tldraw/tldraw";
+import { doAnchorsOverlap } from "../utils";
 
 type SpatialSidebarProps = {
   docType: string;
@@ -43,9 +44,9 @@ type SpatialSidebarProps = {
   ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedAnchors: (anchors: unknown[]) => void;
-  setHoveredAnchors: (anchors: unknown[]) => void;
+  setHoveredAnchor: (anchors: unknown) => void;
   selectedAnchors: unknown[];
-  hoveredAnchors: unknown[];
+  hoveredAnchor: unknown;
 };
 
 export const SpatialSidebar = React.memo(
@@ -56,8 +57,8 @@ export const SpatialSidebar = React.memo(
     onChangeCommentPositionMap,
     setSelectedAnchors,
     selectedAnchors,
-    setHoveredAnchors,
-    hoveredAnchors,
+    setHoveredAnchor,
+    hoveredAnchor,
   }: SpatialSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyAnnotation, setActiveReplyAnnotation] =
@@ -216,7 +217,9 @@ export const SpatialSidebar = React.memo(
                 onAddComment={(content) => {
                   // addCommentToAnnotation(annotation, content);
                 }}
-                isHovered={false}
+                isHovered={annotationGroup.annotations.some((annotation) =>
+                  doAnchorsOverlap(docType, annotation.target, hoveredAnchor)
+                )}
                 setIsHovered={(isHovered) => {
                   // setHoveredAnnotation(isHovered ? annotation : undefined);
                 }}

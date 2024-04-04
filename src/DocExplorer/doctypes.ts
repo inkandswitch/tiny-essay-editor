@@ -120,7 +120,7 @@ export interface DocEditorProps<T, V> {
 
   // spatial comments interface
   selectedAnchors?: T[];
-  hoveredAnchors?: T;
-  setHoveredAnchors?: (anchors: T[]) => void;
   setSelectedAnchors?: (anchors: T[]) => void;
+  hoveredAnchor?: T;
+  setHoveredAnchor?: (anchors: T) => void;
 }

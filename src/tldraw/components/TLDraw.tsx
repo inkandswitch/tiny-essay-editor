@@ -34,6 +34,8 @@ export const TLDraw = ({
   onChangeCamera,
   selectedAnchors,
   setSelectedAnchors,
+  hoveredAnchor,
+  setHoveredAnchor,
 }: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -71,6 +73,8 @@ export const TLDraw = ({
             onChangeCamera={setCamera}
             selectedAnchors={selectedAnchors}
             setSelectedAnchors={setSelectedAnchors}
+            hoveredAnchor={hoveredAnchor}
+            setHoveredAnchor={setHoveredAnchor}
           />
         ) : null
       ) : (
@@ -83,6 +87,8 @@ export const TLDraw = ({
           onChangeCamera={setCamera}
           selectedAnchors={selectedAnchors}
           setSelectedAnchors={setSelectedAnchors}
+          hoveredAnchor={hoveredAnchor}
+          setHoveredAnchor={setHoveredAnchor}
         />
       )}
     </div>
@@ -98,6 +104,8 @@ interface TlDrawProps {
   onChangeCamera?: (camera: TLCamera) => void;
   selectedAnchors: TLDrawDocAnchor[];
   setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
+  hoveredAnchor: TLDrawDocAnchor;
+  setHoveredAnchor: (anchor: TLDrawDocAnchor) => void;
 }
 
 const EditableTLDraw = ({
@@ -109,6 +117,8 @@ const EditableTLDraw = ({
   onChangeCamera,
   selectedAnchors,
   setSelectedAnchors,
+  hoveredAnchor,
+  setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
@@ -119,7 +129,13 @@ const EditableTLDraw = ({
     onChangeCamera,
     camera,
   });
-  useSelectionListener({ editor, selectedAnchors, setSelectedAnchors });
+  useAnchorEventListener({
+    editor,
+    selectedAnchors,
+    setSelectedAnchors,
+    hoveredAnchor,
+    setHoveredAnchor,
+  });
 
   return <Tldraw autoFocus store={store} onMount={setEditor} />;
 };
@@ -133,6 +149,8 @@ const ReadOnlyTLDraw = ({
   camera,
   selectedAnchors,
   setSelectedAnchors,
+  hoveredAnchor,
+  setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
@@ -143,7 +161,13 @@ const ReadOnlyTLDraw = ({
     onChangeCamera,
     camera,
   });
-  useSelectionListener({ editor, selectedAnchors, setSelectedAnchors });
+  useAnchorEventListener({
+    editor,
+    selectedAnchors,
+    setSelectedAnchors,
+    hoveredAnchor,
+    setHoveredAnchor,
+  });
 
   return (
     <Tldraw
@@ -357,30 +381,50 @@ const useDiffStyling = ({
   }, [annotations, store, doc, camera]);
 };
 
-const useSelectionListener = ({
+const useAnchorEventListener = ({
   editor,
   selectedAnchors,
   setSelectedAnchors,
+  hoveredAnchor,
+  setHoveredAnchor,
 }: {
   editor: Editor;
   selectedAnchors: TLDrawDocAnchor[];
   setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
+  hoveredAnchor: TLDrawDocAnchor;
+  setHoveredAnchor: (anchors: TLDrawDocAnchor) => void;
 }) => {
+  const selectedAnchorsRef = useRef<TLDrawDocAnchor[]>();
+  selectedAnchorsRef.current = selectedAnchors;
+
+  const hoveredAnchorRef = useRef<TLDrawDocAnchor>();
+  hoveredAnchorRef.current = hoveredAnchor;
+
   useEffect(() => {
     if (!editor) {
       return;
     }
 
-    editor.on("update", () => {
+    const onChange = () => {
+      if (editor.hoveredShapeId !== hoveredAnchorRef.current) {
+        setHoveredAnchor(editor.hoveredShapeId);
+      }
+
       if (
         !areAnchorSelectionsEqual(
           "tldraw",
           editor?.selectedShapeIds,
-          selectedAnchors
+          selectedAnchorsRef.current
         )
       ) {
         setSelectedAnchors(editor.selectedShapeIds);
       }
-    });
+    };
+
+    editor.on("change", onChange);
+
+    return () => {
+      editor.off("change", onChange);
+    };
   }, [editor]);
 };

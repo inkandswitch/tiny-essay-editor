@@ -110,6 +110,7 @@ export const PatchworkDocEditor: React.FC<{
   const [selection, setSelection] = useState<any>(); // todo: type properly
   const [hoveredAnchors, setHoveredAnchors] = useState<unknown[]>([]);
   const [selectedAnchors, setSelectedAnchors] = useState<unknown[]>([]);
+  const [hoveredAnchor, setHoveredAnchor] = useState<unknown>();
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
@@ -582,6 +583,10 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
+                selectedAnchors={selectedAnchors}
+                setSelectedAnchors={setSelectedAnchors}
+                hoveredAnchor={hoveredAnchor}
+                setHoveredAnchor={setHoveredAnchor}
               />
             ) : (
               <DocEditor
@@ -593,6 +598,8 @@ export const PatchworkDocEditor: React.FC<{
                 actorIdToAuthor={actorIdToAuthor}
                 selectedAnchors={selectedAnchors}
                 setSelectedAnchors={setSelectedAnchors}
+                hoveredAnchor={hoveredAnchor}
+                setHoveredAnchor={setHoveredAnchor}
               />
             )}
             {reviewMode === "comments" && isHistorySidebarOpen && (
@@ -655,6 +662,8 @@ export const PatchworkDocEditor: React.FC<{
                 }}
                 selectedAnchors={selectedAnchors}
                 setSelectedAnchors={setSelectedAnchors}
+                hoveredAnchor={hoveredAnchor}
+                setHoveredAnchor={setHoveredAnchor}
               />
             )}
           </div>
@@ -676,9 +685,9 @@ const DocEditor = <T, V>({
   annotations,
   actorIdToAuthor,
   selectedAnchors,
-  hoveredAnchors,
+  hoveredAnchor,
   setSelectedAnchors,
-  setHoveredAnchors,
+  setHoveredAnchor,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = toolsForDocTypes[docType][0];
@@ -691,9 +700,9 @@ const DocEditor = <T, V>({
       annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
       actorIdToAuthor={actorIdToAuthor}
       selectedAnchors={selectedAnchors}
-      hoveredAnchors={hoveredAnchors}
+      hoveredAnchor={hoveredAnchor}
       setSelectedAnchors={setSelectedAnchors}
-      setHoveredAnchors={setHoveredAnchors}
+      setHoveredAnchor={setHoveredAnchor}
     />
   );
 };
