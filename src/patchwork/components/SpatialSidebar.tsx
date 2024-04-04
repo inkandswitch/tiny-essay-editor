@@ -50,6 +50,12 @@ type SpatialSidebarProps = {
   resetSelection: () => void;
 };
 
+/* FIXME:
+
+- make spatial sidebar work on groups
+
+*/
+
 export const SpatialSidebar = React.memo(
   ({
     docType,
@@ -78,7 +84,7 @@ export const SpatialSidebar = React.memo(
       annotation: Annotation<unknown, unknown>,
       content: string
     ) => {
-      setActiveReplyAnnotation(null);
+      /* setActiveReplyAnnotation(null);
 
       changeDoc((doc) => {
         let discussions = doc.discussions;
@@ -89,7 +95,7 @@ export const SpatialSidebar = React.memo(
           discussions = doc.discussions;
         }
 
-        let discussionId = annotation.discussion?.id;
+        let discussionId = annotation.discussion.id;
 
         if (!discussionId) {
           discussionId = uuid();
@@ -108,7 +114,7 @@ export const SpatialSidebar = React.memo(
           contactUrl: account.contactHandle.url,
           timestamp: Date.now(),
         });
-      });
+      }); */
     };
 
     const addCommentToCurrentSelection = (content: string) => {
@@ -124,8 +130,8 @@ export const SpatialSidebar = React.memo(
       );
     };
 
-    const resolveDiscussion = (discussion: Discussion<unknown, unknown>) => {
-      const index = annotations.findIndex(
+    const resolveDiscussion = (discussion: Discussion<unknown>) => {
+      /* const index = annotations.findIndex(
         (annotation) =>
           annotation.discussion && annotation.discussion.id === discussion.id
       );
@@ -140,7 +146,7 @@ export const SpatialSidebar = React.memo(
 
       changeDoc((doc) => {
         doc.discussions[discussion.id].resolved = true;
-      });
+      }); */
     };
 
     const { registerAnnotationElement, annotationsPositionMap } =
@@ -306,7 +312,7 @@ interface AnnotationWithDiscussionViewProps {
   annotation: Annotation<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
-  onResolveDiscussion: (discussion: Discussion<unknown, unknown>) => void;
+  onResolveDiscussion: (discussion: Discussion<unknown>) => void;
   onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
@@ -411,6 +417,9 @@ const AnnotationWithDicussionView = forwardRef<
       };
     }, [isSelected, onSelectNext, onSelectPrev]);
 
+    return null;
+
+    /*
     return (
       <div
         onClick={(event) => event.stopPropagation()}
@@ -546,7 +555,7 @@ const AnnotationWithDicussionView = forwardRef<
           </div>
         </div>
       </div>
-    );
+    ); */
   }
 );
 

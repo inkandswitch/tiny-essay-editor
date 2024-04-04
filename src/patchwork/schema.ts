@@ -80,21 +80,20 @@ export type DiscussionComment = {
   timestamp: number;
 };
 
-export type Discussion<T, V> = {
+// Right now discussions are both used in the timeline and for comments on the document
+// We should split this up and use separate concepts
+export type Discussion<T> = {
   id: string;
   heads: A.Heads;
   resolved: boolean;
   comments: DiscussionComment[];
 
-  /** An optional specific object being commented on --
-   *  could be an object in the document (eg in a text doc, a range of chars)
-   *  or possibly (not sure yet) an object in the meta discussion like a change group
-   */
-  annotation?: Annotation<T, V>;
+  // optionally a list of doc anchors that this discussion refers to
+  target?: T[];
 };
 
-export type Discussable<T, V> = {
-  discussions: { [key: string]: Discussion<T, V> };
+export type Discussable<T> = {
+  discussions: { [key: string]: Discussion<T> };
 };
 
 export type HasChangeGroupSummaries = {
@@ -119,7 +118,7 @@ export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable<T, V>;
+  Discussable<T>;
 
 export type AnnotationId = string & { __annotationId: true };
 
@@ -127,14 +126,12 @@ interface AddAnnotation<T, V> {
   type: "added";
   target: T;
   added: V;
-  discussion?: Discussion<T, V>;
 }
 
 interface DeleteAnnotation<T, V> {
   type: "deleted";
   target: T;
   deleted: V;
-  discussion?: Discussion<T, V>;
 }
 
 interface ChangeAnnotation<T, V> {
@@ -142,14 +139,12 @@ interface ChangeAnnotation<T, V> {
   target: T;
   before: V;
   after: V;
-  discussion?: Discussion<T, V>;
 }
 
 export interface HighlightAnnotation<T, V> {
   type: "highlighted";
   target: T;
   value: V;
-  discussion?: Discussion<T, V>;
 }
 
 export type Annotation<T, V> =

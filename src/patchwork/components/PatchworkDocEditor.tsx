@@ -900,13 +900,8 @@ const useAnnotations = ({
     const discussions = Object.values(doc?.discussions ?? []);
 
     // highlight annotations only exist in discussions, so we need to get them separately
-    const highlightAnnotations = discussions.flatMap((discussion) =>
-      discussion.resolved ||
-      !discussion.annotation ||
-      discussion.annotation.type !== "highlighted"
-        ? []
-        : [{ ...discussion.annotation, discussion }]
-    );
+    // todo: infere highlight annotations from discussion
+    const highlightAnnotations = [];
 
     if (!diff) {
       return highlightAnnotations;
@@ -917,20 +912,7 @@ const useAnnotations = ({
           doc,
           A.view(doc, diff.fromHeads),
           diff.patches as A.Patch[]
-        ).flatMap((annotation) => {
-          // match up annotations with discussions
-          // it's possible that multiple discussions point to a single annotation (should occur rarely)
-          const discussionsOnAnnotation = discussions.filter((discussion) =>
-            doAnnotationsOverlap(discussion.annotation, annotation)
-          );
-
-          return discussionsOnAnnotation.length === 0
-            ? [annotation]
-            : discussionsOnAnnotation.map((discussion) => ({
-                ...annotation,
-                discussion,
-              }));
-        })
+        )
       : [];
 
     return editAnnotations.concat(highlightAnnotations);
