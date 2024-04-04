@@ -34,11 +34,7 @@ import {
   Trash2Icon,
   Underline,
 } from "lucide-react";
-import {
-  diffWithProvenance,
-  doAnnotationsOverlap,
-  useActorIdToAuthorMap,
-} from "../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -899,6 +895,8 @@ function useAnnotations({
         target: anchor,
         value: valueOfAnchor(doc, anchor),
       }));
+
+      highlightAnnotations.push(...annotations);
 
       annotationGroups.push({
         annotations,

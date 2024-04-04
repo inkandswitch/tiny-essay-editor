@@ -419,7 +419,6 @@ const AnnotationGroupView = forwardRef<
           onClick={() => setIsSelected(true)}
           className="flex flex-col gap-1"
         >
-          {JSON.stringify(annotationGroup.annotations)}
           <div
             className={`flex flex-col gap-1 ${
               annotationGroup.discussion

@@ -286,20 +286,35 @@ const useDiffStyling = ({
 
       annotations.forEach((annotation) => {
         switch (annotation.type) {
+          case "highlighted":
           case "added":
             {
-              const shapeElem = document.getElementById(annotation.added.id);
+              const id =
+                annotation.type === "highlighted"
+                  ? annotation.value.id
+                  : annotation.added.id;
+
+              const shapeElem = document.getElementById(id);
               if (!shapeElem) {
                 return;
               }
 
               activeHighlightedElements.add(shapeElem);
-              if (highlightedElementsRef.current.has(shapeElem)) {
+              if (!highlightedElementsRef.current.has(shapeElem)) {
+                highlightedElementsRef.current.add(shapeElem);
+              }
+
+              // don't override styling if element is already highlighted
+              // if an element is both added and highlighted we show the hightlighted state
+              if (
+                shapeElem.style.filter === "drop-shadow(0 0 0.75rem yellow)"
+              ) {
                 return;
               }
 
-              highlightedElementsRef.current.add(shapeElem);
-              shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
+              shapeElem.style.filter = `drop-shadow(0 0 0.75rem ${
+                annotation.type === "highlighted" ? "yellow" : "green"
+              })`;
             }
             break;
 

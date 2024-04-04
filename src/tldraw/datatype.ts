@@ -76,9 +76,7 @@ export const patchesToAnnotations = (
           {
             type: "deleted",
             deleted: docBefore.store[shapeId],
-            target: {
-              shapeIds: [shapeId],
-            },
+            target: [shapeId],
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 
@@ -87,9 +85,7 @@ export const patchesToAnnotations = (
           {
             type: "added",
             added: doc.store[shapeId],
-            target: {
-              shapeIds: [shapeId],
-            },
+            target: [shapeId],
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 
@@ -98,6 +94,10 @@ export const patchesToAnnotations = (
 
     return [];
   });
+};
+
+export const valueOfAnchor = (doc: TLDrawDoc, anchor: TLShapeId) => {
+  return doc.store[anchor];
 };
 
 const promptForAIChangeGroupSummary = ({
@@ -144,5 +144,6 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   includePatchInChangeGroup,
   includeChangeInHistory,
   patchesToAnnotations,
+  valueOfAnchor,
   promptForAIChangeGroupSummary,
 };
