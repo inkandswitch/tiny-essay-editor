@@ -92,6 +92,11 @@ export type Discussion<T> = {
   target?: T[];
 };
 
+export type AnnotationGroup<T, V> = {
+  annotations: Annotation<T, V>[];
+  discussion: Discussion<T>;
+};
+
 export type Discussable<T> = {
   discussions: { [key: string]: Discussion<T> };
 };
@@ -102,16 +107,6 @@ export type HasChangeGroupSummaries = {
       title: string;
     };
   };
-};
-
-export type HighlightId = string & { __highlightId: true };
-
-export type Highlight<T> = {
-  id: HighlightId;
-};
-
-export type Highlightable<T> = {
-  highlights: Highlight<T>;
 };
 
 export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &

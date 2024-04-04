@@ -9,6 +9,7 @@ import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
 import { Annotation } from "./schema";
 import { isEqual } from "lodash";
+import { DocType, docTypes } from "@/DocExplorer/doctypes";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -512,12 +513,21 @@ export function useDebounce<T>(value: T, delay?: number): T {
   return debouncedValue;
 }
 
-// annotations are fuzzy things, because they are derived from diff they don't have a stable identity
-// right now we just compare if they are identical
-// todo: check if there is overlap
-export const doAnnotationsOverlap = <T, V>(
-  a: Annotation<T, V>,
-  b: Annotation<T, V>
+export const doAnchorsOverlap = (type: DocType, a: unknown, b: unknown) => {
+  const comperator = docTypes[type].doAnchorsOverlap ?? isEqual;
+  return comperator(a, b);
+};
+
+export const areAnchorSelectionsEqual = (
+  type: DocType,
+  a: unknown[],
+  b: unknown[]
 ) => {
-  return isEqual(a, b);
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((anchor) =>
+    b.some((other) => doAnchorsOverlap(type, anchor, other))
+  );
 };

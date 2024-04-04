@@ -8,6 +8,7 @@ import React, {
   useReducer,
 } from "react";
 import {
+  AnnotationGroup,
   Discussion,
   DiscussionComment,
   HasPatchworkMetadata,
@@ -30,44 +31,33 @@ import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
 import { MarkdownDocAnchor } from "@/tee/schema";
 import { truncate } from "lodash";
-import { doAnnotationsOverlap } from "../utils";
 import { MessageCircleIcon } from "lucide-react";
 import { TLDrawDocAnchor } from "@/tldraw/schema";
 import { TLShape } from "@tldraw/tldraw";
 
 type SpatialSidebarProps = {
   docType: string;
-  annotations: Annotation<unknown, unknown>[];
+  annotationGroups: AnnotationGroup<unknown, unknown>[];
   changeDoc: (
     changeFn: (doc: HasPatchworkMetadata<unknown, unknown>) => void
   ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
-  setSelectedAnnotations: (annotations: Annotation<unknown, unknown>[]) => void;
-  setHoveredAnnotation: (annotation: Annotation<unknown, unknown>) => void;
-  selectedAnnotations: Annotation<unknown, unknown>[];
-  hoveredAnnotation: Annotation<unknown, unknown>;
-  selection: any; // todo: type this
-  resetSelection: () => void;
+  setSelectedAnchors: (anchors: unknown[]) => void;
+  setHoveredAnchors: (anchors: unknown[]) => void;
+  selectedAnchors: unknown[];
+  hoveredAnchors: unknown[];
 };
-
-/* FIXME:
-
-- make spatial sidebar work on groups
-
-*/
 
 export const SpatialSidebar = React.memo(
   ({
     docType,
-    annotations,
+    annotationGroups,
     changeDoc,
     onChangeCommentPositionMap,
-    setSelectedAnnotations,
-    selectedAnnotations,
-    setHoveredAnnotation,
-    hoveredAnnotation,
-    selection,
-    resetSelection,
+    setSelectedAnchors,
+    selectedAnchors,
+    setHoveredAnchors,
+    hoveredAnchors,
   }: SpatialSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyAnnotation, setActiveReplyAnnotation] =
@@ -117,17 +107,36 @@ export const SpatialSidebar = React.memo(
       }); */
     };
 
-    const addCommentToCurrentSelection = (content: string) => {
-      resetSelection();
+    const createDiscussion = (content: string) => {
+      setSelectedAnchors([]);
       setPendingCommentText("");
-      addCommentToAnnotation(
-        {
-          type: "highlighted",
-          target: selection,
-          value: undefined,
-        },
-        content
-      );
+
+      changeDoc((doc) => {
+        let discussions = doc.discussions;
+
+        // convert docs without discussions
+        if (!discussions) {
+          doc.discussions = {};
+          discussions = doc.discussions;
+        }
+
+        const discussionId = uuid();
+
+        discussions[discussionId] = {
+          id: discussionId,
+          heads: A.getHeads(doc),
+          comments: [
+            {
+              id: uuid(),
+              content,
+              contactUrl: account.contactHandle.url,
+              timestamp: Date.now(),
+            },
+          ],
+          resolved: false,
+          target: selectedAnchors,
+        };
+      });
     };
 
     const resolveDiscussion = (discussion: Discussion<unknown>) => {
@@ -148,20 +157,6 @@ export const SpatialSidebar = React.memo(
         doc.discussions[discussion.id].resolved = true;
       }); */
     };
-
-    const { registerAnnotationElement, annotationsPositionMap } =
-      useAnnotationsPositionMap({
-        annotations,
-        onChangeCommentPositionMap,
-        offset: scrollContainerRect
-          ? scrollContainerRect.top - scrollOffset
-          : 0,
-      });
-
-    const setScrollTarget = useSetScrollTarget(
-      annotationsPositionMap,
-      scrollContainer
-    );
 
     // sync scrollPosition
     /*useEffect(() => {
@@ -197,10 +192,7 @@ export const SpatialSidebar = React.memo(
     ]);*/
 
     return (
-      <div
-        className="h-full flex flex-col"
-        onClick={() => setSelectedAnnotations([])}
-      >
+      <div className="h-full flex flex-col">
         <div
           ref={setScrollContainer}
           onScroll={(evt) =>
@@ -208,108 +200,92 @@ export const SpatialSidebar = React.memo(
           }
           className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
         >
-          {annotations &&
-            annotations.map((annotation, index) => {
-              // todo: replace this doc type specific condition with a generic filter that
-              // filters out annotations without a position
-              if (docType === "tldraw" && annotation.type !== "highlighted") {
-                return;
-              }
+          {annotationGroups.map((annotationGroup, index) => {
+            return (
+              <AnnotationGroupView
+                docType={docType}
+                key={index}
+                annotationGroup={annotationGroup}
+                isReplyBoxOpen={false}
+                setIsReplyBoxOpen={(isOpen) => {
+                  // setActiveReplyAnnotation(isOpen ? annotation : undefined);
+                }}
+                onResolveDiscussion={(discussion) => {
+                  // resolveDiscussion(discussion)
+                }}
+                onAddComment={(content) => {
+                  // addCommentToAnnotation(annotation, content);
+                }}
+                isHovered={false}
+                setIsHovered={(isHovered) => {
+                  // setHoveredAnnotation(isHovered ? annotation : undefined);
+                }}
+                isSelected={false}
+                setIsSelected={(isSelected) => {
+                  // setSelectedAnnotations(isSelected ? [annotation] : []);
+                }}
+                ref={(element) => {
+                  /*registerAnnotationElement(
+                    JSON.stringify(annotation.target),
+                    element
+                  )*/
+                }}
+                onSelectNext={() => {
+                  /* if (selectedAnnotations.length > 1) {
+                    return;
+                  }
 
-              return (
-                <AnnotationWithDicussionView
-                  docType={docType}
-                  key={JSON.stringify(annotation)}
-                  annotation={annotation}
-                  isReplyBoxOpen={
-                    activeReplyAnnotation &&
-                    doAnnotationsOverlap(activeReplyAnnotation, annotation)
-                  }
-                  setIsReplyBoxOpen={(isOpen) => {
-                    setActiveReplyAnnotation(isOpen ? annotation : undefined);
-                  }}
-                  onResolveDiscussion={(discussion) =>
-                    resolveDiscussion(discussion)
-                  }
-                  onAddComment={(content) => {
-                    addCommentToAnnotation(annotation, content);
-                  }}
-                  isHovered={
-                    hoveredAnnotation &&
-                    doAnnotationsOverlap(hoveredAnnotation, annotation)
-                  }
-                  setIsHovered={(isHovered) => {
-                    setHoveredAnnotation(isHovered ? annotation : undefined);
-                  }}
-                  isSelected={selectedAnnotations.some((selectedAnnotation) =>
-                    doAnnotationsOverlap(selectedAnnotation, annotation)
-                  )}
-                  setIsSelected={(isSelected) => {
-                    setSelectedAnnotations(isSelected ? [annotation] : []);
-                  }}
-                  ref={(element) =>
-                    registerAnnotationElement(
-                      JSON.stringify(annotation.target),
-                      element
-                    )
-                  }
-                  onSelectNext={() => {
-                    if (selectedAnnotations.length > 1) {
-                      return;
-                    }
-
-                    const nextAnnotation = annotations[index + 1];
-                    if (nextAnnotation) {
-                      setSelectedAnnotations([nextAnnotation]);
-                    }
-                  }}
-                  onSelectPrev={() => {
-                    const prevAnnotation = annotations[index - 1];
-                    if (prevAnnotation) {
-                      setSelectedAnnotations([prevAnnotation]);
-                    }
-                  }}
-                />
-              );
-            })}
+                  const nextAnnotation = annotations[index + 1];
+                  if (nextAnnotation) {
+                    setSelectedAnnotations([nextAnnotation]);
+                  } */
+                }}
+                onSelectPrev={() => {
+                  /* const prevAnnotation = annotations[index - 1];
+                  if (prevAnnotation) {
+                    setSelectedAnnotations([prevAnnotation]);
+                  } */
+                }}
+              />
+            );
+          })}
         </div>
-        {selection && (
-          <div className="bg-gray-50 z-10 p-2 flex flex-col gap-2">
-            <Textarea
-              value={pendingCommentText}
-              onChange={(event) => setPendingCommentText(event.target.value)}
-              // GL Nov: figure out how to close the popover upon cmd-enter submit
-              // GL 12/14: the answer here is going to be to control Popover open
-              // state ourselves as we now do elsewhere in the codebase
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && event.metaKey) {
-                  /* startDiscusssionAtSelection(pendingCommentText);
+        {JSON.stringify(selectedAnchors)}
+        <div className="bg-gray-50 z-10 p-2 flex flex-col gap-2">
+          <Textarea
+            value={pendingCommentText}
+            onChange={(event) => setPendingCommentText(event.target.value)}
+            // GL Nov: figure out how to close the popover upon cmd-enter submit
+            // GL 12/14: the answer here is going to be to control Popover open
+            // state ourselves as we now do elsewhere in the codebase
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && event.metaKey) {
+                /* startDiscusssionAtSelection(pendingCommentText);
                 setSuppressButton(true);
                 setIsCommentBoxOpen(false);
                 event.preventDefault(); */
-                }
-              }}
-            />
+              }
+            }}
+          />
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                addCommentToCurrentSelection(pendingCommentText);
-              }}
-            >
-              Comment
-              <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
-            </Button>
-          </div>
-        )}
+          <Button
+            variant="outline"
+            onClick={() => {
+              createDiscussion(pendingCommentText);
+            }}
+          >
+            Comment
+            <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+          </Button>
+        </div>
       </div>
     );
   }
 );
 
-interface AnnotationWithDiscussionViewProps {
+export interface AnnotationGroupViewProps {
   docType: string;
-  annotation: Annotation<unknown, unknown>;
+  annotationGroup: AnnotationGroup<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolveDiscussion: (discussion: Discussion<unknown>) => void;
@@ -322,14 +298,14 @@ interface AnnotationWithDiscussionViewProps {
   setIsSelected: (isSelected: boolean) => void;
 }
 
-const AnnotationWithDicussionView = forwardRef<
+const AnnotationGroupView = forwardRef<
   HTMLDivElement,
-  AnnotationWithDiscussionViewProps
+  AnnotationGroupViewProps
 >(
   <T, V>(
     {
       docType,
-      annotation,
+      annotationGroup,
       isReplyBoxOpen,
       setIsReplyBoxOpen,
       onResolveDiscussion,
@@ -340,7 +316,7 @@ const AnnotationWithDicussionView = forwardRef<
       setIsSelected,
       onSelectNext,
       onSelectPrev,
-    }: AnnotationWithDiscussionViewProps,
+    }: AnnotationGroupViewProps,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -417,9 +393,6 @@ const AnnotationWithDicussionView = forwardRef<
       };
     }, [isSelected, onSelectNext, onSelectPrev]);
 
-    return null;
-
-    /*
     return (
       <div
         onClick={(event) => event.stopPropagation()}
@@ -436,7 +409,7 @@ const AnnotationWithDicussionView = forwardRef<
         }
         onTransitionEnd={() => {
           if (isBeingResolved) {
-            onResolveDiscussion(annotation.discussion);
+            onResolveDiscussion(annotationGroup.discussion);
           }
         }}
       >
@@ -444,31 +417,19 @@ const AnnotationWithDicussionView = forwardRef<
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={() => setIsSelected(true)}
-          key={JSON.stringify(annotation)}
           className="flex flex-col gap-1"
         >
+          {JSON.stringify(annotationGroup.annotations)}
           <div
             className={`flex flex-col gap-1 ${
-              annotation.discussion
+              annotationGroup.discussion
                 ? isSelected || isHovered
                   ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
                   : "border bg-white rounded-sm p-2 border-gray-200 "
                 : ""
             }`}
           >
-            {docType !== "tldraw" && (
-              <div
-                className={`select-none px-2 py-1 w-fit max-w-full bg-white border rounded-sm ${
-                  (isSelected || isHovered) && !annotation.discussion
-                    ? "border-gray-400 shadow-xl"
-                    : "border-gray-200 "
-                }`}
-              >
-                <AnnotationView docType={docType} annotation={annotation} />
-              </div>
-            )}
-
-            {annotation.discussion?.comments.map((comment, index) => (
+            {annotationGroup.discussion?.comments.map((comment, index) => (
               <DiscusssionCommentView comment={comment} key={comment.id} />
             ))}
           </div>
@@ -525,7 +486,7 @@ const AnnotationWithDicussionView = forwardRef<
               </PopoverContent>
             </Popover>
 
-            {annotation.type === "highlighted" && (
+            {annotationGroup.discussion && (
               <Button
                 variant="ghost"
                 className="select-none px-2 flex flex-col w-fi"
@@ -539,23 +500,10 @@ const AnnotationWithDicussionView = forwardRef<
                 </span>
               </Button>
             )}
-            {annotation.type !== "highlighted" && (
-              <Button
-                variant="ghost"
-                className="select-none px-2 flex flex-col w-fit"
-              >
-                <div className="flex text-gray-600 gap-2">
-                  <UndoIcon size={16} /> Revert
-                </div>
-                <span className="text-gray-400 text-center text-xs w-full">
-                  (⌘ + Z)
-                </span>
-              </Button>
-            )}
           </div>
         </div>
       </div>
-    ); */
+    );
   }
 );
 

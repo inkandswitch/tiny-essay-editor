@@ -4,6 +4,8 @@ import {
   EditRangeTarget,
   HasPatchworkMetadata,
   Annotation,
+  HighlightAnnotation,
+  AnnotationGroup,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -110,11 +112,8 @@ export const PatchworkDocEditor: React.FC<{
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
   const [selection, setSelection] = useState<any>(); // todo: type properly
-  const [hoveredAnnotation, setHoveredAnnotation] =
-    useState<Annotation<unknown, unknown>>();
-  const [selectedAnnotations, setSelectedAnnotations] = useState<
-    Annotation<unknown, unknown>[]
-  >([]);
+  const [hoveredAnchors, setHoveredAnchors] = useState<unknown[]>([]);
+  const [selectedAnchors, setSelectedAnchors] = useState<unknown[]>([]);
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
@@ -310,7 +309,7 @@ export const PatchworkDocEditor: React.FC<{
   const activeDoc = selectedBranchUrl ? branchDoc : doc;
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
 
-  const annotations = useAnnotations({
+  const { annotations, annotationGroups } = useAnnotations({
     doc: activeDoc,
     docType,
     diff: diffForEditor,
@@ -596,10 +595,8 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                onUpdateAnnotationPositions={onUpdateAnnotationPositions}
-                selection={selection}
-                setSelection={setSelection}
-                selectedAnnotations={selectedAnnotations}
+                selectedAnchors={selectedAnchors}
+                setSelectedAnchors={setSelectedAnchors}
               />
             )}
             {reviewMode === "comments" && isHistorySidebarOpen && (
@@ -651,12 +648,8 @@ export const PatchworkDocEditor: React.FC<{
             )}
             {reviewMode === "comments" && (
               <SpatialSidebar
-                selection={selection}
-                resetSelection={() => setSelection(undefined)}
                 docType={docType}
-                annotations={annotationPositions.map(
-                  ({ annotation }) => annotation
-                )}
+                annotationGroups={annotationGroups}
                 changeDoc={activeChangeDoc}
                 onChangeCommentPositionMap={(positions) => {
                   // todo: without this condition there is an infinite loop
@@ -664,10 +657,8 @@ export const PatchworkDocEditor: React.FC<{
                     setAnnotationsPositionsInSidebarMap(positions);
                   }
                 }}
-                setSelectedAnnotations={setSelectedAnnotations}
-                selectedAnnotations={selectedAnnotations}
-                setHoveredAnnotation={setHoveredAnnotation}
-                hoveredAnnotation={hoveredAnnotation}
+                selectedAnchors={selectedAnchors}
+                setSelectedAnchors={setSelectedAnchors}
               />
             )}
           </div>
@@ -688,13 +679,10 @@ const DocEditor = <T, V>({
   docHeads,
   annotations,
   actorIdToAuthor,
-  onUpdateAnnotationPositions,
-  hoveredAnnotation,
-  selectedAnnotations,
-  setHoveredAnnotation,
-  setSelectedAnnotations,
-  selection,
-  setSelection,
+  selectedAnchors,
+  hoveredAnchors,
+  setSelectedAnchors,
+  setHoveredAnchors,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = toolsForDocTypes[docType][0];
@@ -706,13 +694,10 @@ const DocEditor = <T, V>({
       docType={docType}
       annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
       actorIdToAuthor={actorIdToAuthor}
-      onUpdateAnnotationPositions={onUpdateAnnotationPositions}
-      hoveredAnnotation={hoveredAnnotation}
-      selectedAnnotations={selectedAnnotations}
-      setHoveredAnnotation={setHoveredAnnotation}
-      setSelectedAnnotations={setSelectedAnnotations}
-      selection={selection}
-      setSelection={setSelection}
+      selectedAnchors={selectedAnchors}
+      hoveredAnchors={hoveredAnchors}
+      setSelectedAnchors={setSelectedAnchors}
+      setHoveredAnchors={setHoveredAnchors}
     />
   );
 };
@@ -882,7 +867,7 @@ const BranchActions: React.FC<{
   );
 };
 
-const useAnnotations = ({
+function useAnnotations({
   doc,
   docType,
   diff,
@@ -890,31 +875,48 @@ const useAnnotations = ({
   doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
   docType: DocType;
   diff?: DiffWithProvenance;
-}) => {
+}): {
+  annotations: Annotation<unknown, unknown>[];
+  annotationGroups: AnnotationGroup<unknown, unknown>[];
+} {
   return useMemo(() => {
     if (!doc) {
-      return [];
+      return { annotations: [], annotationGroups: [] };
     }
 
     const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
+    const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
-    // highlight annotations only exist in discussions, so we need to get them separately
-    // todo: infere highlight annotations from discussion
-    const highlightAnnotations = [];
+    const annotationGroups: AnnotationGroup<unknown, unknown>[] = [];
+    const highlightAnnotations: HighlightAnnotation<unknown, unknown>[] = [];
 
-    if (!diff) {
-      return highlightAnnotations;
-    }
+    discussions.forEach((discussion) => {
+      const annotations: HighlightAnnotation<unknown, unknown>[] = (
+        discussion.target ?? []
+      ).map((anchor) => ({
+        type: "highlighted",
+        target: anchor,
+        value: valueOfAnchor(doc, anchor),
+      }));
 
-    const editAnnotations = patchesToAnnotations
-      ? patchesToAnnotations(
-          doc,
-          A.view(doc, diff.fromHeads),
-          diff.patches as A.Patch[]
-        )
-      : [];
+      annotationGroups.push({
+        annotations,
+        discussion,
+      });
+    });
 
-    return editAnnotations.concat(highlightAnnotations);
+    const editAnnotations =
+      patchesToAnnotations && diff
+        ? patchesToAnnotations(
+            doc,
+            A.view(doc, diff.fromHeads),
+            diff.patches as A.Patch[]
+          )
+        : [];
+
+    const annotations = editAnnotations.concat(highlightAnnotations);
+
+    return { annotations, annotationGroups };
   }, [doc, diff]);
-};
+}

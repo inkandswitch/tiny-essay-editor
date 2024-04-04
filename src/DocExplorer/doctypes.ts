@@ -73,6 +73,10 @@ export type PatchworkDataType<D, T, V> = {
     docBefore: D,
     patches: A.Patch[]
   ) => Annotation<T, V>[];
+
+  valueOfAnchor?: (doc: D, anchor: T) => V;
+
+  doAnchorsOverlap?: (anchor1: T, anchor2: T) => boolean;
 };
 
 export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
@@ -115,13 +119,8 @@ export interface DocEditorProps<T, V> {
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
   // spatial comments interface
-  // todo: simplify
-  selectedAnnotations?: Annotation<T, V>[];
-  hoveredAnnotation?: Annotation<T, V>;
-  setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
-  setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
-  onUpdateAnnotationPositions?: (positions: AnnotationPosition<T, V>[]) => void;
-
-  selection?: T;
-  setSelection?: (target: T) => void;
+  selectedAnchors?: T[];
+  hoveredAnchors?: T;
+  setHoveredAnchors?: (anchors: T[]) => void;
+  setSelectedAnchors?: (anchors: T[]) => void;
 }
