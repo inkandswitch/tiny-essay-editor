@@ -18,7 +18,7 @@ import {
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { truncate, sortBy } from "lodash";
+import { truncate, sortBy, min } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -1020,9 +1020,23 @@ export function useAnnotations({
         )
       ).map((annotations) => ({ annotations }));
 
+    const combinedAnnotationGroups = discussionGroups.concat(
+      computedAnnotationGroups
+    );
+
+    const sortAnchorsBy = docTypes[docType].sortAnchorsBy;
+
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
-      annotationGroups: discussionGroups.concat(computedAnnotationGroups),
+      annotationGroups: sortAnchorsBy
+        ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
+            min(
+              annotationGroup.annotations.map((annotation) =>
+                sortAnchorsBy(doc, annotation.target)
+              )
+            )
+          )
+        : combinedAnnotationGroups,
     };
   }, [doc, discussions, diff]);
 

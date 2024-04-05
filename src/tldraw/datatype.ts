@@ -96,8 +96,13 @@ export const patchesToAnnotations = (
   });
 };
 
-export const valueOfAnchor = (doc: TLDrawDoc, anchor: TLShapeId) => {
-  return doc.store[anchor];
+export const valueOfAnchor = (doc: TLDrawDoc, anchor: TLShapeId): TLShape => {
+  return doc.store[anchor] as TLShape;
+};
+
+export const sortAnchorsBy = (doc: TLDrawDoc, anchor: TLShapeId): number => {
+  const shape = valueOfAnchor(doc, anchor);
+  return shape.y;
 };
 
 const promptForAIChangeGroupSummary = ({
@@ -143,7 +148,8 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   markCopy,
   includePatchInChangeGroup,
   includeChangeInHistory,
+  promptForAIChangeGroupSummary,
   patchesToAnnotations,
   valueOfAnchor,
-  promptForAIChangeGroupSummary,
+  sortAnchorsBy,
 };
