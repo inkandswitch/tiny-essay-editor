@@ -252,7 +252,6 @@ export const SpatialSidebar = React.memo(
             );
           })}
         </div>
-        {JSON.stringify(selectedAnchors)}
         <div className="bg-gray-50 z-10 p-2 flex flex-col gap-2">
           <Textarea
             value={pendingCommentText}

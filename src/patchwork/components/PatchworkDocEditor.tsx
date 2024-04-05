@@ -709,7 +709,9 @@ const DocEditor = <T, V>({
       docUrl={docUrl}
       docHeads={docHeads}
       docType={docType}
-      annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
+      annotations={
+        annotations as AnnotationWithState<MarkdownDocAnchor, string>[]
+      }
       actorIdToAuthor={actorIdToAuthor}
       selectedAnchors={selectedAnchors}
       hoveredAnchor={hoveredAnchor}

@@ -6,7 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import {
+  Annotation,
+  AnnotationPosition,
+  AnnotationWithState,
+} from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";
 import {
   Editor,
@@ -99,7 +103,7 @@ interface TlDrawProps {
   doc: TLDrawDoc;
   handle: DocHandle<TLDrawDoc>;
   userId: string;
-  annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
+  annotations?: AnnotationWithState<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
   selectedAnchors: TLDrawDocAnchor[];
@@ -123,7 +127,7 @@ const EditableTLDraw = ({
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor, selectedAnchors });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -155,7 +159,7 @@ const ReadOnlyTLDraw = ({
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor, selectedAnchors });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
@@ -213,7 +217,9 @@ export const SideBySide = ({
           docUrl={docUrl}
           docHeads={docHeads}
           key={mainDocUrl}
-          annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>[]}
+          annotations={
+            annotations as AnnotationWithState<TLDrawDocAnchor, TLShape>[]
+          }
           camera={camera}
           onChangeCamera={setCamera}
           hoveredAnchor={hoveredAnchor as TLDrawDocAnchor}
@@ -267,13 +273,11 @@ const useDiffStyling = ({
   annotations,
   store,
   editor,
-  selectedAnchors,
 }: {
   doc: TLDrawDoc;
-  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
+  annotations: AnnotationWithState<TLDrawDocAnchor, TLShape>[];
   store: TLStoreWithStatus;
   editor: Editor;
-  selectedAnchors: TLDrawDocAnchor[];
 }) => {
   const tempShapeIdsRef = useRef(new Set<TLShapeId>());
   const highlightedElementsRef = useRef(new Set<HTMLElement>());
@@ -313,6 +317,7 @@ const useDiffStyling = ({
       // track which temp shapes and highlighted elements are active in the current diff
       const activeHighlightedElements = new Set<HTMLElement>();
       const activeTempShapeIds = new Set<TLShapeId>();
+      const highlightedShapeIds = new Set<TLShapeId>();
 
       annotations.forEach((annotation) => {
         switch (annotation.type) {
@@ -336,14 +341,20 @@ const useDiffStyling = ({
 
               // don't override styling if element is already highlighted
               // if an element is both added and highlighted we show the hightlighted state
-              if (
-                shapeElem.style.filter === "drop-shadow(0 0 0.75rem yellow)"
-              ) {
+              if (highlightedShapeIds.has(annotation.target)) {
                 return;
               }
 
+              console.log(annotation.isFocused);
+
               shapeElem.style.filter = `drop-shadow(0 0 0.75rem ${
-                annotation.type === "highlighted" ? "yellow" : "green"
+                annotation.type === "highlighted"
+                  ? annotation.isFocused
+                    ? "orange"
+                    : "yellow"
+                  : annotation.isFocused
+                  ? "rgba(0, 255, 0, 1)"
+                  : "rgba(0, 255, 0, 0.5)"
               })`;
             }
             break;
