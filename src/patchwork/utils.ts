@@ -7,9 +7,10 @@ import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
-import { AnnotationGroup } from "./schema";
+import { AnnotationGroup, Annotation } from "./schema";
 import { isEqual } from "lodash";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import { Annotation } from "@uiw/react-codemirror";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -535,7 +536,13 @@ export const areAnchorSelectionsEqual = (
 export function getAnnotationGroupId<T, V>(
   annotationGroup: AnnotationGroup<T, V>
 ) {
-  return annotationGroup.discussion.id;
+  if (annotationGroup.discussion) return annotationGroup.discussion.id;
+
+  // if the annotation group has no discussion we know that it's a computed annotation group
+  // which means that the annotation doesn't appear in any other annotationGroup
+  // so we can just pick the first annotation to generate a unique id
+  const firstAnnotation = annotationGroup.annotations[0];
+  return `${firstAnnotation.type}:${JSON.stringify(firstAnnotation.target)}`;
 }
 
 export function doesAnnotationGroupContainAnchors<T, V>(
@@ -548,4 +555,16 @@ export function doesAnnotationGroupContainAnchors<T, V>(
       doAnchorsOverlap(docType, annotation.target, anchor)
     )
   );
+}
+
+export function groupAnnotations<T, V>(
+  docType: DocType,
+  annotations: Annotation<T, V>[]
+): Annotation<T, V>[][] {
+  const grouper =
+    docTypes[docType].groupAnnotations ??
+    ((annotations: Annotation<T, V>[]) =>
+      annotations.map((annotation) => [annotation]));
+
+  return grouper(annotations) as Annotation<T, V>[][];
 }

@@ -317,7 +317,6 @@ const useDiffStyling = ({
       // track which temp shapes and highlighted elements are active in the current diff
       const activeHighlightedElements = new Set<HTMLElement>();
       const activeTempShapeIds = new Set<TLShapeId>();
-      const highlightedShapeIds = new Set<TLShapeId>();
 
       annotations.forEach((annotation) => {
         switch (annotation.type) {
@@ -338,14 +337,6 @@ const useDiffStyling = ({
               if (!highlightedElementsRef.current.has(shapeElem)) {
                 highlightedElementsRef.current.add(shapeElem);
               }
-
-              // don't override styling if element is already highlighted
-              // if an element is both added and highlighted we show the hightlighted state
-              if (highlightedShapeIds.has(annotation.target)) {
-                return;
-              }
-
-              console.log(annotation.isFocused);
 
               shapeElem.style.filter = `drop-shadow(0 0 0.75rem ${
                 annotation.type === "highlighted"

@@ -420,13 +420,43 @@ const AnnotationGroupView = forwardRef<
         >
           <div
             className={`flex flex-col gap-1 ${
-              annotationGroup.discussion
-                ? isFocused
-                  ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
-                  : "border bg-white rounded-sm p-2 border-gray-200 "
-                : ""
+              isFocused
+                ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
+                : "border bg-white rounded-sm p-2 border-gray-200 "
             }`}
           >
+            {annotationGroup.annotations.map((annotation, index) => {
+              if (
+                (annotation.type === "added" && !annotation.added) ||
+                (annotation.type === "changed" && !annotation.after) ||
+                (annotation.type == "deleted" && !annotation.deleted) ||
+                (annotation.type == "highlighted" && !annotation.value)
+              ) {
+                return null;
+              }
+
+              const annotationView = (
+                <AnnotationView
+                  docType={docType}
+                  annotation={annotation}
+                  key={index}
+                />
+              );
+
+              return annotationGroup.discussion ? (
+                <div
+                  className={
+                    annotationGroup.discussion
+                      ? "p-2 border border-gray-200 rounded-sm"
+                      : ""
+                  }
+                >
+                  {annotationView}
+                </div>
+              ) : (
+                annotationView
+              );
+            })}
             {annotationGroup.discussion?.comments.map((comment, index) => (
               <DiscusssionCommentView comment={comment} key={comment.id} />
             ))}
@@ -629,12 +659,11 @@ const TLDrawAnnotationView = ({
       );
 
     case "highlighted":
-      return null;
-    /*return (
+      return (
         <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
           highlighted {getShapeName(annotation.value)}
         </div>
-      );*/
+      );
   }
 };
 

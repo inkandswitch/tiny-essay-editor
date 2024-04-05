@@ -9,7 +9,11 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
-import { AnnotationWithState, HasPatchworkMetadata } from "@/patchwork/schema";
+import {
+  AnnotationGroup,
+  AnnotationWithState,
+  HasPatchworkMetadata,
+} from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { Annotation, AnnotationPosition } from "@/patchwork/schema";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
@@ -74,9 +78,16 @@ export type PatchworkDataType<D, T, V> = {
     patches: A.Patch[]
   ) => Annotation<T, V>[];
 
+  groupAnnotations?: (annotations: Annotation<T, V>[]) => Annotation<T, V>[][];
+
   valueOfAnchor?: (doc: D, anchor: T) => V;
 
   doAnchorsOverlap?: (anchor1: T, anchor2: T) => boolean;
+
+  /** define a value for each anchors that will be use to sort them by in descending order
+   *  this is used for example in the SpatialSidebar to sort the annotation groups
+   */
+  sortAnchorsBy?: (anchor: T) => any;
 };
 
 export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;

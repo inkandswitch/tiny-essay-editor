@@ -94,7 +94,7 @@ export type Discussion<T> = {
 
 export type AnnotationGroup<T, V> = {
   annotations: Annotation<T, V>[];
-  discussion: Discussion<T>;
+  discussion?: Discussion<T>;
 };
 
 export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {

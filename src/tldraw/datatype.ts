@@ -76,7 +76,7 @@ export const patchesToAnnotations = (
           {
             type: "deleted",
             deleted: docBefore.store[shapeId],
-            target: [shapeId],
+            target: shapeId,
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 
@@ -85,7 +85,7 @@ export const patchesToAnnotations = (
           {
             type: "added",
             added: doc.store[shapeId],
-            target: [shapeId],
+            target: shapeId,
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 

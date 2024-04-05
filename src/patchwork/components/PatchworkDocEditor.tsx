@@ -39,6 +39,7 @@ import {
 import {
   diffWithProvenance,
   doAnchorsOverlap,
+  groupAnnotations,
   useActorIdToAuthorMap,
 } from "../utils";
 import {
@@ -959,29 +960,8 @@ export function useAnnotations({
     const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
-    const annotationGroups: AnnotationGroup<unknown, unknown>[] = [];
+    const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
     const highlightAnnotations: HighlightAnnotation<unknown, unknown>[] = [];
-
-    discussions.forEach((discussion) => {
-      if (discussion.resolved) {
-        return;
-      }
-
-      const annotations: HighlightAnnotation<unknown, unknown>[] = (
-        discussion.target ?? []
-      ).map((anchor) => ({
-        type: "highlighted",
-        target: anchor,
-        value: valueOfAnchor(doc, anchor),
-      }));
-
-      highlightAnnotations.push(...annotations);
-
-      annotationGroups.push({
-        annotations,
-        discussion,
-      });
-    });
 
     const editAnnotations =
       patchesToAnnotations && diff
@@ -992,11 +972,57 @@ export function useAnnotations({
           )
         : [];
 
-    const annotations = editAnnotations.concat(highlightAnnotations);
+    // remember which annotations are part of a discussion
+    const claimedAnnotations = new Set<Annotation<unknown, unknown>>();
+
+    discussions.forEach((discussion) => {
+      if (discussion.resolved) {
+        return;
+      }
+
+      const discussionHighlightAnnotations: HighlightAnnotation<
+        unknown,
+        unknown
+      >[] = (discussion.target ?? []).map((anchor) => ({
+        type: "highlighted",
+        target: anchor,
+        value: valueOfAnchor(doc, anchor),
+      }));
+
+      highlightAnnotations.push(...discussionHighlightAnnotations);
+
+      const overlappingAnnotations = [];
+
+      editAnnotations.forEach((editAnnotation) => {
+        if (
+          discussion.target.some((anchor) =>
+            doAnchorsOverlap(docType, editAnnotation.target, anchor)
+          )
+        ) {
+          claimedAnnotations.add(editAnnotation);
+          overlappingAnnotations.push(editAnnotation);
+        }
+      });
+
+      discussionGroups.push({
+        annotations: discussionHighlightAnnotations.concat(
+          overlappingAnnotations
+        ),
+        discussion,
+      });
+    });
+
+    const computedAnnotationGroups: AnnotationGroup<unknown, unknown>[] =
+      groupAnnotations(
+        docType,
+        editAnnotations.filter(
+          (annotation) => !claimedAnnotations.has(annotation)
+        )
+      ).map((annotations) => ({ annotations }));
 
     return {
-      annotations,
-      annotationGroups,
+      annotations: editAnnotations.concat(highlightAnnotations),
+      annotationGroups: discussionGroups.concat(computedAnnotationGroups),
     };
   }, [doc, discussions, diff]);
 
@@ -1087,8 +1113,6 @@ export function useAnnotations({
         break;
       }
     }
-
-    console.log(focusedAnnotationGroupIds);
 
     return {
       focusedAnchors,
