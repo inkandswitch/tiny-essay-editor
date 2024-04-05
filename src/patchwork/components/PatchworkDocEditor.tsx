@@ -928,7 +928,9 @@ export function useAnnotations({
   };
 
   const setSelectedAnchors = (anchors: unknown[]) => {
-    setSelectedState({ type: "anchors", anchors });
+    setSelectedState(
+      anchors.length > 0 ? { type: "anchors", anchors } : undefined
+    );
   };
 
   const setSelectedAnnotationGroupId = (id: string) => {
@@ -959,6 +961,10 @@ export function useAnnotations({
     const highlightAnnotations: HighlightAnnotation<unknown, unknown>[] = [];
 
     discussions.forEach((discussion) => {
+      if (discussion.resolved) {
+        return;
+      }
+
       const annotations: HighlightAnnotation<unknown, unknown>[] = (
         discussion.target ?? []
       ).map((anchor) => ({
@@ -1067,7 +1073,7 @@ export function useAnnotations({
 
       case "annotationGroup": {
         // focus hovered annotation group
-        expandedAnnotationGroupId = hoveredState.id;
+        focusedAnnotationGroupIds.add(hoveredState.id);
 
         // focus all anchors in the annotation groupd
         const annotationGroup = annotationGroups.find(
@@ -1095,7 +1101,7 @@ export function useAnnotations({
         ...annotation,
         isFocused: focusedAnchors.has(annotation.target),
       })),
-    [annotations]
+    [annotations, focusedAnchors]
   );
 
   const annotationGroupsWithState: AnnotationGroupWithState<
@@ -1115,7 +1121,7 @@ export function useAnnotations({
               : "neutral",
         };
       }),
-    [annotationGroups]
+    [annotationGroups, expandedAnnotationGroupId, focusedAnnotationGroupIds]
   );
 
   return {
