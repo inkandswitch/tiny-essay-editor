@@ -6,6 +6,8 @@ import {
   Annotation,
   HighlightAnnotation,
   AnnotationGroup,
+  AnnotationWithState,
+  AnnotationGroupWithState,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -34,7 +36,11 @@ import {
   Trash2Icon,
   Underline,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
+import {
+  diffWithProvenance,
+  doAnchorsOverlap,
+  useActorIdToAuthorMap,
+} from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -86,6 +92,8 @@ import { MarkdownDocAnchor } from "@/tee/schema";
 import { AnnotationPosition } from "@/patchwork/schema";
 import { isEqual } from "lodash";
 import { isLLMActive } from "@/llm";
+import { getAnnotationGroupId } from "../utils";
+import { doesAnnotationGroupContainAnchors } from "../utils";
 
 interface MakeBranchOptions {
   name?: string;
@@ -107,10 +115,6 @@ export const PatchworkDocEditor: React.FC<{
   const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
-  const [selection, setSelection] = useState<any>(); // todo: type properly
-  const [hoveredAnchors, setHoveredAnchors] = useState<unknown[]>([]);
-  const [selectedAnchors, setSelectedAnchors] = useState<unknown[]>([]);
-  const [hoveredAnchor, setHoveredAnchor] = useState<unknown>();
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
@@ -306,7 +310,16 @@ export const PatchworkDocEditor: React.FC<{
   const activeDoc = selectedBranchUrl ? branchDoc : doc;
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
 
-  const { annotations, annotationGroups } = useAnnotations({
+  const {
+    annotations,
+    annotationGroups,
+    setHoveredAnchor,
+    setSelectedAnchors,
+    setHoveredAnnotationGroupId,
+    setSelectedAnnotationGroupId,
+    selectedAnchors,
+    hoveredAnchor,
+  } = useAnnotations({
     doc: activeDoc,
     docType,
     diff: diffForEditor,
@@ -584,8 +597,8 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 selectedAnchors={selectedAnchors}
-                setSelectedAnchors={setSelectedAnchors}
                 hoveredAnchor={hoveredAnchor}
+                setSelectedAnchors={setSelectedAnchors}
                 setHoveredAnchor={setHoveredAnchor}
               />
             ) : (
@@ -597,8 +610,8 @@ export const PatchworkDocEditor: React.FC<{
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
                 selectedAnchors={selectedAnchors}
-                setSelectedAnchors={setSelectedAnchors}
                 hoveredAnchor={hoveredAnchor}
+                setSelectedAnchors={setSelectedAnchors}
                 setHoveredAnchor={setHoveredAnchor}
               />
             )}
@@ -653,6 +666,7 @@ export const PatchworkDocEditor: React.FC<{
               <SpatialSidebar
                 docType={docType}
                 annotationGroups={annotationGroups}
+                selectedAnchors={selectedAnchors}
                 changeDoc={activeChangeDoc}
                 onChangeCommentPositionMap={(positions) => {
                   // todo: without this condition there is an infinite loop
@@ -660,10 +674,8 @@ export const PatchworkDocEditor: React.FC<{
                     setAnnotationsPositionsInSidebarMap(positions);
                   }
                 }}
-                selectedAnchors={selectedAnchors}
-                setSelectedAnchors={setSelectedAnchors}
-                hoveredAnchor={hoveredAnchor}
-                setHoveredAnchor={setHoveredAnchor}
+                setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               />
             )}
           </div>
@@ -872,7 +884,25 @@ const BranchActions: React.FC<{
   );
 };
 
-function useAnnotations({
+type HoverAnchorState<T> = {
+  type: "anchor";
+  anchor: T;
+};
+
+type SelectedAnchorsState<T> = {
+  type: "anchors";
+  anchors: T[];
+};
+
+type ActiveGroupState = {
+  type: "annotationGroup";
+  id: string;
+};
+
+type SelectionState<T> = SelectedAnchorsState<T> | ActiveGroupState;
+type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
+
+export function useAnnotations({
   doc,
   docType,
   diff,
@@ -881,10 +911,42 @@ function useAnnotations({
   docType: DocType;
   diff?: DiffWithProvenance;
 }): {
-  annotations: Annotation<unknown, unknown>[];
-  annotationGroups: AnnotationGroup<unknown, unknown>[];
+  annotations: AnnotationWithState<unknown, unknown>[];
+  annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
+  selectedAnchors: unknown[];
+  hoveredAnchor: unknown;
+  setHoveredAnchor: (anchor: unknown) => void;
+  setSelectedAnchors: (anchors: unknown[]) => void;
+  setHoveredAnnotationGroupId: (id: string) => void;
+  setSelectedAnnotationGroupId: (id: string) => void;
 } {
-  return useMemo(() => {
+  const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
+  const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
+
+  const setHoveredAnchor = (anchor: unknown) => {
+    setHoveredState({ type: "anchor", anchor });
+  };
+
+  const setSelectedAnchors = (anchors: unknown[]) => {
+    setSelectedState({ type: "anchors", anchors });
+  };
+
+  const setSelectedAnnotationGroupId = (id: string) => {
+    setSelectedState({ type: "annotationGroup", id });
+  };
+
+  const setHoveredAnnotationGroupId = (id: string) => {
+    setHoveredState(
+      id !== undefined ? { type: "annotationGroup", id } : undefined
+    );
+  };
+
+  const discussions = useMemo(
+    () => (doc?.discussions ? Object.values(doc.discussions) : []),
+    [doc]
+  );
+
+  const { annotations, annotationGroups } = useMemo(() => {
     if (!doc) {
       return { annotations: [], annotationGroups: [] };
     }
@@ -924,6 +986,148 @@ function useAnnotations({
 
     const annotations = editAnnotations.concat(highlightAnnotations);
 
-    return { annotations, annotationGroups };
-  }, [doc, diff]);
+    return {
+      annotations,
+      annotationGroups,
+    };
+  }, [doc, discussions, diff]);
+
+  const {
+    focusedAnchors,
+    focusedAnnotationGroupIds,
+    expandedAnnotationGroupId,
+  } = useMemo(() => {
+    const focusedAnchors = new Set<unknown>();
+    const focusedAnnotationGroupIds = new Set<string>();
+    let expandedAnnotationGroupId: string;
+
+    switch (selectedState?.type) {
+      case "anchors": {
+        // focus selected anchors
+        selectedState.anchors.forEach((anchor) => focusedAnchors.add(anchor));
+
+        // first annotationGroup that contains all selected anchors is expanded
+        const annotationGroup = annotationGroups.find((group) =>
+          doesAnnotationGroupContainAnchors(
+            docType,
+            group,
+            selectedState.anchors
+          )
+        );
+        if (annotationGroup) {
+          expandedAnnotationGroupId = getAnnotationGroupId(annotationGroup);
+
+          // ... the anchors in that group are focused as well
+          annotationGroup.annotations.map((annotation) =>
+            focusedAnchors.add(annotation.target)
+          );
+        }
+        break;
+      }
+
+      case "annotationGroup": {
+        // expand seleted annotation group
+        expandedAnnotationGroupId = selectedState.id;
+
+        // focus all anchors in the annotation group
+        const annotationGroup = annotationGroups.find(
+          (group) => getAnnotationGroupId(group) === selectedState.id
+        );
+        annotationGroup.annotations.forEach((annotation) =>
+          focusedAnchors.add(annotation.target)
+        );
+        break;
+      }
+    }
+
+    switch (hoveredState?.type) {
+      case "anchor": {
+        // focus hovered anchor
+        focusedAnchors.add(hoveredState.anchor);
+
+        // all annotationGroup that contain hovered anchors are focused
+        annotationGroups.forEach((group) => {
+          if (
+            !doesAnnotationGroupContainAnchors(docType, group, [
+              hoveredState.anchor,
+            ])
+          ) {
+            return;
+          }
+
+          focusedAnnotationGroupIds.add(getAnnotationGroupId(group));
+
+          // ... the anchors in that group are focused as well
+          group.annotations.map((annotation) =>
+            focusedAnchors.add(annotation.target)
+          );
+        });
+        break;
+      }
+
+      case "annotationGroup": {
+        // focus hovered annotation group
+        expandedAnnotationGroupId = hoveredState.id;
+
+        // focus all anchors in the annotation groupd
+        const annotationGroup = annotationGroups.find(
+          (group) => getAnnotationGroupId(group) === hoveredState.id
+        );
+        annotationGroup.annotations.forEach((annotation) =>
+          focusedAnchors.add(annotation.target)
+        );
+        break;
+      }
+    }
+
+    console.log(focusedAnnotationGroupIds);
+
+    return {
+      focusedAnchors,
+      focusedAnnotationGroupIds,
+      expandedAnnotationGroupId,
+    };
+  }, [hoveredState, selectedState, annotations, annotationGroups]);
+
+  const annotationsWithState: AnnotationWithState<unknown, unknown>[] = useMemo(
+    () =>
+      annotations.map((annotation) => ({
+        ...annotation,
+        isFocused: focusedAnchors.has(annotation.target),
+      })),
+    [annotations]
+  );
+
+  const annotationGroupsWithState: AnnotationGroupWithState<
+    unknown,
+    unknown
+  >[] = useMemo(
+    () =>
+      annotationGroups.map((annotationGroup) => {
+        const id = getAnnotationGroupId(annotationGroup);
+        return {
+          ...annotationGroup,
+          state:
+            expandedAnnotationGroupId === id
+              ? "expanded"
+              : focusedAnnotationGroupIds.has(id)
+              ? "focused"
+              : "neutral",
+        };
+      }),
+    [annotationGroups]
+  );
+
+  return {
+    annotations: annotationsWithState,
+    annotationGroups: annotationGroupsWithState,
+    selectedAnchors:
+      selectedState?.type === "anchors" ? selectedState.anchors : [],
+    hoveredAnchor:
+      hoveredState?.type === "anchor" ? hoveredState.anchor : undefined,
+    setHoveredAnchor,
+    setSelectedAnchors,
+    setHoveredAnnotationGroupId,
+    setSelectedAnnotationGroupId,
+  };
 }

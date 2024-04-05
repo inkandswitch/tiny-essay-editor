@@ -7,7 +7,7 @@ import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
-import { Annotation } from "./schema";
+import { AnnotationGroup } from "./schema";
 import { isEqual } from "lodash";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
 
@@ -531,3 +531,21 @@ export const areAnchorSelectionsEqual = (
     b.some((other) => doAnchorsOverlap(type, anchor, other))
   );
 };
+
+export function getAnnotationGroupId<T, V>(
+  annotationGroup: AnnotationGroup<T, V>
+) {
+  return annotationGroup.discussion.id;
+}
+
+export function doesAnnotationGroupContainAnchors<T, V>(
+  docType: DocType,
+  group: AnnotationGroup<T, V>,
+  anchors: T[]
+) {
+  return anchors.every((anchor) =>
+    group.annotations.some((annotation) =>
+      doAnchorsOverlap(docType, annotation.target, anchor)
+    )
+  );
+}

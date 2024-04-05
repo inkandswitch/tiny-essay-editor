@@ -33,8 +33,8 @@ export const TLDraw = ({
   camera,
   onChangeCamera,
   selectedAnchors,
-  setSelectedAnchors,
   hoveredAnchor,
+  setSelectedAnchors,
   setHoveredAnchor,
 }: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -72,8 +72,8 @@ export const TLDraw = ({
             camera={camera ?? localCamera}
             onChangeCamera={setCamera}
             selectedAnchors={selectedAnchors}
-            setSelectedAnchors={setSelectedAnchors}
             hoveredAnchor={hoveredAnchor}
+            setSelectedAnchors={setSelectedAnchors}
             setHoveredAnchor={setHoveredAnchor}
           />
         ) : null
@@ -86,8 +86,8 @@ export const TLDraw = ({
           camera={camera ?? localCamera}
           onChangeCamera={setCamera}
           selectedAnchors={selectedAnchors}
-          setSelectedAnchors={setSelectedAnchors}
           hoveredAnchor={hoveredAnchor}
+          setSelectedAnchors={setSelectedAnchors}
           setHoveredAnchor={setHoveredAnchor}
         />
       )}
@@ -187,7 +187,9 @@ export const SideBySide = ({
   docHeads,
   annotations,
   selectedAnchors,
+  hoveredAnchor,
   setSelectedAnchors,
+  setHoveredAnchor,
 }: SideBySideProps<unknown, unknown>) => {
   const [camera, setCamera] = useState<TLCamera>();
 
@@ -200,8 +202,10 @@ export const SideBySide = ({
           annotations={[]}
           camera={camera}
           onChangeCamera={setCamera}
-          setSelectedAnchors={() => {}}
-          selectedAnchors={[]}
+          hoveredAnchor={hoveredAnchor as TLDrawDocAnchor}
+          selectedAnchors={selectedAnchors as TLDrawDocAnchor[]}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
         />
       </div>
       <div className="h-full flex-1 overflow-auto border-l border-l-gray-200">
@@ -212,8 +216,10 @@ export const SideBySide = ({
           annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>[]}
           camera={camera}
           onChangeCamera={setCamera}
-          setSelectedAnchors={setSelectedAnchors}
+          hoveredAnchor={hoveredAnchor as TLDrawDocAnchor}
           selectedAnchors={selectedAnchors as TLDrawDocAnchor[]}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
         />
       </div>
     </div>
@@ -384,8 +390,8 @@ const useDiffStyling = ({
 const useAnchorEventListener = ({
   editor,
   selectedAnchors,
-  setSelectedAnchors,
   hoveredAnchor,
+  setSelectedAnchors,
   setHoveredAnchor,
 }: {
   editor: Editor;

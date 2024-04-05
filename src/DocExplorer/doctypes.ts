@@ -118,9 +118,8 @@ export interface DocEditorProps<T, V> {
   annotations?: Annotation<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
-  // spatial comments interface
-  selectedAnchors?: T[];
-  setSelectedAnchors?: (anchors: T[]) => void;
-  hoveredAnchor?: T;
-  setHoveredAnchor?: (anchors: T) => void;
+  setSelectedAnchors: (anchors: T[]) => void;
+  setHoveredAnchor: (anchors: T) => void;
+  selectedAnchors: T[];
+  hoveredAnchor: T;
 }

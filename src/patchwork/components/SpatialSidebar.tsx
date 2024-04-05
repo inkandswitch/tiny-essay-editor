@@ -27,38 +27,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, Reply, UndoIcon } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import {
+  Annotation,
+  AnnotationPosition,
+  AnnotationGroupWithState,
+} from "@/patchwork/schema";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
 import { MarkdownDocAnchor } from "@/tee/schema";
 import { truncate } from "lodash";
 import { MessageCircleIcon } from "lucide-react";
 import { TLDrawDocAnchor } from "@/tldraw/schema";
 import { TLShape } from "@tldraw/tldraw";
-import { doAnchorsOverlap } from "../utils";
+import { doAnchorsOverlap, getAnnotationGroupId } from "../utils";
 
 type SpatialSidebarProps = {
   docType: string;
-  annotationGroups: AnnotationGroup<unknown, unknown>[];
+  annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
+  selectedAnchors: unknown[];
   changeDoc: (
     changeFn: (doc: HasPatchworkMetadata<unknown, unknown>) => void
   ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
-  setSelectedAnchors: (anchors: unknown[]) => void;
-  setHoveredAnchor: (anchors: unknown) => void;
-  selectedAnchors: unknown[];
-  hoveredAnchor: unknown;
+  setSelectedAnnotationGroupId: (id: string) => void;
+  setHoveredAnnotationGroupId: (id: string) => void;
 };
 
 export const SpatialSidebar = React.memo(
   ({
     docType,
     annotationGroups,
-    changeDoc,
-    onChangeCommentPositionMap,
-    setSelectedAnchors,
     selectedAnchors,
-    setHoveredAnchor,
-    hoveredAnchor,
+    changeDoc,
+    setSelectedAnnotationGroupId,
+    setHoveredAnnotationGroupId,
   }: SpatialSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [activeReplyAnnotation, setActiveReplyAnnotation] =
@@ -109,8 +110,9 @@ export const SpatialSidebar = React.memo(
     };
 
     const createDiscussion = (content: string) => {
-      setSelectedAnchors([]);
       setPendingCommentText("");
+
+      const discussionId = uuid();
 
       changeDoc((doc) => {
         let discussions = doc.discussions;
@@ -120,8 +122,6 @@ export const SpatialSidebar = React.memo(
           doc.discussions = {};
           discussions = doc.discussions;
         }
-
-        const discussionId = uuid();
 
         discussions[discussionId] = {
           id: discussionId,
@@ -138,6 +138,8 @@ export const SpatialSidebar = React.memo(
           target: selectedAnchors,
         };
       });
+
+      setSelectedAnnotationGroupId(discussionId);
     };
 
     const resolveDiscussion = (discussion: Discussion<unknown>) => {
@@ -202,6 +204,7 @@ export const SpatialSidebar = React.memo(
           className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
         >
           {annotationGroups.map((annotationGroup, index) => {
+            const id = getAnnotationGroupId(annotationGroup);
             return (
               <AnnotationGroupView
                 docType={docType}
@@ -217,15 +220,11 @@ export const SpatialSidebar = React.memo(
                 onAddComment={(content) => {
                   // addCommentToAnnotation(annotation, content);
                 }}
-                isHovered={annotationGroup.annotations.some((annotation) =>
-                  doAnchorsOverlap(docType, annotation.target, hoveredAnchor)
-                )}
                 setIsHovered={(isHovered) => {
-                  // setHoveredAnnotation(isHovered ? annotation : undefined);
+                  setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}
-                isSelected={false}
                 setIsSelected={(isSelected) => {
-                  // setSelectedAnnotations(isSelected ? [annotation] : []);
+                  setSelectedAnnotationGroupId(isSelected ? id : undefined);
                 }}
                 ref={(element) => {
                   /*registerAnnotationElement(
@@ -288,16 +287,14 @@ export const SpatialSidebar = React.memo(
 
 export interface AnnotationGroupViewProps {
   docType: string;
-  annotationGroup: AnnotationGroup<unknown, unknown>;
+  annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolveDiscussion: (discussion: Discussion<unknown>) => void;
   onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
-  isHovered: boolean;
   setIsHovered: (isHovered: boolean) => void;
-  isSelected: boolean;
   setIsSelected: (isSelected: boolean) => void;
 }
 
@@ -313,9 +310,7 @@ const AnnotationGroupView = forwardRef<
       setIsReplyBoxOpen,
       onResolveDiscussion,
       onAddComment: onReply,
-      isHovered,
       setIsHovered,
-      isSelected,
       setIsSelected,
       onSelectNext,
       onSelectPrev,
@@ -326,6 +321,8 @@ const AnnotationGroupView = forwardRef<
     const [height, setHeight] = useState();
     const [isBeingResolved, setIsBeingResolved] = useState(false);
     const localRef = useRef(null); // Use useRef to create a local ref
+    const isExpanded = annotationGroup.state === "expanded";
+    const isFocused = annotationGroup.state !== "neutral";
 
     const setRef = (element: HTMLDivElement) => {
       localRef.current = element; // Assign the element to the local ref
@@ -354,7 +351,7 @@ const AnnotationGroupView = forwardRef<
      * cmd + z / ctrl + z : revert
      */
     useEffect(() => {
-      if (!isSelected) {
+      if (!isExpanded) {
         return;
       }
 
@@ -394,7 +391,7 @@ const AnnotationGroupView = forwardRef<
       return () => {
         window.removeEventListener("keydown", onKeydown);
       };
-    }, [isSelected, onSelectNext, onSelectPrev]);
+    }, [isExpanded, onSelectNext, onSelectPrev]);
 
     return (
       <div
@@ -425,7 +422,7 @@ const AnnotationGroupView = forwardRef<
           <div
             className={`flex flex-col gap-1 ${
               annotationGroup.discussion
-                ? isSelected || isHovered
+                ? isFocused
                   ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
                   : "border bg-white rounded-sm p-2 border-gray-200 "
                 : ""
@@ -438,7 +435,7 @@ const AnnotationGroupView = forwardRef<
 
           <div
             className={`overflow-hidden transition-all flex items-center gap-2 ${
-              isSelected ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
+              isExpanded ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
             }`}
           >
             <Popover open={isReplyBoxOpen}>

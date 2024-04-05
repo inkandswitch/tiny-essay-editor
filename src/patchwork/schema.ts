@@ -97,6 +97,10 @@ export type AnnotationGroup<T, V> = {
   discussion: Discussion<T>;
 };
 
+export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {
+  state: "focused" | "expanded" | "neutral";
+};
+
 export type Discussable<T> = {
   discussions: { [key: string]: Discussion<T> };
 };
@@ -147,6 +151,10 @@ export type Annotation<T, V> =
   | DeleteAnnotation<T, V>
   | ChangeAnnotation<T, V>
   | HighlightAnnotation<T, V>;
+
+export type AnnotationWithState<T, V> = Annotation<T, V> & {
+  isFocused: boolean;
+};
 
 export interface AnnotationPosition<T, V> {
   x: number;
