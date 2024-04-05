@@ -338,15 +338,14 @@ const useDiffStyling = ({
                 highlightedElementsRef.current.add(shapeElem);
               }
 
-              shapeElem.style.filter = `drop-shadow(0 0 0.75rem ${
-                annotation.type === "highlighted"
-                  ? annotation.isFocused
-                    ? "orange"
-                    : "yellow"
-                  : annotation.isFocused
-                  ? "rgba(0, 255, 0, 1)"
-                  : "rgba(0, 255, 0, 0.5)"
-              })`;
+              const dropShadowFilter = `drop-shadow(0 0 ${
+                annotation.isFocused ? "0.25rem" : "0.75rem"
+              } ${annotation.type === "highlighted" ? "yellow" : "green"})`;
+
+              // drop shadow has no spread option, to intesify it when annotation is focused we apply it twice
+              shapeElem.style.filter =
+                dropShadowFilter +
+                (annotation.isFocused ? ` ${dropShadowFilter}` : "");
             }
             break;
 
