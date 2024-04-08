@@ -1074,16 +1074,19 @@ export function useAnnotations({
       }
 
       case "annotationGroup": {
-        // expand seleted annotation group
-        expandedAnnotationGroupId = selectedState.id;
-
-        // focus all anchors in the annotation group
         const annotationGroup = annotationGroups.find(
           (group) => getAnnotationGroupId(group) === selectedState.id
         );
-        annotationGroup.annotations.forEach((annotation) =>
-          focusedAnchors.add(annotation.target)
-        );
+
+        if (annotationGroup) {
+          // expand seleted annotation group
+          expandedAnnotationGroupId = selectedState.id;
+
+          // focus all anchors in the annotation group
+          annotationGroup.annotations.forEach((annotation) =>
+            focusedAnchors.add(annotation.target)
+          );
+        }
         break;
       }
     }
@@ -1114,16 +1117,19 @@ export function useAnnotations({
       }
 
       case "annotationGroup": {
-        // focus hovered annotation group
-        focusedAnnotationGroupIds.add(hoveredState.id);
-
-        // focus all anchors in the annotation groupd
         const annotationGroup = annotationGroups.find(
           (group) => getAnnotationGroupId(group) === hoveredState.id
         );
-        annotationGroup.annotations.forEach((annotation) =>
-          focusedAnchors.add(annotation.target)
-        );
+
+        if (annotationGroup) {
+          // focus hovered annotation group
+          focusedAnnotationGroupIds.add(hoveredState.id);
+
+          // focus all anchors in the annotation groupd
+          annotationGroup.annotations.forEach((annotation) =>
+            focusedAnchors.add(annotation.target)
+          );
+        }
         break;
       }
     }

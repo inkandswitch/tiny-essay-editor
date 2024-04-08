@@ -62,8 +62,8 @@ export const SpatialSidebar = React.memo(
     setHoveredAnnotationGroupId,
   }: SpatialSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
-    const [activeReplyAnnotation, setActiveReplyAnnotation] =
-      useState<Annotation<unknown, unknown>>();
+    const [activeReplyAnnotationGroupId, setActiveReplyAnnotationGroupId] =
+      useState<string>();
     const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
@@ -142,57 +142,27 @@ export const SpatialSidebar = React.memo(
       setSelectedAnnotationGroupId(discussionId);
     };
 
-    const resolveDiscussion = (discussion: Discussion<unknown>) => {
-      /* const index = annotations.findIndex(
-        (annotation) =>
-          annotation.discussion && annotation.discussion.id === discussion.id
-      );
-      const nextAnnotation = annotations[index + 1];
+    const resolveDiscussionAtIndex = (index: number) => {
+      const discussionGroup = annotationGroups[index];
 
+      let newSelectedAnnotationGroupId;
+
+      const nextAnnotation = annotationGroups[index + 1];
       if (nextAnnotation) {
-        setSelectedAnnotations([nextAnnotation]);
+        newSelectedAnnotationGroupId = getAnnotationGroupId(nextAnnotation);
       } else {
-        const prevAnnotation = annotations[index - 1];
-        setSelectedAnnotations([prevAnnotation]);
+        const prevAnnotation = annotationGroups[index - 1];
+        if (prevAnnotation) {
+          newSelectedAnnotationGroupId = getAnnotationGroupId(prevAnnotation);
+        }
       }
+
+      setSelectedAnnotationGroupId(newSelectedAnnotationGroupId);
 
       changeDoc((doc) => {
-        doc.discussions[discussion.id].resolved = true;
-      }); */
+        doc.discussions[discussionGroup.discussion.id].resolved = true;
+      });
     };
-
-    // sync scrollPosition
-    /*useEffect(() => {
-      if (!scrollContainer || !topDiscussion) {
-        return;
-      }
-
-      // if there is a new selectedDiscussionId ...
-      if (selectedDiscussionId) {
-        const position = discussionsPositionMap[selectedDiscussionId];
-        const scrollOffset = scrollContainer.scrollTop;
-
-        // scroll into view if it's not vissible
-        if (
-          position &&
-          (position.top - scrollOffset < 0 ||
-            position.bottom - scrollOffset > scrollContainer.clientHeight)
-        ) {
-          setScrollTarget(selectedDiscussionId);
-        }
-
-        return;
-      }
-
-      setScrollTarget(topDiscussion.id);
-    }, [
-      topDiscussion?.id,
-      selectedDiscussionId,
-      scrollContainer,
-      topDiscussion,
-      setScrollTarget,
-      discussionsPositionMap,
-    ]);*/
 
     return (
       <div className="h-full flex flex-col">
@@ -208,15 +178,13 @@ export const SpatialSidebar = React.memo(
             return (
               <AnnotationGroupView
                 docType={docType}
-                key={index}
+                key={id}
                 annotationGroup={annotationGroup}
                 isReplyBoxOpen={false}
                 setIsReplyBoxOpen={(isOpen) => {
-                  // setActiveReplyAnnotation(isOpen ? annotation : undefined);
+                  // setA(isOpen ? annotation : undefined);
                 }}
-                onResolveDiscussion={(discussion) => {
-                  // resolveDiscussion(discussion)
-                }}
+                onResolveDiscussion={() => resolveDiscussionAtIndex(index)}
                 onAddComment={(content) => {
                   // addCommentToAnnotation(annotation, content);
                 }}
@@ -261,11 +229,11 @@ export const SpatialSidebar = React.memo(
             // state ourselves as we now do elsewhere in the codebase
             onKeyDown={(event) => {
               if (event.key === "Enter" && event.metaKey) {
-                /* startDiscusssionAtSelection(pendingCommentText);
-                setSuppressButton(true);
+                /* createDiscussion(pendingCommentText);
                 setIsCommentBoxOpen(false);
                 event.preventDefault(); */
               }
+              event.stopPropagation();
             }}
           />
 
@@ -289,7 +257,7 @@ export interface AnnotationGroupViewProps {
   annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
-  onResolveDiscussion: (discussion: Discussion<unknown>) => void;
+  onResolveDiscussion: () => void;
   onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
@@ -408,7 +376,7 @@ const AnnotationGroupView = forwardRef<
         }
         onTransitionEnd={() => {
           if (isBeingResolved) {
-            onResolveDiscussion(annotationGroup.discussion);
+            onResolveDiscussion();
           }
         }}
       >
