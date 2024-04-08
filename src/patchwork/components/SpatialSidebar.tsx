@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Reply, UndoIcon } from "lucide-react";
+import { Check } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { sortBy } from "lodash";
 import {
@@ -203,20 +203,20 @@ export const SpatialSidebar = React.memo(
                   )*/
                 }}
                 onSelectNext={() => {
-                  /* if (selectedAnnotations.length > 1) {
-                    return;
-                  }
-
-                  const nextAnnotation = annotations[index + 1];
+                  const nextAnnotation = annotationGroups[index + 1];
                   if (nextAnnotation) {
-                    setSelectedAnnotations([nextAnnotation]);
-                  } */
+                    setSelectedAnnotationGroupId(
+                      getAnnotationGroupId(nextAnnotation)
+                    );
+                  }
                 }}
                 onSelectPrev={() => {
-                  /* const prevAnnotation = annotations[index - 1];
+                  const prevAnnotation = annotationGroups[index - 1];
                   if (prevAnnotation) {
-                    setSelectedAnnotations([prevAnnotation]);
-                  } */
+                    setSelectedAnnotationGroupId(
+                      getAnnotationGroupId(prevAnnotation)
+                    );
+                  }
                 }}
               />
             );
