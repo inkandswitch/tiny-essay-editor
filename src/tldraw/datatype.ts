@@ -5,9 +5,9 @@ import { PenLine } from "lucide-react";
 import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { pick } from "lodash";
-import { TLShape, TLShapeId } from "@tldraw/tldraw";
+import { Store, TLShape, TLShapeId, createTLStore } from "@tldraw/tldraw";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
-import { defaultShapeUtils, Box2d } from "@tldraw/tldraw";
+import { defaultShapeUtils, Editor } from "@tldraw/tldraw";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -247,14 +247,15 @@ function unionBounds(boundsA: Bounds, boundsB: Bounds): Bounds {
   return { x: minX, y: minY, w: width, h: height };
 }
 
-const UTILS = {};
-
-defaultShapeUtils.forEach((Util) => {
-  UTILS[Util.type] = new Util(null); // we don't have an editor
+const editor = new Editor({
+  store: createTLStore({ shapeUtils: defaultShapeUtils }),
+  shapeUtils: defaultShapeUtils,
+  tools: [],
+  getContainer: () => null,
 });
 
 const getBounds = (shape: TLShape): Bounds => {
-  const geometry = UTILS[shape.type].getGeometry(shape);
+  const geometry = editor.shapeUtils[shape.type].getGeometry(shape);
 
   return {
     x: shape.x,

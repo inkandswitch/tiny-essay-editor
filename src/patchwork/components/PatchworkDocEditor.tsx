@@ -645,7 +645,7 @@ export const PatchworkDocEditor: React.FC<{
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="comments">Review</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

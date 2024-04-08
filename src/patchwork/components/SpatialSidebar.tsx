@@ -38,7 +38,8 @@ import { truncate } from "lodash";
 import { MessageCircleIcon } from "lucide-react";
 import { TLDrawDocAnchor } from "@/tldraw/schema";
 import { TLShape } from "@tldraw/tldraw";
-import { doAnchorsOverlap, getAnnotationGroupId } from "../utils";
+import { getAnnotationGroupId } from "../utils";
+import { AnnotationsView as TLDrawAnnotationsView } from "@/tldraw/components/TLDraw";
 
 type SpatialSidebarProps = {
   docType: string;
@@ -395,38 +396,11 @@ const AnnotationGroupView = forwardRef<
                 : "border bg-white rounded-sm p-2 border-gray-200 "
             }`}
           >
-            {annotationGroup.annotations.map((annotation, index) => {
-              if (
-                (annotation.type === "added" && !annotation.added) ||
-                (annotation.type === "changed" && !annotation.after) ||
-                (annotation.type == "deleted" && !annotation.deleted) ||
-                (annotation.type == "highlighted" && !annotation.value)
-              ) {
-                return null;
-              }
+            <AnnotationsView
+              docType={docType}
+              annotations={annotationGroup.annotations}
+            />
 
-              const annotationView = (
-                <AnnotationView
-                  docType={docType}
-                  annotation={annotation}
-                  key={index}
-                />
-              );
-
-              return annotationGroup.discussion ? (
-                <div
-                  className={
-                    annotationGroup.discussion
-                      ? "p-2 border border-gray-200 rounded-sm"
-                      : ""
-                  }
-                >
-                  {annotationView}
-                </div>
-              ) : (
-                annotationView
-              );
-            })}
             {annotationGroup.discussion?.comments.map((comment, index) => (
               <DiscusssionCommentView comment={comment} key={comment.id} />
             ))}
@@ -532,27 +506,27 @@ const DiscusssionCommentView = ({
   );
 };
 
-const AnnotationView = <T, V>({
+const AnnotationsView = <T, V>({
   docType,
-  annotation,
+  annotations,
 }: {
   docType: DocType;
-  annotation: Annotation<T, V>;
+  annotations: Annotation<T, V>[];
 }) => {
   switch (docType) {
     case "tldraw":
       return (
-        <TLDrawAnnotationView
-          annotation={annotation as Annotation<TLDrawDocAnchor, TLShape>}
+        <TLDrawAnnotationsView
+          annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>}
         />
       );
 
     case "essay":
-      return (
+      return annotations.map((annotation) => (
         <EssayAnnotationView
-          annotation={annotation as Annotation<MarkdownDocAnchor, string>}
+          annotation={annotations as Annotation<MarkdownDocAnchor, string>}
         />
-      );
+      ));
   }
 };
 
