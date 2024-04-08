@@ -980,14 +980,29 @@ export function useAnnotations({
         return;
       }
 
+      // turn anchors of discussion into hightlight annotations
       const discussionHighlightAnnotations: HighlightAnnotation<
         unknown,
         unknown
-      >[] = (discussion.target ?? []).map((anchor) => ({
-        type: "highlighted",
-        target: anchor,
-        value: valueOfAnchor(doc, anchor),
-      }));
+      >[] = (discussion.target ?? []).flatMap((anchor) => {
+        const value = valueOfAnchor(doc, anchor);
+
+        return value !== undefined
+          ? [
+              {
+                type: "highlighted",
+                target: anchor,
+                value,
+              },
+            ]
+          : [];
+      });
+
+      // ingore discussions without highlight annotations
+      // this can happen if the values that where referenced by a discussion have since been deleted
+      if (discussionHighlightAnnotations.length === 0) {
+        return;
+      }
 
       highlightAnnotations.push(...discussionHighlightAnnotations);
 
