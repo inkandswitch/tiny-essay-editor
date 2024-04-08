@@ -62,7 +62,7 @@ export const SpatialSidebar = React.memo(
     setHoveredAnnotationGroupId,
   }: SpatialSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
-    const [activeReplyAnnotationGroupId, setActiveReplyAnnotationGroupId] =
+    const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
     const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
@@ -72,11 +72,11 @@ export const SpatialSidebar = React.memo(
       [scrollContainer]
     );
 
-    const addCommentToAnnotation = (
-      annotation: Annotation<unknown, unknown>,
+    const addCommentToAnnotationGroup = (
+      annotationGroup: AnnotationGroup<unknown, unknown>,
       content: string
     ) => {
-      /* setActiveReplyAnnotation(null);
+      setAnnotationGroupIdOfActiveReply(undefined);
 
       changeDoc((doc) => {
         let discussions = doc.discussions;
@@ -87,7 +87,7 @@ export const SpatialSidebar = React.memo(
           discussions = doc.discussions;
         }
 
-        let discussionId = annotation.discussion.id;
+        let discussionId = annotationGroup?.discussion?.id;
 
         if (!discussionId) {
           discussionId = uuid();
@@ -96,7 +96,9 @@ export const SpatialSidebar = React.memo(
             heads: A.getHeads(doc),
             comments: [],
             resolved: false,
-            annotation: JSON.parse(JSON.stringify(annotation)), // turn automerge object into plain javascript
+            target: annotationGroup.annotations.map(
+              (annotation) => annotation.target
+            ),
           };
         }
 
@@ -106,7 +108,7 @@ export const SpatialSidebar = React.memo(
           contactUrl: account.contactHandle.url,
           timestamp: Date.now(),
         });
-      }); */
+      });
     };
 
     const createDiscussion = (content: string) => {
@@ -180,13 +182,13 @@ export const SpatialSidebar = React.memo(
                 docType={docType}
                 key={id}
                 annotationGroup={annotationGroup}
-                isReplyBoxOpen={false}
+                isReplyBoxOpen={annotationGroupIdOfActiveReply === id}
                 setIsReplyBoxOpen={(isOpen) => {
-                  // setA(isOpen ? annotation : undefined);
+                  setAnnotationGroupIdOfActiveReply(isOpen ? id : undefined);
                 }}
                 onResolveDiscussion={() => resolveDiscussionAtIndex(index)}
                 onAddComment={(content) => {
-                  // addCommentToAnnotation(annotation, content);
+                  addCommentToAnnotationGroup(annotationGroup, content);
                 }}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
@@ -435,7 +437,10 @@ const AnnotationGroupView = forwardRef<
               isExpanded ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
             }`}
           >
-            <Popover open={isReplyBoxOpen}>
+            <Popover
+              open={isReplyBoxOpen}
+              onOpenChange={(isOpen) => setIsReplyBoxOpen(isOpen)}
+            >
               <PopoverTrigger>
                 <Button
                   variant="ghost"
