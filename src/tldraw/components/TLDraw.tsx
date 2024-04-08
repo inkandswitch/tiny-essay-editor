@@ -365,6 +365,7 @@ const useDiffStyling = ({
       // track which temp shapes and highlighted elements are active in the current diff
       const activeHighlightedElements = new Set<HTMLElement>();
       const activeTempShapeIds = new Set<TLShapeId>();
+      const container = editor.getContainer();
 
       annotations.forEach((annotation) => {
         switch (annotation.type) {
@@ -376,7 +377,9 @@ const useDiffStyling = ({
                   ? annotation.value.id
                   : annotation.added.id;
 
-              const shapeElem = document.getElementById(id);
+              const shapeElem = container.querySelector(
+                `#${id.replace(":", "\\:")}`
+              ) as HTMLElement;
               if (!shapeElem) {
                 return;
               }

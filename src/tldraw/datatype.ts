@@ -137,7 +137,7 @@ export const valueOfAnchor = (doc: TLDrawDoc, anchor: TLShapeId): TLShape => {
 
 export const sortAnchorsBy = (doc: TLDrawDoc, anchor: TLShapeId): number => {
   const shape = valueOfAnchor(doc, anchor);
-  return shape.y;
+  return shape?.y;
 };
 
 type OverlapGroup = {
@@ -251,7 +251,7 @@ const editor = new Editor({
   store: createTLStore({ shapeUtils: defaultShapeUtils }),
   shapeUtils: defaultShapeUtils,
   tools: [],
-  getContainer: () => null,
+  getContainer: () => document.body,
 });
 
 const getBounds = (shape: TLShape): Bounds => {
