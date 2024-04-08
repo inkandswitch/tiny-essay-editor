@@ -7,6 +7,7 @@ import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { pick } from "lodash";
 import { TLShape, TLShapeId } from "@tldraw/tldraw";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
+import { defaultShapeUtils, Box2d } from "@tldraw/tldraw";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -58,6 +59,40 @@ export const includeChangeInHistory = (doc: TLDrawDoc) => {
   };
 };
 
+const promptForAIChangeGroupSummary = ({
+  docBefore,
+  docAfter,
+}: {
+  docBefore: TLDrawDoc;
+  docAfter: TLDrawDoc;
+}) => {
+  return `
+Below are two versions of a drawing in TLDraw, stored as JSON.
+Summarize the changes in this diff in a few words.
+Only return a few words, not a full description. No bullet points.
+
+If possible, interpret the shapes in a meaningful semantic way, eg:
+
+drew mockup of simple UI
+edited text from "kitchen" to "bathroom"
+grew diagram of system architecture
+
+If not, fall back to general visual descriptions:
+
+drew some new rectangles
+moved some shapes to the left
+deleted shapes from the top-right corner
+recolored some shapes from red to blue
+
+## Doc before
+
+${JSON.stringify(pick(docBefore, ["store"]), null, 2)}
+
+## Doc after
+
+${JSON.stringify(pick(docAfter, ["store"]), null, 2)}`;
+};
+
 export const patchesToAnnotations = (
   doc: TLDrawDoc,
   docBefore: TLDrawDoc,
@@ -105,38 +140,141 @@ export const sortAnchorsBy = (doc: TLDrawDoc, anchor: TLShapeId): number => {
   return shape.y;
 };
 
-const promptForAIChangeGroupSummary = ({
-  docBefore,
-  docAfter,
-}: {
-  docBefore: TLDrawDoc;
-  docAfter: TLDrawDoc;
-}) => {
-  return `
-Below are two versions of a drawing in TLDraw, stored as JSON.
-Summarize the changes in this diff in a few words.
-Only return a few words, not a full description. No bullet points.
+type OverlapGroup = {
+  combinedBounds: Bounds;
+  individualBounds: Bounds[];
+  annotations: Annotation<TLShapeId, TLShape>[];
+};
 
-If possible, interpret the shapes in a meaningful semantic way, eg:
+export const groupAnnotations = (
+  annotations: Annotation<TLShapeId, TLShape>[]
+): Annotation<TLShapeId, TLShape>[][] => {
+  const groups = new Set<OverlapGroup>();
 
-drew mockup of simple UI
-edited text from "kitchen" to "bathroom"
-grew diagram of system architecture
+  for (const annotation of annotations) {
+    const value = valueOfAnnotation(annotation);
+    const bounds = getBounds(value);
 
-If not, fall back to general visual descriptions:
+    const overlappingGroups = Array.from(groups).filter(
+      (group) =>
+        doBoundsOverlap(group.combinedBounds, bounds) &&
+        group.individualBounds.some((annotationBound) =>
+          doBoundsOverlap(annotationBound, bounds)
+        )
+    );
 
-drew some new rectangles
-moved some shapes to the left
-deleted shapes from the top-right corner
-recolored some shapes from red to blue
+    if (overlappingGroups.length === 0) {
+      groups.add({
+        combinedBounds: bounds,
+        individualBounds: [bounds],
+        annotations: [annotation],
+      });
+    } else if (overlappingGroups.length === 1) {
+      const existingGroup = overlappingGroups[0];
+      existingGroup.combinedBounds = unionBounds(
+        existingGroup.combinedBounds,
+        bounds
+      );
+      existingGroup.individualBounds.push(bounds);
+      existingGroup.annotations.push(annotation);
+    } else {
+      const mergedGroup: OverlapGroup = {
+        combinedBounds: bounds,
+        individualBounds: [bounds],
+        annotations: [annotation],
+      };
+      for (const existingGroup of overlappingGroups) {
+        groups.delete(existingGroup);
+        mergedGroup.combinedBounds = unionBounds(
+          mergedGroup.combinedBounds,
+          existingGroup.combinedBounds
+        );
 
-## Doc before
+        mergedGroup.annotations = mergedGroup.annotations.concat(
+          existingGroup.annotations
+        );
+        mergedGroup.individualBounds = mergedGroup.individualBounds.concat(
+          existingGroup.individualBounds
+        );
+      }
 
-${JSON.stringify(pick(docBefore, ["store"]), null, 2)}
+      groups.add(mergedGroup);
+    }
+  }
 
-## Doc after
+  return Array.from(groups).map((group) => group.annotations);
+};
 
-${JSON.stringify(pick(docAfter, ["store"]), null, 2)}`;
+interface Bounds {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function doBoundsOverlap(rectA: Bounds, rectB: Bounds) {
+  // rectA and rectB are objects { x, y, w, h }
+  // where (x, y) are the coordinates of the top-left corner,
+  // w is the width, and h is the height of the rectangle
+
+  // Check if one rectangle is to the left of the other
+  if (rectA.x + rectA.w <= rectB.x || rectB.x + rectB.w <= rectA.x) {
+    return false;
+  }
+
+  // Check if one rectangle is above the other
+  if (rectA.y + rectA.h <= rectB.y || rectB.y + rectB.h <= rectA.y) {
+    return false;
+  }
+
+  // If neither of the above, the rectangles overlap
+  return true;
+}
+
+function unionBounds(boundsA: Bounds, boundsB: Bounds): Bounds {
+  // Calculate the minimum x and y coordinates for the bounding box
+  const minX = Math.min(boundsA.x, boundsB.x);
+  const minY = Math.min(boundsA.y, boundsB.y);
+
+  // Calculate the maximum x and y coordinates for the bounding box
+  const maxX = Math.max(boundsA.x + boundsA.w, boundsB.x + boundsB.w);
+  const maxY = Math.max(boundsA.y + boundsA.h, boundsB.y + boundsB.h);
+
+  // The bounding box's width and height
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  return { x: minX, y: minY, w: width, h: height };
+}
+
+const UTILS = {};
+
+defaultShapeUtils.forEach((Util) => {
+  UTILS[Util.type] = new Util(null); // we don't have an editor
+});
+
+const getBounds = (shape: TLShape): Bounds => {
+  const geometry = UTILS[shape.type].getGeometry(shape);
+
+  return {
+    x: shape.x,
+    y: shape.y,
+    w: geometry.bounds.width,
+    h: geometry.bounds.height,
+  };
+};
+
+const valueOfAnnotation = (annotation: Annotation<TLShapeId, TLShape>) => {
+  switch (annotation.type) {
+    case "added":
+      return annotation.added;
+
+    case "changed":
+      return annotation.after;
+
+    case "deleted":
+      return annotation.deleted;
+  }
 };
 
 export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
@@ -152,4 +290,5 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   patchesToAnnotations,
   valueOfAnchor,
   sortAnchorsBy,
+  groupAnnotations,
 };

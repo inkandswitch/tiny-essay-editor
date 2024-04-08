@@ -24,6 +24,7 @@ import "@tldraw/tldraw/tldraw.css";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
 import { areAnchorSelectionsEqual } from "@/patchwork/utils";
+import { defaultShapeUtils } from "@tldraw/tldraw";
 
 interface TLDrawProps extends DocEditorProps<TLDrawDocAnchor, TLShape> {
   camera?: TLCamera;
