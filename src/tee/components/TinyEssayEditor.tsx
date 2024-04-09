@@ -53,36 +53,6 @@ export const TinyEssayEditor = (
     setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
   }, [actorIdToAuthor]);
 
-  // focus annotation
-  /* useEffect(() => {
-    let focusedDiscussion: Discussion;
-
-    if (selection && selection.from === selection.to) {
-      focusedDiscussion = (discussions ?? []).find((discussion) => {
-        if (!discussion.target || discussion.target.type !== "editRange") {
-          return false;
-        }
-
-        const from = A.getCursorPosition(
-          doc,
-          ["content"],
-          discussion.target.value.fromCursor
-        );
-        const to = A.getCursorPosition(
-          doc,
-          ["content"],
-          discussion.target.value.toCursor
-        );
-
-        return from <= selection.from && selection.from <= to;
-      });
-
-      if (focusedDiscussion) {
-        setSelectedDiscussionId(focusedDiscussion.id);
-      }
-    }
-  }, [discussions, doc, selection, setSelectedDiscussionId]); */
-
   const resolvedAnnotations = useMemo<
     AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
   >(() => {

@@ -524,7 +524,7 @@ const AnnotationsView = <T, V>({
     case "essay":
       return annotations.map((annotation) => (
         <EssayAnnotationView
-          annotation={annotations as Annotation<MarkdownDocAnchor, string>}
+          annotation={annotation as Annotation<MarkdownDocAnchor, string>}
         />
       ));
   }
