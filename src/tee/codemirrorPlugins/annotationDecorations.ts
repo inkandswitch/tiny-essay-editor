@@ -128,6 +128,18 @@ export const annotationDecorations = EditorView.decorations.compute(
           ];
         }
 
+        case "changed": {
+          const decoration = annotation.isFocused
+            ? spliceDecorationActive
+            : spliceDecoration;
+          return [
+            decoration.range(fromPos, toPos),
+            makeDeleteDecoration(annotation.before, annotation.isFocused).range(
+              toPos
+            ),
+          ];
+        }
+
         case "highlighted": {
           const decoration = annotation.isFocused
             ? highlightDecorationActive

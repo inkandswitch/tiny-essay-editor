@@ -116,12 +116,16 @@ export const patchesToAnnotations = (
   docBefore: MarkdownDoc,
   patches: A.Patch[]
 ) => {
-  return patches.flatMap((patch): Annotation<MarkdownDocAnchor, string>[] => {
-    if (
-      patch.path[0] !== "content" ||
-      !["splice", "del"].includes(patch.action)
-    )
-      return [];
+  const filteredPatches = patches.filter(
+    (patch) =>
+      patch.path[0] === "content" &&
+      (patch.action === "splice" || patch.action === "del")
+  );
+
+  const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
+
+  for (let i = 0; i < filteredPatches.length; i++) {
+    const patch = filteredPatches[i];
 
     switch (patch.action) {
       case "splice": {
@@ -135,59 +139,65 @@ export const patchesToAnnotations = (
 
         if (!fromCursor || !toCursor) {
           console.warn("Failed to get cursor for patch", patch);
-          return [];
+          break;
         }
 
-        return [
-          {
+        const nextPatch = filteredPatches[i + 1];
+        if (
+          nextPatch &&
+          nextPatch.action === "del" &&
+          nextPatch.path[1] === patchEnd
+        ) {
+          annotations.push({
+            type: "changed",
+            before: nextPatch.removed,
+            after: patch.value,
+            target: {
+              fromCursor: fromCursor,
+              toCursor: toCursor,
+            },
+          });
+          i += 1;
+        } else {
+          annotations.push({
             type: "added",
             added: patch.value,
             target: {
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
-          },
-        ];
+          });
+        }
+        break;
       }
-      case "del":
-        {
-          const patchStart = patch.path[1] as number;
-          const patchEnd = (patch.path[1] as number) + 1;
-          const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-          const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+      case "del": {
+        const patchStart = patch.path[1] as number;
+        const patchEnd = (patch.path[1] as number) + 1;
+        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
+        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
 
-          if (!fromCursor || !toCursor) {
-            console.warn("Failed to get cursor for patch", patch);
-            return [];
-          }
-
-          return [
-            {
-              type: "deleted",
-              deleted: patch.removed,
-              target: {
-                fromCursor: fromCursor,
-                toCursor: toCursor,
-              },
-            },
-          ];
+        if (!fromCursor || !toCursor) {
+          console.warn("Failed to get cursor for patch", patch);
+          break;
         }
 
+        annotations.push({
+          type: "deleted",
+          deleted: patch.removed,
+          target: {
+            fromCursor: fromCursor,
+            toCursor: toCursor,
+          },
+        });
         break;
+      }
 
-      // todo: handle replace
-      /*   case "replace":
-            (patchStart = patch.path[1] as number),
-              (patchEnd = Math.min(
-                (patch.path[1] as number) + patch.new.length,
-                doc.content.length - 1
-              ));
-
-            break; */
       default:
         throw new Error("invalid patch");
     }
-  });
+  }
+
+  return annotations;
 };
 
 const doAnchorsOverlap = (
