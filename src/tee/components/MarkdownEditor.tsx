@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { dropCursor, EditorView, keymap } from "@codemirror/view";
+import {
+  drawSelection,
+  dropCursor,
+  EditorView,
+  keymap,
+} from "@codemirror/view";
 
 import {
   plugin as amgPlugin,
@@ -180,11 +185,7 @@ export function MarkdownEditor({
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),
-
-        // GL 1/10/24: I'm disabling this plugin for now because it was causing weird issues with
-        // rectangular selection, and it doesn't provide any obvious benefit at the moment.
-        // In the future we might want to bring it back though.
-        // drawSelection(),
+        drawSelection(),
 
         dropCursor(),
         indentOnInput(),
