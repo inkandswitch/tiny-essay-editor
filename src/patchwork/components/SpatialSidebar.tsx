@@ -373,7 +373,7 @@ const AnnotationGroupView = forwardRef<
       <div
         onClick={(event) => event.stopPropagation()}
         ref={setRef}
-        className={`pt-2 transition-all ${
+        className={`pt-2 transition-all cursor-default ${
           isBeingResolved ? "overflow-hidden" : ""
         }`}
         style={
@@ -398,8 +398,8 @@ const AnnotationGroupView = forwardRef<
           <div
             className={`flex flex-col gap-1 ${
               isFocused
-                ? "border bg-white rounded-sm p-2 border-gray-400 shadow-xl"
-                : "border bg-white rounded-sm p-2 border-gray-200 "
+                ? "bg-white rounded-sm p-2 border-2 border-blue-600 shadow-lg"
+                : "bg-white rounded-sm p-2 border border-gray-200 "
             }`}
           >
             <AnnotationsView
