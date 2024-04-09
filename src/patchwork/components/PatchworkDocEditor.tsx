@@ -930,21 +930,28 @@ export function useAnnotations({
     setHoveredState({ type: "anchor", anchor });
   };
 
-  const setSelectedAnchors = (anchors: unknown[]) => {
+  const setSelectedAnchors = useStaticCallback((anchors: unknown[]) => {
+    if (
+      selectedState?.type === "anchors" &&
+      isEqual(selectedState.anchors, anchors)
+    ) {
+      return;
+    }
+
     setSelectedState(
       anchors.length > 0 ? { type: "anchors", anchors } : undefined
     );
-  };
+  });
 
-  const setSelectedAnnotationGroupId = (id: string) => {
+  const setSelectedAnnotationGroupId = useStaticCallback((id: string) => {
     setSelectedState({ type: "annotationGroup", id });
-  };
+  });
 
-  const setHoveredAnnotationGroupId = (id: string) => {
+  const setHoveredAnnotationGroupId = useStaticCallback((id: string) => {
     setHoveredState(
       id !== undefined ? { type: "annotationGroup", id } : undefined
     );
-  };
+  });
 
   const discussions = useMemo(
     () => (doc?.discussions ? Object.values(doc.discussions) : []),
