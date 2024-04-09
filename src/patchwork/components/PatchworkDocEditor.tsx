@@ -293,6 +293,8 @@ export const PatchworkDocEditor: React.FC<{
     selectedBranch.type === "branch" ? selectedBranch.url : undefined;
   const [branchDoc, changeBranchDoc] =
     useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
+  const branchHandle =
+    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -310,6 +312,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const activeDoc = selectedBranchUrl ? branchDoc : doc;
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
+  const activeHandle = selectedBranchUrl ? branchHandle : handle;
 
   const {
     annotations,
@@ -665,6 +668,8 @@ export const PatchworkDocEditor: React.FC<{
             )}
             {reviewMode === "comments" && (
               <SpatialSidebar
+                doc={activeDoc}
+                handle={activeHandle}
                 docType={docType}
                 annotationGroups={annotationGroups}
                 selectedAnchors={selectedAnchors}

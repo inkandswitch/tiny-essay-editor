@@ -1,5 +1,5 @@
 import { next as A, Doc } from "@automerge/automerge";
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
@@ -90,6 +90,10 @@ export type PatchworkDataType<D, T, V> = {
 
 export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
 
+// TODO: we can narrow the types below by constructing a mapping from docType IDs
+// to the corresponding typescript type. This will be more natural once we have a
+// schema system for generating typescript types.
+
 export const docTypes: Record<
   string,
   DataType<HasPatchworkMetadata<unknown, unknown>, unknown, unknown>
@@ -122,7 +126,13 @@ export const editorsForDocType: Record<
 
 export const annotationViewersForDocType: Record<
   string,
-  Array<React.FC<{ annotations: Annotation<any, any>[] }>>
+  Array<
+    React.FC<{
+      doc: unknown;
+      handle: DocHandle<unknown>;
+      annotations: Annotation<any, any>[];
+    }>
+  >
 > = {
   essay: [EssayAnnotations],
   tldraw: [TLDrawAnnotations],

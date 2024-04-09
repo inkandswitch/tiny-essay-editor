@@ -33,13 +33,13 @@ import {
   AnnotationGroupWithState,
 } from "@/patchwork/schema";
 import { DocType, annotationViewersForDocType } from "@/DocExplorer/doctypes";
-import { MarkdownDocAnchor } from "@/tee/schema";
 import { MessageCircleIcon } from "lucide-react";
-import { TLDrawDocAnchor } from "@/tldraw/schema";
-import { TLShape } from "@tldraw/tldraw";
 import { getAnnotationGroupId } from "../utils";
+import { DocHandle } from "@automerge/automerge-repo";
 
-type SpatialSidebarProps = {
+type SpatialSidebarProps<T> = {
+  doc: T;
+  handle: DocHandle<T>;
   docType: string;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
@@ -52,14 +52,16 @@ type SpatialSidebarProps = {
 };
 
 export const SpatialSidebar = React.memo(
-  ({
+  <T extends object>({
+    doc,
+    handle,
     docType,
     annotationGroups,
     selectedAnchors,
     changeDoc,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
-  }: SpatialSidebarProps) => {
+  }: SpatialSidebarProps<T>) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
@@ -178,6 +180,8 @@ export const SpatialSidebar = React.memo(
             const id = getAnnotationGroupId(annotationGroup);
             return (
               <AnnotationGroupView
+                doc={doc}
+                handle={handle}
                 docType={docType}
                 key={id}
                 annotationGroup={annotationGroup}
@@ -253,7 +257,9 @@ export const SpatialSidebar = React.memo(
   }
 );
 
-export interface AnnotationGroupViewProps {
+export interface AnnotationGroupViewProps<T, V> {
+  doc: T;
+  handle: DocHandle<T>;
   docType: string;
   annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;
@@ -268,10 +274,12 @@ export interface AnnotationGroupViewProps {
 
 const AnnotationGroupView = forwardRef<
   HTMLDivElement,
-  AnnotationGroupViewProps
+  AnnotationGroupViewProps<any, any>
 >(
   <T, V>(
     {
+      doc,
+      handle,
       docType,
       annotationGroup,
       isReplyBoxOpen,
@@ -282,7 +290,7 @@ const AnnotationGroupView = forwardRef<
       setIsSelected,
       onSelectNext,
       onSelectPrev,
-    }: AnnotationGroupViewProps,
+    }: AnnotationGroupViewProps<T, V>,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -395,6 +403,8 @@ const AnnotationGroupView = forwardRef<
             }`}
           >
             <AnnotationsView
+              doc={doc}
+              handle={handle}
               docType={docType}
               annotations={annotationGroup.annotations}
             />
@@ -505,11 +515,15 @@ const DiscusssionCommentView = ({
 };
 
 const AnnotationsView = <T, V>({
-  docType,
   annotations,
+  docType,
+  doc,
+  handle,
 }: {
-  docType: DocType;
   annotations: Annotation<T, V>[];
+  docType: DocType;
+  doc: T;
+  handle: DocHandle<T>;
 }) => {
   // For now, we just use the first annotation viewer available for this doc type.
   // In the future, we might want to:
@@ -519,7 +533,7 @@ const AnnotationsView = <T, V>({
   if (!Viewer) {
     return null;
   }
-  return <Viewer annotations={annotations} />;
+  return <Viewer doc={doc} handle={handle} annotations={annotations} />;
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
