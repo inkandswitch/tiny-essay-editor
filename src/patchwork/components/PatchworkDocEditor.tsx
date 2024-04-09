@@ -1,4 +1,4 @@
-import { DocType, toolsForDocTypes, docTypes } from "@/DocExplorer/doctypes";
+import { DocType, editorsForDocType, docTypes } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
   EditRangeTarget,
@@ -703,7 +703,7 @@ const DocEditor = <T, V>({
   setHoveredAnchor,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = toolsForDocTypes[docType][0];
+  const Component = editorsForDocType[docType][0];
 
   return (
     <Component

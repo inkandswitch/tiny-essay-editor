@@ -1,5 +1,5 @@
 import { next as A, Doc } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
 import { EssayDatatype } from "@/tee/datatype";
@@ -9,13 +9,9 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
-import {
-  AnnotationGroup,
-  AnnotationWithState,
-  HasPatchworkMetadata,
-} from "@/patchwork/schema";
+import { AnnotationWithState, HasPatchworkMetadata } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { Annotation } from "@/patchwork/schema";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { BotEditor } from "@/bots/BotEditor";
@@ -23,6 +19,8 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
+import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
+import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
 
 export type CoreDataType<D> = {
   id: string;
@@ -107,11 +105,11 @@ export type DocType = keyof typeof docTypes;
 
 // Store a list of tools that can be used with each doc type.
 // This is a crude stand-in for a more flexible system based on matching
-// data schemas with tool capabilities.
+// data schemas with editor capabilities.
 // It's important to store this mapping outside of the datatypes themselves;
 // there might be tools a datatype doesn't know about which can edit the datatype.
 // (A simple example is a raw JSON editor.)
-export const toolsForDocTypes: Record<
+export const editorsForDocType: Record<
   string,
   Array<React.FC<DocEditorPropsWithDocType<any, any>>>
 > = {
@@ -120,6 +118,14 @@ export const toolsForDocTypes: Record<
   tldraw: [TLDraw],
   datagrid: [DataGrid],
   kanban: [KanbanBoard],
+};
+
+export const annotationViewersForDocType: Record<
+  string,
+  Array<React.FC<{ annotations: Annotation<any, any>[] }>>
+> = {
+  essay: [EssayAnnotations],
+  tldraw: [TLDrawAnnotations],
 };
 
 export interface DocEditorProps<T, V> {

@@ -32,14 +32,12 @@ import {
   AnnotationPosition,
   AnnotationGroupWithState,
 } from "@/patchwork/schema";
-import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import { DocType, annotationViewersForDocType } from "@/DocExplorer/doctypes";
 import { MarkdownDocAnchor } from "@/tee/schema";
-import { truncate } from "lodash";
 import { MessageCircleIcon } from "lucide-react";
 import { TLDrawDocAnchor } from "@/tldraw/schema";
 import { TLShape } from "@tldraw/tldraw";
 import { getAnnotationGroupId } from "../utils";
-import { AnnotationsView as TLDrawAnnotationsView } from "@/tldraw/components/TLDraw";
 
 type SpatialSidebarProps = {
   docType: string;
@@ -513,216 +511,18 @@ const AnnotationsView = <T, V>({
   docType: DocType;
   annotations: Annotation<T, V>[];
 }) => {
-  switch (docType) {
-    case "tldraw":
-      return (
-        <TLDrawAnnotationsView
-          annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>}
-        />
-      );
-
-    case "essay":
-      return annotations.map((annotation) => (
-        <EssayAnnotationView
-          annotation={annotation as Annotation<MarkdownDocAnchor, string>}
-        />
-      ));
+  // For now, we just use the first annotation viewer available for this doc type.
+  // In the future, we might want to:
+  // - use an annotations view that's similar to the viewer being used for the main doc
+  // - allow switching between different viewers?
+  const Viewer = annotationViewersForDocType[docType][0];
+  if (!Viewer) {
+    return null;
   }
+  return <Viewer annotations={annotations} />;
 };
-
-// Todo: move this to tee
-const EssayAnnotationView = ({
-  annotation,
-}: {
-  annotation: Annotation<MarkdownDocAnchor, string>;
-}) => {
-  switch (annotation.type) {
-    case "added":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          <span className="font-serif bg-green-50 border-b border-green-400">
-            {annotation.added}
-          </span>
-        </div>
-      );
-
-    case "deleted":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          <span className="font-serif bg-red-50 border-b border-red-400">
-            {annotation.deleted}
-          </span>
-        </div>
-      );
-
-    case "changed":
-      return (
-        <div className="text-sm">
-          <span className="font-serif bg-red-50 border-b border-red-400">
-            {truncate(annotation.before, { length: 45 })}
-          </span>{" "}
-          →{" "}
-          <span className="font-serif bg-green-50 border-b border-green-400">
-            {truncate(annotation.after, { length: 45 })}
-          </span>
-        </div>
-      );
-
-    case "highlighted":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          <span className="font-serif bg-yellow-50 border-b border-yellow-400">
-            {annotation.value}
-          </span>
-        </div>
-      );
-  }
-};
-
-// Todo: move this to tldraw
-const TLDrawAnnotationView = ({
-  annotation,
-}: {
-  annotation: Annotation<TLDrawDocAnchor, TLShape>;
-}) => {
-  switch (annotation.type) {
-    case "added":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          added {getShapeName(annotation.added)}
-        </div>
-      );
-
-    case "deleted":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          deleted {getShapeName(annotation.deleted)}
-        </div>
-      );
-
-    case "changed":
-      return (
-        <div className="text-sm">changed {getShapeName(annotation.after)}</div>
-      );
-
-    case "highlighted":
-      return (
-        <div className="text-sm whitespace-nowrap overflow-ellipsis overflow-hidden">
-          highlighted {getShapeName(annotation.value)}
-        </div>
-      );
-  }
-};
-
-function getShapeName(shape: TLShape) {
-  switch (shape.type) {
-    case "arrow":
-      return "arrow";
-    case "geo":
-      return (shape.props as any).geo.replaceAll("-", " ");
-    case "draw":
-      return "pencil line";
-
-    case "text":
-      return "text";
-  }
-}
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
-
-interface UseAnnotationPositionMapResult {
-  registerAnnotationElement: (
-    discussionId: string,
-    element: HTMLDivElement
-  ) => void;
-  annotationsPositionMap: PositionMap;
-}
-
-interface UseAnnotationPositionOptions<T, V> {
-  annotations: Annotation<T, V>[];
-  onChangeCommentPositionMap?: (map: PositionMap) => void;
-  offset: number;
-}
-
-const useAnnotationsPositionMap = <T, V>({
-  annotations,
-  onChangeCommentPositionMap,
-  offset,
-}: UseAnnotationPositionOptions<T, V>): UseAnnotationPositionMapResult => {
-  const elementByAnnotationId = useRef(new Map<string, HTMLDivElement>());
-  const annotationIdByElement = useRef(new Map<HTMLDivElement, string>());
-  const [elementSizes, setElementSizes] = useState<Record<string, number>>({});
-  // create an artificial dependency that triggeres a re-eval of effects / memos
-  // that depend on it when forceChange is called
-  const [, forceChange] = useReducer(() => ({}), {});
-  const [resizeObserver] = useState(
-    () =>
-      new ResizeObserver((events) => {
-        for (const event of events) {
-          const annotationId = annotationIdByElement.current.get(
-            event.target as HTMLDivElement
-          );
-          setElementSizes((sizes) => ({
-            ...sizes,
-            [annotationId]: event.borderBoxSize[0].blockSize,
-          }));
-        }
-
-        forceChange();
-      })
-  );
-
-  // cleanup resize observer
-  useEffect(() => {
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [resizeObserver]);
-
-  const registerAnnotationElement = (
-    discussionId: string,
-    element?: HTMLDivElement
-  ) => {
-    const prevElement = elementByAnnotationId.current[discussionId];
-    if (prevElement) {
-      resizeObserver.unobserve(prevElement);
-      annotationIdByElement.current.delete(prevElement);
-      delete elementByAnnotationId.current[discussionId];
-    }
-
-    if (element) {
-      resizeObserver.observe(element);
-      elementByAnnotationId.current[discussionId];
-      annotationIdByElement.current.set(element, discussionId);
-    }
-  };
-
-  const annotationsPositionMap = useMemo(() => {
-    let currentPos = offset;
-    const positionMap = {};
-
-    for (const annotation of annotations) {
-      const id = JSON.stringify(annotation.target);
-
-      if (!elementSizes[id] || annotation.type !== "highlighted") {
-        continue;
-      }
-
-      const top = currentPos;
-      const bottom = top + elementSizes[id];
-
-      positionMap[id] = { top, bottom };
-      currentPos = bottom;
-    }
-
-    if (onChangeCommentPositionMap) {
-      onChangeCommentPositionMap(positionMap);
-    }
-    return positionMap;
-  }, [annotations, offset, onChangeCommentPositionMap, elementSizes]);
-
-  return { registerAnnotationElement, annotationsPositionMap };
-};
 
 export const useSetScrollTarget = (
   positionMap: PositionMap,
