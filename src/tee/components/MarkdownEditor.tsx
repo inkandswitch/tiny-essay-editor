@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -124,6 +124,44 @@ export function MarkdownEditor({
       effects: setAnnotationsEffect.of(annotations),
     });
   }, [annotations, editorRoot.current]);
+
+  const selectedAnnotations = useMemo(
+    () => annotations.filter((annotation) => annotation.isFocused),
+    [annotations]
+  );
+
+  // Scroll to focused anchor if it's not highlighted
+  useEffect(() => {
+    const editor = editorRoot?.current;
+
+    // only change scroll position if editor is not focused
+    if (!editor || editor.hasFocus || selectedAnnotations.length === 0) {
+      return;
+    }
+
+    let from = selectedAnnotations[0].target.fromPos;
+    let to = selectedAnnotations[0].target.toPos;
+
+    for (let i = 1; i < selectedAnnotations.length; i++) {
+      const annotation = selectedAnnotations[i];
+
+      if (annotation.target.fromPos < from) {
+        from = annotation.target.fromPos;
+      }
+
+      if (annotation.target.toPos > to) {
+        to = annotation.target.toPos;
+      }
+    }
+
+    editor.dispatch({
+      effects: EditorView.scrollIntoView(from, {
+        y: "nearest",
+      }),
+    });
+
+    editorRoot.current;
+  }, [selectedAnnotations]);
 
   useEffect(() => {
     if (!handleReady || !editorContainer) {
