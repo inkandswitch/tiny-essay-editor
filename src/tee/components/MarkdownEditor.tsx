@@ -212,17 +212,22 @@ export function MarkdownEditor({
           view.update([transaction]);
 
           semaphore.reconcile(handle, view);
-          const selection = view.state.selection.ranges[0];
 
-          if (selection) {
-            setSelectedAnchors([
-              {
-                fromCursor: getCursorSafely(doc, ["content"], selection.from),
-                toCursor: getCursorSafely(doc, ["content"], selection.to),
-              },
-            ]);
-          } else {
-            setSelectedAnchors([]);
+          // only update selection if it has changed and the editor is focused
+          // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar
+          if (transaction.newSelection && view.hasFocus) {
+            const selection = view.state.selection.ranges[0];
+
+            if (selection) {
+              setSelectedAnchors([
+                {
+                  fromCursor: getCursorSafely(doc, ["content"], selection.from),
+                  toCursor: getCursorSafely(doc, ["content"], selection.to),
+                },
+              ]);
+            } else {
+              setSelectedAnchors([]);
+            }
           }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
