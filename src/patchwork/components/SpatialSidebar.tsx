@@ -1,15 +1,7 @@
 import { next as A } from "@automerge/automerge";
-import React, {
-  forwardRef,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useReducer,
-} from "react";
+import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import {
   AnnotationGroup,
-  Discussion,
   DiscussionComment,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
@@ -229,14 +221,10 @@ export const SpatialSidebar = React.memo(
           <Textarea
             value={pendingCommentText}
             onChange={(event) => setPendingCommentText(event.target.value)}
-            // GL Nov: figure out how to close the popover upon cmd-enter submit
-            // GL 12/14: the answer here is going to be to control Popover open
-            // state ourselves as we now do elsewhere in the codebase
             onKeyDown={(event) => {
               if (event.key === "Enter" && event.metaKey) {
-                /* createDiscussion(pendingCommentText);
-                setIsCommentBoxOpen(false);
-                event.preventDefault(); */
+                createDiscussion(pendingCommentText);
+                event.preventDefault();
               }
               event.stopPropagation();
             }}
