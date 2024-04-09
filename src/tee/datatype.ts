@@ -203,6 +203,10 @@ const doAnchorsOverlap = (
   return Math.max(from1, from2) <= Math.min(to1, to2);
 };
 
+const sortAnchorsBy = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
+  return getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
+};
+
 export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   id: "essay",
   name: "Essay",
@@ -215,4 +219,5 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   promptForAIChangeGroupSummary,
   patchesToAnnotations,
   doAnchorsOverlap,
+  sortAnchorsBy,
 };
