@@ -30,10 +30,10 @@ import { searchKeymap } from "@codemirror/search";
 import { SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
-  setAnnotationsEffect,
   annotationDecorations,
   annotationsField,
-} from "../codemirrorPlugins/annotations";
+  setAnnotationsEffect,
+} from "../codemirrorPlugins/annotationDecorations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
@@ -41,28 +41,21 @@ import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import {
-  TextAnnotationForUI,
   MarkdownDoc,
   DiscussionAnotationForUI,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
-import {
-  setPatchesEffect,
-  patchesField,
-  patchDecorations,
-} from "../codemirrorPlugins/patchDecorations";
+
 import {
   DebugHighlight,
   setDebugHighlightsEffect,
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { annotationsPositionListener } from "../codemirrorPlugins/annotationPositionListener";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { AnnotationPosition, AnnotationWithState } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
-import { getCursor } from "@tldraw/tldraw";
 
 export type TextSelection = {
   from: number;
@@ -76,29 +69,25 @@ export type EditorProps = {
   editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
-  selection?: MarkdownDocAnchor;
-  setSelection: (selection: MarkdownDocAnchor) => void;
   setView: (view: EditorView) => void;
+  setSelectedAnchors: (anchors: MarkdownDocAnchor[]) => void;
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  annotations?: Annotation<ResolvedMarkdownDocAnchor, string>[];
+  annotations?: AnnotationWithState<ResolvedMarkdownDocAnchor, string>[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateAnnotationPositions?: (
-    positions: AnnotationPosition<MarkdownDocAnchor, string>[]
-  ) => void;
 };
 
 export function MarkdownEditor({
   editorContainer,
   handle,
   path,
-  setSelection,
+  setSelectedAnchors,
   setView,
   readOnly,
   docHeads,
@@ -107,7 +96,6 @@ export function MarkdownEditor({
   onOpenSnippet,
   foldRanges,
   setEditorContainerElement,
-  onUpdateAnnotationPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -133,7 +121,7 @@ export function MarkdownEditor({
   useEffect(() => {
     editorRoot.current?.dispatch({
       // split up replaces
-      effects: setPatchesEffect.of(annotations),
+      effects: setAnnotationsEffect.of(annotations),
     });
   }, [annotations, editorRoot.current]);
 
@@ -194,8 +182,6 @@ export function MarkdownEditor({
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
-        patchesField,
-        patchDecorations,
         previewFiguresPlugin,
         previewImagesPlugin,
         highlightKeywordsPlugin,
@@ -219,15 +205,6 @@ export function MarkdownEditor({
             return placeholder;
           },
         }),
-        ...(onUpdateAnnotationPositions
-          ? [
-              annotationsPositionListener({
-                onUpdate: onUpdateAnnotationPositions,
-                estimatedLineHeight: 24,
-                editorContainer,
-              }),
-            ]
-          : []),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -236,13 +213,16 @@ export function MarkdownEditor({
 
           semaphore.reconcile(handle, view);
           const selection = view.state.selection.ranges[0];
-          if (selection && selection.from !== selection.to) {
-            setSelection({
-              fromCursor: getCursorSafely(doc, ["content"], selection.from),
-              toCursor: getCursorSafely(doc, ["content"], selection.to),
-            });
+
+          if (selection) {
+            setSelectedAnchors([
+              {
+                fromCursor: getCursorSafely(doc, ["content"], selection.from),
+                toCursor: getCursorSafely(doc, ["content"], selection.to),
+              },
+            ]);
           } else {
-            setSelection(undefined);
+            setSelectedAnchors([]);
           }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where

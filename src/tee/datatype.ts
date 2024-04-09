@@ -8,7 +8,7 @@ import { MarkdownDocAnchor, MarkdownDoc } from "./schema";
 import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
-import { TextPatch } from "@/patchwork/utils";
+import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { pick } from "lodash";
@@ -77,6 +77,38 @@ export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>
 export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   const typedDoc = doc as MarkdownDoc;
   return !!typedDoc.content && !!typedDoc.commentThreads;
+};
+
+const promptForAIChangeGroupSummary = ({
+  docBefore,
+  docAfter,
+}: {
+  docBefore: MarkdownDoc;
+  docAfter: MarkdownDoc;
+}) => {
+  return `
+Summarize the changes in this diff in a few words.
+
+Only return a few words, not a full description. No bullet points.
+
+Here are some good examples of descriptive summaries:
+
+wrote initial outline
+changed title
+small wording changes
+turned outline into prose
+lots of small edits
+total rewrite
+a few small tweaks
+reworded a paragraph
+
+## Doc before
+
+${JSON.stringify(pick(docBefore, ["content", "commentThreads"]), null, 2)}
+
+## Doc after
+
+${JSON.stringify(pick(docAfter, ["content", "commentThreads"]), null, 2)}`;
 };
 
 export const patchesToAnnotations = (
@@ -158,36 +190,17 @@ export const patchesToAnnotations = (
   });
 };
 
-const promptForAIChangeGroupSummary = ({
-  docBefore,
-  docAfter,
-}: {
-  docBefore: MarkdownDoc;
-  docAfter: MarkdownDoc;
-}) => {
-  return `
-Summarize the changes in this diff in a few words.
+const doAnchorsOverlap = (
+  anchor1: MarkdownDocAnchor,
+  anchor2: MarkdownDocAnchor,
+  doc: MarkdownDoc
+) => {
+  const from1 = getCursorPositionSafely(doc, ["content"], anchor1.fromCursor);
+  const to1 = getCursorPositionSafely(doc, ["content"], anchor1.toCursor);
+  const from2 = getCursorPositionSafely(doc, ["content"], anchor2.fromCursor);
+  const to2 = getCursorPositionSafely(doc, ["content"], anchor2.toCursor);
 
-Only return a few words, not a full description. No bullet points.
-
-Here are some good examples of descriptive summaries:
-
-wrote initial outline
-changed title
-small wording changes
-turned outline into prose
-lots of small edits
-total rewrite
-a few small tweaks
-reworded a paragraph
-
-## Doc before
-
-${JSON.stringify(pick(docBefore, ["content", "commentThreads"]), null, 2)}
-
-## Doc after
-
-${JSON.stringify(pick(docAfter, ["content", "commentThreads"]), null, 2)}`;
+  return Math.max(from1, from2) <= Math.min(to1, to2);
 };
 
 export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
@@ -199,6 +212,7 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   markCopy,
   includeChangeInHistory,
   includePatchInChangeGroup,
-  patchesToAnnotations,
   promptForAIChangeGroupSummary,
+  patchesToAnnotations,
+  doAnchorsOverlap,
 };

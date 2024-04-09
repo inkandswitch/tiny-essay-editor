@@ -19,7 +19,7 @@ import { ReviewStateFilter } from "../utils";
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { Annotation } from "@/patchwork/schema";
+import { AnnotationWithState } from "@/patchwork/schema";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Patch, view } from "@automerge/automerge/next";
 import { isEqual, uniq } from "lodash";
@@ -32,111 +32,28 @@ export const TinyEssayEditor = (
     docUrl,
     docHeads,
     annotations = [],
+    setSelectedAnchors,
     actorIdToAuthor,
-    hoveredAnnotation,
-    selectedAnnotations,
-    setSelectedAnnotations,
-    onUpdateAnnotationPositions,
   } = props;
 
   const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
-  const [localSelection, setLocalSelection] = useState<MarkdownDocAnchor>();
   const [editorView, setEditorView] = useState<EditorView>();
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
 
-  const setSelection = props.setSelection ?? setLocalSelection;
-  const selection = props.setSelection ? props.selection : localSelection;
-
   const [visibleAuthorsForEdits, setVisibleAuthorsForEdits] = useState<
     AutomergeUrl[]
   >([]);
-
-  /* const setSelection = useStaticCallback((newSelection: TextSelection) => {
-    if (
-      selection &&
-      newSelection.from === selection.from &&
-      newSelection.to === selection.to
-    ) {
-      return;
-    }
-
-    _setSelection(newSelection);
-  }); */
-
-  const [reviewStateFilter, setReviewStateFilter] = useState<ReviewStateFilter>(
-    {
-      self: "" as AutomergeUrl, // a bit hacky, account might be undefined initially so we just use a dummy value
-      showReviewedByOthers: true,
-      showReviewedBySelf: false,
-    }
-  );
-
-  useEffect(() => {
-    if (!account) {
-      return;
-    }
-
-    setReviewStateFilter((filter) => ({
-      ...filter,
-      self: account.contactHandle.url,
-    }));
-  }, [account, account?.contactHandle.url]);
 
   // If the authors on the doc change, show changes by all authors
   useEffect(() => {
     setVisibleAuthorsForEdits(uniq(Object.values(actorIdToAuthor ?? {})));
   }, [actorIdToAuthor]);
 
-  const docAtHeads = useMemo(
-    () => (docHeads ? view(doc, docHeads) : doc),
-    [doc, docHeads]
-  );
-
-  /*  const discussionAnnotations = useMemo<DiscussionAnotationForUI[]>(() => {
-    if (!doc?.discussions) {
-      return [];
-    }
-
-    return Object.values(doc.discussions).flatMap((discussion) => {
-      if (
-        (discussion.target && discussion.target.type !== "editRange") ||
-        discussion.resolved === true
-      ) {
-        return [];
-      }
-
-      try {
-        return [
-          {
-            type: "discussion",
-            discussion,
-            from: A.getCursorPosition(
-              doc,
-              ["content"],
-              discussion.target.value.fromCursor
-            ),
-            to: A.getCursorPosition(
-              doc,
-              ["content"],
-              discussion.target.value.toCursor
-            ),
-            active:
-              discussion.id === hoveredDiscussionId ||
-              discussion.id === selectedDiscussionId,
-            id: discussion.id,
-          },
-        ];
-      } catch (err) {
-        return [];
-      }
-    });
-  }, [doc, hoveredDiscussionId, selectedDiscussionId]); */
-
-  // focus discussion
+  // focus annotation
   /* useEffect(() => {
     let focusedDiscussion: Discussion;
 
@@ -166,43 +83,8 @@ export const TinyEssayEditor = (
     }
   }, [discussions, doc, selection, setSelectedDiscussionId]); */
 
-  // update scroll position
-  // scroll selectedDiscussion into view
-  /*useEffect(() => {
-    if (!editorContainer) {
-      return;
-    }
-
-    if (selectedDiscussionId) {
-      const target = activeDiscussionTargetPositions.find(
-        ({ discussion }) => discussion.id === selectedDiscussionId
-      );
-
-      if (!target) {
-        return;
-      }
-
-      const targetPos = target.y + scrollOffset;
-
-      // unsure why we need to subtract something here otherwise it doesn't scroll all the way to the bottom
-      if (target.y < 0 || target.y >= editorContainer.clientHeight - 150) {
-        editorContainer.scrollTo({
-          top: targetPos,
-          behavior: "smooth",
-        });
-      }
-
-      return;
-    }
-  }, [
-    activeDiscussionTargetPositions,
-    editorContainer,
-    scrollOffset,
-    selectedDiscussionId,
-  ]); */
-
   const resolvedAnnotations = useMemo<
-    Annotation<ResolvedMarkdownDocAnchor, string>[]
+    AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
   >(() => {
     return annotations.flatMap((annotation) => {
       const { fromCursor, toCursor } = annotation.target;
@@ -215,7 +97,7 @@ export const TinyEssayEditor = (
             {
               ...annotation,
               target: { fromPos, toPos, fromCursor, toCursor },
-            } as Annotation<ResolvedMarkdownDocAnchor, string>,
+            },
           ];
     });
   }, [doc, annotations]);
@@ -249,14 +131,11 @@ export const TinyEssayEditor = (
               diffStyle="normal"
               handle={handle}
               path={["content"]}
-              setSelection={setSelection}
+              setSelectedAnchors={setSelectedAnchors}
               setView={setEditorView}
               annotations={resolvedAnnotations}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              onUpdateAnnotationPositions={(positions) =>
-                onUpdateAnnotationPositions(positions)
-              }
               isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>

@@ -82,7 +82,7 @@ export type PatchworkDataType<D, T, V> = {
 
   valueOfAnchor?: (doc: D, anchor: T) => V;
 
-  doAnchorsOverlap?: (anchor1: T, anchor2: T) => boolean;
+  doAnchorsOverlap?: (anchor1: T, anchor2: T, doc: D) => boolean;
 
   /** define a value for each anchor that will be use to sort them by in descending order
    *  this is used for example in the SpatialSidebar to sort the annotation groups

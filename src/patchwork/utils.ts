@@ -1,5 +1,5 @@
 import React from "react";
-import { DiffWithProvenance } from "./schema";
+import { DiffWithProvenance, HasPatchworkMetadata } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -10,7 +10,6 @@ import * as wasm from "@automerge/automerge-wasm";
 import { AnnotationGroup, Annotation } from "./schema";
 import { isEqual } from "lodash";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
-import { Annotation } from "@uiw/react-codemirror";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -514,22 +513,28 @@ export function useDebounce<T>(value: T, delay?: number): T {
   return debouncedValue;
 }
 
-export const doAnchorsOverlap = (type: DocType, a: unknown, b: unknown) => {
-  const comperator = docTypes[type].doAnchorsOverlap ?? isEqual;
-  return comperator(a, b);
+export const doAnchorsOverlap = (
+  type: DocType,
+  a: unknown,
+  b: unknown,
+  doc: HasPatchworkMetadata<unknown, unknown>
+) => {
+  const comperator = docTypes[type].doAnchorsOverlap;
+  return comperator ? comperator(a, b, doc) : isEqual(a, b);
 };
 
 export const areAnchorSelectionsEqual = (
   type: DocType,
   a: unknown[],
-  b: unknown[]
+  b: unknown[],
+  doc
 ) => {
   if (a.length !== b.length) {
     return false;
   }
 
   return a.every((anchor) =>
-    b.some((other) => doAnchorsOverlap(type, anchor, other))
+    b.some((other) => doAnchorsOverlap(type, anchor, other, doc))
   );
 };
 
@@ -548,11 +553,12 @@ export function getAnnotationGroupId<T, V>(
 export function doesAnnotationGroupContainAnchors<T, V>(
   docType: DocType,
   group: AnnotationGroup<T, V>,
-  anchors: T[]
+  anchors: T[],
+  doc: HasPatchworkMetadata<T, V>
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>
-      doAnchorsOverlap(docType, annotation.target, anchor)
+      doAnchorsOverlap(docType, annotation.target, anchor, doc)
     )
   );
 }

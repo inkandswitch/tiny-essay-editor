@@ -1011,7 +1011,7 @@ export function useAnnotations({
       editAnnotations.forEach((editAnnotation) => {
         if (
           discussion.target.some((anchor) =>
-            doAnchorsOverlap(docType, editAnnotation.target, anchor)
+            doAnchorsOverlap(docType, editAnnotation.target, anchor, doc)
           )
         ) {
           claimedAnnotations.add(editAnnotation);
@@ -1074,7 +1074,8 @@ export function useAnnotations({
           doesAnnotationGroupContainAnchors(
             docType,
             group,
-            selectedState.anchors
+            selectedState.anchors,
+            doc
           )
         );
         if (annotationGroup) {
@@ -1114,9 +1115,12 @@ export function useAnnotations({
         // all annotationGroup that contain hovered anchors are focused
         annotationGroups.forEach((group) => {
           if (
-            !doesAnnotationGroupContainAnchors(docType, group, [
-              hoveredState.anchor,
-            ])
+            !doesAnnotationGroupContainAnchors(
+              docType,
+              group,
+              [hoveredState.anchor],
+              doc
+            )
           ) {
             return;
           }

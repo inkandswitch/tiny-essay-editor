@@ -1,24 +1,22 @@
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
-import * as A from "@automerge/automerge/next";
 import { StateEffect, StateField } from "@codemirror/state";
 
-import { annotationsField } from "./annotations";
-import { Annotation } from "@/patchwork/schema";
-import { MarkdownDocAnchor, ResolvedMarkdownDocAnchor } from "../schema";
+import { AnnotationWithState } from "@/patchwork/schema";
+import { ResolvedMarkdownDocAnchor } from "../schema";
 
-// Stuff for patches decoration
-// TODO: move this into a separate file
-export const setPatchesEffect =
-  StateEffect.define<Annotation<ResolvedMarkdownDocAnchor, string>[]>();
-export const patchesField = StateField.define<
-  Annotation<ResolvedMarkdownDocAnchor, string>[]
+export const setAnnotationsEffect =
+  StateEffect.define<
+    AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
+  >();
+export const annotationsField = StateField.define<
+  AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
 >({
   create() {
     return [];
   },
   update(patches, tr) {
     for (const e of tr.effects) {
-      if (e.is(setPatchesEffect)) {
+      if (e.is(setAnnotationsEffect)) {
         return e.value;
       }
     }
@@ -102,40 +100,36 @@ const makeDeleteDecoration = (deletedText: string, isActive: boolean) =>
     widget: new DeletionMarker(deletedText, isActive),
     side: 1,
   });
-export const patchDecorations = EditorView.decorations.compute(
-  [patchesField, annotationsField],
-  (state) => {
-    const activeAnnotations = state
-      .field(annotationsField)
-      .filter((annotationsField) => annotationsField.active);
 
-    const annotations = state.field(patchesField);
+export const annotationDecorations = EditorView.decorations.compute(
+  [annotationsField],
+  (state) => {
+    const annotations = state.field(annotationsField);
 
     const decorations = annotations.flatMap((annotation) => {
       const { fromPos, toPos } = annotation.target;
       if (fromPos >= toPos) {
         return [];
       }
-      const isActive = activeAnnotations.some(
-        (activeAnnotation) =>
-          fromPos >= activeAnnotation.from && toPos <= activeAnnotation.to
-      );
 
       switch (annotation.type) {
         case "added": {
-          const decoration = isActive
+          const decoration = annotation.isFocused
             ? spliceDecorationActive
             : spliceDecoration;
           return [decoration.range(fromPos, toPos)];
         }
         case "deleted": {
           return [
-            makeDeleteDecoration(annotation.deleted, isActive).range(fromPos),
+            makeDeleteDecoration(
+              annotation.deleted,
+              annotation.isFocused
+            ).range(fromPos),
           ];
         }
 
         case "highlighted": {
-          const decoration = isActive
+          const decoration = annotation.isFocused
             ? highlightDecorationActive
             : highlightDecoration;
           return [decoration.range(fromPos, toPos)];
