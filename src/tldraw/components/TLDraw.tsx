@@ -34,6 +34,8 @@ export const TLDraw = ({
   const account = useCurrentAccount();
   const userId = account ? account.contactHandle.url : "no-account";
 
+  console.log("editable", { annotations });
+
   const [doc] = useDocument<TLDrawDoc>(docUrl);
   const docAtHeads = useMemo(
     () => (docHeads ? A.view(doc, docHeads) : undefined),

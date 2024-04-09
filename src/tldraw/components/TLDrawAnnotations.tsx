@@ -1,8 +1,8 @@
 import { Annotation } from "@/patchwork/schema";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TLDrawDoc } from "../schema";
-import { useAutomergeStore } from "automerge-tldraw";
+import { useAutomergeStore } from "../vendor/automerge-tldraw";
 import { DocHandle } from "@automerge/automerge-repo";
 import { useDiffStyling } from "./hooks";
 
@@ -15,13 +15,17 @@ export const TLDrawAnnotations = ({
   handle: DocHandle<TLDrawDoc>;
   annotations: Annotation<TLShapeId, TLShape>[];
 }) => {
-  const store = useAutomergeStore({ handle, doc, userId: "" });
+  const store = useAutomergeStore({ handle, doc, userId: "test-user" });
   const [editor, setEditor] = useState<Editor>();
 
-  const annotationsWithState = annotations.map((a) => ({
-    ...a,
-    isFocused: false,
-  }));
+  const annotationsWithState = useMemo(
+    () =>
+      annotations.map((a) => ({
+        ...a,
+        isFocused: false,
+      })),
+    [annotations]
+  );
 
   useDiffStyling({ doc, annotations: annotationsWithState, store, editor });
 

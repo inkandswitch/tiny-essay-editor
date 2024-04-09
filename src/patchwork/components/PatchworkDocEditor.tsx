@@ -314,6 +314,8 @@ export const PatchworkDocEditor: React.FC<{
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranchUrl ? branchHandle : handle;
 
+  console.log({ activeHandle });
+
   const {
     annotations,
     annotationGroups,
