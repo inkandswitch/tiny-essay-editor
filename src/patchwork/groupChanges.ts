@@ -186,7 +186,7 @@ export const ByAuthorOrTime =
 // - nonlinear: group by actor, out of this sorted order of changes
 
 export const getMarkersForDoc = <
-  T extends Branchable & Taggable & Discussable<unknown, unknown>
+  T extends Branchable & Taggable & Discussable<unknown>
 >(
   handle: DocHandle<T>,
   repo: Repo
