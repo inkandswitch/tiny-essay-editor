@@ -69,11 +69,7 @@ import {
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  PositionMap,
-  SpatialCommentsLinesLayer,
-  SpatialSidebar,
-} from "./SpatialSidebar";
+import { PositionMap, SpatialSidebar } from "./SpatialSidebar";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
 import {
@@ -605,15 +601,6 @@ export const PatchworkDocEditor: React.FC<{
                 actorIdToAuthor={actorIdToAuthor}
                 setSelectedAnchors={setSelectedAnchors}
                 setHoveredAnchor={setHoveredAnchor}
-              />
-            )}
-            {reviewMode === "comments" && isHistorySidebarOpen && (
-              <SpatialCommentsLinesLayer
-                activeDiscussionIds={activeDiscussionIds}
-                annotationsTargetPositions={annotationPositions}
-                annotationsPositionsInSidebarMap={
-                  annotationsPositionsInSidebarMap
-                }
               />
             )}
           </div>
