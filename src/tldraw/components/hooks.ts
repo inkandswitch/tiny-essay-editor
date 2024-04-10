@@ -9,7 +9,7 @@ import {
   TLStoreWithStatus,
 } from "@tldraw/tldraw";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
-import { areAnchorSelectionsEqual } from "@/patchwork/utils";
+import { areAnchorSelectionsEqual } from "@/patchwork/annotations";
 
 export const useCameraSync = ({
   camera: camera,
@@ -201,7 +201,8 @@ export const useAnchorEventListener = ({
         !areAnchorSelectionsEqual(
           "tldraw",
           editor?.selectedShapeIds,
-          selectedAnchorsRef.current
+          selectedAnchorsRef.current,
+          null
         )
       ) {
         setSelectedAnchors(editor.selectedShapeIds);

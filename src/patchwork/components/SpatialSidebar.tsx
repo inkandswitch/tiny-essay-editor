@@ -34,7 +34,7 @@ import {
 } from "@/patchwork/schema";
 import { DocType, annotationViewersForDocType } from "@/DocExplorer/doctypes";
 import { MessageCircleIcon } from "lucide-react";
-import { getAnnotationGroupId } from "../utils";
+import { getAnnotationGroupId } from "../annotations";
 import { DocHandle } from "@automerge/automerge-repo";
 
 type SpatialSidebarProps<T> = {
