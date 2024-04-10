@@ -161,7 +161,7 @@ export function MarkdownEditor({
 
     editor.dispatch({
       effects: EditorView.scrollIntoView(from, {
-        y: "nearest",
+        y: "center",
       }),
     });
 
