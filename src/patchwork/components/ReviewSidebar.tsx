@@ -4,6 +4,7 @@ import {
   AnnotationGroup,
   DiscussionComment,
   HasPatchworkMetadata,
+  HighlightAnnotation,
 } from "@/patchwork/schema";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
@@ -19,7 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { Annotation, AnnotationGroupWithState } from "@/patchwork/schema";
-import { DocType, annotationViewersForDocType } from "@/DocExplorer/doctypes";
+import {
+  DocType,
+  annotationViewersForDocType,
+  docTypes,
+} from "@/DocExplorer/doctypes";
 import { MessageCircleIcon } from "lucide-react";
 import { getAnnotationGroupId } from "../annotations";
 import { DocHandle } from "@automerge/automerge-repo";
@@ -39,7 +44,7 @@ type ReviewSidebarProps<T> = {
 };
 
 export const ReviewSidebar = React.memo(
-  <T extends object>({
+  <T extends HasPatchworkMetadata<unknown, unknown>>({
     doc,
     handle,
     docType,
@@ -55,6 +60,16 @@ export const ReviewSidebar = React.memo(
     const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
+
+    const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
+      useMemo(() => {
+        const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
+        return selectedAnchors.map((anchor) => ({
+          type: "highlighted",
+          target: [anchor],
+          value: valueOfAnchor(doc, anchor),
+        }));
+      }, [selectedAnchors, doc, docType]);
 
     const addCommentToAnnotationGroup = (
       annotationGroup: AnnotationGroup<unknown, unknown>,
@@ -208,7 +223,14 @@ export const ReviewSidebar = React.memo(
             );
           })}
         </div>
-        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-2 border-t border-gray-300">
+        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-3 border-t border-gray-300">
+          <AnnotationsView
+            doc={doc}
+            handle={handle}
+            docType={docType}
+            annotations={pendingAnnotationsForComment}
+          />
+
           <Textarea
             value={pendingCommentText}
             onChange={(event) => setPendingCommentText(event.target.value)}
