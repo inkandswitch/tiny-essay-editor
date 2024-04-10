@@ -18,12 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Check } from "lucide-react";
 import { uuid } from "@automerge/automerge";
-import { sortBy } from "lodash";
-import {
-  Annotation,
-  AnnotationPosition,
-  AnnotationGroupWithState,
-} from "@/patchwork/schema";
+import { Annotation, AnnotationGroupWithState } from "@/patchwork/schema";
 import { DocType, annotationViewersForDocType } from "@/DocExplorer/doctypes";
 import { MessageCircleIcon } from "lucide-react";
 import { getAnnotationGroupId } from "../annotations";
@@ -60,10 +55,6 @@ export const ReviewSidebar = React.memo(
     const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
-    const scrollContainerRect = useMemo(
-      () => scrollContainer?.getBoundingClientRect(),
-      [scrollContainer]
-    );
 
     const addCommentToAnnotationGroup = (
       annotationGroup: AnnotationGroup<unknown, unknown>,
@@ -217,7 +208,7 @@ export const ReviewSidebar = React.memo(
             );
           })}
         </div>
-        <div className="bg-gray-50 z-10 p-2 flex flex-col gap-2">
+        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-2 border-t border-gray-300">
           <Textarea
             value={pendingCommentText}
             onChange={(event) => setPendingCommentText(event.target.value)}
@@ -398,7 +389,7 @@ const AnnotationGroupView = forwardRef<
             />
 
             {annotationGroup.discussion?.comments.map((comment, index) => (
-              <DiscusssionCommentView comment={comment} key={comment.id} />
+              <DiscussionCommentView comment={comment} key={comment.id} />
             ))}
           </div>
 
@@ -478,11 +469,7 @@ const AnnotationGroupView = forwardRef<
   }
 );
 
-const DiscusssionCommentView = ({
-  comment,
-}: {
-  comment: DiscussionComment;
-}) => {
+const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
   return (
     <div>
       <div className="flex items-center justify-between p-1.5 text-sm">
