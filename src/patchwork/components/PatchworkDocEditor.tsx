@@ -1,13 +1,8 @@
-import { DocType, editorsForDocType, docTypes } from "@/DocExplorer/doctypes";
+import { DocType, editorsForDocType } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
-  EditRangeTarget,
   HasPatchworkMetadata,
-  Annotation,
-  HighlightAnnotation,
-  AnnotationGroup,
   AnnotationWithState,
-  AnnotationGroupWithState,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -16,9 +11,8 @@ import {
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { truncate, sortBy, min } from "lodash";
+import { truncate, sortBy } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -71,12 +65,7 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { useStaticCallback } from "@/tee/utils";
-import { BotEditor } from "@/bots/BotEditor";
-import {
-  TLDraw,
-  SideBySide as TLDrawSideBySide,
-} from "@/tldraw/components/TLDraw";
-import { DataGrid } from "@/datagrid/components/DataGrid";
+import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
@@ -318,43 +307,11 @@ export const PatchworkDocEditor: React.FC<{
   });
 
   const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
-  const [annotationPositions, setAnnotationPositions] = useState<
-    AnnotationPosition<unknown, unknown>[]
-  >([]);
 
   const [
     annotationsPositionsInSidebarMap,
     setAnnotationsPositionsInSidebarMap,
   ] = useState<PositionMap>();
-  const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
-
-  const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
-  const activeDiscussionIds = useMemo(() => {
-    const ids = [];
-
-    if (selectedDiscussionId) {
-      ids.push(selectedDiscussionId);
-    }
-
-    if (hoveredDiscussionId) {
-      ids.push(hoveredDiscussionId);
-    }
-
-    return ids;
-  }, [selectedDiscussionId, hoveredDiscussionId]);
-
-  const onUpdateAnnotationPositions = useStaticCallback((targetPositions) => {
-    setAnnotationPositions(
-      sortBy(
-        targetPositions.map((position) => ({
-          ...position,
-          y: position.y,
-          x: position.x,
-        })),
-        ({ y }) => y
-      )
-    );
-  });
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
