@@ -37,6 +37,12 @@ export const TLDrawAnnotations = ({
     editor.panZoomIntoView(shapeIds, { duration: 100 });
   }, [editor, annotations]);
 
+  if (annotations.length === 0) {
+    return (
+      <div className="text-gray-500 text-xs italic">No shapes selected</div>
+    );
+  }
+
   return (
     <div className="h-[200px] w-full relative">
       <Tldraw
@@ -44,7 +50,7 @@ export const TLDrawAnnotations = ({
         store={store}
         onMount={(editor) => {
           setEditor(editor);
-          editor.updateInstanceState({ isReadonly: true, isFocused: false });
+          editor.updateInstanceState({ isReadonly: true });
         }}
       />
       <div className="absolute top-0 left-0 bottom-0 right-0 z-[999]"></div>
