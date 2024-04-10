@@ -79,7 +79,7 @@ export const TinyEssayEditor = (
 
   return (
     <div
-      className="h-full overflow-hidden min-h-0 w-full"
+      className="h-full overflow-auto min-h-0 w-full"
       ref={setEditorContainer}
     >
       <div className="@container flex bg-gray-100 justify-center">
@@ -90,7 +90,7 @@ export const TinyEssayEditor = (
          */}
         <div className="flex @xl:mt-4 @xl:mr-2 @xl:mb-8 @xl:ml-[-100px] @4xl:ml-[-200px] w-full @xl:w-4/5  max-w-[722px]">
           <div
-            className={`w-full h-full bg-white box-border rounded-md px-8 py-4 transition-all duration-500 ${
+            className={`w-full bg-white box-border rounded-md px-8 py-4 transition-all duration-500 ${
               readOnly
                 ? " border-2 border-dashed border-slate-400"
                 : "border border-gray-200 "
