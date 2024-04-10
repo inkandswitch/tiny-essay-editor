@@ -80,6 +80,10 @@ export const useDiffStyling = ({
       return;
     }
 
+    if (!editor) {
+      return;
+    }
+
     if (!annotations) {
       store.store.remove(Array.from(tempShapeIdsRef.current));
       highlightedElementsRef.current.forEach((element) => {
@@ -166,7 +170,7 @@ export const useDiffStyling = ({
         });
       highlightedElementsRef.current = activeHighlightedElements;
     });
-  }, [annotations, store, doc, camera]);
+  }, [annotations, store, doc, camera, editor]);
 };
 export const useAnchorEventListener = ({
   editor,
