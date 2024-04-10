@@ -437,7 +437,11 @@ const AnnotationGroupView = forwardRef<
                   onClick={() => setIsReplyBoxOpen(true)}
                 >
                   <div className="flex gap-2 text-gray-600">
-                    <MessageCircleIcon size={16} /> Comment
+                    <MessageCircleIcon size={16} />{" "}
+                    {annotationGroup.discussion &&
+                    annotationGroup.discussion.comments.length > 0
+                      ? "Reply"
+                      : "Comment"}
                   </div>
                   <span className="text-gray-400 text-xs w-full text-center">
                     (⌘ + ⏎)
@@ -469,7 +473,10 @@ const AnnotationGroupView = forwardRef<
                       setPendingCommentText("");
                     }}
                   >
-                    Comment
+                    {annotationGroup.discussion &&
+                    annotationGroup.discussion.comments.length > 0
+                      ? "Reply"
+                      : "Comment"}
                     <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
                   </Button>
                 </PopoverClose>
