@@ -76,14 +76,29 @@ export type PatchworkDataType<D, T, V> = {
     patches: A.Patch[]
   ) => Annotation<T, V>[];
 
+  /* Group annotations into logical units. This function get's passed all annotations
+   * that are not associated with any discussions
+   *
+   * The sort order is not preserved. For sorting implement the sortAnchorsBy method.
+   */
   groupAnnotations?: (annotations: Annotation<T, V>[]) => Annotation<T, V>[][];
 
-  valueOfAnchor?: (doc: D, anchor: T) => V;
+  /* Resolves to the value the anchor is pointing to in a document.
+   * If the anchor cannot be resolved return undefined */
+  valueOfAnchor: (doc: D, anchor: T) => V | undefined;
 
+  /* Checks if two anchors overlap. This is used to associate edit annotations with
+   * discussions. A discussion grabs any annotations that overlap with the anchors
+   * associated with the discussion
+   *
+   * If this method is not implemented deep equal will be used as a fallback
+   */
   doAnchorsOverlap?: (anchor1: T, anchor2: T, doc: D) => boolean;
 
-  /** define a value for each anchor that will be use to sort them by in descending order
-   *  this is used for example in the SpatialSidebar to sort the annotation groups
+  /** Defines a value for each anchor that will be use to sort them by in descending order.
+   *  This is used for example in the SpatialSidebar to sort the annotation group.
+   *
+   *  If this method is not implemented the anchors will not be sorted.
    */
   sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
