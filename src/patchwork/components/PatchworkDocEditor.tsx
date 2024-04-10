@@ -69,7 +69,7 @@ import {
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PositionMap, SpatialSidebar } from "./SpatialSidebar";
+import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { useStaticCallback } from "@/tee/utils";
 import { BotEditor } from "@/bots/BotEditor";
 import {
@@ -642,7 +642,7 @@ export const PatchworkDocEditor: React.FC<{
               />
             )}
             {reviewMode === "comments" && (
-              <SpatialSidebar
+              <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
                 docType={docType}

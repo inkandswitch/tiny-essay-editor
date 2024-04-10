@@ -29,7 +29,7 @@ import { MessageCircleIcon } from "lucide-react";
 import { getAnnotationGroupId } from "../annotations";
 import { DocHandle } from "@automerge/automerge-repo";
 
-type SpatialSidebarProps<T> = {
+type ReviewSidebarProps<T> = {
   doc: T;
   handle: DocHandle<T>;
   docType: string;
@@ -43,7 +43,7 @@ type SpatialSidebarProps<T> = {
   setHoveredAnnotationGroupId: (id: string) => void;
 };
 
-export const SpatialSidebar = React.memo(
+export const ReviewSidebar = React.memo(
   <T extends object>({
     doc,
     handle,
@@ -53,7 +53,7 @@ export const SpatialSidebar = React.memo(
     changeDoc,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
-  }: SpatialSidebarProps<T>) => {
+  }: ReviewSidebarProps<T>) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
