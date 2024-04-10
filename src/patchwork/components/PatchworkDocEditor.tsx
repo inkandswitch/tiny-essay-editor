@@ -12,7 +12,7 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { truncate, sortBy } from "lodash";
+import { truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -65,12 +65,10 @@ import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
-import { useStaticCallback } from "@/tee/utils";
 import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
-import { AnnotationPosition } from "@/patchwork/schema";
 import { isEqual } from "lodash";
 import { isLLMActive } from "@/llm";
 import { useAnnotations } from "../annotations";
@@ -306,7 +304,7 @@ export const PatchworkDocEditor: React.FC<{
     diff: diffForEditor,
   });
 
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("timeline");
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("comments");
 
   const [
     annotationsPositionsInSidebarMap,
@@ -508,7 +506,13 @@ export const PatchworkDocEditor: React.FC<{
                 <Button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   variant="outline"
-                  className="h-8 text-x"
+                  className={`h-8 text-x ${
+                    annotations.filter(
+                      (a) => a.type === "highlighted" && a.hasSpotlight
+                    ).length > 0
+                      ? "bg-yellow-200 hover:bg-yellow-400"
+                      : ""
+                  }`}
                 >
                   <MessageSquareIcon size={20} />
                 </Button>
@@ -577,13 +581,13 @@ export const PatchworkDocEditor: React.FC<{
               onValueChange={(value) => setSidebarMode(value as SidebarMode)}
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="timeline">
-                  <HistoryIcon size={16} className="mr-2" />
-                  Timeline
-                </TabsTrigger>
                 <TabsTrigger value="comments">
                   <MessageSquareIcon size={16} className="mr-2" />
                   Review ({annotationGroups.length})
+                </TabsTrigger>
+                <TabsTrigger value="timeline">
+                  <HistoryIcon size={16} className="mr-2" />
+                  History
                 </TabsTrigger>
               </TabsList>
             </Tabs>
