@@ -153,7 +153,7 @@ export type Annotation<T, V> =
   | HighlightAnnotation<T, V>;
 
 export type AnnotationWithState<T, V> = Annotation<T, V> & {
-  isFocused: boolean;
+  hasSpotlight: boolean;
 };
 
 export interface AnnotationPosition<T, V> {

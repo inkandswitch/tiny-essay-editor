@@ -307,17 +307,14 @@ export const PatchworkDocEditor: React.FC<{
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranchUrl ? branchHandle : handle;
 
-  console.log({ activeHandle });
-
   const {
     annotations,
     annotationGroups,
+    selectedAnchors,
     setHoveredAnchor,
     setSelectedAnchors,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
-    selectedAnchors,
-    hoveredAnchor,
   } = useAnnotations({
     doc: activeDoc,
     docType,
@@ -595,8 +592,6 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                selectedAnchors={selectedAnchors}
-                hoveredAnchor={hoveredAnchor}
                 setSelectedAnchors={setSelectedAnchors}
                 setHoveredAnchor={setHoveredAnchor}
               />
@@ -608,8 +603,6 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                selectedAnchors={selectedAnchors}
-                hoveredAnchor={hoveredAnchor}
                 setSelectedAnchors={setSelectedAnchors}
                 setHoveredAnchor={setHoveredAnchor}
               />
@@ -697,8 +690,6 @@ const DocEditor = <T, V>({
   docHeads,
   annotations,
   actorIdToAuthor,
-  selectedAnchors,
-  hoveredAnchor,
   setSelectedAnchors,
   setHoveredAnchor,
 }: DocEditorPropsWithDocType<T, V>) => {
@@ -714,8 +705,6 @@ const DocEditor = <T, V>({
         annotations as AnnotationWithState<MarkdownDocAnchor, string>[]
       }
       actorIdToAuthor={actorIdToAuthor}
-      selectedAnchors={selectedAnchors}
-      hoveredAnchor={hoveredAnchor}
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
     />

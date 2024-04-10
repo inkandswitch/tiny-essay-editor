@@ -131,7 +131,7 @@ export function MarkdownEditor({
   }, [annotations, editorRoot.current]);
 
   const selectedAnnotations = useMemo(
-    () => annotations.filter((annotation) => annotation.isFocused),
+    () => annotations.filter((annotation) => annotation.hasSpotlight),
     [annotations]
   );
 

@@ -93,7 +93,7 @@ export type PatchworkDataType<D, T, V> = {
    *
    * If this method is not implemented deep equal will be used as a fallback
    */
-  doAnchorsOverlap?: (anchor1: T, anchor2: T, doc: D) => boolean;
+  doAnchorsOverlap?: (doc: D, anchor1: T, anchor2: T) => boolean;
 
   /** Defines a value for each anchor that will be use to sort them by in descending order.
    *  This is used for example in the SpatialSidebar to sort the annotation group.
@@ -162,6 +162,4 @@ export interface DocEditorProps<T, V> {
 
   setSelectedAnchors: (anchors: T[]) => void;
   setHoveredAnchor: (anchors: T) => void;
-  selectedAnchors: T[];
-  hoveredAnchor: T;
 }

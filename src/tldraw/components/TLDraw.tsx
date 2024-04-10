@@ -24,8 +24,6 @@ export const TLDraw = ({
   annotations,
   camera,
   onChangeCamera,
-  selectedAnchors,
-  hoveredAnchor,
   setSelectedAnchors,
   setHoveredAnchor,
 }: TLDrawProps) => {
@@ -65,8 +63,6 @@ export const TLDraw = ({
             handle={handle}
             camera={camera ?? localCamera}
             onChangeCamera={setCamera}
-            selectedAnchors={selectedAnchors}
-            hoveredAnchor={hoveredAnchor}
             setSelectedAnchors={setSelectedAnchors}
             setHoveredAnchor={setHoveredAnchor}
           />
@@ -79,8 +75,6 @@ export const TLDraw = ({
           handle={handle}
           camera={camera ?? localCamera}
           onChangeCamera={setCamera}
-          selectedAnchors={selectedAnchors}
-          hoveredAnchor={hoveredAnchor}
           setSelectedAnchors={setSelectedAnchors}
           setHoveredAnchor={setHoveredAnchor}
         />
@@ -96,9 +90,7 @@ interface TlDrawProps {
   annotations?: AnnotationWithState<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
-  selectedAnchors: TLDrawDocAnchor[];
   setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
-  hoveredAnchor: TLDrawDocAnchor;
   setHoveredAnchor: (anchor: TLDrawDocAnchor) => void;
 }
 
@@ -109,9 +101,7 @@ const EditableTLDraw = ({
   annotations,
   camera,
   onChangeCamera,
-  selectedAnchors,
   setSelectedAnchors,
-  hoveredAnchor,
   setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
@@ -125,9 +115,7 @@ const EditableTLDraw = ({
   });
   useAnchorEventListener({
     editor,
-    selectedAnchors,
     setSelectedAnchors,
-    hoveredAnchor,
     setHoveredAnchor,
   });
 
@@ -141,9 +129,7 @@ const ReadOnlyTLDraw = ({
   annotations,
   onChangeCamera,
   camera,
-  selectedAnchors,
   setSelectedAnchors,
-  hoveredAnchor,
   setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
@@ -157,9 +143,7 @@ const ReadOnlyTLDraw = ({
   });
   useAnchorEventListener({
     editor,
-    selectedAnchors,
     setSelectedAnchors,
-    hoveredAnchor,
     setHoveredAnchor,
   });
 
@@ -180,8 +164,6 @@ export const SideBySide = ({
   mainDocUrl,
   docHeads,
   annotations,
-  selectedAnchors,
-  hoveredAnchor,
   setSelectedAnchors,
   setHoveredAnchor,
 }: SideBySideProps<unknown, unknown>) => {
@@ -196,8 +178,6 @@ export const SideBySide = ({
           annotations={[]}
           camera={camera}
           onChangeCamera={setCamera}
-          hoveredAnchor={hoveredAnchor as TLDrawDocAnchor}
-          selectedAnchors={selectedAnchors as TLDrawDocAnchor[]}
           setSelectedAnchors={setSelectedAnchors}
           setHoveredAnchor={setHoveredAnchor}
         />
@@ -212,8 +192,6 @@ export const SideBySide = ({
           }
           camera={camera}
           onChangeCamera={setCamera}
-          hoveredAnchor={hoveredAnchor as TLDrawDocAnchor}
-          selectedAnchors={selectedAnchors as TLDrawDocAnchor[]}
           setSelectedAnchors={setSelectedAnchors}
           setHoveredAnchor={setHoveredAnchor}
         />

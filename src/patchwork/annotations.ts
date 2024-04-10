@@ -43,7 +43,6 @@ export function useAnnotations({
   annotations: AnnotationWithState<unknown, unknown>[];
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
-  hoveredAnchor: unknown;
   setHoveredAnchor: (anchor: unknown) => void;
   setSelectedAnchors: (anchors: unknown[]) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
@@ -52,14 +51,26 @@ export function useAnnotations({
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
 
-  const setHoveredAnchor = (anchor: unknown) => {
+  const setHoveredAnchor = useStaticCallback((anchor: unknown) => {
+    // ingore set if it doesn't change the current state
+    // the document editor might call setHoveredAnchors multiple times, even if it hasn't changed
+    if (
+      hoveredState?.type === "anchor" &&
+      isEqual(hoveredState.anchor, anchor)
+    ) {
+      return;
+    }
+
     setHoveredState({ type: "anchor", anchor });
-  };
+  });
 
   const setSelectedAnchors = useStaticCallback((anchors: unknown[]) => {
+    // ingore set if it doesn't change the current state
+    // the document editor might call setSelectedAnchors multiple times, even if it hasn't changed
     if (
-      selectedState?.type === "anchors" &&
-      isEqual(selectedState.anchors, anchors)
+      (!selectedState && anchors.length === 0) ||
+      (selectedState?.type === "anchors" &&
+        isEqual(selectedState.anchors, anchors))
     ) {
       return;
     }
@@ -297,7 +308,7 @@ export function useAnnotations({
     () =>
       annotations.map((annotation) => ({
         ...annotation,
-        isFocused: focusedAnchors.has(annotation.target),
+        hasSpotlight: focusedAnchors.has(annotation.target),
       })),
     [annotations, focusedAnchors]
   );
@@ -327,8 +338,6 @@ export function useAnnotations({
     annotationGroups: annotationGroupsWithState,
     selectedAnchors:
       selectedState?.type === "anchors" ? selectedState.anchors : [],
-    hoveredAnchor:
-      hoveredState?.type === "anchor" ? hoveredState.anchor : undefined,
     setHoveredAnchor,
     setSelectedAnchors,
     setHoveredAnnotationGroupId,
@@ -343,7 +352,7 @@ export const doAnchorsOverlap = (
   doc: HasPatchworkMetadata<unknown, unknown>
 ) => {
   const comperator = docTypes[type].doAnchorsOverlap;
-  return comperator ? comperator(a, b, doc) : isEqual(a, b);
+  return comperator ? comperator(doc, a, b) : isEqual(a, b);
 };
 
 export const areAnchorSelectionsEqual = (

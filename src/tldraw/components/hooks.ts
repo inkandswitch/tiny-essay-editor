@@ -120,13 +120,13 @@ export const useDiffStyling = ({
               }
 
               const dropShadowFilter = `drop-shadow(0 0 ${
-                annotation.isFocused ? "0.25rem" : "0.75rem"
+                annotation.hasSpotlight ? "0.25rem" : "0.75rem"
               } ${annotation.type === "highlighted" ? "yellow" : "green"})`;
 
               // drop shadow has no spread option, to intesify it when annotation is focused we apply it twice
               shapeElem.style.filter =
                 dropShadowFilter +
-                (annotation.isFocused ? ` ${dropShadowFilter}` : "");
+                (annotation.hasSpotlight ? ` ${dropShadowFilter}` : "");
             }
             break;
 
@@ -170,43 +170,21 @@ export const useDiffStyling = ({
 };
 export const useAnchorEventListener = ({
   editor,
-  selectedAnchors,
-  hoveredAnchor,
   setSelectedAnchors,
   setHoveredAnchor,
 }: {
   editor: Editor;
-  selectedAnchors: TLDrawDocAnchor[];
   setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
-  hoveredAnchor: TLDrawDocAnchor;
   setHoveredAnchor: (anchors: TLDrawDocAnchor) => void;
 }) => {
-  const selectedAnchorsRef = useRef<TLDrawDocAnchor[]>();
-  selectedAnchorsRef.current = selectedAnchors;
-
-  const hoveredAnchorRef = useRef<TLDrawDocAnchor>();
-  hoveredAnchorRef.current = hoveredAnchor;
-
   useEffect(() => {
     if (!editor) {
       return;
     }
 
     const onChange = () => {
-      if (editor.hoveredShapeId !== hoveredAnchorRef.current) {
-        setHoveredAnchor(editor.hoveredShapeId);
-      }
-
-      if (
-        !areAnchorSelectionsEqual(
-          "tldraw",
-          editor?.selectedShapeIds,
-          selectedAnchorsRef.current,
-          null
-        )
-      ) {
-        setSelectedAnchors(editor.selectedShapeIds);
-      }
+      setHoveredAnchor(editor.hoveredShapeId);
+      setSelectedAnchors(editor.selectedShapeIds);
     };
 
     editor.on("change", onChange);

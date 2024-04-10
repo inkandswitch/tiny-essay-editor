@@ -114,7 +114,7 @@ export const annotationDecorations = EditorView.decorations.compute(
 
       switch (annotation.type) {
         case "added": {
-          const decoration = annotation.isFocused
+          const decoration = annotation.hasSpotlight
             ? spliceDecorationActive
             : spliceDecoration;
           return [decoration.range(fromPos, toPos)];
@@ -123,25 +123,26 @@ export const annotationDecorations = EditorView.decorations.compute(
           return [
             makeDeleteDecoration(
               annotation.deleted,
-              annotation.isFocused
+              annotation.hasSpotlight
             ).range(fromPos),
           ];
         }
 
         case "changed": {
-          const decoration = annotation.isFocused
+          const decoration = annotation.hasSpotlight
             ? spliceDecorationActive
             : spliceDecoration;
           return [
             decoration.range(fromPos, toPos),
-            makeDeleteDecoration(annotation.before, annotation.isFocused).range(
-              toPos
-            ),
+            makeDeleteDecoration(
+              annotation.before,
+              annotation.hasSpotlight
+            ).range(toPos),
           ];
         }
 
         case "highlighted": {
-          const decoration = annotation.isFocused
+          const decoration = annotation.hasSpotlight
             ? highlightDecorationActive
             : highlightDecoration;
           return [decoration.range(fromPos, toPos)];

@@ -200,10 +200,17 @@ export const patchesToAnnotations = (
   return annotations;
 };
 
+const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
+  const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
+  const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+  return doc.content.slice(from, to);
+};
+
 const doAnchorsOverlap = (
+  doc: MarkdownDoc,
   anchor1: MarkdownDocAnchor,
-  anchor2: MarkdownDocAnchor,
-  doc: MarkdownDoc
+  anchor2: MarkdownDocAnchor
 ) => {
   const from1 = getCursorPositionSafely(doc, ["content"], anchor1.fromCursor);
   const to1 = getCursorPositionSafely(doc, ["content"], anchor1.toCursor);
@@ -228,6 +235,7 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   includePatchInChangeGroup,
   promptForAIChangeGroupSummary,
   patchesToAnnotations,
+  valueOfAnchor,
   doAnchorsOverlap,
   sortAnchorsBy,
 };
