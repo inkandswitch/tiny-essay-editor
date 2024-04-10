@@ -18,7 +18,7 @@ import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
   annotationDecorations,
   annotationsField,
-} from "../codemirrorPlugins/annotations";
+} from "../codemirrorPlugins/annotationDecorations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";

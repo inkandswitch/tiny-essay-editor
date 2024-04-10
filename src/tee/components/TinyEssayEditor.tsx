@@ -101,7 +101,7 @@ export const TinyEssayEditor = (
               diffStyle="normal"
               handle={handle}
               path={["content"]}
-              setSelectedAnchors={setSelectedAnchors}
+              setSelectedAnchors={setSelectedAnchors ?? (() => {})}
               setView={setEditorView}
               annotations={resolvedAnnotations}
               readOnly={readOnly ?? false}

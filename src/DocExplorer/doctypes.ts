@@ -160,6 +160,6 @@ export interface DocEditorProps<T, V> {
   annotations?: AnnotationWithState<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
-  setSelectedAnchors: (anchors: T[]) => void;
-  setHoveredAnchor: (anchors: T) => void;
+  setSelectedAnchors?: (anchors: T[]) => void;
+  setHoveredAnchor?: (anchors: T) => void;
 }

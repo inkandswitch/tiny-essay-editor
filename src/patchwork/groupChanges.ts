@@ -89,7 +89,7 @@ export type HeadsMarker<T> = {
       source: Branchable["branchMetadata"]["source"];
       branch: Branch;
     }
-  | { type: "discussionThread"; discussion: Discussion<unknown, unknown> }
+  | { type: "discussionThread"; discussion: Discussion<unknown> }
 );
 
 // All ChangelogItems have a unique id, a heads, and some users asociated.
