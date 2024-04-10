@@ -1,4 +1,4 @@
-import { Annotation, AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithState } from "@/patchwork/schema";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { TLDrawDoc } from "../schema";
@@ -33,8 +33,8 @@ export const TLDrawAnnotations = ({
     if (!editor) {
       return;
     }
-    const shapeIds = annotations.map((a) => a.target);
-    editor.panZoomIntoView(shapeIds, { duration: 50 });
+    const shapeIds = annotations.flatMap((a) => a.target);
+    editor.panZoomIntoView(shapeIds, { duration: 100 });
   }, [editor, annotations]);
 
   return (
@@ -44,7 +44,7 @@ export const TLDrawAnnotations = ({
         store={store}
         onMount={(editor) => {
           setEditor(editor);
-          editor.updateInstanceState({ isReadonly: true });
+          editor.updateInstanceState({ isReadonly: true, isFocused: false });
         }}
       />
       <div className="absolute top-0 left-0 bottom-0 right-0 z-[999]"></div>

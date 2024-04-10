@@ -65,6 +65,7 @@ export const ReviewSidebar = React.memo(
 
     const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
       useMemo(() => {
+        if (!doc) return [];
         const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
         return selectedAnchors.map((anchor) => ({
           type: "highlighted",
@@ -226,14 +227,21 @@ export const ReviewSidebar = React.memo(
           })}
         </div>
         <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-4 border-t border-gray-300">
-          {isCommentInputFocused && (
+          {/* We only want to show the AnnotationsView when the comment input is focused.
+              But we can't let it mount/unmount because then some viewers (eg TLDraw will steal
+              focus from the comment input. So instead we leave it in the UI tree, but hidden */}
+          <div
+            className={`${
+              isCommentInputFocused ? "opacity-100" : "h-0 overflow-hidden"
+            }`}
+          >
             <AnnotationsView
               doc={doc}
               handle={handle}
               docType={docType}
               annotations={pendingAnnotationsForComment}
             />
-          )}
+          </div>
 
           <Textarea
             value={pendingCommentText}
