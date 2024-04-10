@@ -21,6 +21,7 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   GitMergeIcon,
+  HistoryIcon,
   Link,
   MergeIcon,
   MessageSquareIcon,
@@ -79,7 +80,7 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
-type ReviewMode = "comments" | "timeline";
+type SidebarMode = "comments" | "timeline";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const PatchworkDocEditor: React.FC<{
@@ -112,15 +113,14 @@ export const PatchworkDocEditor: React.FC<{
     }
   }, [JSON.stringify(selectedBranch)]);
 
-  const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isHistorySidebarOpen) {
+    if (!isSidebarOpen) {
       setDiffFromHistorySidebar(undefined);
       setDocHeadsFromHistorySidebar(undefined);
     }
-  }, [isHistorySidebarOpen]);
+  }, [isSidebarOpen]);
   const [diffFromHistorySidebar, setDiffFromHistorySidebar] =
     useState<DiffWithProvenance>();
   const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
@@ -306,7 +306,7 @@ export const PatchworkDocEditor: React.FC<{
     diff: diffForEditor,
   });
 
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("timeline");
 
   const [
     annotationsPositionsInSidebarMap,
@@ -502,13 +502,11 @@ export const PatchworkDocEditor: React.FC<{
             )}
           </div>
 
-          {!isHistorySidebarOpen && (
-            <div
-              className={` ml-auto ${isHistorySidebarOpen ? "mr-96" : "mr-4"}`}
-            >
+          {!isSidebarOpen && (
+            <div className={` ml-auto ${isSidebarOpen ? "mr-96" : "mr-4"}`}>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   variant="outline"
                   className="h-8 text-x"
                 >
@@ -564,29 +562,35 @@ export const PatchworkDocEditor: React.FC<{
         </div>
       </div>
 
-      {isHistorySidebarOpen && (
+      {isSidebarOpen && (
         <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
           <div
             className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-            onClick={() => setIsHistorySidebarOpen(false)}
+            onClick={() => setIsSidebarOpen(false)}
           >
             <ChevronsRight size={16} />
           </div>
 
           <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
             <Tabs
-              value={reviewMode}
-              onValueChange={(value) => setReviewMode(value as ReviewMode)}
+              value={sidebarMode}
+              onValueChange={(value) => setSidebarMode(value as SidebarMode)}
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="comments">Review</TabsTrigger>
+                <TabsTrigger value="timeline">
+                  <HistoryIcon size={16} className="mr-2" />
+                  Timeline
+                </TabsTrigger>
+                <TabsTrigger value="comments">
+                  <MessageSquareIcon size={16} className="mr-2" />
+                  Review ({annotationGroups.length})
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
           <div className="min-h-0 flex-grow w-96">
-            {reviewMode === "timeline" && (
+            {sidebarMode === "timeline" && (
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranchLink?.url ?? mainDocUrl}
@@ -598,7 +602,7 @@ export const PatchworkDocEditor: React.FC<{
                 setSelectedBranch={setSelectedBranch}
               />
             )}
-            {reviewMode === "comments" && (
+            {sidebarMode === "comments" && (
               <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
