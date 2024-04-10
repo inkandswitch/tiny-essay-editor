@@ -61,12 +61,14 @@ export const ReviewSidebar = React.memo(
     const account = useCurrentAccount();
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
 
+    const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
+
     const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
       useMemo(() => {
         const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
         return selectedAnchors.map((anchor) => ({
           type: "highlighted",
-          target: [anchor],
+          target: [anchor] as unknown as T, // todo: investigate if this typecast is wrong
           value: valueOfAnchor(doc, anchor),
         }));
       }, [selectedAnchors, doc, docType]);
@@ -223,13 +225,15 @@ export const ReviewSidebar = React.memo(
             );
           })}
         </div>
-        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-3 border-t border-gray-300">
-          <AnnotationsView
-            doc={doc}
-            handle={handle}
-            docType={docType}
-            annotations={pendingAnnotationsForComment}
-          />
+        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-4 border-t border-gray-300">
+          {isCommentInputFocused && (
+            <AnnotationsView
+              doc={doc}
+              handle={handle}
+              docType={docType}
+              annotations={pendingAnnotationsForComment}
+            />
+          )}
 
           <Textarea
             value={pendingCommentText}
@@ -241,6 +245,8 @@ export const ReviewSidebar = React.memo(
               }
               event.stopPropagation();
             }}
+            onFocus={() => setIsCommentInputFocused(true)}
+            onBlur={() => setIsCommentInputFocused(false)}
           />
 
           <Button
@@ -493,8 +499,8 @@ const AnnotationGroupView = forwardRef<
 
 const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
   return (
-    <div>
-      <div className="flex items-center justify-between p-1.5 text-sm">
+    <div className="p-1.5">
+      <div className="flex items-center justify-between text-sm">
         <div className="">
           <ContactAvatar url={comment.contactUrl} showName={true} size="sm" />
         </div>
@@ -504,7 +510,7 @@ const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
         </div>
       </div>
 
-      <div className="p-1.5">
+      <div className="text-sm">
         <p>{comment.content}</p>
       </div>
     </div>
