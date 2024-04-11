@@ -14,7 +14,12 @@ import {
   slashCommands,
 } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { Branchable, DiscussionComment, Taggable } from "@/patchwork/schema";
+import {
+  Branchable,
+  DiscussionComment,
+  Taggable,
+  UnknownPatchworkDoc,
+} from "@/patchwork/schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,9 +67,7 @@ type DiscussionInputProps<T> = {
   changelogItems: ChangelogItem<T>[];
   changelogSelection: ChangelogSelection;
 };
-export const DiscussionInput = function <
-  T extends HasPatchworkMetadata<unknown, unknown>
->({
+export const DiscussionInput = function <T extends UnknownPatchworkDoc>({
   doc,
   changeDoc,
   handle,

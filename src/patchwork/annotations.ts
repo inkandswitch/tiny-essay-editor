@@ -4,23 +4,27 @@ import { isEqual, sortBy, min } from "lodash";
 import { useStaticCallback } from "@/tee/utils";
 import { DocType, docTypes } from "@/DocExplorer/doctypes";
 import {
+  Anchor,
   Annotation,
   HighlightAnnotation,
   AnnotationGroup,
   AnnotationGroupWithState,
   AnnotationWithState,
   DiffWithProvenance,
+  UnknownAnnotationGroup,
+  UnknownAnnotationGroupWithState,
 } from "./schema";
-import { HasPatchworkMetadata } from "./schema";
+import { HasPatchworkMetadata, UnknownPatchworkDoc } from "./schema";
+import { ChangeSelector } from "./changeSelectors";
 
-type HoverAnchorState<T> = {
+type HoverAnchorState<D, A extends Anchor<D, V>, V> = {
   type: "anchor";
-  anchor: T;
+  anchor: A;
 };
 
-type SelectedAnchorsState<T> = {
+type SelectedAnchorsState<D, A extends Anchor<D, V>, V> = {
   type: "anchors";
-  anchors: T[];
+  anchors: A[];
 };
 
 type ActiveGroupState = {
@@ -28,57 +32,67 @@ type ActiveGroupState = {
   id: string;
 };
 
-type SelectionState<T> = SelectedAnchorsState<T> | ActiveGroupState;
-type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
+type SelectionState<D, A extends Anchor<D, V>, V> =
+  | SelectedAnchorsState<D, A, V>
+  | ActiveGroupState;
+type HoverState<D, A extends Anchor<D, V>, V> =
+  | HoverAnchorState<D, A, V>
+  | ActiveGroupState;
 
 export function useAnnotations({
   doc,
   docType,
   diff,
 }: {
-  doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
+  doc: UnknownPatchworkDoc;
   docType: DocType;
   diff?: DiffWithProvenance;
 }): {
   annotations: AnnotationWithState<unknown, unknown>[];
-  annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
+  annotationGroups: UnknownAnnotationGroup[];
   selectedAnchors: unknown[];
   setHoveredAnchor: (anchor: unknown) => void;
   setSelectedAnchors: (anchors: unknown[]) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
 } {
-  const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
-  const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
+  const [hoveredState, setHoveredState] =
+    useState<HoverState<unknown, Anchor<unknown, unknown>, unknown>>();
+  const [selectedState, setSelectedState] =
+    useState<SelectionState<unknown, Anchor<unknown, unknown>, unknown>>();
 
-  const setHoveredAnchor = useStaticCallback((anchor: unknown) => {
-    // ingore set if it doesn't change the current state
-    // the document editor might call setHoveredAnchors multiple times, even if it hasn't changed
-    if (
-      hoveredState?.type === "anchor" &&
-      isEqual(hoveredState.anchor, anchor)
-    ) {
-      return;
+  const setHoveredAnchor = useStaticCallback(
+    (anchor: Anchor<unknown, unknown>) => {
+      // ingore set if it doesn't change the current state
+      // the document editor might call setHoveredAnchors multiple times, even if it hasn't changed
+      if (
+        hoveredState?.type === "anchor" &&
+        isEqual(hoveredState.anchor, anchor)
+      ) {
+        return;
+      }
+
+      setHoveredState({ type: "anchor", anchor });
     }
+  );
 
-    setHoveredState({ type: "anchor", anchor });
-  });
+  const setSelectedAnchors = useStaticCallback(
+    (anchors: Anchor<unknown, unknown>[]) => {
+      // ingore set if it doesn't change the current state
+      // the document editor might call setSelectedAnchors multiple times, even if it hasn't changed
+      if (
+        (!selectedState && anchors.length === 0) ||
+        (selectedState?.type === "anchors" &&
+          isEqual(selectedState.anchors, anchors))
+      ) {
+        return;
+      }
 
-  const setSelectedAnchors = useStaticCallback((anchors: unknown[]) => {
-    // ingore set if it doesn't change the current state
-    // the document editor might call setSelectedAnchors multiple times, even if it hasn't changed
-    if (
-      (!selectedState && anchors.length === 0) ||
-      (selectedState?.type === "anchors" &&
-        isEqual(selectedState.anchors, anchors))
-    ) {
-      return;
+      setSelectedState(
+        anchors.length > 0 ? { type: "anchors", anchors } : undefined
+      );
     }
-
-    setSelectedState(
-      anchors.length > 0 ? { type: "anchors", anchors } : undefined
-    );
-  });
+  );
 
   const setSelectedAnnotationGroupId = useStaticCallback((id: string) => {
     setSelectedState({ type: "annotationGroup", id });
@@ -96,30 +110,34 @@ export function useAnnotations({
   );
 
   const { annotations, annotationGroups } = useMemo(() => {
-    if (!doc) {
+    // todo: investigate why docTypes[docType] is Record<string, any>
+    const changeSelector: ChangeSelector<
+      unknown,
+      Anchor<unknown, unknown>,
+      unknown
+    > = docTypes[docType].changeSelector;
+
+    if (!doc || !changeSelector) {
       return { annotations: [], annotationGroups: [] };
     }
 
-    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
-    const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
-    const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
+    const discussionGroups: UnknownAnnotationGroup[] = [];
     const highlightAnnotations: HighlightAnnotation<unknown, unknown>[] = [];
 
-    const editAnnotations =
-      patchesToAnnotations && diff
-        ? patchesToAnnotations(
-            doc,
-            A.view(doc, diff.fromHeads),
-            diff.patches as A.Patch[]
-          )
-        : [];
+    const editAnnotations = changeSelector.patchesToAnnotations(
+      doc,
+      A.view(doc, diff.fromHeads),
+      diff.patches as A.Patch[]
+    );
 
     // remember which annotations are part of a discussion
     const claimedAnnotations = new Set<Annotation<unknown, unknown>>();
 
     discussions.forEach((discussion) => {
+      const discussionAnchors = discussion.anchors ?? [];
+
       if (discussion.resolved) {
         return;
       }
@@ -128,15 +146,25 @@ export function useAnnotations({
       const discussionHighlightAnnotations: HighlightAnnotation<
         unknown,
         unknown
-      >[] = (discussion.target ?? []).flatMap((anchor) => {
-        const value = valueOfAnchor(doc, anchor);
+      >[] = discussionAnchors.flatMap((anchorJson) => {
+        const anchor = changeSelector.anchorFromJson(anchorJson);
+
+        if (!anchor) {
+          console.warn("invalid anchor", anchor);
+          return [];
+        }
+
+        const value = anchor.resolve(doc);
+        if (value === undefined) {
+          return [];
+        }
 
         return value !== undefined
           ? [
               {
                 type: "highlighted",
-                target: anchor,
-                value,
+                anchor,
+                value: anchor.resolve(doc),
               },
             ]
           : [];
@@ -154,8 +182,8 @@ export function useAnnotations({
 
       editAnnotations.forEach((editAnnotation) => {
         if (
-          discussion.target.some((anchor) =>
-            doAnchorsOverlap(docType, editAnnotation.target, anchor, doc)
+          discussionAnchors.some((anchor) =>
+            editAnnotation.anchor.doesOverlap(anchor, doc)
           )
         ) {
           claimedAnnotations.add(editAnnotation);
@@ -171,31 +199,25 @@ export function useAnnotations({
       });
     });
 
-    const computedAnnotationGroups: AnnotationGroup<unknown, unknown>[] =
-      groupAnnotations(
-        docType,
-        editAnnotations.filter(
-          (annotation) => !claimedAnnotations.has(annotation)
-        )
-      ).map((annotations) => ({ annotations }));
+    const computedAnnotationGroups: UnknownAnnotationGroup[] = groupAnnotations(
+      editAnnotations.filter(
+        (annotation) => !claimedAnnotations.has(annotation)
+      )
+    ).map((annotations) => ({ annotations }));
 
     const combinedAnnotationGroups = discussionGroups.concat(
       computedAnnotationGroups
     );
 
-    const sortAnchorsBy = docTypes[docType].sortAnchorsBy;
-
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
-      annotationGroups: sortAnchorsBy
-        ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
-            min(
-              annotationGroup.annotations.map((annotation) =>
-                sortAnchorsBy(doc, annotation.target)
-              )
-            )
+      annotationGroups: sortBy(combinedAnnotationGroups, (annotationGroup) =>
+        min(
+          annotationGroup.annotations.map((annotation) =>
+            annotation.anchor.sortValue()
           )
-        : combinedAnnotationGroups,
+        )
+      ),
     };
   }, [doc, discussions, diff]);
 
@@ -204,7 +226,7 @@ export function useAnnotations({
     focusedAnnotationGroupIds,
     expandedAnnotationGroupId,
   } = useMemo(() => {
-    const focusedAnchors = new Set<unknown>();
+    const focusedAnchors = new Set<Anchor<unknown, unknown>>();
     const focusedAnnotationGroupIds = new Set<string>();
     let expandedAnnotationGroupId: string;
 
@@ -215,19 +237,14 @@ export function useAnnotations({
 
         // first annotationGroup that contains all selected anchors is expanded
         const annotationGroup = annotationGroups.find((group) =>
-          doesAnnotationGroupContainAnchors(
-            docType,
-            group,
-            selectedState.anchors,
-            doc
-          )
+          doesAnnotationGroupContainAnchors(group, selectedState.anchors, doc)
         );
         if (annotationGroup) {
           expandedAnnotationGroupId = getAnnotationGroupId(annotationGroup);
 
           // ... the anchors in that group are focused as well
           annotationGroup.annotations.map((annotation) =>
-            focusedAnchors.add(annotation.target)
+            focusedAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -244,7 +261,7 @@ export function useAnnotations({
 
           // focus all anchors in the annotation group
           annotationGroup.annotations.forEach((annotation) =>
-            focusedAnchors.add(annotation.target)
+            focusedAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -260,7 +277,6 @@ export function useAnnotations({
         annotationGroups.forEach((group) => {
           if (
             !doesAnnotationGroupContainAnchors(
-              docType,
               group,
               [hoveredState.anchor],
               doc
@@ -273,7 +289,7 @@ export function useAnnotations({
 
           // ... the anchors in that group are focused as well
           group.annotations.map((annotation) =>
-            focusedAnchors.add(annotation.target)
+            focusedAnchors.add(annotation.anchor)
           );
         });
         break;
@@ -290,7 +306,7 @@ export function useAnnotations({
 
           // focus all anchors in the annotation groupd
           annotationGroup.annotations.forEach((annotation) =>
-            focusedAnchors.add(annotation.target)
+            focusedAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -308,15 +324,12 @@ export function useAnnotations({
     () =>
       annotations.map((annotation) => ({
         ...annotation,
-        hasSpotlight: focusedAnchors.has(annotation.target),
+        hasSpotlight: focusedAnchors.has(annotation.anchor),
       })),
     [annotations, focusedAnchors]
   );
 
-  const annotationGroupsWithState: AnnotationGroupWithState<
-    unknown,
-    unknown
-  >[] = useMemo(
+  const annotationGroupsWithState: UnknownAnnotationGroupWithState[] = useMemo(
     () =>
       annotationGroups.map((annotationGroup) => {
         const id = getAnnotationGroupId(annotationGroup);
@@ -345,33 +358,8 @@ export function useAnnotations({
   };
 }
 
-export const doAnchorsOverlap = (
-  type: DocType,
-  a: unknown,
-  b: unknown,
-  doc: HasPatchworkMetadata<unknown, unknown>
-) => {
-  const comperator = docTypes[type].doAnchorsOverlap;
-  return comperator ? comperator(doc, a, b) : isEqual(a, b);
-};
-
-export const areAnchorSelectionsEqual = (
-  type: DocType,
-  a: unknown[],
-  b: unknown[],
-  doc: HasPatchworkMetadata<unknown, unknown>
-) => {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  return a.every((anchor) =>
-    b.some((other) => doAnchorsOverlap(type, anchor, other, doc))
-  );
-};
-
-export function getAnnotationGroupId<T, V>(
-  annotationGroup: AnnotationGroup<T, V>
+export function getAnnotationGroupId<D, A extends Anchor<D, V>, V>(
+  annotationGroup: AnnotationGroup<D, A, V>
 ) {
   if (annotationGroup.discussion) return annotationGroup.discussion.id;
 
@@ -379,30 +367,24 @@ export function getAnnotationGroupId<T, V>(
   // which means that the annotation doesn't appear in any other annotationGroup
   // so we can just pick the first annotation to generate a unique id
   const firstAnnotation = annotationGroup.annotations[0];
-  return `${firstAnnotation.type}:${JSON.stringify(firstAnnotation.target)}`;
+  return JSON.stringify(firstAnnotation.anchor.toJson());
 }
 
-export function doesAnnotationGroupContainAnchors<T, V>(
-  docType: DocType,
-  group: AnnotationGroup<T, V>,
-  anchors: T[],
-  doc: HasPatchworkMetadata<T, V>
+export function doesAnnotationGroupContainAnchors<D, A extends Anchor<D, V>, V>(
+  group: AnnotationGroup<D, A, V>,
+  anchors: A[],
+  doc: D
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>
-      doAnchorsOverlap(docType, annotation.target, anchor, doc)
+      anchor.doesOverlap(annotation.anchor, doc)
     )
   );
 }
 
-export function groupAnnotations<T, V>(
-  docType: DocType,
-  annotations: Annotation<T, V>[]
-): Annotation<T, V>[][] {
-  const grouper =
-    docTypes[docType].groupAnnotations ??
-    ((annotations: Annotation<T, V>[]) =>
-      annotations.map((annotation) => [annotation]));
-
-  return grouper(annotations) as Annotation<T, V>[][];
+export function groupAnnotations<D, V>(
+  annotations: Annotation<D, V>[]
+): Annotation<D, V>[][] {
+  // todo: support custom groupings
+  return annotations.map((annotation) => [annotation]);
 }

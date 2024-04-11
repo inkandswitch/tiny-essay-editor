@@ -35,16 +35,14 @@ type ReviewSidebarProps<T> = {
   docType: string;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
-  changeDoc: (
-    changeFn: (doc: HasPatchworkMetadata<unknown, unknown>) => void
-  ) => void;
+  changeDoc: (changeFn: (doc: UnknownPatchworkDoc) => void) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
 };
 
 export const ReviewSidebar = React.memo(
-  <T extends HasPatchworkMetadata<unknown, unknown>>({
+  <T extends UnknownPatchworkDoc>({
     doc,
     handle,
     docType,

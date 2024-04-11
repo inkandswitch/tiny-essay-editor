@@ -82,27 +82,18 @@ export type DiscussionComment = {
 
 // Right now discussions are both used in the timeline and for comments on the document
 // We should split this up and use separate concepts
-export type Discussion<T> = {
+export type Discussion<D, A extends Anchor<D, V>, V> = {
   id: string;
   heads: A.Heads;
   resolved: boolean;
   comments: DiscussionComment[];
 
   // optionally a list of doc anchors that this discussion refers to
-  target?: T[];
+  anchors?: A[];
 };
 
-export type AnnotationGroup<T, V> = {
-  annotations: Annotation<T, V>[];
-  discussion?: Discussion<T>;
-};
-
-export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {
-  state: "focused" | "expanded" | "neutral";
-};
-
-export type Discussable<T> = {
-  discussions: { [key: string]: Discussion<T> };
+export type Discussable<D, A extends Anchor<D, V>, V> = {
+  discussions: { [key: string]: Discussion<D, A, V> };
 };
 
 export type HasChangeGroupSummaries = {
@@ -113,54 +104,91 @@ export type HasChangeGroupSummaries = {
   };
 };
 
-export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
+export type HasPatchworkMetadata<
+  D,
+  A extends Anchor<D, V>,
+  V
+> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable<T>;
+  Discussable<D, A, V>;
+
+export type UnknownPatchworkDoc = A.Doc<
+  HasPatchworkMetadata<unknown, Anchor<unknown, unknown>, unknown>
+>;
 
 export type AnnotationId = string & { __annotationId: true };
 
-interface AddAnnotation<T, V> {
+export abstract class Anchor<D, V> {
+  abstract resolve(doc: D): V | undefined;
+
+  abstract toJson(): any;
+
+  abstract doesOverlap(anchor: Anchor<D, V>, doc: D): boolean;
+
+  abstract sortValue(): string | number;
+}
+
+interface AddAnnotation<D, V> {
   type: "added";
-  target: T;
+  anchor: Anchor<D, V>;
   added: V;
 }
 
-interface DeleteAnnotation<T, V> {
+interface DeleteAnnotation<D, V> {
   type: "deleted";
-  target: T;
+  anchor: Anchor<D, V>;
   deleted: V;
 }
 
-interface ChangeAnnotation<T, V> {
+interface ChangeAnnotation<D, V> {
   type: "changed";
-  target: T;
+  anchor: Anchor<D, V>;
   before: V;
   after: V;
 }
 
-export interface HighlightAnnotation<T, V> {
+export interface HighlightAnnotation<D, V> {
   type: "highlighted";
-  target: T;
+  anchor: Anchor<D, V>;
   value: V;
 }
 
-export type Annotation<T, V> =
-  | AddAnnotation<T, V>
-  | DeleteAnnotation<T, V>
-  | ChangeAnnotation<T, V>
-  | HighlightAnnotation<T, V>;
+export type Annotation<D, V> =
+  | AddAnnotation<D, V>
+  | DeleteAnnotation<D, V>
+  | ChangeAnnotation<D, V>
+  | HighlightAnnotation<D, V>;
 
-export type AnnotationWithState<T, V> = Annotation<T, V> & {
+export type AnnotationWithState<D, V> = Annotation<D, V> & {
   hasSpotlight: boolean;
 };
 
-export interface AnnotationPosition<T, V> {
-  x: number;
-  y: number;
-  annotation: Annotation<T, V>;
-}
+export type AnnotationGroup<D, A extends Anchor<D, V>, V> = {
+  annotations: Annotation<D, V>[];
+  discussion?: Discussion<D, A, V>;
+};
+
+export type UnknownAnnotationGroup = AnnotationGroup<
+  unknown,
+  Anchor<unknown, unknown>,
+  unknown
+>;
+
+export type AnnotationGroupWithState<
+  D,
+  A extends Anchor<D, V>,
+  V
+> = AnnotationGroup<D, A, V> & {
+  state: "focused" | "expanded" | "neutral";
+};
+
+export type UnknownAnnotationGroupWithState = AnnotationGroupWithState<
+  unknown,
+  Anchor<unknown, unknown>,
+  unknown
+>;
 
 export const initPatchworkMetadata = (doc: any) => {
   doc.branchMetadata = {

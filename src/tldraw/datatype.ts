@@ -98,7 +98,8 @@ export const patchesToAnnotations = (
   docBefore: TLDrawDoc,
   patches: A.Patch[]
 ) => {
-  return patches.flatMap((patch) => {
+  return [];
+  /*  return patches.flatMap((patch) => {
     if (patch.path.length !== 2 || patch.path[0] !== "store") {
       return [];
     }
@@ -128,7 +129,7 @@ export const patchesToAnnotations = (
     }
 
     return [];
-  });
+  }); */
 };
 
 export const valueOfAnchor = (doc: TLDrawDoc, anchor: TLShapeId): TLShape => {
@@ -278,7 +279,7 @@ const valueOfAnnotation = (annotation: Annotation<TLShapeId, TLShape>) => {
   }
 };
 
-export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
+export const TLDrawDatatype: DataType<TLDrawDoc, never, TLShape> = {
   id: "tldraw",
   name: "Drawing",
   icon: PenLine,
@@ -288,8 +289,4 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   includePatchInChangeGroup,
   includeChangeInHistory,
   promptForAIChangeGroupSummary,
-  patchesToAnnotations,
-  valueOfAnchor,
-  sortAnchorsBy,
-  groupAnnotations,
 };

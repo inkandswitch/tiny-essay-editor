@@ -3,6 +3,7 @@ import {
   DiffWithProvenance,
   HasPatchworkMetadata,
   AnnotationWithState,
+  UnknownPatchworkDoc,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -88,9 +89,8 @@ export const PatchworkDocEditor: React.FC<{
   setSelectedBranch: (branch: SelectedBranch) => void;
 }> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
-  const [doc, changeDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
-  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+  const [doc, changeDoc] = useDocument<UnknownPatchworkDoc>(mainDocUrl);
+  const handle = useHandle<UnknownPatchworkDoc>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
 
@@ -220,10 +220,8 @@ export const PatchworkDocEditor: React.FC<{
 
   const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
-      const branchHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(branchUrl);
-      const docHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+      const branchHandle = repo.find<UnknownPatchworkDoc>(branchUrl);
+      const docHandle = repo.find<UnknownPatchworkDoc>(mainDocUrl);
       mergeBranch({
         docHandle,
         branchHandle,
@@ -236,10 +234,8 @@ export const PatchworkDocEditor: React.FC<{
   );
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
-    const draftHandle =
-      repo.find<HasPatchworkMetadata<unknown, unknown>>(draftUrl);
-    const docHandle =
-      repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+    const draftHandle = repo.find<UnknownPatchworkDoc>(draftUrl);
+    const docHandle = repo.find<UnknownPatchworkDoc>(mainDocUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
@@ -250,8 +246,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const renameBranch = useCallback(
     (draftUrl: AutomergeUrl, newName: string) => {
-      const docHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+      const docHandle = repo.find<UnknownPatchworkDoc>(mainDocUrl);
       docHandle.change((doc) => {
         const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
@@ -268,9 +263,8 @@ export const PatchworkDocEditor: React.FC<{
   const selectedBranchUrl =
     selectedBranch.type === "branch" ? selectedBranch.url : undefined;
   const [branchDoc, changeBranchDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
-  const branchHandle =
-    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
+    useDocument<UnknownPatchworkDoc>(selectedBranchUrl);
+  const branchHandle = useHandle<UnknownPatchworkDoc>(selectedBranchUrl);
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -698,8 +692,8 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
 };
 
 const BranchActions: React.FC<{
-  doc: HasPatchworkMetadata<unknown, unknown>;
-  branchDoc: HasPatchworkMetadata<unknown, unknown>;
+  doc: UnknownPatchworkDoc;
+  branchDoc: UnknownPatchworkDoc;
   branchUrl: AutomergeUrl;
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;

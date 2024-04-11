@@ -9,7 +9,7 @@ import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
-import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
+import { Anchor, Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { pick } from "lodash";
 
@@ -224,7 +224,7 @@ const sortAnchorsBy = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   return getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
 };
 
-export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
+export const EssayDatatype: DataType<MarkdownDoc, never, string> = {
   id: "essay",
   name: "Essay",
   icon: Text,
@@ -234,8 +234,4 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   includeChangeInHistory,
   includePatchInChangeGroup,
   promptForAIChangeGroupSummary,
-  patchesToAnnotations,
-  valueOfAnchor,
-  doAnchorsOverlap,
-  sortAnchorsBy,
 };

@@ -22,7 +22,7 @@ import { Toaster } from "@/components/ui/sonner";
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
 import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasPatchworkMetadata, UnknownPatchworkDoc } from "@/patchwork/schema";
 import { useStaticCallback } from "@/tee/utils";
 
 export const DocExplorer: React.FC = () => {
@@ -63,7 +63,7 @@ export const DocExplorer: React.FC = () => {
 
       const newDocHandle = repo.create();
       newDocHandle.change((doc) =>
-        docTypes[type].init(doc as HasPatchworkMetadata<unknown, unknown>, repo)
+        docTypes[type].init(doc as UnknownPatchworkDoc, repo)
       );
 
       if (!rootFolderDoc) {
@@ -315,8 +315,7 @@ const useSelectedDoc = ({ rootFolderDoc, changeRootFolderDoc }) => {
     window.handle = selectedDocHandle;
   }, [selectedDocHandle]);
 
-  const [selectedDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+  const [selectedDoc] = useDocument<UnknownPatchworkDoc>(selectedDocUrl);
 
   const selectDoc = useCallback(
     (docUrl: AutomergeUrl | null, branch?: SelectedBranch) => {

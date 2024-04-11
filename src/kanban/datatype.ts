@@ -55,7 +55,9 @@ const patchesToAnnotations = (
   docBefore: KanbanBoardDoc,
   patches: A.Patch[]
 ) => {
-  return patches.flatMap(
+  return [];
+
+  /*  return patches.flatMap(
     (patch): Annotation<KanbanBoardDocAnchor, undefined>[] => {
       // GL 3/15/24 This is a weird hack to detect newly added lanes.
       // When we set the ID on a lane that means we're creating it.
@@ -95,7 +97,7 @@ const patchesToAnnotations = (
         return [];
       }
     }
-  );
+  ); */
 };
 
 const fallbackSummaryForChangeGroup = (
@@ -234,11 +236,7 @@ const actions = {
   },
 };
 
-export const KanbanBoardDatatype: DataType<
-  KanbanBoardDoc,
-  KanbanBoardDocAnchor,
-  undefined
-> = {
+export const KanbanBoardDatatype: DataType<KanbanBoardDoc, never, undefined> = {
   id: "kanban",
   name: "Kanban Board",
   icon: KanbanSquare,
@@ -247,5 +245,4 @@ export const KanbanBoardDatatype: DataType<
   markCopy,
   fallbackSummaryForChangeGroup,
   actions,
-  patchesToAnnotations,
 };

@@ -9,7 +9,6 @@ import {
   TLStoreWithStatus,
 } from "@tldraw/tldraw";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
-import { areAnchorSelectionsEqual } from "@/patchwork/annotations";
 
 export const useCameraSync = ({
   camera: camera,

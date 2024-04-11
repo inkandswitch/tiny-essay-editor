@@ -8,7 +8,7 @@ import {
   getChangelogItems,
   getMarkersForDoc,
 } from "./groupChanges";
-import { HasPatchworkMetadata } from "./schema";
+import { HasPatchworkMetadata, UnknownPatchworkDoc } from "./schema";
 import { next as A } from "@automerge/automerge";
 import { debounce, isEqual } from "lodash";
 
@@ -20,9 +20,7 @@ const GROUPER_DEBOUNCE_MS = 1000;
  * the main purpose of this stateful class is to improve performance
  * by maintaining a cache of decoded changes and by debouncing updates.
  */
-export class ChangeGrouper<
-  D extends HasPatchworkMetadata<unknown, unknown>
-> extends EventEmitter {
+export class ChangeGrouper<D extends UnknownPatchworkDoc> extends EventEmitter {
   private handle: DocHandle<D>;
   private repo: Repo;
   private groupingOptions: Omit<ChangeGroupingOptions<D>, "markers">;

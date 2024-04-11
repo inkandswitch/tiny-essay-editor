@@ -42,7 +42,7 @@ import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 import { runBot } from "@/bots/essayEditorBot";
 import { Button } from "@/components/ui/button";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasPatchworkMetadata, UnknownPatchworkDoc } from "@/patchwork/schema";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
@@ -67,8 +67,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   );
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
-  const selectedDocHandle =
-    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+  const selectedDocHandle = useHandle<UnknownPatchworkDoc>(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
   const [selectedDoc] = useDocument(selectedDocUrl);
@@ -216,9 +215,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             <DropdownMenuItem
               onClick={async () => {
                 const newHandle =
-                  repo.clone<HasPatchworkMetadata<unknown, unknown>>(
-                    selectedDocHandle
-                  );
+                  repo.clone<UnknownPatchworkDoc>(selectedDocHandle);
                 newHandle.change((doc: any) => {
                   docTypes[selectedDocType].markCopy(doc);
                   doc.branchMetadata.source = {

@@ -104,7 +104,7 @@ const patchesToAnnotations = (
   docBefore: DataGridDoc,
   patches: A.Patch[]
 ) => {
-  return patches.flatMap((patch): Annotation<DataGridDocAnchor, string>[] => {
+  /* return patches.flatMap((patch): Annotation<DataGridDocAnchor, string>[] => {
     const handledPatchActions = ["splice"];
     if (patch.path[0] !== "data" || !handledPatchActions.includes(patch.action))
       return [];
@@ -130,14 +130,10 @@ const patchesToAnnotations = (
       default:
         throw new Error("invalid patch");
     }
-  });
+  }); */
 };
 
-export const DataGridDatatype: DataType<
-  DataGridDoc,
-  DataGridDocAnchor,
-  string
-> = {
+export const DataGridDatatype: DataType<DataGridDoc, never, string> = {
   id: "datagrid",
   name: "Spreadsheet",
   icon: Sheet,
@@ -147,8 +143,6 @@ export const DataGridDatatype: DataType<
 
   includeChangeInHistory,
   includePatchInChangeGroup,
-
-  patchesToAnnotations,
 
   promptForAIChangeGroupSummary,
 };

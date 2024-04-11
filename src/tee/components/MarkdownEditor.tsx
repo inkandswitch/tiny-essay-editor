@@ -59,7 +59,7 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { AnnotationPosition, AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithState } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 
 export type TextSelection = {

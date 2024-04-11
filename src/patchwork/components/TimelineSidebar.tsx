@@ -79,15 +79,10 @@ type ChangelogSelectionAnchor = {
 /** A React hook that returns the changelog items for a handle */
 const useChangelogItems = (
   handle,
-  options: Omit<
-    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
-    "markers"
-  >
+  options: Omit<ChangeGroupingOptions<UnknownPatchworkDoc>, "markers">
 ) => {
   const repo = useRepo();
-  const [items, setItems] = useState<
-    ChangelogItem<HasPatchworkMetadata<unknown, unknown>>[]
-  >([]);
+  const [items, setItems] = useState<ChangelogItem<UnknownPatchworkDoc>[]>([]);
   useEffect(() => {
     const grouper = new ChangeGrouper(handle, repo, options);
     if (grouper.items) {
@@ -126,12 +121,11 @@ export const TimelineSidebar: React.FC<{
   setDocHeads,
   setDiff,
 }) => {
-  const [doc, changeDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(docUrl);
-  const [mainDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
+  const [doc, changeDoc] = useDocument<UnknownPatchworkDoc>(docUrl);
+  const [mainDoc] = useDocument<UnknownPatchworkDoc>(
     doc?.branchMetadata?.source?.url
   );
-  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(docUrl);
+  const handle = useHandle<UnknownPatchworkDoc>(docUrl);
   const repo = useRepo();
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
@@ -145,10 +139,7 @@ export const TimelineSidebar: React.FC<{
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
-    Omit<
-      ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
-      "markers"
-    >
+    Omit<ChangeGroupingOptions<UnknownPatchworkDoc>, "markers">
   >(() => {
     return {
       grouping: ByAuthorOrTime(60),
@@ -621,7 +612,7 @@ const useChangelogSelection = function <T>({
 
 const ChangeGroupItem: React.FC<{
   group: GenericChangeGroup;
-  doc: HasPatchworkMetadata<unknown, unknown>;
+  doc: UnknownPatchworkDoc;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (
