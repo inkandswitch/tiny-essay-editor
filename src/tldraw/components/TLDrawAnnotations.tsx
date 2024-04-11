@@ -22,7 +22,7 @@ export const TLDrawAnnotations = ({
     () =>
       annotations.map((a) => ({
         ...a,
-        isFocused: false,
+        isEmphasized: false,
       })),
     [annotations]
   );

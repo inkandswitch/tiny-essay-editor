@@ -151,7 +151,7 @@ const ReadOnlyTLDraw = ({
       autoFocus
       onMount={(editor) => {
         setEditor(editor);
-        editor.updateInstanceState({ isReadonly: true });
+        editor.updateInstanceState({ isReadonly: true, isFocused: false });
       }}
     />
   );

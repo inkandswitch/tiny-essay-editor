@@ -9,8 +9,6 @@ import {
   TLStoreWithStatus,
 } from "@tldraw/tldraw";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
-import { areAnchorSelectionsEqual } from "@/patchwork/annotations";
-import { Annotation } from "@uiw/react-codemirror";
 
 export const useCameraSync = ({
   camera: camera,
