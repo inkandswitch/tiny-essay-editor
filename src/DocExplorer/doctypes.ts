@@ -87,8 +87,11 @@ export type PatchworkDataType<D, T, V> = {
   groupAnnotations?: (annotations: Annotation<T, V>[]) => Annotation<T, V>[][];
 
   /* Resolves to the value the anchor is pointing to in a document.
-   * If the anchor cannot be resolved return undefined */
-  valueOfAnchor: (doc: D, anchor: T) => V | undefined;
+   * If the anchor cannot be resolved return undefined.
+   * If not defined, annotations in the review sidebar won't include the
+   * contents of the annotated data.
+   */
+  valueOfAnchor?: (doc: D, anchor: T) => V | undefined;
 
   /* Checks if two anchors overlap. This is used to associate edit annotations with
    * discussions. A discussion grabs any annotations that overlap with the anchors
