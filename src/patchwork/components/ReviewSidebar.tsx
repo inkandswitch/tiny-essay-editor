@@ -59,9 +59,7 @@ export const ReviewSidebar = React.memo(
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
-    const [scrollOffset, setScrollOffset] = useState(0);
     const account = useCurrentAccount();
-    const [scrollContainer, setScrollContainer] = useState<HTMLDivElement>();
 
     const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
 
@@ -172,13 +170,7 @@ export const ReviewSidebar = React.memo(
 
     return (
       <div className="h-full flex flex-col">
-        <div
-          ref={setScrollContainer}
-          onScroll={(evt) =>
-            setScrollOffset((evt.target as HTMLDivElement).scrollTop)
-          }
-          className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible"
-        >
+        <div className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible">
           {annotationGroups.map((annotationGroup, index) => {
             const id = getAnnotationGroupId(annotationGroup);
             return (
@@ -389,6 +381,20 @@ const AnnotationGroupView = forwardRef<
       };
     }, [isExpanded, onSelectNext, onSelectPrev]);
 
+    // Scroll this annotation group into view when it's expanded.
+    // This handles two distinct interactions:
+    // 1) when the annotation group is selected from within a doc editor,
+    //    the sidebar scrolls to make it visible
+    // 2) When the user selects an annotation group within the sidebar,
+    //    this ensures that the entire annotation group is made visible.
+    //    If it's already fully visible nothing happens; but if it's only
+    //    partially visible then this makes it fully visible.
+    useEffect(() => {
+      if (isExpanded) {
+        localRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }, [isExpanded]);
+
     return (
       <div
         onClick={(event) => event.stopPropagation()}
@@ -556,66 +562,11 @@ const AnnotationsView = <T, V>({
   // - allow switching between different viewers?
   const Viewer = annotationViewersForDocType[docType]?.[0];
   if (!Viewer) {
-    return null;
+    return (
+      <div className="text-gray-500 text-xs italic">
+        No view available for this edit
+      </div>
+    );
   }
   return <Viewer doc={doc} handle={handle} annotations={annotations} />;
-};
-
-export type PositionMap = Record<string, { top: number; bottom: number }>;
-
-export const useSetScrollTarget = (
-  positionMap: PositionMap,
-  scrollContainer: HTMLDivElement
-) => {
-  const targetIdRef = useRef<string>();
-
-  const triggerScrollPositionUpdate = useStaticCallback(() => {
-    const maxScrollPos =
-      scrollContainer.scrollHeight - scrollContainer.clientHeight;
-    const targetPos = positionMap[targetIdRef.current]?.top;
-
-    // abort, if target no longer exists
-    if (targetPos === undefined) {
-      return;
-    }
-
-    const scrollToPos = Math.min(maxScrollPos, targetPos);
-
-    // hack: for some reason the scrolling get's stuck when it's close to the target but not quite
-    // haven't figured out yet why this is happening
-    if (Math.abs(scrollContainer.scrollTop - scrollToPos) < 5) {
-      scrollContainer.scrollTo({
-        top: scrollToPos,
-        behavior: "instant",
-      });
-      targetIdRef.current = undefined;
-      return;
-    }
-
-    // incrementally converge towards scrollToPos
-    const nextPosition = (scrollContainer.scrollTop * 9 + scrollToPos) / 10;
-
-    scrollContainer.scrollTo({
-      top: nextPosition,
-      behavior: "instant",
-    });
-
-    requestAnimationFrame(triggerScrollPositionUpdate);
-  });
-
-  useEffect(() => {
-    if (scrollContainer && targetIdRef.current !== undefined) {
-      triggerScrollPositionUpdate();
-    }
-  }, [scrollContainer, triggerScrollPositionUpdate]);
-
-  return (discussionId: string) => {
-    const prevTarget = targetIdRef.current;
-
-    targetIdRef.current = discussionId;
-
-    if (!prevTarget && scrollContainer) {
-      triggerScrollPositionUpdate();
-    }
-  };
 };
