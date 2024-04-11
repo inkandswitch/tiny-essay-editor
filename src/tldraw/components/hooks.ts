@@ -10,6 +10,7 @@ import {
 } from "@tldraw/tldraw";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
 import { areAnchorSelectionsEqual } from "@/patchwork/annotations";
+import { Annotation } from "@uiw/react-codemirror";
 
 export const useCameraSync = ({
   camera: camera,
@@ -101,6 +102,8 @@ export const useDiffStyling = ({
       const activeTempShapeIds = new Set<TLShapeId>();
       const container = editor.getContainer();
 
+      const addedShapeIds = new Set<TLShapeId>();
+
       annotations.forEach((annotation) => {
         switch (annotation.type) {
           case "highlighted":
@@ -125,12 +128,16 @@ export const useDiffStyling = ({
 
               let highlightColor;
               if (annotation.type === "highlighted") {
-                if (annotation.hasSpotlight) {
-                  highlightColor = "rgb(255 228 74)";
-                } else {
-                  highlightColor = "rgb(255 246 0)";
+                // don't override shapes that have styling from an "added" annotation
+                if (!addedShapeIds.has(annotation.target)) {
+                  if (annotation.hasSpotlight) {
+                    highlightColor = "rgb(255 228 74)";
+                  } else {
+                    highlightColor = "rgb(255 246 0)";
+                  }
                 }
               } else {
+                addedShapeIds.add(annotation.target);
                 highlightColor = "green";
               }
 
