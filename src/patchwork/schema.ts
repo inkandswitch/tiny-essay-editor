@@ -152,8 +152,15 @@ export type Annotation<T, V> =
   | ChangeAnnotation<T, V>
   | HighlightAnnotation<T, V>;
 
-export type AnnotationWithState<T, V> = Annotation<T, V> & {
-  hasSpotlight: boolean;
+export type AnnotationWithUIState<T, V> = Annotation<T, V> & {
+  /** Whether the annotation should be visually emphasized in the UI (eg, with darker coloring).
+   *  This is used to indicate hovered/selected annotations within the UI.
+   */
+  isEmphasized: boolean;
+
+  /** Whether the annotation should be scrolled into view in the UI.
+   */
+  shouldBeVisibleInViewport: boolean;
 };
 
 export interface AnnotationPosition<T, V> {

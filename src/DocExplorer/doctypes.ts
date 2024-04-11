@@ -9,7 +9,10 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
-import { AnnotationWithState, HasPatchworkMetadata } from "@/patchwork/schema";
+import {
+  AnnotationWithUIState,
+  HasPatchworkMetadata,
+} from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { Annotation } from "@/patchwork/schema";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
@@ -157,7 +160,7 @@ export interface DocEditorProps<T, V> {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];
-  annotations?: AnnotationWithState<T, V>[];
+  annotations?: AnnotationWithUIState<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
   setSelectedAnchors?: (anchors: T[]) => void;

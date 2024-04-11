@@ -1,4 +1,4 @@
-import { AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { TLDrawDoc } from "../schema";
@@ -13,7 +13,7 @@ export const TLDrawAnnotations = ({
 }: {
   doc: TLDrawDoc;
   handle: DocHandle<TLDrawDoc>;
-  annotations: AnnotationWithState<TLShapeId, TLShape>[];
+  annotations: AnnotationWithUIState<TLShapeId, TLShape>[];
 }) => {
   const store = useAutomergeStore({ handle, doc, userId: "test-user" });
   const [editor, setEditor] = useState<Editor>();

@@ -1,6 +1,6 @@
 import { isEqual } from "lodash";
 import { useEffect, useRef, useState } from "react";
-import { AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import {
   Editor,
   TLCamera,
@@ -54,7 +54,7 @@ export const useDiffStyling = ({
   editor,
 }: {
   doc: TLDrawDoc;
-  annotations: AnnotationWithState<TLDrawDocAnchor, TLShape>[];
+  annotations: AnnotationWithUIState<TLDrawDocAnchor, TLShape>[];
   store: TLStoreWithStatus;
   editor: Editor;
 }) => {
@@ -130,7 +130,7 @@ export const useDiffStyling = ({
               if (annotation.type === "highlighted") {
                 // don't override shapes that have styling from an "added" annotation
                 if (!addedShapeIds.has(annotation.target)) {
-                  if (annotation.hasSpotlight) {
+                  if (annotation.isEmphasized) {
                     highlightColor = "rgb(255 228 74)";
                   } else {
                     highlightColor = "rgb(255 246 0)";
@@ -142,13 +142,13 @@ export const useDiffStyling = ({
               }
 
               const dropShadowFilter = `drop-shadow(0 0 ${
-                annotation.hasSpotlight ? "0.25rem" : "0.75rem"
+                annotation.isEmphasized ? "0.25rem" : "0.75rem"
               } ${highlightColor})`;
 
               // drop shadow has no spread option, to intesify it when annotation is focused we apply it twice
               shapeElem.style.filter =
                 dropShadowFilter +
-                (annotation.hasSpotlight ? ` ${dropShadowFilter}` : "");
+                (annotation.isEmphasized ? ` ${dropShadowFilter}` : "");
             }
             break;
 

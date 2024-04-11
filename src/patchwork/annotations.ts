@@ -8,7 +8,7 @@ import {
   HighlightAnnotation,
   AnnotationGroup,
   AnnotationGroupWithState,
-  AnnotationWithState,
+  AnnotationWithUIState,
   DiffWithProvenance,
 } from "./schema";
 import { HasPatchworkMetadata } from "./schema";
@@ -40,11 +40,12 @@ export function useAnnotations({
   docType: DocType;
   diff?: DiffWithProvenance;
 }): {
-  annotations: AnnotationWithState<unknown, unknown>[];
+  annotations: AnnotationWithUIState<unknown, unknown>[];
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
   setHoveredAnchor: (anchor: unknown) => void;
   setSelectedAnchors: (anchors: unknown[]) => void;
+  hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
 } {
@@ -90,6 +91,12 @@ export function useAnnotations({
     );
   });
 
+  const hoveredAnnotationGroupId = useMemo(
+    () =>
+      hoveredState?.type === "annotationGroup" ? hoveredState.id : undefined,
+    [hoveredState]
+  );
+
   const discussions = useMemo(
     () => (doc?.discussions ? Object.values(doc.discussions) : []),
     [doc]
@@ -124,7 +131,7 @@ export function useAnnotations({
         return;
       }
 
-      // turn anchors of discussion into hightlight annotations
+      // turn anchors of discussion into highlight annotations
       const discussionHighlightAnnotations: HighlightAnnotation<
         unknown,
         unknown
@@ -200,18 +207,21 @@ export function useAnnotations({
   }, [doc, discussions, diff]);
 
   const {
-    focusedAnchors,
-    focusedAnnotationGroupIds,
+    selectedAnchors,
+    hoveredAnchors,
+    selectedAnnotationGroupIds,
     expandedAnnotationGroupId,
   } = useMemo(() => {
-    const focusedAnchors = new Set<unknown>();
-    const focusedAnnotationGroupIds = new Set<string>();
+    const selectedAnchors = new Set<unknown>();
+    const hoveredAnchors = new Set<unknown>();
+    const selectedAnnotationGroupIds = new Set<string>();
     let expandedAnnotationGroupId: string;
 
+    // Record selection state for anchors and annotation groups
     switch (selectedState?.type) {
       case "anchors": {
         // focus selected anchors
-        selectedState.anchors.forEach((anchor) => focusedAnchors.add(anchor));
+        selectedState.anchors.forEach((anchor) => selectedAnchors.add(anchor));
 
         // first annotationGroup that contains all selected anchors is expanded
         const annotationGroup = annotationGroups.find((group) =>
@@ -227,7 +237,7 @@ export function useAnnotations({
 
           // ... the anchors in that group are focused as well
           annotationGroup.annotations.map((annotation) =>
-            focusedAnchors.add(annotation.target)
+            selectedAnchors.add(annotation.target)
           );
         }
         break;
@@ -244,38 +254,18 @@ export function useAnnotations({
 
           // focus all anchors in the annotation group
           annotationGroup.annotations.forEach((annotation) =>
-            focusedAnchors.add(annotation.target)
+            selectedAnchors.add(annotation.target)
           );
         }
         break;
       }
     }
 
+    // Record hovered state for anchors
     switch (hoveredState?.type) {
       case "anchor": {
         // focus hovered anchor
-        focusedAnchors.add(hoveredState.anchor);
-
-        // all annotationGroup that contain hovered anchors are focused
-        annotationGroups.forEach((group) => {
-          if (
-            !doesAnnotationGroupContainAnchors(
-              docType,
-              group,
-              [hoveredState.anchor],
-              doc
-            )
-          ) {
-            return;
-          }
-
-          focusedAnnotationGroupIds.add(getAnnotationGroupId(group));
-
-          // ... the anchors in that group are focused as well
-          group.annotations.map((annotation) =>
-            focusedAnchors.add(annotation.target)
-          );
-        });
+        hoveredAnchors.add(hoveredState.anchor);
         break;
       }
 
@@ -285,12 +275,9 @@ export function useAnnotations({
         );
 
         if (annotationGroup) {
-          // focus hovered annotation group
-          focusedAnnotationGroupIds.add(hoveredState.id);
-
           // focus all anchors in the annotation groupd
           annotationGroup.annotations.forEach((annotation) =>
-            focusedAnchors.add(annotation.target)
+            hoveredAnchors.add(annotation.target)
           );
         }
         break;
@@ -298,20 +285,30 @@ export function useAnnotations({
     }
 
     return {
-      focusedAnchors,
-      focusedAnnotationGroupIds,
+      selectedAnchors,
+      hoveredAnchors,
+      selectedAnnotationGroupIds,
       expandedAnnotationGroupId,
     };
   }, [hoveredState, selectedState, annotations, annotationGroups]);
 
-  const annotationsWithState: AnnotationWithState<unknown, unknown>[] = useMemo(
-    () =>
-      annotations.map((annotation) => ({
-        ...annotation,
-        hasSpotlight: focusedAnchors.has(annotation.target),
-      })),
-    [annotations, focusedAnchors]
-  );
+  const annotationsWithUIState: AnnotationWithUIState<unknown, unknown>[] =
+    useMemo(
+      (): AnnotationWithUIState<unknown, unknown>[] =>
+        annotations.map((annotation) => ({
+          ...annotation,
+          // Hovered or selected annotations should be highlighted in the main doc view.
+          // todo: In the future we might decide to allow views to distinguish between selected and hovered states,
+          // but for now we're keeping it simple and just exposing a single highlighted property.
+          isEmphasized:
+            selectedAnchors.has(annotation.target) ||
+            hoveredAnchors.has(annotation.target),
+
+          // Selected annotations should be scrolled into view
+          shouldBeVisibleInViewport: selectedAnchors.has(annotation.target),
+        })),
+      [annotations, selectedAnchors]
+    );
 
   const annotationGroupsWithState: AnnotationGroupWithState<
     unknown,
@@ -325,21 +322,22 @@ export function useAnnotations({
           state:
             expandedAnnotationGroupId === id
               ? "expanded"
-              : focusedAnnotationGroupIds.has(id)
+              : selectedAnnotationGroupIds.has(id)
               ? "focused"
               : "neutral",
         };
       }),
-    [annotationGroups, expandedAnnotationGroupId, focusedAnnotationGroupIds]
+    [annotationGroups, expandedAnnotationGroupId, selectedAnnotationGroupIds]
   );
 
   return {
-    annotations: annotationsWithState,
+    annotations: annotationsWithUIState,
     annotationGroups: annotationGroupsWithState,
     selectedAnchors:
       selectedState?.type === "anchors" ? selectedState.anchors : [],
     setHoveredAnchor,
     setSelectedAnchors,
+    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
   };

@@ -19,7 +19,7 @@ import { ReviewStateFilter } from "../utils";
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Patch, view } from "@automerge/automerge/next";
 import { isEqual, uniq } from "lodash";
@@ -54,7 +54,7 @@ export const TinyEssayEditor = (
   }, [actorIdToAuthor]);
 
   const resolvedAnnotations = useMemo<
-    AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
+    AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
   >(() => {
     return annotations.flatMap((annotation) => {
       const { fromCursor, toCursor } = annotation.target;
@@ -79,7 +79,7 @@ export const TinyEssayEditor = (
 
   return (
     <div
-      className="h-full overflow-auto min-h-0 w-full"
+      className="h-full overflow-auto min-h-0 w-full scroll-smooth"
       ref={setEditorContainer}
     >
       <div className="@container flex bg-gray-100 justify-center">

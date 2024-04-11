@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -59,7 +59,7 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { AnnotationPosition, AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationPosition, AnnotationWithUIState } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 
 export type TextSelection = {
@@ -79,7 +79,7 @@ export type EditorProps = {
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  annotations?: AnnotationWithState<ResolvedMarkdownDocAnchor, string>[];
+  annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
@@ -130,44 +130,9 @@ export function MarkdownEditor({
     });
   }, [annotations, editorRoot.current]);
 
-  const selectedAnnotations = useMemo(
-    () => annotations.filter((annotation) => annotation.hasSpotlight),
-    [annotations]
-  );
+  useScrollAnnotationsIntoView(annotations, editorRoot);
 
-  // Scroll to focused anchor if it's not highlighted
-  useEffect(() => {
-    const editor = editorRoot?.current;
-
-    // only change scroll position if editor is not focused
-    if (!editor || editor.hasFocus || selectedAnnotations.length === 0) {
-      return;
-    }
-
-    let from = selectedAnnotations[0].target.fromPos;
-    let to = selectedAnnotations[0].target.toPos;
-
-    for (let i = 1; i < selectedAnnotations.length; i++) {
-      const annotation = selectedAnnotations[i];
-
-      if (annotation.target.fromPos < from) {
-        from = annotation.target.fromPos;
-      }
-
-      if (annotation.target.toPos > to) {
-        to = annotation.target.toPos;
-      }
-    }
-
-    editor.dispatch({
-      effects: EditorView.scrollIntoView(from, {
-        y: "center",
-      }),
-    });
-
-    editorRoot.current;
-  }, [selectedAnnotations]);
-
+  // This big useEffect sets up the editor view
   useEffect(() => {
     if (!handleReady || !editorContainer) {
       return;
@@ -356,3 +321,52 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+// Scroll annotations into view when needed
+const useScrollAnnotationsIntoView = (
+  annotations: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[],
+  editorRoot: RefObject<EditorView>
+) => {
+  const annotationsToScrollIntoView = useMemo(
+    () =>
+      annotations.filter((annotation) => annotation.shouldBeVisibleInViewport),
+    [annotations]
+  );
+
+  useEffect(() => {
+    const editor = editorRoot?.current;
+
+    // only change scroll position if editor is not focused
+    if (
+      !editor ||
+      editor.hasFocus ||
+      annotationsToScrollIntoView.length === 0
+    ) {
+      return;
+    }
+
+    let from = annotationsToScrollIntoView[0].target.fromPos;
+    let to = annotationsToScrollIntoView[0].target.toPos;
+
+    for (let i = 1; i < annotationsToScrollIntoView.length; i++) {
+      const annotation = annotationsToScrollIntoView[i];
+
+      if (annotation.target.fromPos < from) {
+        from = annotation.target.fromPos;
+      }
+
+      if (annotation.target.toPos > to) {
+        to = annotation.target.toPos;
+      }
+    }
+
+    editor.dispatch({
+      effects: EditorView.scrollIntoView(from, {
+        y: "nearest",
+        yMargin: 100,
+      }),
+    });
+
+    editorRoot.current;
+  }, [annotationsToScrollIntoView, editorRoot]);
+};

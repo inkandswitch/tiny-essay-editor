@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
-import { AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";
 import { Editor, TLCamera, TLShape, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
@@ -31,8 +31,6 @@ export const TLDraw = ({
   const handle = useHandle<TLDrawDoc>(docUrl);
   const account = useCurrentAccount();
   const userId = account ? account.contactHandle.url : "no-account";
-
-  console.log("editable", { annotations });
 
   const [doc] = useDocument<TLDrawDoc>(docUrl);
   const docAtHeads = useMemo(
@@ -87,7 +85,7 @@ interface TlDrawProps {
   doc: TLDrawDoc;
   handle: DocHandle<TLDrawDoc>;
   userId: string;
-  annotations?: AnnotationWithState<TLDrawDocAnchor, TLShape>[];
+  annotations?: AnnotationWithUIState<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
   setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
@@ -188,7 +186,7 @@ export const SideBySide = ({
           docHeads={docHeads}
           key={mainDocUrl}
           annotations={
-            annotations as AnnotationWithState<TLDrawDocAnchor, TLShape>[]
+            annotations as AnnotationWithUIState<TLDrawDocAnchor, TLShape>[]
           }
           camera={camera}
           onChangeCamera={setCamera}

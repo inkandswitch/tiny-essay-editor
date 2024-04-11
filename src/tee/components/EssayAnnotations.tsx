@@ -8,7 +8,7 @@ export const EssayAnnotations = ({
   annotations: Annotation<MarkdownDocAnchor, string>[];
 }) => {
   return (
-    <div className="px-2 py-1 border border-gray-200 rounded-sm">
+    <div className="px-2 bg-white rounded-sm">
       {annotations.map((annotation) => {
         switch (annotation.type) {
           case "added":

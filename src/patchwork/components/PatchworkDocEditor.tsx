@@ -2,7 +2,7 @@ import { DocType, editorsForDocType } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
   HasPatchworkMetadata,
-  AnnotationWithState,
+  AnnotationWithUIState,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -296,6 +296,7 @@ export const PatchworkDocEditor: React.FC<{
     selectedAnchors,
     setHoveredAnchor,
     setSelectedAnchors,
+    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
   } = useAnnotations({
@@ -508,7 +509,7 @@ export const PatchworkDocEditor: React.FC<{
                   variant="outline"
                   className={`h-8 text-x ${
                     annotations.filter(
-                      (a) => a.type === "highlighted" && a.hasSpotlight
+                      (a) => a.type === "highlighted" && a.isEmphasized
                     ).length > 0
                       ? "bg-yellow-200 hover:bg-yellow-400"
                       : ""
@@ -620,6 +621,7 @@ export const PatchworkDocEditor: React.FC<{
                     setAnnotationsPositionsInSidebarMap(positions);
                   }
                 }}
+                hoveredAnnotationGroupId={hoveredAnnotationGroupId}
                 setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                 setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               />
@@ -654,7 +656,7 @@ const DocEditor = <T, V>({
       docHeads={docHeads}
       docType={docType}
       annotations={
-        annotations as AnnotationWithState<MarkdownDocAnchor, string>[]
+        annotations as AnnotationWithUIState<MarkdownDocAnchor, string>[]
       }
       actorIdToAuthor={actorIdToAuthor}
       setSelectedAnchors={setSelectedAnchors}

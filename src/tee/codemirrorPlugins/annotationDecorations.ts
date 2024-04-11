@@ -1,15 +1,15 @@
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 
-import { AnnotationWithState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import { ResolvedMarkdownDocAnchor } from "../schema";
 
 export const setAnnotationsEffect =
   StateEffect.define<
-    AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
+    AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
   >();
 export const annotationsField = StateField.define<
-  AnnotationWithState<ResolvedMarkdownDocAnchor, string>[]
+  AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
 >({
   create() {
     return [];
@@ -114,7 +114,7 @@ export const annotationDecorations = EditorView.decorations.compute(
 
       switch (annotation.type) {
         case "added": {
-          const decoration = annotation.hasSpotlight
+          const decoration = annotation.isEmphasized
             ? spliceDecorationActive
             : spliceDecoration;
           return [decoration.range(fromPos, toPos)];
@@ -123,26 +123,26 @@ export const annotationDecorations = EditorView.decorations.compute(
           return [
             makeDeleteDecoration(
               annotation.deleted,
-              annotation.hasSpotlight
+              annotation.isEmphasized
             ).range(fromPos),
           ];
         }
 
         case "changed": {
-          const decoration = annotation.hasSpotlight
+          const decoration = annotation.isEmphasized
             ? spliceDecorationActive
             : spliceDecoration;
           return [
             decoration.range(fromPos, toPos),
             makeDeleteDecoration(
               annotation.before,
-              annotation.hasSpotlight
+              annotation.isEmphasized
             ).range(toPos),
           ];
         }
 
         case "highlighted": {
-          const decoration = annotation.hasSpotlight
+          const decoration = annotation.isEmphasized
             ? highlightDecorationActive
             : highlightDecoration;
           return [decoration.range(fromPos, toPos)];

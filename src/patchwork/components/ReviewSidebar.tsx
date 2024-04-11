@@ -40,6 +40,7 @@ type ReviewSidebarProps<T> = {
   ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
+  hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
 };
 
@@ -52,6 +53,7 @@ export const ReviewSidebar = React.memo(
     selectedAnchors,
     changeDoc,
     setSelectedAnnotationGroupId,
+    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
   }: ReviewSidebarProps<T>) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -194,6 +196,7 @@ export const ReviewSidebar = React.memo(
                 onAddComment={(content) => {
                   addCommentToAnnotationGroup(annotationGroup, content);
                 }}
+                isHovered={hoveredAnnotationGroupId === id}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}
@@ -226,7 +229,7 @@ export const ReviewSidebar = React.memo(
             );
           })}
         </div>
-        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-4 border-t border-gray-300">
+        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-3 border-t border-gray-400 ">
           {/* We only want to show the AnnotationsView when the comment input is focused.
               But we can't let it mount/unmount because then some viewers (eg TLDraw will steal
               focus from the comment input. So instead we leave it in the UI tree, but hidden */}
@@ -283,6 +286,7 @@ export interface AnnotationGroupViewProps<T, V> {
   onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
+  isHovered: boolean;
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
 }
@@ -301,6 +305,7 @@ const AnnotationGroupView = forwardRef<
       setIsReplyBoxOpen,
       onResolveDiscussion,
       onAddComment: onReply,
+      isHovered,
       setIsHovered,
       setIsSelected,
       onSelectNext,
@@ -411,10 +416,12 @@ const AnnotationGroupView = forwardRef<
           className="flex flex-col gap-1"
         >
           <div
-            className={`flex flex-col gap-1 ${
+            className={`flex flex-col gap-1 bg-white rounded-sm p-2 border-2 ${
               isFocused
-                ? "bg-white rounded-sm p-2 border-2 border-blue-600 shadow-lg"
-                : "bg-white rounded-sm p-2 border border-gray-200 "
+                ? "border-blue-600 shadow-lg"
+                : isHovered
+                ? "border-blue-600 shadow-lg"
+                : "border border-gray-200 "
             }`}
           >
             <AnnotationsView
@@ -547,7 +554,7 @@ const AnnotationsView = <T, V>({
   // In the future, we might want to:
   // - use an annotations view that's similar to the viewer being used for the main doc
   // - allow switching between different viewers?
-  const Viewer = annotationViewersForDocType[docType][0];
+  const Viewer = annotationViewersForDocType[docType]?.[0];
   if (!Viewer) {
     return null;
   }
