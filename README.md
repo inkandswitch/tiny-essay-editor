@@ -27,43 +27,10 @@ Hopefully the code serves as a useful sample for building apps based on automerg
 
 ## Run it
 
-Setup the automerge-repo submodule
-
 ```
-git submodule init
-git submodule update --init --remote
-```
-
-Check out the `version-control-project` branch in the vendored automerge-repo. By default git checks out a detached HEAD so we need to manually switch to the branch.
-
-```
-cd src/vendor/vendored-automerge-repo
-git checkout chronicle
-```
-
-Install and build automerge-repo
-
-```
-pnpm install
-pnpm build
-```
-
-Install dependencies for tiny-essay-editor and start the dev server
-
-```
-cd ../../..
 yarn
 yarn dev
 ```
-
-To pull in subsequent updates for the submodule run:
-
-```
-git submodule update --remote --rebase
-```
-
-> --remote ensures we are getting the latest changes <br>
-> --rebase ensures that the changes are pulled into the checked out "version-control-branch" instead of checking out a detached HEAD
 
 ## Dual deployment
 
@@ -71,6 +38,3 @@ This app is designed for normal webapp deployment as well as experimental deploy
 
 - `src/main.tsx` is the normal app entry point
 - `src/index.ts` is an experimental entry point which just exports some functions to a host environment
-
-
-
