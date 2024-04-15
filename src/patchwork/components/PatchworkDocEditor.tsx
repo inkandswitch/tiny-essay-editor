@@ -118,6 +118,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
+  const [isBranchPickerOpen, setIsBranchPickerOpen] = useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
@@ -156,7 +157,7 @@ export const PatchworkDocEditor: React.FC<{
   }, [doc, sessionStartHeads]);
 
   const currentEditSessionDiff = useMemo(() => {
-    if (!doc || !sessionStartHeads) {
+    if (!doc || !sessionStartHeads || !isBranchPickerOpen) {
       return undefined;
     }
 
@@ -169,7 +170,7 @@ export const PatchworkDocEditor: React.FC<{
         diff.patches.filter((patch) => patch.path[0] === "content")
       ),
     };
-  }, [doc, sessionStartHeads]);
+  }, [doc, sessionStartHeads, isBranchPickerOpen]);
 
   const actorIdToAuthor = useActorIdToAuthorMap(mainDocUrl);
 
@@ -376,6 +377,7 @@ export const PatchworkDocEditor: React.FC<{
         <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
           <Select
             value={JSON.stringify(selectedBranch)}
+            onOpenChange={setIsBranchPickerOpen}
             onValueChange={(value) => {
               if (value === "__newDraft") {
                 handleCreateBranch();
