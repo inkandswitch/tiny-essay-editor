@@ -23,7 +23,7 @@ import {
   foldKeymap,
   indentUnit,
 } from "@codemirror/language";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
@@ -99,7 +99,7 @@ export function MarkdownEditor({
         dropCursor(),
         indentOnInput(),
         keymap.of([
-          ...defaultKeymap,
+          ...standardKeymap,
           ...searchKeymap,
           ...historyKeymap,
           ...foldKeymap,
