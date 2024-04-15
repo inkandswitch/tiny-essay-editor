@@ -29,9 +29,15 @@ getAccount(repo).then((account) => {
   });
 });
 
-/** monkey patch change and changeAt on doc handle
- *  always add currently logged in user as author and the current timestamp as metadata to each change
- *  todo: replace this with a proper meta data api
+/** Here we monkey patch the DocHandle to
+ *  always add the currently logged in user as author
+ *  and the current timestamp as metadata to each change.
+ *
+ *  Eventually, we would like to ship this functionality directly
+ *  inside automerge-repo, but that's currently blocked on having a
+ *  more efficient approach to storing change metadata in Automerge.
+ *
+ *  Once that's done we should remove this monkey patch.
  */
 const oldChange = DocHandle.prototype.change;
 DocHandle.prototype.change = function <T>(
