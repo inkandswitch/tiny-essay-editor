@@ -118,7 +118,6 @@ export const PatchworkDocEditor: React.FC<{
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
-  const [isBranchPickerOpen, setIsBranchPickerOpen] = useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
   const [compareWithMainFlag, setCompareWithMainFlag] =
     useState<boolean>(false);
@@ -157,7 +156,7 @@ export const PatchworkDocEditor: React.FC<{
   }, [doc, sessionStartHeads]);
 
   const currentEditSessionDiff = useMemo(() => {
-    if (!doc || !sessionStartHeads || !isBranchPickerOpen) {
+    if (!doc || !sessionStartHeads || !isHoveringYankToBranchOption) {
       return undefined;
     }
 
@@ -170,7 +169,7 @@ export const PatchworkDocEditor: React.FC<{
         diff.patches.filter((patch) => patch.path[0] === "content")
       ),
     };
-  }, [doc, sessionStartHeads, isBranchPickerOpen]);
+  }, [doc, sessionStartHeads, isHoveringYankToBranchOption]);
 
   const actorIdToAuthor = useActorIdToAuthorMap(mainDocUrl);
 
@@ -377,7 +376,6 @@ export const PatchworkDocEditor: React.FC<{
         <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
           <Select
             value={JSON.stringify(selectedBranch)}
-            onOpenChange={setIsBranchPickerOpen}
             onValueChange={(value) => {
               if (value === "__newDraft") {
                 handleCreateBranch();
@@ -468,23 +466,18 @@ export const PatchworkDocEditor: React.FC<{
                   <PlusIcon className="inline mr-1" size={12} />
                   Create new branch
                 </SelectItem>
-                {selectedBranch.type === "main" &&
-                  currentEditSessionDiff &&
-                  currentEditSessionDiff.patches.length > 0 && (
-                    <SelectItem
-                      value={"__moveChangesToBranch"}
-                      key={"__moveChangesToBranch"}
-                      className="font-regular"
-                      onMouseEnter={() => setIsHoveringYankToBranchOption(true)}
-                      onMouseLeave={() =>
-                        setIsHoveringYankToBranchOption(false)
-                      }
-                    >
-                      <SplitIcon className="inline mr-1" size={12} />
-                      Move my changes ({currentEditSessionDiff?.patches.length})
-                      to new Branch
-                    </SelectItem>
-                  )}
+                {selectedBranch.type === "main" && (
+                  <SelectItem
+                    value={"__moveChangesToBranch"}
+                    key={"__moveChangesToBranch"}
+                    className="font-regular"
+                    onMouseEnter={() => setIsHoveringYankToBranchOption(true)}
+                    onMouseLeave={() => setIsHoveringYankToBranchOption(false)}
+                  >
+                    <SplitIcon className="inline mr-1" size={12} />
+                    Move edits from this session to a new branch
+                  </SelectItem>
+                )}
               </SelectGroup>
             </SelectContent>
           </Select>
