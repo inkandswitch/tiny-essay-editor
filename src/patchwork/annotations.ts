@@ -238,7 +238,7 @@ export function useAnnotations({
           expandedAnnotationGroupId = getAnnotationGroupId(annotationGroup);
 
           // ... the anchors in that group are focused as well
-          annotationGroup.annotations.map((annotation) =>
+          annotationGroup.annotations.forEach((annotation) =>
             selectedAnchors.add(annotation.anchor)
           );
         }
@@ -268,6 +268,23 @@ export function useAnnotations({
       case "anchor": {
         // focus hovered anchor
         hoveredAnchors.add(hoveredState.anchor);
+
+        // find first discussion that contains the hovered anchor and hover all anchors that are part of that discussion as wellp
+        const annotationGroup = annotationGroups.find((group) =>
+          doesAnnotationGroupContainAnchors(
+            docType,
+            group,
+            [hoveredState.anchor],
+            doc
+          )
+        );
+
+        if (annotationGroup) {
+          annotationGroup.annotations.forEach(({ anchor }) =>
+            hoveredAnchors.add(anchor)
+          );
+        }
+
         break;
       }
 
