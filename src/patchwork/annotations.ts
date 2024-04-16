@@ -124,6 +124,7 @@ export function useAnnotations({
         : [];
 
     // remember which annotations are part of a discussion
+    // these annotations are filtered out and won't be passed to the annotation grouping function
     const claimedAnnotations = new Set<Annotation<unknown, unknown>>();
 
     discussions.forEach((discussion) => {
@@ -165,6 +166,7 @@ export function useAnnotations({
             doAnchorsOverlap(docType, editAnnotation.target, anchor, doc)
           )
         ) {
+          // mark any annotation that is part of a discussion as claimed
           claimedAnnotations.add(editAnnotation);
           overlappingAnnotations.push(editAnnotation);
         }
