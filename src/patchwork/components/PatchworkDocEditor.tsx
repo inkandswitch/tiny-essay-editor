@@ -156,7 +156,7 @@ export const PatchworkDocEditor: React.FC<{
   }, [doc, sessionStartHeads]);
 
   const currentEditSessionDiff = useMemo(() => {
-    if (!doc || !sessionStartHeads) {
+    if (!doc || !sessionStartHeads || !isHoveringYankToBranchOption) {
       return undefined;
     }
 
@@ -169,7 +169,7 @@ export const PatchworkDocEditor: React.FC<{
         diff.patches.filter((patch) => patch.path[0] === "content")
       ),
     };
-  }, [doc, sessionStartHeads]);
+  }, [doc, sessionStartHeads, isHoveringYankToBranchOption]);
 
   const actorIdToAuthor = useActorIdToAuthorMap(mainDocUrl);
 
@@ -466,23 +466,18 @@ export const PatchworkDocEditor: React.FC<{
                   <PlusIcon className="inline mr-1" size={12} />
                   Create new branch
                 </SelectItem>
-                {selectedBranch.type === "main" &&
-                  currentEditSessionDiff &&
-                  currentEditSessionDiff.patches.length > 0 && (
-                    <SelectItem
-                      value={"__moveChangesToBranch"}
-                      key={"__moveChangesToBranch"}
-                      className="font-regular"
-                      onMouseEnter={() => setIsHoveringYankToBranchOption(true)}
-                      onMouseLeave={() =>
-                        setIsHoveringYankToBranchOption(false)
-                      }
-                    >
-                      <SplitIcon className="inline mr-1" size={12} />
-                      Move my changes ({currentEditSessionDiff?.patches.length})
-                      to new Branch
-                    </SelectItem>
-                  )}
+                {selectedBranch.type === "main" && (
+                  <SelectItem
+                    value={"__moveChangesToBranch"}
+                    key={"__moveChangesToBranch"}
+                    className="font-regular"
+                    onMouseEnter={() => setIsHoveringYankToBranchOption(true)}
+                    onMouseLeave={() => setIsHoveringYankToBranchOption(false)}
+                  >
+                    <SplitIcon className="inline mr-1" size={12} />
+                    Move edits from this session to a new branch
+                  </SelectItem>
+                )}
               </SelectGroup>
             </SelectContent>
           </Select>
