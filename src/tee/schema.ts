@@ -92,7 +92,7 @@ export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
 export type DiscussionAnnotation = {
   type: "discussion";
   id: string;
-  discussion: Discussion<unknown, unknown>;
+  discussion: Discussion<unknown>;
 };
 
 export type TextAnnotation =

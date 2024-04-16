@@ -16,7 +16,6 @@ export const KanbanBoard = ({
   readOnly,
   annotations,
 }: DocEditorProps<KanbanBoardDocAnchor, string> & { readOnly?: boolean }) => {
-  console.log({ annotations });
   const [latestDoc, _changeDoc, actions] =
     useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads
 
@@ -34,8 +33,8 @@ export const KanbanBoard = ({
         const showAsAdded = annotations.find(
           (a) =>
             a.type === "added" &&
-            a.target.type === "lane" &&
-            a.target.id === lane.id
+            a.anchor.type === "lane" &&
+            a.anchor.id === lane.id
         );
         return {
           ...lane,
@@ -48,8 +47,8 @@ export const KanbanBoard = ({
             const showAsAdded = annotations.find(
               (a) =>
                 a.type === "added" &&
-                a.target.type === "card" &&
-                a.target.id === cardId
+                a.anchor.type === "card" &&
+                a.anchor.id === cardId
             );
             return {
               ...card,
@@ -62,8 +61,6 @@ export const KanbanBoard = ({
       }),
     };
   }, [doc]);
-
-  console.log({ dataForBoard });
 
   return (
     <div className="h-full overflow-auto">

@@ -73,7 +73,7 @@ const patchesToAnnotations = (
           {
             type: "added",
             added: undefined,
-            target: { type: "lane", id: laneId },
+            anchor: { type: "lane", id: laneId },
           },
         ];
       }
@@ -88,7 +88,7 @@ const patchesToAnnotations = (
           {
             type: "added",
             added: undefined,
-            target: { type: "card", id: cardId },
+            anchor: { type: "card", id: cardId },
           },
         ];
       } else {

@@ -8,7 +8,7 @@ import { MarkdownDocAnchor, MarkdownDoc } from "./schema";
 import { Doc, splice } from "@automerge/automerge/next";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
-import { TextPatch } from "@/patchwork/utils";
+import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { pick } from "lodash";
@@ -79,85 +79,6 @@ export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   return !!typedDoc.content && !!typedDoc.commentThreads;
 };
 
-export const patchesToAnnotations = (
-  doc: MarkdownDoc,
-  docBefore: MarkdownDoc,
-  patches: A.Patch[]
-) => {
-  return patches.flatMap((patch): Annotation<MarkdownDocAnchor, string>[] => {
-    if (
-      patch.path[0] !== "content" ||
-      !["splice", "del"].includes(patch.action)
-    )
-      return [];
-
-    switch (patch.action) {
-      case "splice": {
-        const patchStart = patch.path[1] as number;
-        const patchEnd = Math.min(
-          (patch.path[1] as number) + patch.value.length,
-          doc.content.length - 1
-        );
-        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
-
-        if (!fromCursor || !toCursor) {
-          console.warn("Failed to get cursor for patch", patch);
-          return [];
-        }
-
-        return [
-          {
-            type: "added",
-            added: patch.value,
-            target: {
-              fromCursor: fromCursor,
-              toCursor: toCursor,
-            },
-          },
-        ];
-      }
-      case "del":
-        {
-          const patchStart = patch.path[1] as number;
-          const patchEnd = (patch.path[1] as number) + 1;
-          const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-          const toCursor = getCursorSafely(doc, ["content"], patchEnd);
-
-          if (!fromCursor || !toCursor) {
-            console.warn("Failed to get cursor for patch", patch);
-            return [];
-          }
-
-          return [
-            {
-              type: "deleted",
-              deleted: patch.removed,
-              target: {
-                fromCursor: fromCursor,
-                toCursor: toCursor,
-              },
-            },
-          ];
-        }
-
-        break;
-
-      // todo: handle replace
-      /*   case "replace":
-            (patchStart = patch.path[1] as number),
-              (patchEnd = Math.min(
-                (patch.path[1] as number) + patch.new.length,
-                doc.content.length - 1
-              ));
-
-            break; */
-      default:
-        throw new Error("invalid patch");
-    }
-  });
-};
-
 const promptForAIChangeGroupSummary = ({
   docBefore,
   docAfter,
@@ -190,6 +111,119 @@ ${JSON.stringify(pick(docBefore, ["content", "commentThreads"]), null, 2)}
 ${JSON.stringify(pick(docAfter, ["content", "commentThreads"]), null, 2)}`;
 };
 
+export const patchesToAnnotations = (
+  doc: MarkdownDoc,
+  docBefore: MarkdownDoc,
+  patches: A.Patch[]
+) => {
+  const filteredPatches = patches.filter(
+    (patch) =>
+      patch.path[0] === "content" &&
+      (patch.action === "splice" || patch.action === "del")
+  );
+
+  const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
+
+  for (let i = 0; i < filteredPatches.length; i++) {
+    const patch = filteredPatches[i];
+
+    switch (patch.action) {
+      case "splice": {
+        const patchStart = patch.path[1] as number;
+        const patchEnd = Math.min(
+          (patch.path[1] as number) + patch.value.length,
+          doc.content.length - 1
+        );
+        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
+        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+
+        if (!fromCursor || !toCursor) {
+          console.warn("Failed to get cursor for patch", patch);
+          break;
+        }
+
+        const nextPatch = filteredPatches[i + 1];
+        if (
+          nextPatch &&
+          nextPatch.action === "del" &&
+          nextPatch.path[1] === patchEnd
+        ) {
+          annotations.push({
+            type: "changed",
+            before: nextPatch.removed,
+            after: patch.value,
+            anchor: {
+              fromCursor: fromCursor,
+              toCursor: toCursor,
+            },
+          });
+          i += 1;
+        } else {
+          annotations.push({
+            type: "added",
+            added: patch.value,
+            anchor: {
+              fromCursor: fromCursor,
+              toCursor: toCursor,
+            },
+          });
+        }
+        break;
+      }
+      case "del": {
+        const patchStart = patch.path[1] as number;
+        const patchEnd = (patch.path[1] as number) + 1;
+        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
+        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+
+        if (!fromCursor || !toCursor) {
+          console.warn("Failed to get cursor for patch", patch);
+          break;
+        }
+
+        annotations.push({
+          type: "deleted",
+          deleted: patch.removed,
+          anchor: {
+            fromCursor: fromCursor,
+            toCursor: toCursor,
+          },
+        });
+        break;
+      }
+
+      default:
+        throw new Error("invalid patch");
+    }
+  }
+
+  return annotations;
+};
+
+const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
+  const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
+  const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+  return doc.content.slice(from, to);
+};
+
+const doAnchorsOverlap = (
+  doc: MarkdownDoc,
+  anchor1: MarkdownDocAnchor,
+  anchor2: MarkdownDocAnchor
+) => {
+  const from1 = getCursorPositionSafely(doc, ["content"], anchor1.fromCursor);
+  const to1 = getCursorPositionSafely(doc, ["content"], anchor1.toCursor);
+  const from2 = getCursorPositionSafely(doc, ["content"], anchor2.fromCursor);
+  const to2 = getCursorPositionSafely(doc, ["content"], anchor2.toCursor);
+
+  return Math.max(from1, from2) <= Math.min(to1, to2);
+};
+
+const sortAnchorsBy = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
+  return getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
+};
+
 export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   id: "essay",
   name: "Essay",
@@ -199,6 +233,9 @@ export const EssayDatatype: DataType<MarkdownDoc, MarkdownDocAnchor, string> = {
   markCopy,
   includeChangeInHistory,
   includePatchInChangeGroup,
-  patchesToAnnotations,
   promptForAIChangeGroupSummary,
+  patchesToAnnotations,
+  valueOfAnchor,
+  doAnchorsOverlap,
+  sortAnchorsBy,
 };

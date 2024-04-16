@@ -1,5 +1,5 @@
 import React from "react";
-import { DiffWithProvenance } from "./schema";
+import { DiffWithProvenance, HasPatchworkMetadata } from "./schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -7,8 +7,9 @@ import { useForceUpdate } from "@/lib/utils";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
-import { Annotation } from "./schema";
+import { AnnotationGroup, Annotation } from "./schema";
 import { isEqual } from "lodash";
+import { DocType, docTypes } from "@/DocExplorer/doctypes";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -512,13 +513,3 @@ export function useDebounce<T>(value: T, delay?: number): T {
 
   return debouncedValue;
 }
-
-// annotations are fuzzy things, because they are derived from diff they don't have a stable identity
-// right now we just compare if they are identical
-// todo: check if there is overlap
-export const doAnnotationsOverlap = <T, V>(
-  a: Annotation<T, V>,
-  b: Annotation<T, V>
-) => {
-  return isEqual(a, b);
-};

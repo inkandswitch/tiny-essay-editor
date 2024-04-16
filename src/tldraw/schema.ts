@@ -11,6 +11,4 @@ export type TLDrawDoc = HasPatchworkMetadata<never, never> & {
   schema: SerializedSchema;
 };
 
-export type TLDrawDocAnchor = {
-  shapeIds: TLShapeId[];
-};
+export type TLDrawDocAnchor = TLShapeId;

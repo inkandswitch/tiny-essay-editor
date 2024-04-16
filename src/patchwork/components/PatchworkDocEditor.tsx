@@ -1,9 +1,8 @@
-import { DocType, toolsForDocTypes, docTypes } from "@/DocExplorer/doctypes";
+import { DocType, editorsForDocType } from "@/DocExplorer/doctypes";
 import {
   DiffWithProvenance,
-  EditRangeTarget,
   HasPatchworkMetadata,
-  Annotation,
+  AnnotationWithUIState,
 } from "../schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -12,9 +11,8 @@ import {
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Button } from "@/components/ui/button";
-import { truncate, sortBy } from "lodash";
+import { truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
 import {
   ChevronsRight,
@@ -23,6 +21,7 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   GitMergeIcon,
+  HistoryIcon,
   Link,
   MergeIcon,
   MessageSquareIcon,
@@ -30,13 +29,8 @@ import {
   PlusIcon,
   SplitIcon,
   Trash2Icon,
-  Underline,
 } from "lucide-react";
-import {
-  diffWithProvenance,
-  doAnnotationsOverlap,
-  useActorIdToAuthorMap,
-} from "../utils";
+import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
 import {
   Select,
   SelectTrigger,
@@ -70,31 +64,21 @@ import {
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  PositionMap,
-  SpatialCommentsLinesLayer,
-  SpatialSidebar,
-} from "./SpatialSidebar";
-import { useStaticCallback } from "@/tee/utils";
-import { BotEditor } from "@/bots/BotEditor";
-import {
-  TLDraw,
-  SideBySide as TLDrawSideBySide,
-} from "@/tldraw/components/TLDraw";
-import { DataGrid } from "@/datagrid/components/DataGrid";
+import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
+import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { isMarkdownDoc } from "@/tee/datatype";
 import { MarkdownDocAnchor } from "@/tee/schema";
-import { AnnotationPosition } from "@/patchwork/schema";
 import { isEqual } from "lodash";
 import { isLLMActive } from "@/llm";
+import { useAnnotations } from "../annotations";
 
 interface MakeBranchOptions {
   name?: string;
   heads?: A.Heads;
 }
 
-type ReviewMode = "comments" | "timeline";
+type SidebarMode = "comments" | "timeline";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const PatchworkDocEditor: React.FC<{
@@ -109,12 +93,6 @@ export const PatchworkDocEditor: React.FC<{
   const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
-  const [selection, setSelection] = useState<any>(); // todo: type properly
-  const [hoveredAnnotation, setHoveredAnnotation] =
-    useState<Annotation<unknown, unknown>>();
-  const [selectedAnnotations, setSelectedAnnotations] = useState<
-    Annotation<unknown, unknown>[]
-  >([]);
 
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
@@ -133,15 +111,14 @@ export const PatchworkDocEditor: React.FC<{
     }
   }, [JSON.stringify(selectedBranch)]);
 
-  const [isHistorySidebarOpen, setIsHistorySidebarOpen] =
-    useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isHistorySidebarOpen) {
+    if (!isSidebarOpen) {
       setDiffFromHistorySidebar(undefined);
       setDocHeadsFromHistorySidebar(undefined);
     }
-  }, [isHistorySidebarOpen]);
+  }, [isSidebarOpen]);
   const [diffFromHistorySidebar, setDiffFromHistorySidebar] =
     useState<DiffWithProvenance>();
   const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
@@ -292,6 +269,8 @@ export const PatchworkDocEditor: React.FC<{
     selectedBranch.type === "branch" ? selectedBranch.url : undefined;
   const [branchDoc, changeBranchDoc] =
     useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
+  const branchHandle =
+    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -309,51 +288,29 @@ export const PatchworkDocEditor: React.FC<{
 
   const activeDoc = selectedBranchUrl ? branchDoc : doc;
   const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
+  const activeHandle = selectedBranchUrl ? branchHandle : handle;
 
-  const annotations = useAnnotations({
+  const {
+    annotations,
+    annotationGroups,
+    selectedAnchors,
+    setHoveredAnchor,
+    setSelectedAnchors,
+    hoveredAnnotationGroupId,
+    setHoveredAnnotationGroupId,
+    setSelectedAnnotationGroupId,
+  } = useAnnotations({
     doc: activeDoc,
     docType,
     diff: diffForEditor,
   });
 
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("timeline");
-  const [annotationPositions, setAnnotationPositions] = useState<
-    AnnotationPosition<unknown, unknown>[]
-  >([]);
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("comments");
 
   const [
     annotationsPositionsInSidebarMap,
     setAnnotationsPositionsInSidebarMap,
   ] = useState<PositionMap>();
-  const [selectedDiscussionId, setSelectedDiscussionId] = useState<string>();
-
-  const [hoveredDiscussionId, setHoveredDiscussionId] = useState<string>();
-  const activeDiscussionIds = useMemo(() => {
-    const ids = [];
-
-    if (selectedDiscussionId) {
-      ids.push(selectedDiscussionId);
-    }
-
-    if (hoveredDiscussionId) {
-      ids.push(hoveredDiscussionId);
-    }
-
-    return ids;
-  }, [selectedDiscussionId, hoveredDiscussionId]);
-
-  const onUpdateAnnotationPositions = useStaticCallback((targetPositions) => {
-    setAnnotationPositions(
-      sortBy(
-        targetPositions.map((position) => ({
-          ...position,
-          y: position.y,
-          x: position.x,
-        })),
-        ({ y }) => y
-      )
-    );
-  });
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
@@ -539,15 +496,19 @@ export const PatchworkDocEditor: React.FC<{
             )}
           </div>
 
-          {!isHistorySidebarOpen && (
-            <div
-              className={` ml-auto ${isHistorySidebarOpen ? "mr-96" : "mr-4"}`}
-            >
+          {!isSidebarOpen && (
+            <div className={` ml-auto ${isSidebarOpen ? "mr-96" : "mr-4"}`}>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   variant="outline"
-                  className="h-8 text-x"
+                  className={`h-8 text-x ${
+                    annotations.filter(
+                      (a) => a.type === "highlighted" && a.isEmphasized
+                    ).length > 0
+                      ? "bg-yellow-200 hover:bg-yellow-400"
+                      : ""
+                  }`}
                 >
                   <MessageSquareIcon size={20} />
                 </Button>
@@ -582,6 +543,8 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
+                setSelectedAnchors={setSelectedAnchors}
+                setHoveredAnchor={setHoveredAnchor}
               />
             ) : (
               <DocEditor
@@ -591,48 +554,43 @@ export const PatchworkDocEditor: React.FC<{
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
-                onUpdateAnnotationPositions={onUpdateAnnotationPositions}
-                selection={selection}
-                setSelection={setSelection}
-                selectedAnnotations={selectedAnnotations}
-              />
-            )}
-            {reviewMode === "comments" && isHistorySidebarOpen && (
-              <SpatialCommentsLinesLayer
-                activeDiscussionIds={activeDiscussionIds}
-                annotationsTargetPositions={annotationPositions}
-                annotationsPositionsInSidebarMap={
-                  annotationsPositionsInSidebarMap
-                }
+                setSelectedAnchors={setSelectedAnchors}
+                setHoveredAnchor={setHoveredAnchor}
               />
             )}
           </div>
         </div>
       </div>
 
-      {isHistorySidebarOpen && (
+      {isSidebarOpen && (
         <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
           <div
             className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-            onClick={() => setIsHistorySidebarOpen(false)}
+            onClick={() => setIsSidebarOpen(false)}
           >
             <ChevronsRight size={16} />
           </div>
 
           <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
             <Tabs
-              value={reviewMode}
-              onValueChange={(value) => setReviewMode(value as ReviewMode)}
+              value={sidebarMode}
+              onValueChange={(value) => setSidebarMode(value as SidebarMode)}
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="comments">
+                  <MessageSquareIcon size={16} className="mr-2" />
+                  Review ({annotationGroups.length})
+                </TabsTrigger>
+                <TabsTrigger value="timeline">
+                  <HistoryIcon size={16} className="mr-2" />
+                  History
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
           <div className="min-h-0 flex-grow w-96">
-            {reviewMode === "timeline" && (
+            {sidebarMode === "timeline" && (
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranchLink?.url ?? mainDocUrl}
@@ -644,14 +602,13 @@ export const PatchworkDocEditor: React.FC<{
                 setSelectedBranch={setSelectedBranch}
               />
             )}
-            {reviewMode === "comments" && (
-              <SpatialSidebar
-                selection={selection}
-                resetSelection={() => setSelection(undefined)}
+            {sidebarMode === "comments" && (
+              <ReviewSidebar
+                doc={activeDoc}
+                handle={activeHandle}
                 docType={docType}
-                annotations={annotationPositions.map(
-                  ({ annotation }) => annotation
-                )}
+                annotationGroups={annotationGroups}
+                selectedAnchors={selectedAnchors}
                 changeDoc={activeChangeDoc}
                 onChangeCommentPositionMap={(positions) => {
                   // todo: without this condition there is an infinite loop
@@ -659,10 +616,9 @@ export const PatchworkDocEditor: React.FC<{
                     setAnnotationsPositionsInSidebarMap(positions);
                   }
                 }}
-                setSelectedAnnotations={setSelectedAnnotations}
-                selectedAnnotations={selectedAnnotations}
-                setHoveredAnnotation={setHoveredAnnotation}
-                hoveredAnnotation={hoveredAnnotation}
+                hoveredAnnotationGroupId={hoveredAnnotationGroupId}
+                setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               />
             )}
           </div>
@@ -683,31 +639,23 @@ const DocEditor = <T, V>({
   docHeads,
   annotations,
   actorIdToAuthor,
-  onUpdateAnnotationPositions,
-  hoveredAnnotation,
-  selectedAnnotations,
-  setHoveredAnnotation,
-  setSelectedAnnotations,
-  selection,
-  setSelection,
+  setSelectedAnchors,
+  setHoveredAnchor,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = toolsForDocTypes[docType][0];
+  const Component = editorsForDocType[docType][0];
 
   return (
     <Component
       docUrl={docUrl}
       docHeads={docHeads}
       docType={docType}
-      annotations={annotations as Annotation<MarkdownDocAnchor, string>[]}
+      annotations={
+        annotations as AnnotationWithUIState<MarkdownDocAnchor, string>[]
+      }
       actorIdToAuthor={actorIdToAuthor}
-      onUpdateAnnotationPositions={onUpdateAnnotationPositions}
-      hoveredAnnotation={hoveredAnnotation}
-      selectedAnnotations={selectedAnnotations}
-      setHoveredAnnotation={setHoveredAnnotation}
-      setSelectedAnnotations={setSelectedAnnotations}
-      selection={selection}
-      setSelection={setSelection}
+      setSelectedAnchors={setSelectedAnchors}
+      setHoveredAnchor={setHoveredAnchor}
     />
   );
 };
@@ -875,59 +823,4 @@ const BranchActions: React.FC<{
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
-
-const useAnnotations = ({
-  doc,
-  docType,
-  diff,
-}: {
-  doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
-  docType: DocType;
-  diff?: DiffWithProvenance;
-}) => {
-  return useMemo(() => {
-    if (!doc) {
-      return [];
-    }
-
-    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
-    const discussions = Object.values(doc?.discussions ?? []);
-
-    // highlight annotations only exist in discussions, so we need to get them separately
-    const highlightAnnotations = discussions.flatMap((discussion) =>
-      discussion.resolved ||
-      !discussion.annotation ||
-      discussion.annotation.type !== "highlighted"
-        ? []
-        : [{ ...discussion.annotation, discussion }]
-    );
-
-    if (!diff) {
-      return highlightAnnotations;
-    }
-
-    const editAnnotations = patchesToAnnotations
-      ? patchesToAnnotations(
-          doc,
-          A.view(doc, diff.fromHeads),
-          diff.patches as A.Patch[]
-        ).flatMap((annotation) => {
-          // match up annotations with discussions
-          // it's possible that multiple discussions point to a single annotation (should occur rarely)
-          const discussionsOnAnnotation = discussions.filter((discussion) =>
-            doAnnotationsOverlap(discussion.annotation, annotation)
-          );
-
-          return discussionsOnAnnotation.length === 0
-            ? [annotation]
-            : discussionsOnAnnotation.map((discussion) => ({
-                ...annotation,
-                discussion,
-              }));
-        })
-      : [];
-
-    return editAnnotations.concat(highlightAnnotations);
-  }, [doc, diff]);
 };

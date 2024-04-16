@@ -1,24 +1,17 @@
 import { DocHandle } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { isEqual } from "lodash";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";
-import {
-  Editor,
-  TLCamera,
-  TLShape,
-  TLShapeId,
-  TLStoreWithStatus,
-  Tldraw,
-} from "@tldraw/tldraw";
+import { Editor, TLCamera, TLShape, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { TLDrawDoc, TLDrawDocAnchor } from "../schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
+import { useDiffStyling, useCameraSync, useAnchorEventListener } from "./hooks";
 
 interface TLDrawProps extends DocEditorProps<TLDrawDocAnchor, TLShape> {
   camera?: TLCamera;
@@ -31,10 +24,8 @@ export const TLDraw = ({
   annotations,
   camera,
   onChangeCamera,
-  onUpdateAnnotationPositions,
-  selection,
-  setSelection,
-  selectedAnnotations,
+  setSelectedAnchors,
+  setHoveredAnchor,
 }: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);
@@ -58,12 +49,6 @@ export const TLDraw = ({
     setLocalCamera(camera);
   };
 
-  useAnnotationsPositionListener({
-    camera: camera ?? localCamera,
-    annotations,
-    onUpdateAnnotationPositions,
-  });
-
   return (
     <div className="tldraw__editor h-full overflow-auto">
       {docHeads ? (
@@ -76,9 +61,8 @@ export const TLDraw = ({
             handle={handle}
             camera={camera ?? localCamera}
             onChangeCamera={setCamera}
-            selection={selection}
-            setSelection={setSelection}
-            selectedAnnotations={selectedAnnotations}
+            setSelectedAnchors={setSelectedAnchors}
+            setHoveredAnchor={setHoveredAnchor}
           />
         ) : null
       ) : (
@@ -89,9 +73,8 @@ export const TLDraw = ({
           handle={handle}
           camera={camera ?? localCamera}
           onChangeCamera={setCamera}
-          selection={selection}
-          setSelection={setSelection}
-          selectedAnnotations={selectedAnnotations}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
         />
       )}
     </div>
@@ -102,12 +85,11 @@ interface TlDrawProps {
   doc: TLDrawDoc;
   handle: DocHandle<TLDrawDoc>;
   userId: string;
-  annotations?: Annotation<TLDrawDocAnchor, TLShape>[];
+  annotations?: AnnotationWithUIState<TLDrawDocAnchor, TLShape>[];
   camera?: TLCamera;
   onChangeCamera?: (camera: TLCamera) => void;
-  selection?: TLDrawDocAnchor;
-  setSelection: (selection: TLDrawDocAnchor) => void;
-  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
+  setSelectedAnchors: (anchors: TLDrawDocAnchor[]) => void;
+  setHoveredAnchor: (anchor: TLDrawDocAnchor) => void;
 }
 
 const EditableTLDraw = ({
@@ -117,21 +99,23 @@ const EditableTLDraw = ({
   annotations,
   camera,
   onChangeCamera,
-  selection,
-  setSelection,
-  selectedAnnotations,
+  setSelectedAnchors,
+  setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor, selectedAnnotations });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
     camera,
   });
-
-  useSelectionListener({ editor, selection, setSelection });
+  useAnchorEventListener({
+    editor,
+    setSelectedAnchors,
+    setHoveredAnchor,
+  });
 
   return <Tldraw autoFocus store={store} onMount={setEditor} />;
 };
@@ -143,21 +127,23 @@ const ReadOnlyTLDraw = ({
   annotations,
   onChangeCamera,
   camera,
-  selection,
-  setSelection,
-  selectedAnnotations,
+  setSelectedAnchors,
+  setHoveredAnchor,
 }: TlDrawProps) => {
   const store = useAutomergeStore({ handle, doc, userId });
   const [editor, setEditor] = useState<Editor>();
 
-  useDiffStyling({ doc, annotations, store, editor, selectedAnnotations });
+  useDiffStyling({ doc, annotations, store, editor });
   useCameraSync({
     editor,
     onChangeCamera,
     camera,
   });
-
-  useSelectionListener({ editor, selection, setSelection });
+  useAnchorEventListener({
+    editor,
+    setSelectedAnchors,
+    setHoveredAnchor,
+  });
 
   return (
     <Tldraw
@@ -165,7 +151,7 @@ const ReadOnlyTLDraw = ({
       autoFocus
       onMount={(editor) => {
         setEditor(editor);
-        editor.updateInstanceState({ isReadonly: true });
+        editor.updateInstanceState({ isReadonly: true, isFocused: false });
       }}
     />
   );
@@ -176,10 +162,8 @@ export const SideBySide = ({
   mainDocUrl,
   docHeads,
   annotations,
-  selection,
-  setSelection,
-  selectedAnnotations,
-  onUpdateAnnotationPositions,
+  setSelectedAnchors,
+  setHoveredAnchor,
 }: SideBySideProps<unknown, unknown>) => {
   const [camera, setCamera] = useState<TLCamera>();
 
@@ -192,9 +176,8 @@ export const SideBySide = ({
           annotations={[]}
           camera={camera}
           onChangeCamera={setCamera}
-          selection={undefined}
-          setSelection={() => {}}
-          selectedAnnotations={[]}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
         />
       </div>
       <div className="h-full flex-1 overflow-auto border-l border-l-gray-200">
@@ -202,240 +185,15 @@ export const SideBySide = ({
           docUrl={docUrl}
           docHeads={docHeads}
           key={mainDocUrl}
-          annotations={annotations as Annotation<TLDrawDocAnchor, TLShape>[]}
+          annotations={
+            annotations as AnnotationWithUIState<TLDrawDocAnchor, TLShape>[]
+          }
           camera={camera}
           onChangeCamera={setCamera}
-          selection={selection as TLDrawDocAnchor}
-          setSelection={setSelection}
-          selectedAnnotations={
-            selectedAnnotations as Annotation<TLDrawDocAnchor, TLShape>[]
-          }
-          onUpdateAnnotationPositions={onUpdateAnnotationPositions}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
         />
       </div>
     </div>
   );
-};
-
-const useCameraSync = ({
-  camera: camera,
-  onChangeCamera: onChangeCamera,
-  editor,
-}: {
-  camera?: TLCamera;
-  onChangeCamera?: (camera: TLCamera) => void;
-  editor: Editor;
-}) => {
-  useEffect(() => {
-    if (!editor || !camera || isEqual(editor.camera, camera)) {
-      return;
-    }
-
-    editor.setCamera(camera);
-  }, [editor, camera]);
-
-  useEffect(() => {
-    if (!editor || !onChangeCamera) {
-      return;
-    }
-
-    const onChange = () => {
-      if (editor.cameraState === "moving") {
-        onChangeCamera(editor.camera);
-      }
-    };
-
-    editor.on("change", onChange);
-
-    return () => {
-      editor.off("change", onChange);
-    };
-  }, [editor, onChangeCamera]);
-};
-
-const useAnnotationsPositionListener = ({
-  camera,
-  annotations,
-  onUpdateAnnotationPositions,
-}: {
-  camera?: TLCamera;
-  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
-  onUpdateAnnotationPositions?: (
-    positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[]
-  ) => void;
-}) => {
-  useEffect(() => {
-    if (!onUpdateAnnotationPositions) {
-      return;
-    }
-
-    const positions: AnnotationPosition<TLDrawDocAnchor, TLShape>[] = [];
-
-    for (const annotation of annotations) {
-      if (annotation.type !== "highlighted") {
-        continue;
-      }
-
-      const element = document.getElementById(annotation.target.shapeIds[0]);
-
-      if (element) {
-        const { top, right } = element.getBoundingClientRect();
-        positions.push({ annotation, x: right, y: top });
-      }
-    }
-
-    onUpdateAnnotationPositions(positions);
-  }, [annotations, camera, onUpdateAnnotationPositions]);
-};
-
-const useDiffStyling = ({
-  doc,
-  annotations,
-  store,
-  editor,
-  selectedAnnotations,
-}: {
-  doc: TLDrawDoc;
-  annotations: Annotation<TLDrawDocAnchor, TLShape>[];
-  store: TLStoreWithStatus;
-  editor: Editor;
-  selectedAnnotations: Annotation<TLDrawDocAnchor, TLShape>[];
-}) => {
-  const tempShapeIdsRef = useRef(new Set<TLShapeId>());
-  const highlightedElementsRef = useRef(new Set<HTMLElement>());
-  const [camera, setCamera] = useState<TLCamera>();
-
-  useEffect(() => {
-    if (!editor) {
-      return;
-    }
-
-    editor.on("change", () => {
-      if (editor.cameraState === "moving") {
-        setCamera(editor.camera);
-      }
-    });
-
-    return () => {};
-  }, [editor]);
-
-  // todo: handle multi select
-  const selectedAnnotation: Annotation<TLDrawDocAnchor, TLShape> =
-    selectedAnnotations ? selectedAnnotations[0] : undefined;
-
-  useEffect(() => {
-    if (!store.store) {
-      return;
-    }
-
-    if (!annotations) {
-      store.store.remove(Array.from(tempShapeIdsRef.current));
-      highlightedElementsRef.current.forEach((element) => {
-        element.style.filter = "";
-      });
-
-      tempShapeIdsRef.current = new Set();
-      highlightedElementsRef.current = new Set();
-      return;
-    }
-
-    setTimeout(() => {
-      // track which temp shapes and highlighted elements are active in the current diff
-      const activeHighlightedElements = new Set<HTMLElement>();
-      const activeTempShapeIds = new Set<TLShapeId>();
-
-      annotations.forEach((annotation) => {
-        switch (annotation.type) {
-          case "added":
-            {
-              if (
-                selectedAnnotation &&
-                selectedAnnotation.type === "highlighted" &&
-                !selectedAnnotation.target.shapeIds.includes(
-                  annotation.target.shapeIds[0]
-                )
-              ) {
-                return;
-              }
-
-              const shapeElem = document.getElementById(annotation.added.id);
-              if (!shapeElem) {
-                return;
-              }
-
-              activeHighlightedElements.add(shapeElem);
-              if (highlightedElementsRef.current.has(shapeElem)) {
-                return;
-              }
-
-              highlightedElementsRef.current.add(shapeElem);
-              shapeElem.style.filter = "drop-shadow(0 0 0.75rem green)";
-            }
-            break;
-
-          case "deleted": {
-            activeTempShapeIds.add(annotation.deleted.id);
-            if (tempShapeIdsRef.current.has(annotation.deleted.id)) {
-              break;
-            }
-
-            const deletedShape = annotation.deleted;
-
-            deletedShape.opacity = 0.1;
-            deletedShape.isLocked = true;
-
-            activeTempShapeIds.add(deletedShape.id);
-            tempShapeIdsRef.current.add(deletedShape.id);
-            store.store.put([deletedShape]);
-
-            break;
-          }
-        }
-      }, 100);
-
-      // delete shapes that are not part of the current diff
-      store.store.remove(
-        Array.from(tempShapeIdsRef.current).filter(
-          (id) => !activeTempShapeIds.has(id)
-        )
-      );
-      tempShapeIdsRef.current = activeTempShapeIds;
-
-      // remove highlights that are not part of the current diff
-      Array.from(highlightedElementsRef.current)
-        .filter((element) => !activeHighlightedElements.has(element))
-        .forEach((element) => {
-          element.style.filter = "";
-        });
-      highlightedElementsRef.current = activeHighlightedElements;
-    });
-  }, [annotations, store, doc, camera, selectedAnnotation]);
-};
-
-const useSelectionListener = ({
-  editor,
-  selection,
-  setSelection,
-}: {
-  editor: Editor;
-  selection: TLDrawDocAnchor;
-  setSelection: (selection: TLDrawDocAnchor) => void;
-}) => {
-  useEffect(() => {
-    if (!editor) {
-      return;
-    }
-
-    editor.on("update", () => {
-      if (!isEqual(editor?.selectedShapeIds, selection?.shapeIds)) {
-        console.log(editor.selectedShapeIds);
-
-        setSelection(
-          editor.selectedShapeIds.length > 0
-            ? { shapeIds: editor.selectedShapeIds }
-            : undefined
-        );
-      }
-    });
-  }, [editor]);
 };

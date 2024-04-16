@@ -80,21 +80,29 @@ export type DiscussionComment = {
   timestamp: number;
 };
 
-export type Discussion<T, V> = {
+// Right now discussions are both used in the timeline and for comments on the document
+// We should split this up and use separate concepts
+export type Discussion<T> = {
   id: string;
   heads: A.Heads;
   resolved: boolean;
   comments: DiscussionComment[];
 
-  /** An optional specific object being commented on --
-   *  could be an object in the document (eg in a text doc, a range of chars)
-   *  or possibly (not sure yet) an object in the meta discussion like a change group
-   */
-  annotation?: Annotation<T, V>;
+  // optionally a list of doc anchors that this discussion refers to
+  anchors?: T[];
 };
 
-export type Discussable<T, V> = {
-  discussions: { [key: string]: Discussion<T, V> };
+export type AnnotationGroup<T, V> = {
+  annotations: Annotation<T, V>[];
+  discussion?: Discussion<T>;
+};
+
+export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {
+  state: "focused" | "expanded" | "neutral";
+};
+
+export type Discussable<T> = {
+  discussions: { [key: string]: Discussion<T> };
 };
 
 export type HasChangeGroupSummaries = {
@@ -105,51 +113,37 @@ export type HasChangeGroupSummaries = {
   };
 };
 
-export type HighlightId = string & { __highlightId: true };
-
-export type Highlight<T> = {
-  id: HighlightId;
-};
-
-export type Highlightable<T> = {
-  highlights: Highlight<T>;
-};
-
 export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable<T, V>;
+  Discussable<T>;
 
 export type AnnotationId = string & { __annotationId: true };
 
-interface AddAnnotation<T, V> {
+interface AddAnnotation<A, V> {
   type: "added";
-  target: T;
+  anchor: A;
   added: V;
-  discussion?: Discussion<T, V>;
 }
 
-interface DeleteAnnotation<T, V> {
+interface DeleteAnnotation<A, V> {
   type: "deleted";
-  target: T;
+  anchor: A;
   deleted: V;
-  discussion?: Discussion<T, V>;
 }
 
-interface ChangeAnnotation<T, V> {
+interface ChangeAnnotation<A, V> {
   type: "changed";
-  target: T;
+  anchor: A;
   before: V;
   after: V;
-  discussion?: Discussion<T, V>;
 }
 
-export interface HighlightAnnotation<T, V> {
+export interface HighlightAnnotation<A, V> {
   type: "highlighted";
-  target: T;
+  anchor: A;
   value: V;
-  discussion?: Discussion<T, V>;
 }
 
 export type Annotation<T, V> =
@@ -157,6 +151,17 @@ export type Annotation<T, V> =
   | DeleteAnnotation<T, V>
   | ChangeAnnotation<T, V>
   | HighlightAnnotation<T, V>;
+
+export type AnnotationWithUIState<T, V> = Annotation<T, V> & {
+  /** Whether the annotation should be visually emphasized in the UI (eg, with darker coloring).
+   *  This is used to indicate hovered/selected annotations within the UI.
+   */
+  isEmphasized: boolean;
+
+  /** Whether the annotation should be scrolled into view in the UI.
+   */
+  shouldBeVisibleInViewport: boolean;
+};
 
 export interface AnnotationPosition<T, V> {
   x: number;

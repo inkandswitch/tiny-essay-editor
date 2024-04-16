@@ -9,9 +9,12 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import {
+  AnnotationWithUIState,
+  HasPatchworkMetadata,
+} from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { Annotation } from "@/patchwork/schema";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { BotEditor } from "@/bots/BotEditor";
@@ -19,6 +22,8 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
+import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
+import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
 
 export type CoreDataType<D> = {
   id: string;
@@ -73,9 +78,42 @@ export type PatchworkDataType<D, T, V> = {
     docBefore: D,
     patches: A.Patch[]
   ) => Annotation<T, V>[];
+
+  /* Group annotations into logical units. This function get's passed all annotations
+   * that are not associated with any discussions
+   *
+   * The sort order is not preserved. For sorting implement the sortAnchorsBy method.
+   */
+  groupAnnotations?: (annotations: Annotation<T, V>[]) => Annotation<T, V>[][];
+
+  /* Resolves to the value the anchor is pointing to in a document.
+   * If the anchor cannot be resolved return undefined.
+   * If not defined, annotations in the review sidebar won't include the
+   * contents of the annotated data.
+   */
+  valueOfAnchor?: (doc: D, anchor: T) => V | undefined;
+
+  /* Checks if two anchors overlap. This is used to associate edit annotations with
+   * discussions. A discussion grabs any annotations that overlap with the anchors
+   * associated with the discussion
+   *
+   * If this method is not implemented deep equal will be used as a fallback
+   */
+  doAnchorsOverlap?: (doc: D, anchor1: T, anchor2: T) => boolean;
+
+  /** Defines a value for each anchor that will be use to sort them by in descending order.
+   *  This is used for example in the SpatialSidebar to sort the annotation group.
+   *
+   *  If this method is not implemented the anchors will not be sorted.
+   */
+  sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
 
 export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
+
+// TODO: we can narrow the types below by constructing a mapping from docType IDs
+// to the corresponding typescript type. This will be more natural once we have a
+// schema system for generating typescript types.
 
 export const docTypes: Record<
   string,
@@ -92,11 +130,11 @@ export type DocType = keyof typeof docTypes;
 
 // Store a list of tools that can be used with each doc type.
 // This is a crude stand-in for a more flexible system based on matching
-// data schemas with tool capabilities.
+// data schemas with editor capabilities.
 // It's important to store this mapping outside of the datatypes themselves;
 // there might be tools a datatype doesn't know about which can edit the datatype.
 // (A simple example is a raw JSON editor.)
-export const toolsForDocTypes: Record<
+export const editorsForDocType: Record<
   string,
   Array<React.FC<DocEditorPropsWithDocType<any, any>>>
 > = {
@@ -107,21 +145,27 @@ export const toolsForDocTypes: Record<
   kanban: [KanbanBoard],
 };
 
+export const annotationViewersForDocType: Record<
+  string,
+  Array<
+    React.FC<{
+      doc: unknown;
+      handle: DocHandle<unknown>;
+      annotations: Annotation<any, any>[];
+    }>
+  >
+> = {
+  essay: [EssayAnnotations],
+  tldraw: [TLDrawAnnotations],
+};
+
 export interface DocEditorProps<T, V> {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];
-  annotations?: Annotation<T, V>[];
+  annotations?: AnnotationWithUIState<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
-  // spatial comments interface
-  // todo: simplify
-  selectedAnnotations?: Annotation<T, V>[];
-  hoveredAnnotation?: Annotation<T, V>;
-  setHoveredAnnotation?: (annotation: Annotation<T, V>) => void;
-  setSelectedAnnotations?: (annotations: Annotation<T, V>[]) => void;
-  onUpdateAnnotationPositions?: (positions: AnnotationPosition<T, V>[]) => void;
-
-  selection?: T;
-  setSelection?: (target: T) => void;
+  setSelectedAnchors?: (anchors: T[]) => void;
+  setHoveredAnchor?: (anchors: T) => void;
 }

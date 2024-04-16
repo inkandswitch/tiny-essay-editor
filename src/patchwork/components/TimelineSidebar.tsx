@@ -797,7 +797,7 @@ const BranchOriginItem = ({
 const DiscussionThreadItem = ({
   discussion,
 }: {
-  discussion: Discussion<unknown, unknown>;
+  discussion: Discussion<unknown>;
   selected: boolean;
 }) => {
   const comment = discussion.comments[0];

@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { dropCursor, EditorView, keymap } from "@codemirror/view";
+import {
+  drawSelection,
+  dropCursor,
+  EditorView,
+  keymap,
+} from "@codemirror/view";
 
 import {
   plugin as amgPlugin,
@@ -30,10 +35,10 @@ import { searchKeymap } from "@codemirror/search";
 import { SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
-  setAnnotationsEffect,
   annotationDecorations,
   annotationsField,
-} from "../codemirrorPlugins/annotations";
+  setAnnotationsEffect,
+} from "../codemirrorPlugins/annotationDecorations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
 import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
@@ -41,28 +46,21 @@ import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import {
-  TextAnnotationForUI,
   MarkdownDoc,
   DiscussionAnotationForUI,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "../schema";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
-import {
-  setPatchesEffect,
-  patchesField,
-  patchDecorations,
-} from "../codemirrorPlugins/patchDecorations";
+
 import {
   DebugHighlight,
   setDebugHighlightsEffect,
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { annotationsPositionListener } from "../codemirrorPlugins/annotationPositionListener";
-import { Annotation, AnnotationPosition } from "@/patchwork/schema";
+import { AnnotationPosition, AnnotationWithUIState } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
-import { getCursor } from "@tldraw/tldraw";
 
 export type TextSelection = {
   from: number;
@@ -76,29 +74,25 @@ export type EditorProps = {
   editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
-  selection?: MarkdownDocAnchor;
-  setSelection: (selection: MarkdownDocAnchor) => void;
   setView: (view: EditorView) => void;
+  setSelectedAnchors: (anchors: MarkdownDocAnchor[]) => void;
   discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
-  annotations?: Annotation<ResolvedMarkdownDocAnchor, string>[];
+  annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
   onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
-  onUpdateAnnotationPositions?: (
-    positions: AnnotationPosition<MarkdownDocAnchor, string>[]
-  ) => void;
 };
 
 export function MarkdownEditor({
   editorContainer,
   handle,
   path,
-  setSelection,
+  setSelectedAnchors,
   setView,
   readOnly,
   docHeads,
@@ -107,7 +101,6 @@ export function MarkdownEditor({
   onOpenSnippet,
   foldRanges,
   setEditorContainerElement,
-  onUpdateAnnotationPositions,
 }: EditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -133,10 +126,13 @@ export function MarkdownEditor({
   useEffect(() => {
     editorRoot.current?.dispatch({
       // split up replaces
-      effects: setPatchesEffect.of(annotations),
+      effects: setAnnotationsEffect.of(annotations),
     });
   }, [annotations, editorRoot.current]);
 
+  useScrollAnnotationsIntoView(annotations, editorRoot);
+
+  // This big useEffect sets up the editor view
   useEffect(() => {
     if (!handleReady || !editorContainer) {
       return;
@@ -154,11 +150,7 @@ export function MarkdownEditor({
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),
-
-        // GL 1/10/24: I'm disabling this plugin for now because it was causing weird issues with
-        // rectangular selection, and it doesn't provide any obvious benefit at the moment.
-        // In the future we might want to bring it back though.
-        // drawSelection(),
+        drawSelection(),
 
         dropCursor(),
         indentOnInput(),
@@ -194,8 +186,6 @@ export function MarkdownEditor({
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
-        patchesField,
-        patchDecorations,
         previewFiguresPlugin,
         previewImagesPlugin,
         highlightKeywordsPlugin,
@@ -219,15 +209,6 @@ export function MarkdownEditor({
             return placeholder;
           },
         }),
-        ...(onUpdateAnnotationPositions
-          ? [
-              annotationsPositionListener({
-                onUpdate: onUpdateAnnotationPositions,
-                estimatedLineHeight: 24,
-                editorContainer,
-              }),
-            ]
-          : []),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -235,14 +216,22 @@ export function MarkdownEditor({
           view.update([transaction]);
 
           semaphore.reconcile(handle, view);
-          const selection = view.state.selection.ranges[0];
-          if (selection && selection.from !== selection.to) {
-            setSelection({
-              fromCursor: getCursorSafely(doc, ["content"], selection.from),
-              toCursor: getCursorSafely(doc, ["content"], selection.to),
-            });
-          } else {
-            setSelection(undefined);
+
+          // only update selection if it has changed and the editor is focused
+          // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar
+          if (transaction.newSelection && view.hasFocus) {
+            const selection = view.state.selection.ranges[0];
+
+            if (selection) {
+              setSelectedAnchors([
+                {
+                  fromCursor: getCursorSafely(doc, ["content"], selection.from),
+                  toCursor: getCursorSafely(doc, ["content"], selection.to),
+                },
+              ]);
+            } else {
+              setSelectedAnchors([]);
+            }
           }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
@@ -332,3 +321,52 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+// Scroll annotations into view when needed
+const useScrollAnnotationsIntoView = (
+  annotations: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[],
+  editorRoot: RefObject<EditorView>
+) => {
+  const annotationsToScrollIntoView = useMemo(
+    () =>
+      annotations.filter((annotation) => annotation.shouldBeVisibleInViewport),
+    [annotations]
+  );
+
+  useEffect(() => {
+    const editor = editorRoot?.current;
+
+    // only change scroll position if editor is not focused
+    if (
+      !editor ||
+      editor.hasFocus ||
+      annotationsToScrollIntoView.length === 0
+    ) {
+      return;
+    }
+
+    let from = annotationsToScrollIntoView[0].anchor.fromPos;
+    let to = annotationsToScrollIntoView[0].anchor.toPos;
+
+    for (let i = 1; i < annotationsToScrollIntoView.length; i++) {
+      const annotation = annotationsToScrollIntoView[i];
+
+      if (annotation.anchor.fromPos < from) {
+        from = annotation.anchor.fromPos;
+      }
+
+      if (annotation.anchor.toPos > to) {
+        to = annotation.anchor.toPos;
+      }
+    }
+
+    editor.dispatch({
+      effects: EditorView.scrollIntoView(from, {
+        y: "nearest",
+        yMargin: 100,
+      }),
+    });
+
+    editorRoot.current;
+  }, [annotationsToScrollIntoView, editorRoot]);
+};

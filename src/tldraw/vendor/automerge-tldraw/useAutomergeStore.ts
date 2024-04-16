@@ -49,6 +49,7 @@ export function useAutomergeStore({
 
   /* -------------------- TLDraw <--> Automerge -------------------- */
   useEffect(() => {
+    if (!handle) return;
     const unsubs: (() => void)[] = [];
 
     // A hacky workaround to prevent local changes from being applied twice
