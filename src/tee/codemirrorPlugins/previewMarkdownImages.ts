@@ -21,7 +21,7 @@ import * as A from "@automerge/automerge";
 
 class Image extends WidgetType {
   constructor(
-    protected heads: A.Heads[],
+    protected heads: A.Heads,
     protected url: string,
     protected caption: string
   ) {
