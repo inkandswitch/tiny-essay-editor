@@ -33,7 +33,7 @@ export const TLDrawAnnotations = ({
     if (!editor) {
       return;
     }
-    const shapeIds = annotations.flatMap((a) => a.target);
+    const shapeIds = annotations.flatMap((a) => a.anchor);
     editor.panZoomIntoView(shapeIds, { duration: 100 });
   }, [editor, annotations]);
 

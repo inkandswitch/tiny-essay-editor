@@ -107,7 +107,7 @@ export const annotationDecorations = EditorView.decorations.compute(
     const annotations = state.field(annotationsField);
 
     const decorations = annotations.flatMap((annotation) => {
-      const { fromPos, toPos } = annotation.target;
+      const { fromPos, toPos } = annotation.anchor;
       if (fromPos >= toPos) {
         return [];
       }

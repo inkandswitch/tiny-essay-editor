@@ -136,14 +136,14 @@ export function useAnnotations({
       const discussionHighlightAnnotations: HighlightAnnotation<
         unknown,
         unknown
-      >[] = (discussion.target ?? []).flatMap((anchor) => {
+      >[] = (discussion.anchors ?? []).flatMap((anchor) => {
         const value = valueOfAnchor(doc, anchor);
 
         return value !== undefined
           ? [
               {
                 type: "highlighted",
-                target: anchor,
+                anchor,
                 value,
               },
             ]
@@ -162,8 +162,8 @@ export function useAnnotations({
 
       editAnnotations.forEach((editAnnotation) => {
         if (
-          discussion.target.some((anchor) =>
-            doAnchorsOverlap(docType, editAnnotation.target, anchor, doc)
+          discussion.anchors.some((anchor) =>
+            doAnchorsOverlap(docType, editAnnotation.anchor, anchor, doc)
           )
         ) {
           // mark any annotation that is part of a discussion as claimed
@@ -200,7 +200,7 @@ export function useAnnotations({
         ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
             min(
               annotationGroup.annotations.map((annotation) =>
-                sortAnchorsBy(doc, annotation.target)
+                sortAnchorsBy(doc, annotation.anchor)
               )
             )
           )
@@ -239,7 +239,7 @@ export function useAnnotations({
 
           // ... the anchors in that group are focused as well
           annotationGroup.annotations.map((annotation) =>
-            selectedAnchors.add(annotation.target)
+            selectedAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -256,7 +256,7 @@ export function useAnnotations({
 
           // focus all anchors in the annotation group
           annotationGroup.annotations.forEach((annotation) =>
-            selectedAnchors.add(annotation.target)
+            selectedAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -279,7 +279,7 @@ export function useAnnotations({
         if (annotationGroup) {
           // focus all anchors in the annotation groupd
           annotationGroup.annotations.forEach((annotation) =>
-            hoveredAnchors.add(annotation.target)
+            hoveredAnchors.add(annotation.anchor)
           );
         }
         break;
@@ -303,11 +303,11 @@ export function useAnnotations({
           // todo: In the future we might decide to allow views to distinguish between selected and hovered states,
           // but for now we're keeping it simple and just exposing a single highlighted property.
           isEmphasized:
-            selectedAnchors.has(annotation.target) ||
-            hoveredAnchors.has(annotation.target),
+            selectedAnchors.has(annotation.anchor) ||
+            hoveredAnchors.has(annotation.anchor),
 
           // Selected annotations should be scrolled into view
-          shouldBeVisibleInViewport: selectedAnchors.has(annotation.target),
+          shouldBeVisibleInViewport: selectedAnchors.has(annotation.anchor),
         })),
       [annotations, selectedAnchors]
     );
@@ -379,7 +379,7 @@ export function getAnnotationGroupId<T, V>(
   // which means that the annotation doesn't appear in any other annotationGroup
   // so we can just pick the first annotation to generate a unique id
   const firstAnnotation = annotationGroup.annotations[0];
-  return `${firstAnnotation.type}:${JSON.stringify(firstAnnotation.target)}`;
+  return `${firstAnnotation.type}:${JSON.stringify(firstAnnotation.anchor)}`;
 }
 
 export function doesAnnotationGroupContainAnchors<T, V>(
@@ -390,7 +390,7 @@ export function doesAnnotationGroupContainAnchors<T, V>(
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>
-      doAnchorsOverlap(docType, annotation.target, anchor, doc)
+      doAnchorsOverlap(docType, annotation.anchor, anchor, doc)
     )
   );
 }

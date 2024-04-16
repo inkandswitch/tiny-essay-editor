@@ -70,8 +70,8 @@ export const DataGrid = ({
   };
 
   const cellAnnotations = annotations.map((annotation) => ({
-    row: annotation.target.row,
-    col: annotation.target.column,
+    row: annotation.anchor.row,
+    col: annotation.anchor.column,
     renderer: "addedCell",
   }));
 

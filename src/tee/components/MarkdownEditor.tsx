@@ -345,18 +345,18 @@ const useScrollAnnotationsIntoView = (
       return;
     }
 
-    let from = annotationsToScrollIntoView[0].target.fromPos;
-    let to = annotationsToScrollIntoView[0].target.toPos;
+    let from = annotationsToScrollIntoView[0].anchor.fromPos;
+    let to = annotationsToScrollIntoView[0].anchor.toPos;
 
     for (let i = 1; i < annotationsToScrollIntoView.length; i++) {
       const annotation = annotationsToScrollIntoView[i];
 
-      if (annotation.target.fromPos < from) {
-        from = annotation.target.fromPos;
+      if (annotation.anchor.fromPos < from) {
+        from = annotation.anchor.fromPos;
       }
 
-      if (annotation.target.toPos > to) {
-        to = annotation.target.toPos;
+      if (annotation.anchor.toPos > to) {
+        to = annotation.anchor.toPos;
       }
     }
 

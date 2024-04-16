@@ -71,7 +71,7 @@ export const ReviewSidebar = React.memo(
         const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
         return selectedAnchors.map((anchor) => ({
           type: "highlighted",
-          target: [anchor] as unknown as T, // todo: investigate if this typecast is wrong
+          anchor: [anchor] as unknown as T, // todo: investigate if this typecast is wrong
           value: valueOfAnchor(doc, anchor),
         }));
       }, [selectedAnchors, doc, docType]);
@@ -100,8 +100,8 @@ export const ReviewSidebar = React.memo(
             heads: A.getHeads(doc),
             comments: [],
             resolved: false,
-            target: annotationGroup.annotations.map(
-              (annotation) => annotation.target
+            anchors: annotationGroup.annotations.map(
+              (annotation) => annotation.anchor
             ),
           };
         }
@@ -141,7 +141,7 @@ export const ReviewSidebar = React.memo(
             },
           ],
           resolved: false,
-          target: selectedAnchors,
+          anchors: selectedAnchors,
         };
       });
 

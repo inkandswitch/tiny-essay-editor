@@ -89,7 +89,7 @@ export type Discussion<T> = {
   comments: DiscussionComment[];
 
   // optionally a list of doc anchors that this discussion refers to
-  target?: T[];
+  anchors?: T[];
 };
 
 export type AnnotationGroup<T, V> = {
@@ -121,28 +121,28 @@ export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
 
 export type AnnotationId = string & { __annotationId: true };
 
-interface AddAnnotation<T, V> {
+interface AddAnnotation<A, V> {
   type: "added";
-  target: T;
+  anchor: A;
   added: V;
 }
 
-interface DeleteAnnotation<T, V> {
+interface DeleteAnnotation<A, V> {
   type: "deleted";
-  target: T;
+  anchor: A;
   deleted: V;
 }
 
-interface ChangeAnnotation<T, V> {
+interface ChangeAnnotation<A, V> {
   type: "changed";
-  target: T;
+  anchor: A;
   before: V;
   after: V;
 }
 
-export interface HighlightAnnotation<T, V> {
+export interface HighlightAnnotation<A, V> {
   type: "highlighted";
-  target: T;
+  anchor: A;
   value: V;
 }
 

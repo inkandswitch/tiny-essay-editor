@@ -57,7 +57,7 @@ export const TinyEssayEditor = (
     AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
   >(() => {
     return annotations.flatMap((annotation) => {
-      const { fromCursor, toCursor } = annotation.target;
+      const { fromCursor, toCursor } = annotation.anchor;
       const fromPos = getCursorPositionSafely(doc, ["content"], fromCursor);
       const toPos = getCursorPositionSafely(doc, ["content"], toCursor);
 
@@ -66,7 +66,7 @@ export const TinyEssayEditor = (
         : [
             {
               ...annotation,
-              target: { fromPos, toPos, fromCursor, toCursor },
+              anchor: { fromPos, toPos, fromCursor, toCursor },
             },
           ];
     });

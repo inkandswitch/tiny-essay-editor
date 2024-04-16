@@ -127,7 +127,7 @@ export const useDiffStyling = ({
               let highlightColor;
               if (annotation.type === "highlighted") {
                 // don't override shapes that have styling from an "added" annotation
-                if (!addedShapeIds.has(annotation.target)) {
+                if (!addedShapeIds.has(annotation.anchor)) {
                   if (annotation.isEmphasized) {
                     highlightColor = "rgb(255 228 74)";
                   } else {
@@ -135,7 +135,7 @@ export const useDiffStyling = ({
                   }
                 }
               } else {
-                addedShapeIds.add(annotation.target);
+                addedShapeIds.add(annotation.anchor);
                 highlightColor = "green";
               }
 

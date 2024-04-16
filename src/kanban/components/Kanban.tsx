@@ -33,8 +33,8 @@ export const KanbanBoard = ({
         const showAsAdded = annotations.find(
           (a) =>
             a.type === "added" &&
-            a.target.type === "lane" &&
-            a.target.id === lane.id
+            a.anchor.type === "lane" &&
+            a.anchor.id === lane.id
         );
         return {
           ...lane,
@@ -47,8 +47,8 @@ export const KanbanBoard = ({
             const showAsAdded = annotations.find(
               (a) =>
                 a.type === "added" &&
-                a.target.type === "card" &&
-                a.target.id === cardId
+                a.anchor.type === "card" &&
+                a.anchor.id === cardId
             );
             return {
               ...card,

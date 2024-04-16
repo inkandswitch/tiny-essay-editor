@@ -152,7 +152,7 @@ export const patchesToAnnotations = (
             type: "changed",
             before: nextPatch.removed,
             after: patch.value,
-            target: {
+            anchor: {
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
@@ -162,7 +162,7 @@ export const patchesToAnnotations = (
           annotations.push({
             type: "added",
             added: patch.value,
-            target: {
+            anchor: {
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
@@ -184,7 +184,7 @@ export const patchesToAnnotations = (
         annotations.push({
           type: "deleted",
           deleted: patch.removed,
-          target: {
+          anchor: {
             fromCursor: fromCursor,
             toCursor: toCursor,
           },

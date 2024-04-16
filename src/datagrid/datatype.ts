@@ -116,7 +116,7 @@ const patchesToAnnotations = (
           {
             type: "added",
             added: patch.value,
-            target: {
+            anchor: {
               row: patch.path[1] as number,
               column: patch.path[2] as number,
             },
