@@ -1,4 +1,5 @@
-import { Repo, AutomergeUrl } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
+import { Repo, AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 
@@ -8,6 +9,7 @@ import { next as Automerge } from "@automerge/automerge";
 import "./index.css";
 import { mount } from "./mount.js";
 import { getAccount } from "./account.js";
+import { timeStamp } from "console";
 
 const repo = new Repo({
   network: [
@@ -15,7 +17,6 @@ const repo = new Repo({
     new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
   ],
   storage: new IndexedDBStorageAdapter(),
-  changeMetadata: () => ({ author, time: Date.now() }),
 });
 
 let author: AutomergeUrl;
@@ -27,6 +28,43 @@ getAccount(repo).then((account) => {
     author = account.contactHandle.url;
   });
 });
+
+/** Here we monkey patch the DocHandle to
+ *  always add the currently logged in user as author
+ *  and the current timestamp as metadata to each change.
+ *
+ *  Eventually, we would like to ship this functionality directly
+ *  inside automerge-repo, but that's currently blocked on having a
+ *  more efficient approach to storing change metadata in Automerge.
+ *
+ *  Once that's done we should remove this monkey patch.
+ */
+const oldChange = DocHandle.prototype.change;
+DocHandle.prototype.change = function <T>(
+  callback: A.ChangeFn<T>,
+  options: A.ChangeOptions<T> = {}
+) {
+  const optionsWithAttribution: A.ChangeOptions<T> = {
+    time: Date.now(),
+    message: JSON.stringify({ author }),
+    ...options,
+  };
+  oldChange.call(this, callback, optionsWithAttribution);
+};
+
+const oldChangeAt = DocHandle.prototype.changeAt;
+DocHandle.prototype.changeAt = function <T>(
+  heads: A.Heads,
+  callback: A.ChangeFn<T>,
+  options: A.ChangeOptions<T> = {}
+) {
+  const optionsWithAttribution: A.ChangeOptions<T> = {
+    time: Date.now(),
+    message: JSON.stringify({ author }),
+    ...options,
+  };
+  return oldChangeAt.call(this, heads, callback, optionsWithAttribution);
+};
 
 // @ts-expect-error - adding property to window
 window.Automerge = Automerge;
