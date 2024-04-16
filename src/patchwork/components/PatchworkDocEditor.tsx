@@ -466,7 +466,7 @@ export const PatchworkDocEditor: React.FC<{
                   <PlusIcon className="inline mr-1" size={12} />
                   Create new branch
                 </SelectItem>
-                {selectedBranch.type === "main" && (
+                {selectedBranch.type === "main" && isMarkdownDoc(doc) && (
                   <SelectItem
                     value={"__moveChangesToBranch"}
                     key={"__moveChangesToBranch"}
