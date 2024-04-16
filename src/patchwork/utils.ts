@@ -82,6 +82,7 @@ export const useActorIdToAuthorMap = (
 
       const doc = handle.docSync();
       const changes = A.getChanges(A.view(doc, lastHeads), doc);
+      lastHeads = A.getHeads(doc);
       addChangesToActorIdMap(changes);
     };
 
