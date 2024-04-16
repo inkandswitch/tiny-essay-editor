@@ -44,6 +44,8 @@ type ReviewSidebarProps<T> = {
   setHoveredAnnotationGroupId: (id: string) => void;
 };
 
+export type PositionMap = Record<string, { top: number; bottom: number }>;
+
 export const ReviewSidebar = React.memo(
   <T extends HasPatchworkMetadata<unknown, unknown>>({
     doc,
