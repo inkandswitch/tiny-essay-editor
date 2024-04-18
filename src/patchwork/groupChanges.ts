@@ -94,7 +94,7 @@ export type HeadsMarker<T> = {
 
 // All ChangelogItems have a unique id, a heads, and some users asociated.
 // Then, each type of item has its own unique data associated too.
-export type ChangelogItem<T> = {
+export type TimelineItems<T> = {
   id: string;
   heads: Heads;
   users: AutomergeUrl[];
@@ -195,8 +195,9 @@ export const getMarkersForDoc = <
   if (!doc) return [];
   let markers: HeadsMarker<T>[] = [];
 
-  const discussions = Object.values(doc.discussions ?? {}).map(
-    (discussion) => ({
+  const discussions = Object.values(doc.discussions ?? {})
+    .filter((d) => !d.anchors)
+    .map((discussion) => ({
       type: "discussionThread" as const,
       id: `discussion-${discussion.id}`,
       heads: discussion.heads,
@@ -204,8 +205,7 @@ export const getMarkersForDoc = <
         .map((comment) => comment.contactUrl)
         .filter(Boolean),
       discussion,
-    })
-  );
+    }));
 
   // Sorting by timestamp is a bit bad and not-local-firsty...
   // The problem is that we don't currently store an ordering on
@@ -315,10 +315,10 @@ export type MemoizedChangeGroups<D> = {
   options: ChangeGroupingOptions<D>;
 };
 
-/** Returns a flat list of changelog items for display in the UI,
+/** Returns a flat list of timeline items for display in the UI,
  *  based on a list of change groups.
  */
-export const getChangelogItems = <D extends Branchable>({
+export const getTimelineItems = <D extends Branchable>({
   doc,
   changes,
   options,
@@ -329,7 +329,7 @@ export const getChangelogItems = <D extends Branchable>({
   options: ChangeGroupingOptions<D>;
   memoizedGroups?: MemoizedChangeGroups<D>;
 }): {
-  items: ChangelogItem<D>[];
+  items: TimelineItems<D>[];
   memoizedGroups: MemoizedChangeGroups<D>;
 } => {
   const { changeGroups, changeCount } = getGroupedChangesMemo({
@@ -339,7 +339,7 @@ export const getChangelogItems = <D extends Branchable>({
     memoizedGroups,
   });
 
-  const changelogItems: ChangelogItem<D>[] = [];
+  const timelineItems: TimelineItems<D>[] = [];
   for (const changeGroup of changeGroups) {
     // If this is a branch merge, we treat it in a special way --
     // we don't directly put the change group in as an item;
@@ -351,13 +351,13 @@ export const getChangelogItems = <D extends Branchable>({
       const otherMarkersForThisGroup = changeGroup.markers.filter(
         (m) => m !== mergeMarker
       );
-      changelogItems.push({ ...mergeMarker, time: changeGroup.time });
+      timelineItems.push({ ...mergeMarker, time: changeGroup.time });
       for (const marker of otherMarkersForThisGroup) {
-        changelogItems.push({ ...marker, time: changeGroup.time });
+        timelineItems.push({ ...marker, time: changeGroup.time });
       }
     } else {
       // for normal change groups, push the group and then any markers
-      changelogItems.push({
+      timelineItems.push({
         id: `changeGroup-${changeGroup.from}-${changeGroup.to}`,
         type: "changeGroup",
         changeGroup,
@@ -366,12 +366,12 @@ export const getChangelogItems = <D extends Branchable>({
         time: changeGroup.time,
       });
       for (const marker of changeGroup.markers) {
-        changelogItems.push({ ...marker, time: changeGroup.time });
+        timelineItems.push({ ...marker, time: changeGroup.time });
       }
     }
   }
   return {
-    items: changelogItems,
+    items: timelineItems,
     memoizedGroups: {
       changeGroups,
       changeCount,

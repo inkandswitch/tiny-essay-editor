@@ -8,7 +8,7 @@ import {
 import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
   ByAuthorOrTime,
-  ChangelogItem,
+  TimelineItems,
   GenericChangeGroup,
 } from "../groupChanges";
 import { docTypes } from "@/DocExplorer/doctypes";
@@ -76,8 +76,7 @@ type ChangelogSelectionAnchor = {
   yPos: number;
 };
 
-/** A React hook that returns the changelog items for a handle */
-const useChangelogItems = (
+const useTimelineItems = (
   handle,
   options: Omit<
     ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
@@ -86,7 +85,7 @@ const useChangelogItems = (
 ) => {
   const repo = useRepo();
   const [items, setItems] = useState<
-    ChangelogItem<HasPatchworkMetadata<unknown, unknown>>[]
+    TimelineItems<HasPatchworkMetadata<unknown, unknown>>[]
   >([]);
   useEffect(() => {
     const grouper = new ChangeGrouper(handle, repo, options);
@@ -132,7 +131,6 @@ export const TimelineSidebar: React.FC<{
     doc?.branchMetadata?.source?.url
   );
   const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(docUrl);
-  const repo = useRepo();
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
 
@@ -163,7 +161,7 @@ export const TimelineSidebar: React.FC<{
     fallbackSummaryForChangeGroup,
   ]);
 
-  const changelogItems = useChangelogItems(handle, changeGroupingOptions);
+  const changelogItems = useTimelineItems(handle, changeGroupingOptions);
 
   const hiddenItemBoundary = changelogItems.findIndex(
     (item) => item.type === "originOfThisBranch" && item.hideHistoryBeforeThis
@@ -497,7 +495,7 @@ const useChangelogSelection = function <T>({
   setDiff,
   setDocHeads,
 }: {
-  items: ChangelogItem<T>[];
+  items: TimelineItems<T>[];
   setDiff: (diff: DiffWithProvenance) => void;
   setDocHeads: (heads: Heads) => void;
 }): {

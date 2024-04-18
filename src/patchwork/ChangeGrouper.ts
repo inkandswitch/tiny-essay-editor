@@ -3,9 +3,9 @@ import { EventEmitter } from "eventemitter3";
 import {
   ChangeGroup,
   ChangeGroupingOptions,
-  ChangelogItem,
+  TimelineItems,
   DecodedChangeWithMetadata,
-  getChangelogItems,
+  getTimelineItems,
   getMarkersForDoc,
 } from "./groupChanges";
 import { HasPatchworkMetadata } from "./schema";
@@ -29,7 +29,7 @@ export class ChangeGrouper<
   // An array of decoded changes on the doc.
   private decodedChanges: DecodedChangeWithMetadata[];
   private debouncedListener;
-  items: ChangelogItem<D>[];
+  items: TimelineItems<D>[];
 
   private memoizedGroups: {
     changeGroups: ChangeGroup<D>[];
@@ -90,7 +90,7 @@ export class ChangeGrouper<
       this.decodedChanges = this.decodedChanges.concat(newDecodedChanges);
       const markers = getMarkersForDoc(this.handle, this.repo);
 
-      const { items, memoizedGroups } = getChangelogItems({
+      const { items, memoizedGroups } = getTimelineItems({
         doc: this.handle.docSync(),
         changes: this.decodedChanges,
         options: { ...this.groupingOptions, markers },

@@ -29,7 +29,7 @@ import { createBranch, mergeBranch } from "@/patchwork/branches";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { ChangelogSelection } from "./TimelineSidebar";
-import { ChangelogItem } from "@/patchwork/groupChanges";
+import { TimelineItems } from "@/patchwork/groupChanges";
 import { toast } from "sonner";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 
@@ -59,7 +59,7 @@ type DiscussionInputProps<T> = {
   handle: DocHandle<T>;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
-  changelogItems: ChangelogItem<T>[];
+  changelogItems: TimelineItems<T>[];
   changelogSelection: ChangelogSelection;
 };
 export const DiscussionInput = function <
