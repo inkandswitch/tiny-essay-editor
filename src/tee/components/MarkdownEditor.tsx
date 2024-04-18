@@ -36,6 +36,7 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages";
 
 export type TextSelection = {
   from: number;
@@ -92,6 +93,12 @@ export function MarkdownEditor({
         // drawSelection(),
 
         dropCursor(),
+        dragAndDropImagesPlugin({
+          onDrop: (file) => {
+            // todo: store file
+            console.log("dropped", file);
+          },
+        }),
         indentOnInput(),
         keymap.of([
           ...standardKeymap,
