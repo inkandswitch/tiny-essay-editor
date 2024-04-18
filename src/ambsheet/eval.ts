@@ -2,20 +2,20 @@ import { AmbSheetDoc } from './datatype';
 import { isFormula, parseFormula, Node, AmbNode } from './parse';
 
 export interface Value {
-  context: Context;
+  context: AmbContext;
   rawValue: number;
 }
 
-type Continuation = (value: Value, context: Context) => void;
+type Continuation = (value: Value, context: AmbContext) => void;
 
 /** a mapping that tracks which value we've chosen for a given amb node
  *  within the current subtree of the evaluation. (using a numeric index
  *  into the list of values, so that we can disambiguate equivalent values)
  */
-type Context = Map<AmbNode, number>;
+export type AmbContext = Map<AmbNode, number>;
 
 // Two contexts are "compatible" if they contain no overlapping keys with differing values
-const contextsAreCompatible = (a: Context, b: Context) => {
+const contextsAreCompatible = (a: AmbContext, b: AmbContext) => {
   for (const [node, value] of a) {
     if (b.has(node) && b.get(node) !== value) {
       return false;
@@ -35,8 +35,9 @@ export type FilteredResults = (
 // AND of ORs
 export function filter(
   results: Results,
-  contextses: Context[][]
+  contextses: AmbContext[][]
 ): FilteredResults {
+  console.log('filtering', results, contextses);
   const shouldInclude = (v: Value) =>
     contextses.every((contexts) =>
       contexts.some((ctx) => contextsAreCompatible(ctx, v.context))
@@ -46,6 +47,7 @@ export function filter(
       if (cell == null || cell === NOT_READY) {
         return cell;
       }
+
       // todo: get rid of this typecast by using a type guard
       return (cell as Value[]).map((value) => ({
         value,
@@ -104,7 +106,7 @@ export class Env {
     this.results[row][col] = values;
   }
 
-  interp(node: Node, context: Context, continuation: Continuation) {
+  interp(node: Node, context: AmbContext, continuation: Continuation) {
     switch (node.type) {
       case 'num':
         return continuation(
@@ -184,7 +186,7 @@ export class Env {
 
   interpBinOp(
     node: Node & { left: Node; right: Node },
-    context: Context,
+    context: AmbContext,
     continuation: Continuation,
     op: (x: number, y: number) => number
   ) {

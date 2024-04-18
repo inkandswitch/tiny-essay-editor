@@ -4,12 +4,12 @@ import { AmbSheetDoc, AmbSheetDocAnchor } from '../datatype';
 import { HotTable } from '@handsontable/react';
 import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/dist/handsontable.full.min.css';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import * as A from '@automerge/automerge/next';
 import { registerRenderer, textRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
-import { evalSheet } from '../eval';
+import { AmbContext, NOT_READY, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
 import { isFormula } from '../parse';
 
@@ -26,25 +26,62 @@ registerRenderer('addedCell', (hotInstance, TD, ...rest) => {
 registerRenderer(
   'amb',
   (instance, td, row, col, prop, value, cellProperties) => {
-    if (value) {
-      console.log(value);
-    }
     if (value === null) {
       td.innerText = '';
       return td;
     }
 
-    // todo: handle cycles / error values here
+    if (value === NOT_READY) {
+      // todo: is this right? need to consider when NOT_READY gets returned...
+      td.innerText = '!ERROR';
+      return td;
+    }
 
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.flexDirection = 'row';
-    container.style.justifyContent = 'space-around';
+    container.style.justifyContent = 'flex-start';
+    container.style.gap = '8px';
     container.style.alignItems = 'center';
+
+    // Adding a pseudo-element for borders between flex items
+    container.className = 'value-container';
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .value-container::after {
+        content: '';
+        height: 100%;
+        border-right: 1px solid #ddd;
+      }
+      .value-container > div:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: -4px; /* half of gap size to center the border */
+        height: 100%;
+        border-right: 1px solid #ddd;
+      }
+      .value-container > div {
+        position: relative;
+      }
+    `;
+    document.head.appendChild(style);
+
     value.forEach((val) => {
       const valueElement = document.createElement('div');
-      valueElement.innerText = val.rawValue;
+      valueElement.innerText = val.value.rawValue;
       valueElement.setAttribute('data-context', JSON.stringify(val.context));
+      if (!val.include) {
+        valueElement.style.color = '#ddd';
+      }
+      if (instance.getCellMeta(row, col)['hoveredValue'] === val) {
+        valueElement.style.background = 'rgb(0 255 0 / 10%)';
+      }
+      valueElement.onmouseenter = () => {
+        instance.setCellMeta(row, col, 'hoveredValue', val.value);
+      };
+      valueElement.onmouseleave = () => {
+        instance.setCellMeta(row, col, 'hoveredValue', null);
+      };
       container.appendChild(valueElement);
     });
     td.innerHTML = '';
@@ -66,16 +103,23 @@ export const AmbSheet = ({
 }: DocEditorProps<AmbSheetDocAnchor, string>) => {
   const [latestDoc] = useDocument<AmbSheetDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<AmbSheetDoc>(docUrl);
+  const [filterContexts, setFilterContexts] = useState<AmbContext[][]>([]);
 
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
     [latestDoc, docHeads]
   );
 
-  const evaluatedSheet = useMemo(
-    () => (doc ? evalSheet(doc.data).results : []),
-    [doc]
-  );
+  const evaluatedSheet = useMemo(() => {
+    if (!doc) {
+      return [];
+    }
+    const results = evalSheet(doc.data).results;
+    const filtered = filter(results, filterContexts);
+
+    console.log({ filterContexts, filtered });
+    return filtered;
+  }, [doc, filterContexts]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -90,6 +134,11 @@ export const AmbSheet = ({
       });
     });
     return false;
+  };
+
+  const onAfterSetCellMeta = (_, __, ___, value) => {
+    const newFilterContexts = [[value.context]];
+    setFilterContexts(newFilterContexts);
   };
 
   const onBeforeCreateRow = (index, amount) => {
@@ -124,6 +173,7 @@ export const AmbSheet = ({
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}
         beforeCreateCol={onBeforeCreateCol}
+        afterSetCellMeta={onAfterSetCellMeta}
         rowHeaders={true}
         colHeaders={true}
         contextMenu={true}
