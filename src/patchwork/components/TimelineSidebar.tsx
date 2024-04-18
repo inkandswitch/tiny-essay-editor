@@ -7,9 +7,9 @@ import {
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
 import {
-  ByAuthorOrTime,
   TimelineItems,
   GenericChangeGroup,
+  groupingByEditTime,
 } from "../groupChanges";
 import { docTypes } from "@/DocExplorer/doctypes";
 
@@ -149,7 +149,7 @@ export const TimelineSidebar: React.FC<{
     >
   >(() => {
     return {
-      grouping: ByAuthorOrTime(60),
+      grouping: groupingByEditTime(30),
       includeChangeInHistory,
       includePatchInChangeGroup,
       fallbackSummaryForChangeGroup,

@@ -163,7 +163,7 @@ export const groupingByEditTime =
     return newChange.time < currentGroup.time + maxGapInMinutes * 60 * 1000;
   };
 
-export const ByAuthorOrTime =
+export const groupingByAuthorOrTime =
   <T>(maxGapInMinutes: number) =>
   (currentGroup: ChangeGroup<T>, newChange: DecodedChangeWithMetadata) => {
     const authorMatch =
