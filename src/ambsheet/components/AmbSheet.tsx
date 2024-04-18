@@ -23,6 +23,36 @@ registerRenderer('addedCell', (hotInstance, TD, ...rest) => {
   TD.style.background = 'rgb(0 255 0 / 10%)';
 });
 
+registerRenderer(
+  'amb',
+  (instance, td, row, col, prop, value, cellProperties) => {
+    const valueAsText = JSON.stringify(value);
+
+    if (value === null) {
+      td.innerText = '';
+      return td;
+    }
+
+    // todo: handle cycles / error values here
+
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'row';
+    container.style.justifyContent = 'space-around';
+    container.style.alignItems = 'center';
+    value.forEach((val) => {
+      const valueElement = document.createElement('div');
+      valueElement.innerText = val.rawValue;
+      valueElement.setAttribute('data-context', JSON.stringify(val.context));
+      container.appendChild(valueElement);
+    });
+    td.innerHTML = '';
+    td.appendChild(container);
+
+    return td;
+  }
+);
+
 // Here's an overview of how formula evaluation works:
 // - The raw document stores cells as text, including formulas
 // - The data we pass into HOT contains evaluated formula results
@@ -42,7 +72,7 @@ export const AmbSheet = ({
   );
 
   const evaluatedSheet = useMemo(
-    () => (doc ? evalSheet(doc.data).print() : []),
+    () => (doc ? evalSheet(doc.data).results : []),
     [doc]
   );
 
@@ -85,7 +115,7 @@ export const AmbSheet = ({
     row: annotation.target.row,
     col: annotation.target.column,
     renderer: 'addedCell',
-    formula: `=${annotation.target.row}+${annotation.target.column}`,
+    // formula: `=${annotation.target.row}+${annotation.target.column}`,
   }));
 
   if (!doc) {
@@ -108,7 +138,8 @@ export const AmbSheet = ({
         autoWrapRow={false}
         autoWrapCol={false}
         licenseKey="non-commercial-and-evaluation"
-        cell={cellAnnotations}
+        renderer="amb"
+        // cell={cellAnnotations}
         // Attach raw formula results to the cell metadata
         cells={(row, col) => {
           const rawContents = doc.data[row][col];
