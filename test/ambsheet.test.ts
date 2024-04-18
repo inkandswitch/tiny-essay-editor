@@ -114,40 +114,43 @@ describe('ambsheet evaluator', () => {
     );
   });
 
+  const filteredResultsToResults = (
+    filteredResults: FilteredResults
+  ): Results => {
+    return filteredResults.map((row) =>
+      row.map((cell) => {
+        if (cell === null || cell === NOT_READY) {
+          return cell;
+        }
+        return (cell as { value: Value; include: boolean }[])
+          .filter((v) => v.include)
+          .map((v) => v.value);
+      })
+    );
+  };
+
   it('filters values correctly', () => {
-    const results = evalSheet([['={1, 2}', '={3, 4}', '=A1*10+B1']]).results;
+    const results = evalSheet([
+      ['={1, 2}', '={3, 4}', '=A1*10+B1', '=C1>20'],
+    ]).results;
 
     assert.deepStrictEqual(printResults(results), [
-      ['{1,2}', '{3,4}', '{13,14,23,24}'],
+      ['{1,2}', '{3,4}', '{13,14,23,24}', '{0,0,1,1}'],
     ]);
 
-    const filteredResultsToResults = (
-      filteredResults: FilteredResults
-    ): Results => {
-      return filteredResults.map((row) =>
-        row.map((cell) => {
-          if (cell === null || cell === NOT_READY) {
-            return cell;
-          }
-          return (cell as { value: Value; include: boolean }[])
-            .filter((v) => v.include)
-            .map((v) => v.value);
-        })
-      );
-    };
-
-    const resultCell = results[0][2];
+    const cellC1 = results[0][2]; // C1
+    const cellD1 = results[0][3]; // D1
 
     assert.deepStrictEqual(
       printResults(
         filteredResultsToResults(
           filter(results, [
             // select 14, 23 in the result cell
-            [resultCell[1].context, resultCell[2].context],
+            [cellC1[1].context, cellC1[2].context],
           ])
         )
       ),
-      [['{1,2}', '{3,4}', '{14,23}']]
+      [['{1,2}', '{3,4}', '{14,23}', '{0,1}']]
     );
 
     assert.deepStrictEqual(
@@ -155,11 +158,25 @@ describe('ambsheet evaluator', () => {
         filteredResultsToResults(
           filter(results, [
             // select 13, 14 in the result cell
-            [resultCell[0].context, resultCell[1].context],
+            [cellC1[0].context, cellC1[1].context],
           ])
         )
       ),
-      [['1', '{3,4}', '{13,14}']]
+      [['1', '{3,4}', '{13,14}', '{0,0}']]
+    );
+
+    assert.deepStrictEqual(
+      printResults(
+        filteredResultsToResults(
+          filter(results, [
+            // select D1=1 in the result cell
+            (cellD1 as Value[])
+              .filter((v) => v.rawValue === 1)
+              .map((v) => v.context),
+          ])
+        )
+      ),
+      [['2', '{3,4}', '{23,24}', '{1,1}']]
     );
   });
 });
