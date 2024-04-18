@@ -9,7 +9,7 @@ import { useMemo, useState } from 'react';
 import * as A from '@automerge/automerge/next';
 import { registerRenderer, textRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
-import { AmbContext, NOT_READY, evalSheet, filter } from '../eval';
+import { AmbContext, NOT_READY, Value, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
 import { isFormula } from '../parse';
 
@@ -26,6 +26,8 @@ registerRenderer('addedCell', (hotInstance, TD, ...rest) => {
 registerRenderer(
   'amb',
   (instance, td, row, col, prop, value, cellProperties) => {
+    const selectedValueIndexes =
+      instance.getCellMeta(row, col)['selectedValueIndexes'] || [];
     if (value === null) {
       td.innerText = '';
       return td;
@@ -41,10 +43,10 @@ registerRenderer(
     container.style.display = 'flex';
     container.style.flexDirection = 'row';
     container.style.justifyContent = 'flex-start';
-    container.style.gap = '8px';
     container.style.alignItems = 'center';
+    container.style.fontSize = '16px';
 
-    // Adding a pseudo-element for borders between flex items
+    // Adjusting styles to compensate for removed gap
     container.className = 'value-container';
     const style = document.createElement('style');
     style.innerHTML = `
@@ -56,7 +58,7 @@ registerRenderer(
       .value-container > div:not(:last-child)::after {
         content: '';
         position: absolute;
-        right: -4px; /* half of gap size to center the border */
+        right: 0; /* adjusted for removed gap */
         height: 100%;
         border-right: 1px solid #ddd;
       }
@@ -66,22 +68,30 @@ registerRenderer(
     `;
     document.head.appendChild(style);
 
-    value.forEach((val) => {
+    value.forEach((val, i) => {
       const valueElement = document.createElement('div');
       valueElement.innerText = val.value.rawValue;
+      valueElement.style.padding = '1px 4px';
       valueElement.setAttribute('data-context', JSON.stringify(val.context));
       if (!val.include) {
         valueElement.style.color = '#ddd';
       }
-      if (instance.getCellMeta(row, col)['hoveredValue'] === val) {
-        valueElement.style.background = 'rgb(0 255 0 / 10%)';
+      if (selectedValueIndexes.includes(i)) {
+        valueElement.style.background = 'rgb(255 0 0 / 10%)';
       }
-      valueElement.onmouseenter = () => {
-        instance.setCellMeta(row, col, 'hoveredValue', val.value);
-      };
-      valueElement.addEventListener('mouseleave', () => {
-        console.log('leave');
-        instance.setCellMeta(row, col, 'hoveredValue', null);
+      valueElement.addEventListener('click', () => {
+        const valueIndex = selectedValueIndexes.indexOf(i);
+        if (valueIndex > -1) {
+          selectedValueIndexes.splice(valueIndex, 1); // Remove the value if it's already in the array
+        } else {
+          selectedValueIndexes.push(i); // Add the value if it's not in the array
+        }
+        instance.setCellMeta(
+          row,
+          col,
+          'selectedValueIndexes',
+          selectedValueIndexes
+        );
       });
       container.appendChild(valueElement);
     });
@@ -104,7 +114,11 @@ export const AmbSheet = ({
 }: DocEditorProps<AmbSheetDocAnchor, string>) => {
   const [latestDoc] = useDocument<AmbSheetDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<AmbSheetDoc>(docUrl);
-  const [filterContexts, setFilterContexts] = useState<AmbContext[][]>([]);
+  const [selectedValuesForCells, setSelectedValuesForCells] = useState<
+    { row: number; col: number; selectedValueIndexes: number[] }[]
+  >([]);
+
+  console.log({ selectedValuesForCells });
 
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
@@ -119,8 +133,13 @@ export const AmbSheet = ({
   }, [doc]);
 
   const filteredResults = useMemo(() => {
+    const filterContexts = selectedValuesForCells.map((f) => {
+      return f.selectedValueIndexes.map(
+        (i) => evaluatedSheet[f.row][f.col][i].context
+      );
+    });
     return filter(evaluatedSheet, filterContexts);
-  }, [evaluatedSheet, filterContexts]);
+  }, [evaluatedSheet, selectedValuesForCells]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -137,16 +156,36 @@ export const AmbSheet = ({
     return false;
   };
 
-  const onAfterSetCellMeta = (_, __, ___, value) => {
-    console.log(value);
-    if (value === null) {
-      setFilterContexts([]);
-      return;
+  const onAfterSetCellMeta = (row, col, _, value) => {
+    const existingEntryIndex = selectedValuesForCells.findIndex(
+      (entry) => entry.row === row && entry.col === col
+    );
+    if (existingEntryIndex !== -1) {
+      if (value.length === 0) {
+        // Clear out the existing entry if the value is an empty array
+        setSelectedValuesForCells(
+          selectedValuesForCells.filter(
+            (_, index) => index !== existingEntryIndex
+          )
+        );
+      } else {
+        // Update existing entry
+        const updatedEntry = {
+          ...selectedValuesForCells[existingEntryIndex],
+          selectedValueIndexes: value,
+        };
+        const newFilterContextsForCells = [...selectedValuesForCells];
+        newFilterContextsForCells[existingEntryIndex] = updatedEntry;
+        setSelectedValuesForCells(newFilterContextsForCells);
+      }
+    } else if (value.length > 0) {
+      // Add new entry only if value is not an empty array
+      setSelectedValuesForCells([
+        ...selectedValuesForCells,
+        { row, col, selectedValueIndexes: value },
+      ]);
     }
-    const newFilterContexts = [[value.context]];
-    setFilterContexts(newFilterContexts);
   };
-
   const onBeforeCreateRow = (index, amount) => {
     handle.change((doc) => {
       doc.data.splice(
@@ -192,8 +231,11 @@ export const AmbSheet = ({
         // Attach raw formula results to the cell metadata
         cells={(row, col) => {
           const rawContents = doc.data[row][col];
+          const selectedValueIndexes =
+            selectedValuesForCells.find((f) => f.row === row && f.col === col)
+              ?.selectedValueIndexes || [];
           if (isFormula(rawContents)) {
-            return { formula: rawContents };
+            return { formula: rawContents, selectedValueIndexes };
           }
         }}
       />
