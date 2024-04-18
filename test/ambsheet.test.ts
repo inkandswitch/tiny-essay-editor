@@ -7,7 +7,6 @@ import {
   Value,
   evalSheet,
   filter,
-  filter,
   printResults,
 } from '@/ambsheet/eval.js';
 
