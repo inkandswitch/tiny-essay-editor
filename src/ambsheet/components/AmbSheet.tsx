@@ -112,13 +112,6 @@ export const AmbSheet = ({
     return false;
   };
 
-  const cellAnnotations = annotations.map((annotation) => ({
-    row: annotation.target.row,
-    col: annotation.target.column,
-    renderer: 'addedCell',
-    // formula: `=${annotation.target.row}+${annotation.target.column}`,
-  }));
-
   if (!doc) {
     return null;
   }
@@ -140,7 +133,6 @@ export const AmbSheet = ({
         autoWrapCol={false}
         licenseKey="non-commercial-and-evaluation"
         renderer="amb"
-        // cell={cellAnnotations}
         // Attach raw formula results to the cell metadata
         cells={(row, col) => {
           const rawContents = doc.data[row][col];
