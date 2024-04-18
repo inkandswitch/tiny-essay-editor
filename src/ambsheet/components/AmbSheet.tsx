@@ -26,8 +26,9 @@ registerRenderer('addedCell', (hotInstance, TD, ...rest) => {
 registerRenderer(
   'amb',
   (instance, td, row, col, prop, value, cellProperties) => {
-    const valueAsText = JSON.stringify(value);
-
+    if (value) {
+      console.log(value);
+    }
     if (value === null) {
       td.innerText = '';
       return td;

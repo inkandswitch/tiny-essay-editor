@@ -1,6 +1,15 @@
 import assert from 'assert';
 import { describe, it } from 'vitest';
-import { evalSheet } from '@/ambsheet/eval.js';
+import {
+  FilteredResults,
+  NOT_READY,
+  Results,
+  Value,
+  evalSheet,
+  filter,
+  filter,
+  printResults,
+} from '@/ambsheet/eval.js';
 
 describe('ambsheet evaluator', () => {
   it('handles basic addition', () => {
@@ -102,6 +111,55 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(
       evalSheet([['={1, 2}', '=if(A1>1, A1, 5)']]).print(),
       [['{1,2}', '{5,2}']]
+    );
+  });
+
+  it('filters values correctly', () => {
+    const results = evalSheet([['={1, 2}', '={3, 4}', '=A1*10+B1']]).results;
+
+    assert.deepStrictEqual(printResults(results), [
+      ['{1,2}', '{3,4}', '{13,14,23,24}'],
+    ]);
+
+    const filteredResultsToResults = (
+      filteredResults: FilteredResults
+    ): Results => {
+      return filteredResults.map((row) =>
+        row.map((cell) => {
+          if (cell === null || cell === NOT_READY) {
+            return cell;
+          }
+          return (cell as { value: Value; include: boolean }[])
+            .filter((v) => v.include)
+            .map((v) => v.value);
+        })
+      );
+    };
+
+    const resultCell = results[0][2];
+
+    assert.deepStrictEqual(
+      printResults(
+        filteredResultsToResults(
+          filter(results, [
+            // select 14, 23 in the result cell
+            [resultCell[1].context, resultCell[2].context],
+          ])
+        )
+      ),
+      [['{1,2}', '{3,4}', '{14,23}']]
+    );
+
+    assert.deepStrictEqual(
+      printResults(
+        filteredResultsToResults(
+          filter(results, [
+            // select 13, 14 in the result cell
+            [resultCell[0].context, resultCell[1].context],
+          ])
+        )
+      ),
+      [['1', '{3,4}', '{13,14}']]
     );
   });
 });

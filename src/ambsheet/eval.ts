@@ -24,7 +24,38 @@ const contextsAreCompatible = (a: Context, b: Context) => {
   return true;
 };
 
-const NOT_READY = {};
+export type Results = (Value[] | typeof NOT_READY | null)[][];
+
+export type FilteredResults = (
+  | { value: Value; include: boolean }[]
+  | typeof NOT_READY
+  | null
+)[][];
+
+// AND of ORs
+export function filter(
+  results: Results,
+  contextses: Context[][]
+): FilteredResults {
+  const shouldInclude = (v: Value) =>
+    contextses.every((contexts) =>
+      contexts.some((ctx) => contextsAreCompatible(ctx, v.context))
+    );
+  return results.map((row) =>
+    row.map((cell) => {
+      if (cell == null || cell === NOT_READY) {
+        return cell;
+      }
+      // todo: get rid of this typecast by using a type guard
+      return (cell as Value[]).map((value) => ({
+        value,
+        include: shouldInclude(value),
+      }));
+    })
+  );
+}
+
+export const NOT_READY = {};
 
 const isReady = (
   cellValues: Value[] | typeof NOT_READY
@@ -36,7 +67,7 @@ const isReady = (
  */
 export class Env {
   // accumulate evaluation results at each point in the sheet
-  public results: (Value[] | typeof NOT_READY | null)[][];
+  public results: Results;
 
   constructor(private data: AmbSheetDoc['data']) {
     this.results = data.map((row) =>
@@ -218,20 +249,24 @@ export class Env {
   }
 
   print() {
-    return this.results.map((row) =>
-      row.map((cell) => {
-        if (!isReady(cell)) {
-          return 'ERROR!';
-        } else if (cell === null) {
-          return '';
-        } else if (cell.length === 1) {
-          return '' + cell[0].rawValue;
-        } else {
-          return '{' + cell.map((v) => v.rawValue).join(',') + '}';
-        }
-      })
-    );
+    return printResults(this.results);
   }
+}
+
+export function printResults(results: Results) {
+  return results.map((row) =>
+    row.map((cell) => {
+      if (!isReady(cell)) {
+        return 'ERROR!';
+      } else if (cell === null) {
+        return '';
+      } else if (cell.length === 1) {
+        return '' + cell[0].rawValue;
+      } else {
+        return '{' + cell.map((v) => v.rawValue).join(',') + '}';
+      }
+    })
+  );
 }
 
 export const evalSheet = (data: AmbSheetDoc['data']) => new Env(data).eval();
