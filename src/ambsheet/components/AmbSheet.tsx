@@ -79,9 +79,10 @@ registerRenderer(
       valueElement.onmouseenter = () => {
         instance.setCellMeta(row, col, 'hoveredValue', val.value);
       };
-      valueElement.onmouseleave = () => {
+      valueElement.addEventListener('mouseleave', () => {
+        console.log('leave');
         instance.setCellMeta(row, col, 'hoveredValue', null);
-      };
+      });
       container.appendChild(valueElement);
     });
     td.innerHTML = '';
@@ -114,12 +115,12 @@ export const AmbSheet = ({
     if (!doc) {
       return [];
     }
-    const results = evalSheet(doc.data).results;
-    const filtered = filter(results, filterContexts);
+    return evalSheet(doc.data).results;
+  }, [doc]);
 
-    console.log({ filterContexts, filtered });
-    return filtered;
-  }, [doc, filterContexts]);
+  const filteredResults = useMemo(() => {
+    return filter(evaluatedSheet, filterContexts);
+  }, [evaluatedSheet, filterContexts]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -137,6 +138,11 @@ export const AmbSheet = ({
   };
 
   const onAfterSetCellMeta = (_, __, ___, value) => {
+    console.log(value);
+    if (value === null) {
+      setFilterContexts([]);
+      return;
+    }
     const newFilterContexts = [[value.context]];
     setFilterContexts(newFilterContexts);
   };
@@ -168,7 +174,7 @@ export const AmbSheet = ({
   return (
     <div className="w-full h-full overflow-hidden">
       <HotTable
-        data={evaluatedSheet}
+        data={filteredResults}
         editor={FormulaEditor}
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}

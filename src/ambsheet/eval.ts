@@ -37,7 +37,6 @@ export function filter(
   results: Results,
   contextses: AmbContext[][]
 ): FilteredResults {
-  console.log('filtering', results, contextses);
   const shouldInclude = (v: Value) =>
     contextses.every((contexts) =>
       contexts.some((ctx) => contextsAreCompatible(ctx, v.context))
