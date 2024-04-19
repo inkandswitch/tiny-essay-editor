@@ -6,6 +6,9 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
+  // We set the app type to mpa (Multi Page Application) so sub routes will all resolve to index.html
+  appType: "mpa",
+
   base: "./",
   plugins: [topLevelAwait(), react()],
   resolve: {
@@ -13,7 +16,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-
   optimizeDeps: {
     // This is necessary because otherwise `vite dev` includes two separate
     // versions of the JS wrapper. This causes problems because the JS
@@ -25,7 +27,6 @@ export default defineConfig({
       "@syntect/wasm",
     ],
   },
-
   build: {
     rollupOptions: {
       input: {

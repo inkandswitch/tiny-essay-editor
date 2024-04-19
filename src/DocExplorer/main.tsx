@@ -19,7 +19,7 @@ import { timeStamp } from "console";
 // First, spawn the serviceworker.
 async function setupServiceWorker() {
   const registration = await navigator.serviceWorker.register(
-    "service-worker.js",
+    "/service-worker.js",
     {
       type: "module",
     }
