@@ -3,7 +3,7 @@ import { EditorView } from "@codemirror/view";
 type DragAndDropImagePluginConfig = {
   // onDrop is called whenever an image is dropped into the editor
   // the handle can return a string that will be inserted at the the drop position
-  onDrop: (file: File) => string | undefined;
+  onDrop: (file: File) => Promise<string | undefined>;
 };
 
 export const dragAndDropImagesPlugin = ({
@@ -25,17 +25,20 @@ export const dragAndDropImagesPlugin = ({
       if (files.length > 0) {
         const file = files[0];
         if (file.type.startsWith("image/")) {
-          const text = onDrop(file);
+          onDrop(file).then((text) => {
+            console.log("drop", text);
 
-          if (text) {
-            const pos = view.posAtCoords({
-              x: event.clientX,
-              y: event.clientY,
-            });
-            view.dispatch({
-              changes: { from: pos, insert: text },
-            });
-          }
+            if (text) {
+              const pos = view.posAtCoords({
+                x: event.clientX,
+                y: event.clientY,
+              });
+
+              view.dispatch({
+                changes: { from: pos, insert: text },
+              });
+            }
+          });
         } else {
           alert("Only image files are allowed.");
         }

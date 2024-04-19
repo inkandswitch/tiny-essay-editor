@@ -95,7 +95,7 @@ export function MarkdownEditor({
 
         dropCursor(),
         dragAndDropImagesPlugin({
-          onDrop: (file) => {
+          onDrop: async (file) => {
             const doc = handle.docSync();
             const fileAlreadyExists = doc.assets && doc.assets[file.name];
             if (fileAlreadyExists) {
@@ -105,22 +105,25 @@ export function MarkdownEditor({
               return;
             }
 
-            loadFile(file).then((contents) => {
-              handle.change((doc) => {
-                // convert old docs
-                if (!doc.assets) {
-                  doc.assets = {};
-                }
+            const contents = await loadFile(file);
 
-                doc.assets[file.name] = {
-                  contentType: file.type,
-                  contents,
-                };
-              });
+            handle.change((doc) => {
+              // convert old docs
+              if (!doc.assets) {
+                doc.assets = {};
+              }
+
+              doc.assets[file.name] = {
+                contentType: file.type,
+                contents,
+              };
             });
 
-            const markdownImageText = `![](./assets/${file.name})`;
-            return markdownImageText;
+            // hack: wait till next frame so doc will be (hopefully) synced
+            // with service worker by then
+            await new Promise((resolve) => setTimeout(() => resolve(true)));
+
+            return `![](./assets/${file.name})`;
           },
         }),
         indentOnInput(),
