@@ -57,8 +57,8 @@ function getImages(view: EditorView) {
       const caption = match.groups.caption;
       const widget = Decoration.widget({
         widget: new Image(url, caption),
-        side: 1,
-      }).range(position + match[0].length);
+        side: -1,
+      }).range(position);
       decorations.push(widget);
       decorations.push(
         Decoration.mark({
