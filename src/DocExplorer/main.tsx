@@ -1,5 +1,7 @@
 import * as A from "@automerge/automerge";
 import * as AW from "@automerge/automerge-wasm";
+import React from "react";
+import ReactDom from "react-dom/client";
 import {
   Repo,
   AutomergeUrl,
@@ -12,9 +14,9 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { next as Automerge } from "@automerge/automerge";
 
 import "./index.css";
-import { mount } from "./mount.js";
 import { getAccount } from "./account.js";
-import { timeStamp } from "console";
+import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { useLocation } from "./navigation.js";
 
 // First, spawn the serviceworker.
 async function setupServiceWorker() {
@@ -123,4 +125,33 @@ window.repo = repo;
 // Unlike other uses of mount, here we don't pass any doc URL.
 // That's because DocExplorer internally expects to manage the URL hash itself.
 
-mount(document.getElementById("root"), {});
+const Root = () => {
+  const location = useLocation();
+
+  return (
+    <div className="p-10">
+      {location}
+      <div className="flex gap-2">
+        <a href="foo" className="text-blue-500 underline">
+          foo
+        </a>
+
+        <a href="bar" className="text-blue-500 underline">
+          bar
+        </a>
+      </div>
+      <pre>{JSON.stringify(location, null, 2)}</pre>
+    </div>
+  );
+};
+
+ReactDom.createRoot(document.getElementById("root")).render(
+  // We get the Automerge Repo from the global window;
+  // this is set by either our standalone entrypoint or trailrunner
+  React.createElement(
+    RepoContext.Provider,
+    // eslint-disable-next-line no-undef
+    { value: repo },
+    React.createElement(Root, {})
+  )
+);
