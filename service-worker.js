@@ -78,39 +78,32 @@ self.addEventListener("activate", async (event) => {
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
 
-  const match = url.pathname.match(
-    new RegExp("^.*/automerge-repo/(automerge:.*)")
+  const [documentId, ...path] = url.pathname.slice(1).split("/");
+  const possibleAutomergeUrl = `automerge:${documentId}`;
+
+  console.log(
+    "fetch",
+    url.pathname.split("/"),
+    url.pathname,
+    isValidAutomergeUrl(possibleAutomergeUrl),
+    possibleAutomergeUrl
   );
-  if (match) {
+
+  if (isValidAutomergeUrl(possibleAutomergeUrl) && path[0] === "assets") {
     event.respondWith(
       (async () => {
-        let [docUrl, ...path] = match[1].split("/");
-
-        if (!isValidAutomergeUrl(docUrl)) {
-          return new Response(`Invalid Automerge URL\n${docUrl}`, {
-            status: 500,
-            headers: { "Content-Type": "text/plain" },
-          });
-        }
-
-        const handle = (await repo).find(docUrl);
+        const handle = (await repo).find(possibleAutomergeUrl);
         await handle.whenReady();
         const doc = await handle.doc();
 
         if (!doc) {
           return new Response(
-            `Document unavailable.\n${docUrl}: ${handle.state}`,
+            `Document unavailable.\n${possibleAutomergeUrl}: ${handle.state}`,
             {
               status: 500,
               headers: { "Content-Type": "text/plain" },
             }
           );
-        }
-
-        // This is a bit of a hack but helps with JSPM looking for package.json
-        // at the root. It might actually not do that now I think about it.
-        if (path[0] === "package.json") {
-          return new Response(JSON.stringify(doc));
         }
 
         const subTree = path.reduce((acc, curr) => acc?.[curr], doc);
@@ -144,7 +137,7 @@ self.addEventListener("fetch", async (event) => {
       })()
     );
   }
-  // disable caching files for now
+  // disable caching other files for now
   /* else if (event.request.method === "GET" && url.origin === self.location.origin) {
     event.respondWith(
       (async () => {

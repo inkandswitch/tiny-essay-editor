@@ -37,6 +37,7 @@ import {
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 
 export type TextSelection = {
   from: number;
@@ -118,7 +119,7 @@ export function MarkdownEditor({
               });
             });
 
-            const markdownImageText = `![${file.name}](${file.name})`;
+            const markdownImageText = `![](./assets/${file.name})`;
             return markdownImageText;
           },
         }),
@@ -153,6 +154,7 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
+        previewImagesPlugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?

@@ -253,7 +253,7 @@ const isValidDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
 
 const parseUrlPath = (path: string): UrlParams | null => {
-  const match = path.match(/^\/(?<docType>\w+)\/(?<name>.*-)?(?<docId>\w+)$/);
+  const match = path.match(/^\/(?<name>.*-)?(?<docId>\w+)\/(?<docType>\w+)$/);
 
   if (!match) {
     return;
@@ -336,7 +336,7 @@ const useSelectedDoc = ({
     }
 
     const documentId = params.url.split(":")[1];
-    navigation.navigate(`/${params.type}/${documentId}`, options);
+    navigation.navigate(`/${documentId}/${params.type}`, options);
   };
 
   const urlParams = useMemo<UrlParams | null>(() => {
