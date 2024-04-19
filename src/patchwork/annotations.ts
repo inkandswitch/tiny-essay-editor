@@ -35,10 +35,12 @@ export function useAnnotations({
   doc,
   docType,
   diff,
+  isCommentInputFocused,
 }: {
   doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
   docType: DocType;
   diff?: DiffWithProvenance;
+  isCommentInputFocused: boolean;
 }): {
   annotations: AnnotationWithUIState<unknown, unknown>[];
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
@@ -103,6 +105,7 @@ export function useAnnotations({
   );
 
   const { annotations, annotationGroups } = useMemo(() => {
+    console.log("yo");
     if (!doc) {
       return { annotations: [], annotationGroups: [] };
     }
@@ -192,6 +195,18 @@ export function useAnnotations({
       computedAnnotationGroups
     );
 
+    // If the comment input is focused, then we highlight the selected anchors
+    // which will be the target of the pending comment.
+    if (isCommentInputFocused && selectedState?.type === "anchors") {
+      const selectionAnnotations = selectedState.anchors.map((anchor) => ({
+        type: "highlighted" as const,
+        anchor,
+        value: null,
+      }));
+
+      highlightAnnotations.push(...selectionAnnotations);
+    }
+
     const sortAnchorsBy = docTypes[docType].sortAnchorsBy;
 
     return {
@@ -206,7 +221,7 @@ export function useAnnotations({
           )
         : combinedAnnotationGroups,
     };
-  }, [doc, discussions, diff]);
+  }, [doc, diff, selectedState, isCommentInputFocused, docType]);
 
   const {
     selectedAnchors,

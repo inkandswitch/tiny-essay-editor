@@ -42,6 +42,8 @@ type ReviewSidebarProps<T> = {
   setSelectedAnnotationGroupId: (id: string) => void;
   hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
+  isCommentInputFocused: boolean;
+  setIsCommentInputFocused: (isFocused: boolean) => void;
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
@@ -57,13 +59,13 @@ export const ReviewSidebar = React.memo(
     setSelectedAnnotationGroupId,
     hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
+    isCommentInputFocused,
+    setIsCommentInputFocused,
   }: ReviewSidebarProps<T>) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
     const account = useCurrentAccount();
-
-    const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
 
     const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
       useMemo(() => {

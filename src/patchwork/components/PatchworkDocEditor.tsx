@@ -94,6 +94,8 @@ export const PatchworkDocEditor: React.FC<{
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
 
+  const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
+
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
@@ -303,6 +305,7 @@ export const PatchworkDocEditor: React.FC<{
     doc: activeDoc,
     docType,
     diff: diffForEditor,
+    isCommentInputFocused,
   });
 
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("comments");
@@ -619,6 +622,8 @@ export const PatchworkDocEditor: React.FC<{
                 hoveredAnnotationGroupId={hoveredAnnotationGroupId}
                 setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                 setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+                isCommentInputFocused={isCommentInputFocused}
+                setIsCommentInputFocused={setIsCommentInputFocused}
               />
             )}
           </div>
