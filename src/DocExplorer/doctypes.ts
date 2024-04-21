@@ -1,5 +1,6 @@
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { EssayDatatype } from "@/tee/datatype";
+import { LivingPapersDatatype } from "@/living-papers/datatype";
 
 export interface DataType {
   id: string;
@@ -13,6 +14,7 @@ export interface DataType {
 export const docTypes = {
   essay: EssayDatatype,
   tldraw: TLDrawDatatype,
+  livingPapers: LivingPapersDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;

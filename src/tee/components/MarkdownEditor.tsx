@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import {
-  EditorView,
-  keymap,
-  drawSelection,
-  dropCursor,
-} from "@codemirror/view";
+import { EditorView, keymap, dropCursor } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 

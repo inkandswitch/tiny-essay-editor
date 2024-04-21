@@ -33,14 +33,16 @@ export const getTitle = (doc: any) => {
   const frontmatterMatch = content.match(frontmatterRegex);
   const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
 
-  const titleRegex = /title:\s"(.+?)"/;
-  const subtitleRegex = /subtitle:\s"(.+?)"/;
+  const titleRegex = /title:\s"?(.+?)"?\n/;
+  const subtitleRegex = /subtitle:\s"?(.+?)"?\n/;
 
   const titleMatch = frontmatter.match(titleRegex);
   const subtitleMatch = frontmatter.match(subtitleRegex);
 
   let title = titleMatch ? titleMatch[1] : null;
   const subtitle = subtitleMatch ? subtitleMatch[1] : "";
+
+  console.log(doc, frontmatter, title, subtitle);
 
   // If title not found in frontmatter, find first markdown heading
   if (!title) {
