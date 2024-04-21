@@ -18,6 +18,7 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
+import { LivingPapersEditor } from "@/living-papers/components/LivingPapersEditor";
 
 export type Tool = {
   id: string;
@@ -38,6 +39,13 @@ const TOOLS = {
       id: "tldraw",
       name: "Drawing",
       component: TLDraw,
+    },
+  ],
+  livingPapers: [
+    {
+      id: "livingPapers",
+      name: "Living Papers",
+      component: LivingPapersEditor,
     },
   ],
 };
@@ -65,9 +73,9 @@ export const DocExplorer: React.FC = () => {
     () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
     [selectedDocLink]
   );
-  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
+  const [activeTool, setActiveTool] = useState(availableTools?.[0] ?? null);
   useEffect(() => {
-    setActiveTool(availableTools[0]);
+    setActiveTool(availableTools?.[0]);
   }, [availableTools]);
 
   const ToolComponent = activeTool?.component;
@@ -229,6 +237,12 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && ToolComponent && (
                 <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+              )}
+
+              {!ToolComponent && (
+                <div className="flex items-center justify-center h-full bg-gray-100 text-gray-500 text-sm cursor-default">
+                  No editor available for this datatype
+                </div>
               )}
             </div>
           </div>
