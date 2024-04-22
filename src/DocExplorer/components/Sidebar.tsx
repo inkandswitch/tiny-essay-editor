@@ -50,14 +50,14 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
 
 type SidebarProps = {
   selectedDocUrl: AutomergeUrl | null;
-  selectDoc: (docUrl: AutomergeUrl | null) => void;
+  selectDocLink: (docLink: DocLink | null) => void;
   hideSidebar: () => void;
   addNewDocument: (doc: { type: DocType }) => void;
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
   selectedDocUrl,
-  selectDoc,
+  selectDocLink,
   hideSidebar,
   addNewDocument,
 }) => {
@@ -177,7 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return false;
                   }
                   if (isValidAutomergeUrl(selections[0]?.id)) {
-                    selectDoc(selections[0].id as AutomergeUrl);
+                    selectDocLink(selections[0].data);
                   }
                 }}
                 // For now, don't allow deleting w/ backspace key in the sidebar—

@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Button } from "@/components/ui/button";
 import {
+  DocLink,
   FolderDoc,
   useCurrentAccount,
   useCurrentAccountDoc,
@@ -55,22 +56,19 @@ export const DocExplorer: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectedDocType, selectDoc, selectedDocUrl } =
-    useSelectedDoc({
-      rootFolderDoc,
-      changeRootFolderDoc,
-    });
+  const [selectedDocLink, setSelectedDocLink] = useSelectedDocLink({
+    rootFolderDoc,
+    changeRootFolderDoc,
+  });
 
-  const selectedDocLink = rootFolderDoc?.docs.find(
-    (doc) => doc.url === selectedDocUrl
-  );
+  const [selectedDoc] = useDocument(selectedDocLink?.url);
 
   const selectedDocName = selectedDocLink?.name;
 
   const availableTools = useMemo(() => {
-    const type = selectedDocType ?? selectedDocLink.type;
+    const type = selectedDocLink.type ?? selectedDocLink.type;
     return type ? TOOLS[type] : [];
-  }, [selectedDocLink, selectedDocType]);
+  }, [selectedDocLink, selectedDocLink.type]);
 
   const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
   useEffect(() => {
@@ -92,16 +90,16 @@ export const DocExplorer: React.FC = () => {
         return;
       }
 
-      changeRootFolderDoc((doc) =>
-        doc.docs.unshift({
-          type: type,
-          name: "Untitled document",
-          url: newDocHandle.url,
-        })
-      );
+      const newDocLink = {
+        type: type,
+        name: "Untitled document",
+        url: newDocHandle.url,
+      };
+
+      changeRootFolderDoc((doc) => doc.docs.unshift(newDocLink));
 
       // By updating the URL to the new doc, we'll trigger a navigation
-      selectDoc({ docUrl: newDocHandle.url, docType: type });
+      setSelectedDocLink(newDocLink);
     },
     [changeRootFolderDoc, repo, rootFolderDoc]
   );
@@ -116,7 +114,7 @@ export const DocExplorer: React.FC = () => {
 
       changeRootFolderDoc((doc) => {
         const existingDocLink = doc.docs.find(
-          (link) => link.url === selectedDocUrl
+          (link) => link.url === selectedDocLink.url
         );
         if (existingDocLink && existingDocLink.name !== title) {
           existingDocLink.name = title;
@@ -125,7 +123,7 @@ export const DocExplorer: React.FC = () => {
     })();
   }, [
     selectedDoc,
-    selectedDocUrl,
+    selectedDocLink,
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
@@ -147,7 +145,7 @@ export const DocExplorer: React.FC = () => {
       }
 
       // if there's no document selected and the user hits enter, make a new document
-      if (!selectedDocUrl && event.key === "Enter") {
+      if (!selectedDocLink.url && event.key === "Enter") {
         addNewDocument({ type: "essay" });
       }
     };
@@ -158,17 +156,17 @@ export const DocExplorer: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", keydownHandler);
     };
-  }, [addNewDocument, selectedDocUrl]);
+  }, [addNewDocument, selectedDocLink.url]);
 
   const deleteFromRootFolder = (id: string) => {
     const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id);
     if (itemIndex >= 0) {
       if (itemIndex < rootFolderDoc?.docs.length - 1) {
-        selectDoc(rootFolderDoc?.docs[itemIndex + 1].url);
+        setSelectedDocLink(rootFolderDoc?.docs[itemIndex + 1]);
       } else if (itemIndex > 1) {
-        selectDoc(rootFolderDoc?.docs[itemIndex - 1].url);
+        setSelectedDocLink(rootFolderDoc?.docs[itemIndex - 1]);
       } else {
-        selectDoc(null);
+        setSelectedDocLink(null);
       }
       changeRootFolderDoc((doc) => {
         doc.docs.splice(itemIndex, 1);
@@ -193,29 +191,30 @@ export const DocExplorer: React.FC = () => {
             showSidebar ? "w-64" : "w-0 translate-x-[-100%]"
           } flex-shrink-0 bg-gray-100 border-r border-gray-400 transition-all duration-100 overflow-hidden  `}
         >
-          <Sidebar
-            selectedDocUrl={selectedDocUrl}
-            selectDoc={selectDoc}
-            hideSidebar={() => setShowSidebar(false)}
-            addNewDocument={addNewDocument}
-          />
+          {
+            <Sidebar
+              selectedDocUrl={selectedDocLink.url}
+              selectDocLink={setSelectedDocLink}
+              hideSidebar={() => setShowSidebar(false)}
+              addNewDocument={addNewDocument}
+            />
+          }
         </div>
         <div
           className={`flex-grow relative h-screen ${
-            !selectedDocUrl ? "bg-gray-200" : ""
+            !selectedDocLink.url ? "bg-gray-200" : ""
           }`}
         >
           <div className="flex flex-col h-screen">
             <Topbar
               showSidebar={showSidebar}
               setShowSidebar={setShowSidebar}
-              selectedDocUrl={selectedDocUrl}
-              selectDoc={selectDoc}
+              selectedDocLink={selectedDocLink}
+              selectDocLink={setSelectedDocLink}
               deleteFromAccountDocList={deleteFromRootFolder}
-              addNewDocument={addNewDocument}
             />
             <div className="flex-grow overflow-hidden z-0">
-              {!selectedDocUrl && (
+              {!selectedDocLink.url && (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div>
                     <p className="text-center cursor-default select-none mb-4">
@@ -234,8 +233,11 @@ export const DocExplorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
+              {selectedDocLink.url && selectedDoc && ToolComponent && (
+                <ToolComponent
+                  docUrl={selectedDocLink.url}
+                  key={selectedDocLink.url}
+                />
               )}
             </div>
           </div>
@@ -245,16 +247,10 @@ export const DocExplorer: React.FC = () => {
   );
 };
 
-export type UrlParams = {
-  url: AutomergeUrl;
-  type: DocType;
-  name?: string;
-};
-
 const isValidDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
 
-const parseUrlPath = (path: string): UrlParams | null => {
+const parseUrlPath = (path: string): DocLink | null => {
   const match = path.match(/^\/(?<name>.*-)?(?<docId>\w+)\/(?<docType>\w+)$/);
 
   if (!match) {
@@ -281,7 +277,7 @@ const parseUrlPath = (path: string): UrlParams | null => {
   };
 };
 
-const parseUrlHash = (hash: string): UrlParams => {
+const parseUrlHash = (hash: string): DocLink => {
   // This is a backwards compatibility shim for old URLs where we
   // only had one parameter, the Automerge URL.
   // We just assume it's a TEE essay in that case.
@@ -289,6 +285,7 @@ const parseUrlHash = (hash: string): UrlParams => {
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
       url: possibleAutomergeUrl,
+      name: "",
       type: "essay",
     };
   }
@@ -313,6 +310,7 @@ const parseUrlHash = (hash: string): UrlParams => {
 
   return {
     url: docUrl,
+    name: "",
     type: docType,
   };
 };
@@ -320,32 +318,32 @@ const parseUrlHash = (hash: string): UrlParams => {
 // Drive the currently selected doc using the URL
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
-const useSelectedDoc = ({
+const useSelectedDocLink = ({
   rootFolderDoc,
   changeRootFolderDoc,
 }: {
   rootFolderDoc: FolderDoc;
   changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
-}) => {
+}): [DocLink, (docLink: DocLink) => void] => {
   const currentUrlPath = useCurrentUrlPath();
 
-  const setUrl = (
-    params: UrlParams,
+  const setSelectedDocLink = (
+    docLink: DocLink,
     options: NavigationNavigateOptions = {}
   ) => {
     if (
-      urlParams &&
-      params.url === urlParams.url &&
-      params.type == urlParams.type
+      selectedDocLink &&
+      selectedDocLink.url === docLink.url &&
+      selectedDocLink.type == docLink.type
     ) {
       return;
     }
 
-    const documentId = params.url.split(":")[1];
-    navigation.navigate(`/${documentId}/${params.type}`, options);
+    const documentId = docLink.url.split(":")[1];
+    navigation.navigate(`/${documentId}/${docLink.type}`, options);
   };
 
-  const urlParams = useMemo<UrlParams | null>(() => {
+  const selectedDocLink = useMemo<UrlParams | null>(() => {
     // todo: handle old url
     /* if (currentUrlPath === "/" || currentUrlPath === "") {
       if (window.location.hash) {
@@ -363,51 +361,24 @@ const useSelectedDoc = ({
     return parseUrlPath(currentUrlPath);
   }, [currentUrlPath]);
 
-  const selectedDocUrl = urlParams?.url;
-  const selectedDocType = urlParams?.type;
-
-  const [selectedDoc] = useDocument(selectedDocUrl);
-
-  const selectDoc = (docUrl: AutomergeUrl | null) => {
-    const doc = rootFolderDoc.docs.find((doc) => doc.url === docUrl);
-    if (!doc) {
-      alert(`Could not find document with URL: ${docUrl}`);
-      return;
-    }
-    if (!Object.keys(docTypes).includes(doc.type)) {
-      alert(`Unknown doc type: ${doc.type}`);
-      return;
-    }
-    setUrl({
-      url: docUrl,
-      type: doc.type,
-      name: doc.name,
-    });
-  };
-
   useEffect(() => {
-    if (!rootFolderDoc) {
+    if (!rootFolderDoc || !selectedDocLink) {
       return;
     }
 
     // TODO: validate the doc's data schema here before adding to our collection
-    if (!rootFolderDoc?.docs.find((doc) => doc.url === selectedDocUrl)) {
+    if (!rootFolderDoc?.docs.find((doc) => doc.url === selectedDocLink.url)) {
       changeRootFolderDoc((doc) =>
         doc.docs.unshift({
-          type: selectedDocType,
+          type: selectedDocLink.type,
           name: "Unknown document", // TODO: sync up the name once we load the data
-          url: selectedDocUrl,
+          url: selectedDocLink.url,
         })
       );
     }
-  }, [rootFolderDoc, selectedDocUrl]);
+  }, [rootFolderDoc, selectedDocLink]);
 
-  return {
-    selectedDocUrl,
-    selectedDocType,
-    selectedDoc,
-    selectDoc,
-  };
+  return [selectedDocLink, setSelectedDocLink];
 };
 
 const removeHash = () => {
