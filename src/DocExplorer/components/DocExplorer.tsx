@@ -55,10 +55,11 @@ export const DocExplorer: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { selectedDoc, selectDoc, selectedDocUrl } = useSelectedDoc({
-    rootFolderDoc,
-    changeRootFolderDoc,
-  });
+  const { selectedDoc, selectedDocType, selectDoc, selectedDocUrl } =
+    useSelectedDoc({
+      rootFolderDoc,
+      changeRootFolderDoc,
+    });
 
   const selectedDocLink = rootFolderDoc?.docs.find(
     (doc) => doc.url === selectedDocUrl
@@ -66,10 +67,11 @@ export const DocExplorer: React.FC = () => {
 
   const selectedDocName = selectedDocLink?.name;
 
-  const availableTools = useMemo(
-    () => (selectedDocLink ? TOOLS[selectedDocLink.type] : []),
-    [selectedDocLink]
-  );
+  const availableTools = useMemo(() => {
+    const type = selectedDocType ?? selectedDocLink.type;
+    return type ? TOOLS[type] : [];
+  }, [selectedDocLink, selectedDocType]);
+
   const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
   useEffect(() => {
     setActiveTool(availableTools[0]);
@@ -364,8 +366,6 @@ const useSelectedDoc = ({
   const selectedDocUrl = urlParams?.url;
   const selectedDocType = urlParams?.type;
 
-  console.log(selectedDocUrl);
-
   const [selectedDoc] = useDocument(selectedDocUrl);
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
@@ -385,37 +385,28 @@ const useSelectedDoc = ({
     });
   };
 
-  // Add an existing doc to our collection
-  const openDocFromUrl = useCallback(
-    (params: UrlParams) => {
-      if (!rootFolderDoc) {
-        return;
-      }
+  useEffect(() => {
+    if (!rootFolderDoc) {
+      return;
+    }
 
-      const { type: docType, url: docUrl } = params;
-
-      // TODO: validate the doc's data schema here before adding to our collection
-      if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
-        changeRootFolderDoc((doc) =>
-          doc.docs.unshift({
-            type: docType,
-            name: "Unknown document", // TODO: sync up the name once we load the data
-            url: docUrl,
-          })
-        );
-      }
-
-      setUrl(params);
-    },
-    [rootFolderDoc, changeRootFolderDoc, selectDoc]
-  );
+    // TODO: validate the doc's data schema here before adding to our collection
+    if (!rootFolderDoc?.docs.find((doc) => doc.url === selectedDocUrl)) {
+      changeRootFolderDoc((doc) =>
+        doc.docs.unshift({
+          type: selectedDocType,
+          name: "Unknown document", // TODO: sync up the name once we load the data
+          url: selectedDocUrl,
+        })
+      );
+    }
+  }, [rootFolderDoc, selectedDocUrl]);
 
   return {
     selectedDocUrl,
     selectedDocType,
     selectedDoc,
     selectDoc,
-    openDocFromUrl,
   };
 };
 
