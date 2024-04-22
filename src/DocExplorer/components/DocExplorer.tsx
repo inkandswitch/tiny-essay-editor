@@ -64,11 +64,12 @@ export const DocExplorer: React.FC = () => {
   const [selectedDoc] = useDocument(selectedDocLink?.url);
 
   const selectedDocName = selectedDocLink?.name;
+  const selectedDocUrl = selectedDocLink?.url;
+  const selectedDocType = selectedDocLink?.type;
 
   const availableTools = useMemo(() => {
-    const type = selectedDocLink.type ?? selectedDocLink.type;
-    return type ? TOOLS[type] : [];
-  }, [selectedDocLink, selectedDocLink.type]);
+    return selectedDocType ? TOOLS[selectedDocType] : [];
+  }, [selectedDocType]);
 
   const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
   useEffect(() => {
@@ -110,11 +111,11 @@ export const DocExplorer: React.FC = () => {
       if (selectedDoc === undefined || selectedDocLink === undefined) {
         return;
       }
-      const title = await docTypes[selectedDocLink.type].getTitle(selectedDoc);
+      const title = await docTypes[selectedDocType].getTitle(selectedDoc);
 
       changeRootFolderDoc((doc) => {
         const existingDocLink = doc.docs.find(
-          (link) => link.url === selectedDocLink.url
+          (link) => link.url === selectedDocUrl
         );
         if (existingDocLink && existingDocLink.name !== title) {
           existingDocLink.name = title;
@@ -123,7 +124,6 @@ export const DocExplorer: React.FC = () => {
     })();
   }, [
     selectedDoc,
-    selectedDocLink,
     changeAccountDoc,
     rootFolderDoc,
     changeRootFolderDoc,
@@ -145,7 +145,7 @@ export const DocExplorer: React.FC = () => {
       }
 
       // if there's no document selected and the user hits enter, make a new document
-      if (!selectedDocLink.url && event.key === "Enter") {
+      if (!selectedDocUrl && event.key === "Enter") {
         addNewDocument({ type: "essay" });
       }
     };
@@ -156,7 +156,7 @@ export const DocExplorer: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", keydownHandler);
     };
-  }, [addNewDocument, selectedDocLink.url]);
+  }, [addNewDocument, selectedDocUrl]);
 
   const deleteFromRootFolder = (id: string) => {
     const itemIndex = rootFolderDoc?.docs.findIndex((item) => item.url === id);
@@ -193,7 +193,7 @@ export const DocExplorer: React.FC = () => {
         >
           {
             <Sidebar
-              selectedDocUrl={selectedDocLink.url}
+              selectedDocUrl={selectedDocUrl}
               selectDocLink={setSelectedDocLink}
               hideSidebar={() => setShowSidebar(false)}
               addNewDocument={addNewDocument}
@@ -202,7 +202,7 @@ export const DocExplorer: React.FC = () => {
         </div>
         <div
           className={`flex-grow relative h-screen ${
-            !selectedDocLink.url ? "bg-gray-200" : ""
+            !selectedDocUrl ? "bg-gray-200" : ""
           }`}
         >
           <div className="flex flex-col h-screen">
@@ -214,7 +214,7 @@ export const DocExplorer: React.FC = () => {
               deleteFromAccountDocList={deleteFromRootFolder}
             />
             <div className="flex-grow overflow-hidden z-0">
-              {!selectedDocLink.url && (
+              {!selectedDocUrl && (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div>
                     <p className="text-center cursor-default select-none mb-4">
@@ -233,11 +233,8 @@ export const DocExplorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocLink.url && selectedDoc && ToolComponent && (
-                <ToolComponent
-                  docUrl={selectedDocLink.url}
-                  key={selectedDocLink.url}
-                />
+              {selectedDocUrl && selectedDoc && ToolComponent && (
+                <ToolComponent docUrl={selectedDocUrl} key={selectedDocUrl} />
               )}
             </div>
           </div>
@@ -340,10 +337,21 @@ const useSelectedDocLink = ({
     }
 
     const documentId = docLink.url.split(":")[1];
-    navigation.navigate(`/${documentId}/${docLink.type}`, options);
+
+    const name = docLink.name
+      ? `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`
+      : "";
+
+    console.log("name", name);
+
+    navigation.navigate(`/${name}${documentId}/${docLink.type}`, options);
   };
 
-  const selectedDocLink = useMemo<UrlParams | null>(() => {
+  const selectedDocLink = useMemo<DocLink | null>(() => {
+    if (!rootFolderDoc) {
+      return;
+    }
+
     // todo: handle old url
     /* if (currentUrlPath === "/" || currentUrlPath === "") {
       if (window.location.hash) {
@@ -358,8 +366,15 @@ const useSelectedDocLink = ({
       }
     } */
 
-    return parseUrlPath(currentUrlPath);
-  }, [currentUrlPath]);
+    const { type, url } = parseUrlPath(currentUrlPath) ?? {};
+    return {
+      name:
+        rootFolderDoc.docs.find((docLink) => docLink.url === url)?.name ??
+        "Unknown document",
+      type,
+      url,
+    };
+  }, [currentUrlPath, rootFolderDoc]);
 
   useEffect(() => {
     if (!rootFolderDoc || !selectedDocLink) {
