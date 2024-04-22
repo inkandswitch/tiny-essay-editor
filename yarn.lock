@@ -25,6 +25,13 @@
     "@codemirror/view" "^6.21.3"
     codemirror "^6.0.1"
 
+"@automerge/automerge-repo-network-broadcastchannel@^1.1.5":
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-broadcastchannel/-/automerge-repo-network-broadcastchannel-1.1.5.tgz#d972bab63d9c50bfa3fecb9f3288acc066195d05"
+  integrity sha512-2w2J+vC3Pu1s19mhrbvvCVHpybMFNE1/a12mT1m/EMcvr2VDfsbrs61XSh4uf4PRDnfscf5A7JyH/0Lod4Yd4w==
+  dependencies:
+    "@automerge/automerge-repo" "1.1.5"
+
 "@automerge/automerge-repo-network-messagechannel@^1.1.5":
   version "1.1.9"
   resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-messagechannel/-/automerge-repo-network-messagechannel-1.1.9.tgz#143c9e68c5c918153a682578ecb2d1bc5f6e82c2"
