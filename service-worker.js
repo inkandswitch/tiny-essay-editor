@@ -79,18 +79,18 @@ self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
 
   const [documentId, ...path] = decodeURI(url.pathname.slice(1)).split("/");
-  const possibleAutomergeUrl = `automerge:${documentId}`;
+  const automergeUrl = getAutomergeUrlFromDocumentId(documentId);
 
-  if (isValidAutomergeUrl(possibleAutomergeUrl) && path[0] === "assets") {
+  if (automergeUrl && path[0] === "assets") {
     event.respondWith(
       (async () => {
-        const handle = (await repo).find(possibleAutomergeUrl);
+        const handle = (await repo).find(automergeUrl);
         await handle.whenReady();
         const doc = await handle.doc();
 
         if (!doc) {
           return new Response(
-            `Document unavailable.\n${possibleAutomergeUrl}: ${handle.state}`,
+            `Document unavailable.\n${automergeUrl}: ${handle.state}`,
             {
               status: 500,
               headers: { "Content-Type": "text/plain" },
@@ -147,3 +147,13 @@ self.addEventListener("fetch", async (event) => {
     ) 
   } */
 });
+
+const getAutomergeUrlFromDocumentId = (possibleDocumentId) => {
+  const parts = possibleDocumentId.split("-");
+  const documentId = parts[parts.length - 1];
+  const possibleAutomergeUrl = `automerge:${documentId}`;
+
+  return isValidAutomergeUrl(possibleAutomergeUrl)
+    ? possibleAutomergeUrl
+    : undefined;
+};
