@@ -20,7 +20,7 @@ class Image extends WidgetType {
     image.src = this.url;
 
     wrap.append(image);
-    wrap.className = "border border-gray-200";
+    wrap.className = "border border-gray-200 w-fit";
 
     if (this.caption.length > 0) {
       const captionDiv = document.createElement("div");
