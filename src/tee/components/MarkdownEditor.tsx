@@ -6,6 +6,7 @@ import {
   drawSelection,
   dropCursor,
 } from "@codemirror/view";
+
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
@@ -95,7 +96,7 @@ export function MarkdownEditor({
 
         dropCursor(),
         dragAndDropImagesPlugin({
-          onDrop: async (file) => {
+          createImageReference: async (file) => {
             const doc = handle.docSync();
             const fileAlreadyExists = doc.assets && doc.assets[file.name];
             if (fileAlreadyExists) {
