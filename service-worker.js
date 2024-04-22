@@ -78,16 +78,8 @@ self.addEventListener("activate", async (event) => {
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
 
-  const [documentId, ...path] = url.pathname.slice(1).split("/");
+  const [documentId, ...path] = decodeURI(url.pathname.slice(1)).split("/");
   const possibleAutomergeUrl = `automerge:${documentId}`;
-
-  console.log(
-    "fetch",
-    url.pathname.split("/"),
-    url.pathname,
-    isValidAutomergeUrl(possibleAutomergeUrl),
-    possibleAutomergeUrl
-  );
 
   if (isValidAutomergeUrl(possibleAutomergeUrl) && path[0] === "assets") {
     event.respondWith(
