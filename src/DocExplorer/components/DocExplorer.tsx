@@ -331,7 +331,11 @@ const useSelectedDoc = ({
     params: UrlParams,
     options: NavigationNavigateOptions = {}
   ) => {
-    if (params.url === urlParams.url && params.type == urlParams.type) {
+    if (
+      urlParams &&
+      params.url === urlParams.url &&
+      params.type == urlParams.type
+    ) {
       return;
     }
 
