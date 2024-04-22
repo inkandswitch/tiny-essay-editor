@@ -1,12 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import {
-  EditorView,
-  keymap,
-  drawSelection,
-  dropCursor,
-} from "@codemirror/view";
+import { EditorView, keymap, dropCursor } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
+import { Table } from "@lezer/markdown";
 import { languages } from "@codemirror/language-data";
 
 import { Prop } from "@automerge/automerge";
@@ -39,6 +35,8 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { richEditor } from "../codemirrorPlugins/rich-markdown";
+import { config } from "../codemirrorPlugins/rich-markdown/config";
 
 export type TextSelection = {
   from: number;
@@ -109,22 +107,30 @@ export function MarkdownEditor({
         ]),
         EditorView.lineWrapping,
         essayTheme,
-        markdown({
-          codeLanguages: languages,
-        }),
+        // markdown({
+        //   codeLanguages: languages,
+        // }),
         indentUnit.of("    "),
-        syntaxHighlighting(markdownStyles),
+        // syntaxHighlighting(markdownStyles),
+
+        richEditor({
+          markdoc: config,
+          lezer: {
+            codeLanguages: languages,
+            extensions: [Table],
+          },
+        }),
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergePlugin,
-        frontmatterPlugin,
+        // frontmatterPlugin,
         threadsField,
-        threadDecorations,
-        previewFiguresPlugin,
-        highlightKeywordsPlugin,
-        tableOfContentsPreviewPlugin,
-        codeMonospacePlugin,
-        lineWrappingPlugin,
+        // threadDecorations,
+        // previewFiguresPlugin,
+        // highlightKeywordsPlugin,
+        // tableOfContentsPreviewPlugin,
+        // codeMonospacePlugin,
+        // lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?

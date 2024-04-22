@@ -1,0 +1,78 @@
+.cm-markdoc-hidden {
+  display: none;
+}
+
+.cm-markdoc-bullet * {
+  display: none;
+}
+
+.cm-markdoc-bullet::after {
+  display: inline !important;
+  color: darkgray;
+  content: '•';
+}
+
+.cm-markdoc-renderBlock table {
+  border-collapse: collapse;
+  margin-left: 5px;
+}
+
+.cm-markdoc-renderBlock th,
+.cm-markdoc-renderBlock td {
+  border: 1px solid lightgray;
+  padding: 5px 10px;
+}
+
+.cm-markdoc-renderBlock blockquote {
+  border-left: 3px solid lightgray;
+  padding-left: 10px;
+  margin: 0 0 0 15px;
+}
+
+.cm-markdoc-renderBlock p {
+  margin: 3px;
+}
+
+.cm-markdoc-tag {
+  color: darkgray;
+}
+
+.cm-markdoc-fallbackTag {
+  border: 2px solid rgb(97, 70, 155);
+  border-radius: 3px;
+  margin: 0 5px;
+}
+
+.cm-markdoc-fallbackTag--name {
+  background-color: rgb(97, 70, 155);
+  color: white;
+  padding: 5px;
+}
+
+.cm-markdoc-fallbackTag--inner {
+  padding: 10px;
+}
+
+.cm-markdoc-callout {
+  border: 1px solid rgb(227, 232, 238);
+  background: rgb(247, 250, 252);
+  border-radius: 3px;
+  display: flex;
+  padding: 10px;
+  margin: 0 5px;
+}
+
+.cm-markdoc-callout .icon {
+  font-size: 24px;
+  margin-right: 10px;
+  color: rgb(164, 205, 254);
+}
+
+.cm-markdoc-callout--warning {
+  background-color: rgb(252, 249, 233);
+  border-color: rgb(249, 229, 185);
+}
+
+.cm-markdoc-callout--warning .icon {
+  color: rgb(229, 153, 62);
+}
