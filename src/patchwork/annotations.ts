@@ -105,7 +105,6 @@ export function useAnnotations({
   );
 
   const { annotations, annotationGroups } = useMemo(() => {
-    console.log("yo");
     if (!doc) {
       return { annotations: [], annotationGroups: [] };
     }
