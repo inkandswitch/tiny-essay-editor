@@ -12,8 +12,12 @@ export const useCurrentUrlPath = (): string => {
         return;
       }
 
+      console.log(event);
+
       event.intercept({
         handler: async () => {
+          console.log("intercept", window.location.pathname);
+
           setLocation(window.location.pathname);
         },
       });
@@ -43,6 +47,14 @@ const shouldNotIntercept = (navigationEvent) => {
     navigationEvent.downloadRequest ||
     // If this is a form submission,
     // let that go to the server.
-    navigationEvent.formData
+    navigationEvent.formData ||
+    // Ignore replace eve
+    navigationEvent.navigationType === "replace"
   );
+};
+
+// use replaceUrl to change the current url without triggering a navigation event
+// and without adding a new entry to the history
+export const replaceUrl = (url: string) => {
+  history.replaceState({ ignore: false }, "", url);
 };

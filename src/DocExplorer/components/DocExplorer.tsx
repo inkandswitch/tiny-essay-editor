@@ -22,8 +22,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
-import { setUrlHashForDoc } from "../utils";
-import { useCurrentUrlPath } from "../navigation";
+import { replaceUrl, useCurrentUrlPath } from "../navigation";
 
 export type Tool = {
   id: string;
@@ -191,14 +190,12 @@ export const DocExplorer: React.FC = () => {
             showSidebar ? "w-64" : "w-0 translate-x-[-100%]"
           } flex-shrink-0 bg-gray-100 border-r border-gray-400 transition-all duration-100 overflow-hidden  `}
         >
-          {
-            <Sidebar
-              selectedDocUrl={selectedDocUrl}
-              selectDocLink={setSelectedDocLink}
-              hideSidebar={() => setShowSidebar(false)}
-              addNewDocument={addNewDocument}
-            />
-          }
+          <Sidebar
+            selectedDocUrl={selectedDocUrl}
+            selectDocLink={setSelectedDocLink}
+            hideSidebar={() => setShowSidebar(false)}
+            addNewDocument={addNewDocument}
+          />
         </div>
         <div
           className={`flex-grow relative h-screen ${
@@ -324,10 +321,7 @@ const useSelectedDocLink = ({
 }): [DocLink, (docLink: DocLink) => void] => {
   const currentUrlPath = useCurrentUrlPath();
 
-  const setSelectedDocLink = (
-    docLink: DocLink,
-    options: NavigationNavigateOptions = {}
-  ) => {
+  const setSelectedDocLink = (docLink: DocLink) => {
     if (
       selectedDocLink &&
       selectedDocLink.url === docLink.url &&
@@ -336,19 +330,16 @@ const useSelectedDocLink = ({
       return;
     }
 
-    const documentId = docLink.url.split(":")[1];
-
-    const name = docLink.name
-      ? `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`
-      : "";
-
-    console.log("name", name);
-
-    navigation.navigate(`/${name}${documentId}/${docLink.type}`, options);
+    navigation.navigate(docLinkToUrl(docLink));
   };
 
+  const urlParams = useMemo(
+    () => parseUrlPath(currentUrlPath),
+    [currentUrlPath]
+  );
+
   const selectedDocLink = useMemo<DocLink | null>(() => {
-    if (!rootFolderDoc) {
+    if (!rootFolderDoc || !urlParams) {
       return;
     }
 
@@ -366,15 +357,32 @@ const useSelectedDocLink = ({
       }
     } */
 
-    const { type, url } = parseUrlPath(currentUrlPath) ?? {};
+    const { type, url } = urlParams;
+
     return {
+      type,
+      url,
       name:
         rootFolderDoc.docs.find((docLink) => docLink.url === url)?.name ??
         "Unknown document",
-      type,
-      url,
     };
-  }, [currentUrlPath, rootFolderDoc]);
+  }, [urlParams?.type, urlParams?.url, rootFolderDoc]);
+
+  useEffect(() => {
+    if (!selectedDocLink) {
+      return;
+    }
+
+    const url = docLinkToUrl(selectedDocLink);
+
+    if (url !== location.pathname) {
+      replaceUrl(url);
+    }
+  }, [selectedDocLink?.name]);
+
+  useEffect(() => {
+    console.log("doc link changed");
+  }, [selectedDocLink]);
 
   useEffect(() => {
     if (!rootFolderDoc || !selectedDocLink) {
@@ -394,6 +402,13 @@ const useSelectedDocLink = ({
   }, [rootFolderDoc, selectedDocLink]);
 
   return [selectedDocLink, setSelectedDocLink];
+};
+
+const docLinkToUrl = (docLink: DocLink): string => {
+  const documentId = docLink.url.split(":")[1];
+  const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
+
+  return `/${name}${documentId}/${docLink.type}`;
 };
 
 const removeHash = () => {
