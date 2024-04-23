@@ -31,8 +31,6 @@ export const dragAndDropImagesPlugin = ({
       const file = files[0];
       if (file.type.startsWith("image/")) {
         createImageReference(file).then((text) => {
-          console.log("drop", text);
-
           if (text) {
             const pos = view.posAtCoords({
               x: event.clientX,

@@ -12,12 +12,8 @@ export const useCurrentUrlPath = (): string => {
         return;
       }
 
-      console.log(event);
-
       event.intercept({
         handler: async () => {
-          console.log("intercept", window.location.pathname);
-
           setUrlPath(window.location.pathname);
         },
       });
