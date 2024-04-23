@@ -22,7 +22,11 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
-import { replaceUrl, useCurrentUrlPath } from "../navigation";
+import {
+  replaceUrl,
+  useCurrentUrlHash,
+  useCurrentUrlPath,
+} from "../navigation";
 
 export type Tool = {
   id: string;
@@ -320,6 +324,7 @@ const useSelectedDocLink = ({
   changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
 }): [DocLink, (docLink: DocLink) => void] => {
   const currentUrlPath = useCurrentUrlPath();
+  const currentUrlHash = useCurrentUrlHash();
 
   const setSelectedDocLink = (docLink: DocLink) => {
     if (
@@ -335,27 +340,13 @@ const useSelectedDocLink = ({
 
   const urlParams = useMemo(
     () => parseUrlPath(currentUrlPath),
-    [currentUrlPath]
+    [currentUrlPath, currentUrlHash]
   );
 
   const selectedDocLink = useMemo<DocLink | null>(() => {
     if (!rootFolderDoc || !urlParams) {
       return;
     }
-
-    // todo: handle old url
-    /* if (currentUrlPath === "/" || currentUrlPath === "") {
-      if (window.location.hash) {
-        const params = parseUrlHash(window.location.hash);
-
-        if (params) {
-          removeHash();
-          setUrl(params, { history: "replace" });
-        }
-
-        return params;
-      }
-    } */
 
     const { type, url } = urlParams;
 
@@ -368,22 +359,35 @@ const useSelectedDocLink = ({
     };
   }, [urlParams?.type, urlParams?.url, rootFolderDoc]);
 
+  // We redirect old hash urls to the new format
+  useEffect(() => {
+    if (!currentUrlHash) {
+      return;
+    }
+
+    // only parse url as hash if no url path is set
+    if (currentUrlPath === "/" || currentUrlPath === "") {
+      // redirect to new format
+      const docLink = parseUrlHash(currentUrlHash);
+      if (docLink) {
+        setSelectedDocLink(docLink);
+      }
+    }
+  }, [currentUrlHash, currentUrlPath]);
+
+  // Whenever the name of the selected document changes,
+  // we update the name in the url by replacing the url
   useEffect(() => {
     if (!selectedDocLink) {
       return;
     }
 
     const url = docLinkToUrl(selectedDocLink);
-
-    if (url !== location.pathname) {
-      replaceUrl(url);
-    }
+    replaceUrl(url);
   }, [selectedDocLink?.name]);
 
-  useEffect(() => {
-    console.log("doc link changed");
-  }, [selectedDocLink]);
-
+  // We check if the current file is already in the root folder
+  // If not we add it to the top of the root folder
   useEffect(() => {
     if (!rootFolderDoc || !selectedDocLink) {
       return;
@@ -409,12 +413,4 @@ const docLinkToUrl = (docLink: DocLink): string => {
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
   return `/${name}${documentId}/${docLink.type}`;
-};
-
-const removeHash = () => {
-  history.replaceState(
-    "",
-    document.title,
-    window.location.pathname + window.location.search
-  );
 };

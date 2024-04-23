@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 export const useCurrentUrlPath = (): string => {
   // Initialize the state with the current location
-  const [location, setLocation] = useState(window.location.pathname);
+  const [urlPath, setUrlPath] = useState(window.location.pathname);
 
   useEffect(() => {
     const onNavigate = (event: NavigateEvent) => {
@@ -18,7 +18,7 @@ export const useCurrentUrlPath = (): string => {
         handler: async () => {
           console.log("intercept", window.location.pathname);
 
-          setLocation(window.location.pathname);
+          setUrlPath(window.location.pathname);
         },
       });
     };
@@ -31,7 +31,27 @@ export const useCurrentUrlPath = (): string => {
     };
   }, []);
 
-  return location;
+  return urlPath;
+};
+
+export const useCurrentUrlHash = (): string => {
+  const [hash, setHash] = useState(location.hash);
+
+  useEffect(() => {
+    const hashChangeHandler = () => {
+      setHash(location.hash);
+    };
+
+    // Listen for hash changes
+    window.addEventListener("hashchange", hashChangeHandler, false);
+
+    // Clean up listener on unmount
+    return () => {
+      window.removeEventListener("hashchange", hashChangeHandler, false);
+    };
+  }, []);
+
+  return hash;
 };
 
 export const useActiveDocument = () => {};
