@@ -88,7 +88,7 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle = repo.create();
-      newDocHandle.change((doc) => docTypes[type].init(doc));
+      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
 
       if (!rootFolderDoc) {
         return;

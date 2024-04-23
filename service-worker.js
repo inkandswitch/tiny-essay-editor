@@ -98,7 +98,23 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        const subTree = path.reduce((acc, curr) => acc?.[curr], doc);
+        const assetsHandle = (await repo).find(doc.assetsDocUrl);
+        await assetsHandle.whenReady();
+        const assetsDoc = await assetsHandle.doc();
+
+        if (!assetsDoc) {
+          return new Response(
+            `Document unavailable.\n${assetsHandle.url}: ${assetsHandle.state}`,
+            {
+              status: 500,
+              headers: { "Content-Type": "text/plain" },
+            }
+          );
+        }
+
+        const subTree = path
+          .slice(1) // skip "/assets"
+          .reduce((acc, curr) => acc?.[curr], assetsDoc.files);
         if (!subTree) {
           return new Response(
             `Not found\nObject path: ${path}\n${JSON.stringify(doc, null, 2)}`,

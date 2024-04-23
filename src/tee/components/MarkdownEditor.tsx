@@ -39,6 +39,8 @@ import {
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AssetsDoc } from "../assets";
 
 export type TextSelection = {
   from: number;
@@ -63,6 +65,7 @@ export function MarkdownEditor({
   setActiveThreadId,
   threadsWithPositions,
 }: EditorProps) {
+  const repo = useRepo();
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
@@ -98,7 +101,25 @@ export function MarkdownEditor({
         dragAndDropImagesPlugin({
           createImageReference: async (file) => {
             const doc = handle.docSync();
-            const fileAlreadyExists = doc.assets && doc.assets[file.name];
+            let assetsHandle: DocHandle<AssetsDoc>;
+
+            if (!doc.assetsDocUrl) {
+              // add assets doc to old documents
+              assetsHandle = repo.create<AssetsDoc>();
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files = {};
+              });
+              handle.change((doc) => {
+                doc.assetsDocUrl = assetsHandle.url;
+              });
+            } else {
+              assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
+            }
+
+            await assetsHandle.whenReady();
+            const assetsDoc = assetsHandle.docSync();
+
+            const fileAlreadyExists = assetsDoc.files[file.name];
             if (fileAlreadyExists) {
               alert(
                 `a file with the name "${file.name}" already exists in the document`
@@ -108,21 +129,12 @@ export function MarkdownEditor({
 
             const contents = await loadFile(file);
 
-            handle.change((doc) => {
-              // convert old docs
-              if (!doc.assets) {
-                doc.assets = {};
-              }
-
-              doc.assets[file.name] = {
+            assetsHandle.change((assetsDoc) => {
+              assetsDoc.files[file.name] = {
                 contentType: file.type,
                 contents,
               };
             });
-
-            // hack: wait till next frame so doc will be (hopefully) synced
-            // with service worker by then
-            await new Promise((resolve) => setTimeout(() => resolve(true)));
 
             return `![](./assets/${file.name})`;
           },

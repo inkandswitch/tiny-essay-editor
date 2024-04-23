@@ -1,4 +1,5 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import { HasAssets } from "./assets";
 
 export type Comment = {
   id: string;
@@ -33,16 +34,8 @@ export type User = {
   name: string;
 };
 
-type FileEntry = {
-  contentType: string;
-  contents: string | Uint8Array;
-};
-
-export type MarkdownDoc = {
+export type MarkdownDoc = HasAssets & {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
-
-  // todo: generalize for other data types
-  assets: { [filename: string]: FileEntry };
 };
