@@ -32,6 +32,7 @@ export interface AnonymousContactDoc {
 export interface RegisteredContactDoc {
   type: "registered";
   name: string;
+  color: string; // hex color
   avatarUrl?: AutomergeUrl;
 }
 
@@ -47,6 +48,7 @@ interface AccountEvents {
 
 interface ContactProps {
   name: string;
+  color: string;
   avatar: File;
 }
 
@@ -102,7 +104,7 @@ class Account extends EventEmitter<AccountEvents> {
     this.emit("change");
   }
 
-  async signUp({ name, avatar }: ContactProps) {
+  async signUp({ name, avatar, color }: ContactProps) {
     let avatarUrl: AutomergeUrl;
     if (avatar) {
       avatarUrl = await uploadFile(this.#repo, avatar);
@@ -114,6 +116,10 @@ class Account extends EventEmitter<AccountEvents> {
 
       if (avatarUrl) {
         contact.avatarUrl = avatarUrl;
+      }
+
+      if (color) {
+        contact.color = color;
       }
     });
   }
