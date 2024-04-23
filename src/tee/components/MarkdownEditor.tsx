@@ -136,6 +136,9 @@ export function MarkdownEditor({
               };
             });
 
+            // hack: wait a frame so image is loaded in service worker
+            await new Promise((resolve) => setTimeout(resolve));
+
             return `![](./assets/${file.name})`;
           },
         }),
