@@ -75,13 +75,26 @@ self.addEventListener("activate", async (event) => {
   clients.claim();
 });
 
+const ASSETS_REQUEST_URL_REGEX = /^\/(.*-)?(?<docId>\w+)\/assets\/(?<path>.*)$/;
+
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
 
-  const [documentId, ...path] = decodeURI(url.pathname.slice(1)).split("/");
-  const automergeUrl = getAutomergeUrlFromDocumentId(documentId);
+  const match = url.pathname.match(ASSETS_REQUEST_URL_REGEX);
+  if (match) {
+    const { docId, path } = match.groups;
 
-  if (automergeUrl && path[0] === "assets") {
+    const automergeUrl = `automerge:${docId}`;
+    if (!isValidAutomergeUrl(automergeUrl)) {
+      event.respondWith(
+        new Response(`Invalid document id ${docId}`, {
+          status: 404,
+          headers: { "Content-Type": "text/plain" },
+        })
+      );
+      return;
+    }
+
     event.respondWith(
       (async () => {
         const handle = (await repo).find(automergeUrl);
@@ -112,12 +125,14 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        const subTree = path
-          .slice(1) // skip "/assets"
-          .reduce((acc, curr) => acc?.[curr], assetsDoc.files);
-        if (!subTree) {
+        const file = assetsDoc.files[decodeURI(path)];
+        if (!file) {
           return new Response(
-            `Not found\nObject path: ${path}\n${JSON.stringify(doc, null, 2)}`,
+            `Not found\npath: ${path}\nfiles:${JSON.stringify(
+              Object.keys(assetsDoc.files),
+              null,
+              2
+            )}`,
             {
               status: 404,
               headers: { "Content-Type": "text/plain" },
@@ -125,23 +140,21 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        if (subTree.contentType) {
-          return new Response(subTree.contents, {
-            headers: { "Content-Type": subTree.contentType },
+        if (file.contentType) {
+          return new Response(file.contents, {
+            headers: { "Content-Type": file.contentType },
           });
         }
 
-        // This doesn't work for a RawString...
-        // (Sorry if you're here because of that.)
-        if (typeof subTree === "string") {
-          return new Response(subTree, {
+        return new Response(
+          `Invalid file entry.\n${
+            assetsHandle.url
+          }:\nfileEntry:${JSON.stringify(file)}`,
+          {
+            status: 404,
             headers: { "Content-Type": "text/plain" },
-          });
-        }
-
-        return new Response(JSON.stringify(subTree), {
-          headers: { "Content-Type": "application/json" },
-        });
+          }
+        );
       })()
     );
   }
@@ -163,13 +176,3 @@ self.addEventListener("fetch", async (event) => {
     ) 
   } */
 });
-
-const getAutomergeUrlFromDocumentId = (possibleDocumentId) => {
-  const parts = possibleDocumentId.split("-");
-  const documentId = parts[parts.length - 1];
-  const possibleAutomergeUrl = `automerge:${documentId}`;
-
-  return isValidAutomergeUrl(possibleAutomergeUrl)
-    ? possibleAutomergeUrl
-    : undefined;
-};
