@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import {
-  EditorView,
-  keymap,
-  drawSelection,
-  dropCursor,
-} from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -41,6 +36,7 @@ import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages"
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc } from "../assets";
+import { dropCursor } from "../codemirrorPlugins/dropCursor";
 
 export type TextSelection = {
   from: number;
