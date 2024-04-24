@@ -18,17 +18,17 @@ import { useCurrentUrlPath } from "./navigation.js";
 import { mount } from "./mount.js";
 
 // First, spawn the serviceworker.
-async function setupServiceWorker() {
-  const registration = await navigator.serviceWorker.register(
-    "/service-worker.js",
-    {
+function setupServiceWorker() {
+  navigator.serviceWorker
+    .register("/service-worker.js", {
       type: "module",
-    }
-  );
-  console.log(
-    "ServiceWorker registration successful with scope:",
-    registration.scope
-  );
+    })
+    .then((registration) => {
+      if (registration.active) {
+        establishMessageChannel(registration.active);
+        return;
+      }
+    });
 }
 
 // Then set up an automerge repo (loading with our annoying WASM hack)
@@ -48,27 +48,32 @@ async function setupRepo() {
   return repo;
 }
 
-// Now introduce the two to each other. This frontend takes advantage of loaded state in the SW.
-function establishMessageChannel(repo) {
-  if (!navigator.serviceWorker.controller) {
-    console.log("No service worker is controlling this tab right now.");
-    return;
-  }
+console.log("register change");
 
+// Re-establish the MessageChannel if the controlling service worker changes
+navigator.serviceWorker.addEventListener("controllerchange", (event) => {
+  console.log("controller changed");
+  const serviceWorker = (event.target as ServiceWorkerContainer).controller;
+  establishMessageChannel(serviceWorker);
+});
+
+// Now introduce the two to each other. This frontend takes advantage of loaded state in the SW.
+function establishMessageChannel(serviceWorker: ServiceWorker) {
   // Send one side of a MessageChannel to the service worker and register the other with the repo.
   const messageChannel = new MessageChannel();
   repo.networkSubsystem.addNetworkAdapter(
     new MessageChannelNetworkAdapter(messageChannel.port1)
   );
-  navigator.serviceWorker.controller.postMessage({ type: "INIT_PORT" }, [
-    messageChannel.port2,
-  ]);
+  serviceWorker.postMessage({ type: "INIT_PORT" }, [messageChannel.port2]);
+
+  console.log("Connected to service worker!");
 }
 
 // (Actually do the things above here.)
-await setupServiceWorker();
+
 const repo = await setupRepo();
-establishMessageChannel(repo);
+
+setupServiceWorker();
 
 let author: AutomergeUrl;
 
