@@ -42,6 +42,7 @@ async function setupRepo() {
     network: [],
     peerId: ("frontend-" + Math.round(Math.random() * 10000)) as PeerId,
     sharePolicy: async (peerId) => peerId.includes("service-worker"),
+    enableRemoteHeadsGossiping: true,
   });
 
   return repo;

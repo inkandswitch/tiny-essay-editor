@@ -14,6 +14,7 @@ async function initializeRepo() {
     network: [new BrowserWebSocketClientAdapter("wss://sync.automerge.org")],
     peerId: "service-worker-" + Math.round(Math.random() * 1000000),
     sharePolicy: async (peerId) => peerId.includes("storage-server"),
+    enableRemoteHeadsGossiping: true,
   });
 
   await AutomergeWasm.promise;
