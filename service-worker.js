@@ -32,11 +32,16 @@ repo.then((r) => {
   self.Automerge = Automerge;
 });
 
+// Paul: I'm not sure what this comment means
 // return a promise from this so that we can wait on it before returning fetch/addNetworkAdapter
 // because otherwise we might not have the WASM module loaded before we get to work.
 
-self.addEventListener("install", (event) => {
-  console.log("Installing SW");
+self.addEventListener("install", () => {
+  /* We skip waiting which means the service worker immediately takes over once it's installed
+   * Any existing tab that is connected to a previous worker gets sent an "controllerchange" event to switch over to the new service worker
+   *
+   * IMPORTANT: don't do any async work here, otherwise you need adapt setupServiceWorker in main
+   */
   self.skipWaiting();
 });
 

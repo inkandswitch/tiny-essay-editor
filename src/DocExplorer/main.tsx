@@ -13,51 +13,66 @@ import { next as Automerge } from "@automerge/automerge";
 
 import "./index.css";
 import { getAccount } from "./account.js";
-import { RepoContext } from "@automerge/automerge-repo-react-hooks";
-import { useCurrentUrlPath } from "./navigation.js";
 import { mount } from "./mount.js";
 
-// First, spawn the serviceworker.
-function setupServiceWorker() {
-  navigator.serviceWorker
+const serviceWorker = await setupServiceWorker();
+
+// This case should never happen
+// if the service worker is not defined here either the initialization failed
+// or we found a new case that we haven't considered yet
+if (!serviceWorker) {
+  throw new Error("failed to setup service worker");
+}
+
+const repo = await setupRepo();
+
+establishMessageChannel(serviceWorker);
+
+async function setupServiceWorker() {
+  return navigator.serviceWorker
     .register("/service-worker.js", {
       type: "module",
     })
     .then((registration) => {
-      if (registration.active) {
-        establishMessageChannel(registration.active);
-        return;
-      }
+      /* After the registration is completed the service worker is always in the
+       * active case because we don't do any async operations in the installation handler.
+       *
+       * navigator.serviceWorker.controller is still undefined in this state if this is the first time we are
+       * installing a service worker
+       */
+      return registration.active;
     });
 }
 
-// Then set up an automerge repo (loading with our annoying WASM hack)
 async function setupRepo() {
   await AW.promise;
   A.use(AW);
 
-  // no network, no storage... not yet.
+  // We create a repo without any network adapters.
+  // Later we connect the repo with the repo in the service worker through a message channel
   const repo = new Repo({
     storage: new IndexedDBStorageAdapter(),
     network: [],
     peerId: ("frontend-" + Math.round(Math.random() * 10000)) as PeerId,
     sharePolicy: async (peerId) => peerId.includes("service-worker"),
+    // We need to enable remote heads gossiping so the remote heads of the sync server
+    // are forwarded from the service worker to the repo here in the main thread
     enableRemoteHeadsGossiping: true,
   });
 
   return repo;
 }
 
-console.log("register change");
-
-// Re-establish the MessageChannel if the controlling service worker changes
+// Re-establish the MessageChannel if the controlling service worker changes.
 navigator.serviceWorker.addEventListener("controllerchange", (event) => {
   console.log("controller changed");
   const serviceWorker = (event.target as ServiceWorkerContainer).controller;
   establishMessageChannel(serviceWorker);
 });
 
-// Now introduce the two to each other. This frontend takes advantage of loaded state in the SW.
+// Connects the repo in the tab with the repo in the service worker through a message channel.
+// The repo in the tab takes advantage of loaded state in the SW.
+// TODO: clean up MessageChannels to old repos
 function establishMessageChannel(serviceWorker: ServiceWorker) {
   // Send one side of a MessageChannel to the service worker and register the other with the repo.
   const messageChannel = new MessageChannel();
@@ -69,11 +84,7 @@ function establishMessageChannel(serviceWorker: ServiceWorker) {
   console.log("Connected to service worker!");
 }
 
-// (Actually do the things above here.)
-
-const repo = await setupRepo();
-
-setupServiceWorker();
+// Setup account
 
 let author: AutomergeUrl;
 
