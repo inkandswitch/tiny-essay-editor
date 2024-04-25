@@ -17,7 +17,7 @@ export const init = (doc: any, repo: Repo) => {
     doc.files = {};
   });
 
-  doc.assetsFileSystemUrl = handle.url;
+  doc.assetsDocUrl = handle.url;
 };
 
 // When a copy of the document has been made,

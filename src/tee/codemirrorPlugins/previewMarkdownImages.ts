@@ -7,29 +7,45 @@ import {
   Decoration,
 } from "@codemirror/view";
 import { Range } from "@codemirror/state";
+import {
+  AutomergeUrl,
+  DocHandle,
+  DocHandleChangePayload,
+  DocHandleRemoteHeadsPayload,
+  Repo,
+} from "@automerge/automerge-repo";
+import { MarkdownDoc } from "../schema";
+import { AssetsDoc } from "../assets";
 
 class Image extends WidgetType {
-  constructor(protected url: string, protected caption: string) {
+  constructor(
+    protected url: string,
+    protected caption: string,
+    protected registerImage: (image: HTMLImageElement) => void
+  ) {
     super();
   }
 
   toDOM() {
-    const wrap = document.createElement("div");
+    const wrapper = document.createElement("div");
     const image = document.createElement("img");
+
+    this.registerImage(image);
+
     image.crossOrigin = "anonymous";
     image.src = this.url;
 
-    wrap.append(image);
-    wrap.className = "border border-gray-200 w-fit";
+    wrapper.append(image);
+    wrapper.className = "border border-gray-200 w-fit";
 
     if (this.caption.length > 0) {
       const captionDiv = document.createElement("div");
       captionDiv.append(document.createTextNode(this.caption));
       captionDiv.className = "p-4 bg-gray-100 text-sm font-sans";
-      wrap.append(captionDiv);
+      wrapper.append(captionDiv);
     }
 
-    return wrap;
+    return wrapper;
   }
 
   eq(other: Image) {
@@ -43,7 +59,10 @@ class Image extends WidgetType {
 
 const MARKDOWN_IMAGE_REGEX = /!\[(?<caption>.*?)\]\((?<url>.*?)\)/gs;
 
-function getImages(view: EditorView) {
+function getImages(
+  view: EditorView,
+  registerImage: (image: HTMLImageElement) => void
+) {
   const decorations: Range<Decoration>[] = [];
 
   for (const { from, to } of view.visibleRanges) {
@@ -55,8 +74,9 @@ function getImages(view: EditorView) {
 
       const url = match.groups.url;
       const caption = match.groups.caption;
+      const image = new Image(url, caption, registerImage);
       const widget = Decoration.widget({
-        widget: new Image(url, caption),
+        widget: image,
         side: -1,
       }).range(position);
       decorations.push(widget);
@@ -69,25 +89,89 @@ function getImages(view: EditorView) {
     }
   }
 
-  return Decoration.set(
-    decorations.sort((range1, range2) => range1.from - range2.from)
-  );
+  return Decoration.set(decorations, true /* = sort decorations */);
 }
 
-export const previewImagesPlugin = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
+export const previewImagesPlugin = (
+  handle: DocHandle<MarkdownDoc>,
+  repo: Repo
+) =>
+  ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      images: HTMLImageElement[] = [];
 
-    constructor(view: EditorView) {
-      this.decorations = getImages(view);
-    }
+      assetsDocHandle: DocHandle<AssetsDoc>;
 
-    update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged)
-        this.decorations = getImages(update.view);
+      constructor(view: EditorView) {
+        this.decorations = getImages(view, (image) => {
+          this.images.push(image);
+        });
+
+        this.onChangeDoc = this.onChangeDoc.bind(this);
+        this.onRemoteHeadsChanged = this.onRemoteHeadsChanged.bind(this);
+
+        if (handle.isReady()) {
+          const assetsDocUrl = handle.docSync().assetsDocUrl;
+          this.onChangeAssetsDocUrl(assetsDocUrl);
+        }
+
+        handle.on("change", this.onChangeDoc);
+      }
+
+      onChangeDoc({ doc }: DocHandleChangePayload<MarkdownDoc>) {
+        if (
+          this.assetsDocHandle &&
+          this.assetsDocHandle.url === doc.assetsDocUrl
+        ) {
+          return;
+        }
+
+        if (this.assetsDocHandle) {
+          this.assetsDocHandle.off("remote-heads", this.onRemoteHeadsChanged);
+        }
+
+        if (doc.assetsDocUrl) {
+          this.onChangeAssetsDocUrl(doc.assetsDocUrl);
+        }
+      }
+
+      onChangeAssetsDocUrl(url: AutomergeUrl) {
+        if (this.assetsDocHandle) {
+          this.assetsDocHandle.off("remote-heads", this.onRemoteHeadsChanged);
+        }
+
+        this.assetsDocHandle = repo.find<AssetsDoc>(url);
+        this.assetsDocHandle.on("remote-heads", this.onRemoteHeadsChanged);
+      }
+
+      async onRemoteHeadsChanged({
+        heads,
+        storageId,
+      }: DocHandleRemoteHeadsPayload) {
+        // We care about remote heads event from the service worker, because we can only load
+        // assets once they have arrived in the service worker. The service worker and the
+        // client have the same storage id since they are connected to the same indexeddb instance.
+        const ownStorageId = await repo.storageId();
+        if (ownStorageId === storageId) {
+          this.images.forEach((image) => {
+            const url = image.src;
+            image.src = "";
+            image.src = url;
+          });
+        }
+      }
+
+      update(update: ViewUpdate) {
+        if (update.docChanged || update.viewportChanged) {
+          this.images = [];
+          this.decorations = getImages(update.view, (image) =>
+            this.images.push(image)
+          );
+        }
+      }
+    },
+    {
+      decorations: (v) => v.decorations,
     }
-  },
-  {
-    decorations: (v) => v.decorations,
-  }
-);
+  );

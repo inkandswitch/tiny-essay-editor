@@ -123,17 +123,14 @@ export function MarkdownEditor({
               return;
             }
 
-            const contents = await loadFile(file);
-
-            assetsHandle.change((assetsDoc) => {
-              assetsDoc.files[file.name] = {
-                contentType: file.type,
-                contents,
-              };
+            loadFile(file).then((contents) => {
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files[file.name] = {
+                  contentType: file.type,
+                  contents,
+                };
+              });
             });
-
-            // hack: wait a frame so image is loaded in service worker
-            await new Promise((resolve) => setTimeout(resolve));
 
             return `![](./assets/${file.name})`;
           },
@@ -169,7 +166,7 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
-        previewImagesPlugin,
+        previewImagesPlugin(handle, repo),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
