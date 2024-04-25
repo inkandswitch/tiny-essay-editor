@@ -23,7 +23,6 @@ async function initializeRepo() {
   return repo;
 }
 
-console.log("Before registration");
 const repo = initializeRepo();
 
 // put it on the global context for interactive use
@@ -39,8 +38,6 @@ repo.then((r) => {
 self.addEventListener("install", () => {
   /* We skip waiting which means the service worker immediately takes over once it's installed
    * Any existing tab that is connected to a previous worker gets sent an "controllerchange" event to switch over to the new service worker
-   *
-   * IMPORTANT: don't do any async work here, otherwise you need adapt setupServiceWorker in main
    */
   self.skipWaiting();
 });

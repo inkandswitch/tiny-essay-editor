@@ -21,25 +21,32 @@ const serviceWorker = await setupServiceWorker();
 // if the service worker is not defined here either the initialization failed
 // or we found a new case that we haven't considered yet
 if (!serviceWorker) {
-  throw new Error("failed to setup service worker");
+  throw new Error("Failed to setup service worker");
 }
 
 const repo = await setupRepo();
 
 establishMessageChannel(serviceWorker);
 
-async function setupServiceWorker() {
+async function setupServiceWorker(): Promise<ServiceWorker> {
   return navigator.serviceWorker
     .register("/service-worker.js", {
       type: "module",
     })
     .then((registration) => {
-      /* After the registration is completed the service worker is always in the
-       * active case because we don't do any async operations in the installation handler.
-       *
-       * navigator.serviceWorker.controller is still undefined in this state if this is the first time we are
-       * installing a service worker
-       */
+      // If the service worker is still installing, we wait until it is activated
+      if (registration.installing) {
+        return new Promise((resolve) => {
+          registration.installing.onstatechange = (event) => {
+            const serviceWorker = event.target as ServiceWorker;
+            if (serviceWorker.state === "activated") {
+              resolve(serviceWorker);
+            }
+          };
+        });
+      }
+
+      // otherwise return the active service worker
       return registration.active;
     });
 }
@@ -65,7 +72,7 @@ async function setupRepo() {
 
 // Re-establish the MessageChannel if the controlling service worker changes.
 navigator.serviceWorker.addEventListener("controllerchange", (event) => {
-  console.log("controller changed");
+  console.log("New service worker took over");
   const serviceWorker = (event.target as ServiceWorkerContainer).controller;
   establishMessageChannel(serviceWorker);
 });
@@ -81,7 +88,7 @@ function establishMessageChannel(serviceWorker: ServiceWorker) {
   );
   serviceWorker.postMessage({ type: "INIT_PORT" }, [messageChannel.port2]);
 
-  console.log("Connected to service worker!");
+  console.log("Connected to service worker");
 }
 
 // Setup account
