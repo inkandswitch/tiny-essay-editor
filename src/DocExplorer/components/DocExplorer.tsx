@@ -376,7 +376,7 @@ const useSelectedDocLink = ({
     }
 
     const url = docLinkToUrl(selectedDocLink);
-    replaceUrl(url);
+    navigation.navigate(url, { history: "replace" });
   }, [selectedDocLink?.name]);
 
   // We check if the current file is already in the root folder

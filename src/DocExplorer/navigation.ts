@@ -41,14 +41,6 @@ const shouldNotIntercept = (navigationEvent) => {
     navigationEvent.downloadRequest ||
     // If this is a form submission,
     // let that go to the server.
-    navigationEvent.formData ||
-    // Ignore replace eve
-    navigationEvent.navigationType === "replace"
+    navigationEvent.formData
   );
-};
-
-// use replaceUrl to change the current url without triggering a navigation event
-// and without adding a new entry to the history
-export const replaceUrl = (url: string) => {
-  history.replaceState({ ignore: false }, "", url);
 };
