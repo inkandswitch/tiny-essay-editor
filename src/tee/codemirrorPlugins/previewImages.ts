@@ -23,7 +23,8 @@ class Image extends WidgetType {
   constructor(
     protected heads: A.Heads[],
     protected url: string,
-    protected caption: string
+    protected width: number,
+    protected height: number
   ) {
     super();
   }
@@ -33,17 +34,23 @@ class Image extends WidgetType {
     const image = document.createElement("img");
 
     image.crossOrigin = "anonymous";
+    image.width = this.width;
+    image.height = this.height;
     image.src = this.url;
+    image.className = "min-w-0";
+    image.onerror = () => {
+      image.style.opacity = "0";
+    };
 
     wrapper.append(image);
-    wrapper.className = "border border-gray-200 w-fit";
+    wrapper.className = "w-fit border border-gray-200";
 
-    if (this.caption.length > 0) {
+    /* if (this.caption.length > 0) {
       const captionDiv = document.createElement("div");
       captionDiv.append(document.createTextNode(this.caption));
       captionDiv.className = "p-4 bg-gray-100 text-sm font-sans";
       wrapper.append(captionDiv);
-    }
+    } */
 
     return wrapper;
   }
@@ -51,7 +58,7 @@ class Image extends WidgetType {
   eq(other: Image) {
     return (
       other.url === this.url &&
-      other.caption === this.caption &&
+      //other.caption === this.caption &&
       A.equals(other.heads, this.heads)
     );
   }
@@ -61,7 +68,7 @@ class Image extends WidgetType {
   }
 }
 
-const MARKDOWN_IMAGE_REGEX = /!\[(?<caption>.*?)\]\((?<url>.*?)\)/gs;
+const IMAGE_TAG_REGEX = /\<img[^>]*\/?>/gs;
 
 function getImages(heads: A.Heads, docId: DocumentId, view: EditorView) {
   const decorations: Range<Decoration>[] = [];
@@ -70,12 +77,22 @@ function getImages(heads: A.Heads, docId: DocumentId, view: EditorView) {
     const text = view.state.sliceDoc(from, to);
 
     let match;
-    while ((match = MARKDOWN_IMAGE_REGEX.exec(text))) {
+    while ((match = IMAGE_TAG_REGEX.exec(text))) {
       const position = match.index + from;
 
-      const url = match.groups.url;
-      const caption = match.groups.caption;
-      const image = new Image(heads, docId ? `${docId}/${url}` : "", caption);
+      const imageTag = match[0];
+      const imageElement = parseImageTag(imageTag);
+      if (!imageElement) {
+        debugger;
+        continue;
+      }
+
+      const image = new Image(
+        heads,
+        docId ? `${docId}${new URL(imageElement.src).pathname}` : "",
+        imageElement.width,
+        imageElement.height
+      );
       const widget = Decoration.widget({
         widget: image,
         side: -1,
@@ -92,6 +109,12 @@ function getImages(heads: A.Heads, docId: DocumentId, view: EditorView) {
 
   return Decoration.set(decorations, true /* = sort decorations */);
 }
+
+const parseImageTag = (imageTag: string): HTMLImageElement | undefined => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(imageTag, "text/html");
+  return doc.querySelector("img");
+};
 
 export const setAssetHeadsEffect = StateEffect.define<A.Heads>();
 export const assetsHeadsField = StateField.define<A.Heads>({
@@ -169,8 +192,6 @@ export const previewImagesPlugin = (
         // client have the same storage id since they are connected to the same indexeddb instance.
         const ownStorageId = await repo.storageId();
         if (ownStorageId === storageId) {
-          console.log("change");
-
           this.view.dispatch({ effects: setAssetHeadsEffect.of(heads) });
         }
       }

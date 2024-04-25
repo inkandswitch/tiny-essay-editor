@@ -33,7 +33,7 @@ import {
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewImages";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc } from "../assets";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
@@ -132,7 +132,9 @@ export function MarkdownEditor({
               });
             });
 
-            return `![](./assets/${file.name})`;
+            const { width, height } = await getDimensionsOfImageFile(file);
+
+            return `<img src="./assets/${file.name}" width="${width}" height="${height}"/>`;
           },
         }),
         indentOnInput(),
@@ -279,5 +281,23 @@ const loadFile = (file: File): Promise<Uint8Array> => {
     };
 
     reader.readAsArrayBuffer(file);
+  });
+};
+
+const getDimensionsOfImageFile = (
+  file: File
+): Promise<{ height: number; width: number }> => {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      resolve({
+        width: img.width,
+        height: img.height,
+      });
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = url;
   });
 };
