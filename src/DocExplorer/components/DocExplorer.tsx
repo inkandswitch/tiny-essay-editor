@@ -22,11 +22,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
-import {
-  replaceUrl,
-  useCurrentUrlHash,
-  useCurrentUrlPath,
-} from "../navigation";
+import { replaceUrl, useCurrentUrl } from "../navigation";
 
 export type Tool = {
   id: string;
@@ -248,14 +244,15 @@ export const DocExplorer: React.FC = () => {
 const isValidDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
 
-const parseUrlPath = (path: string): DocLink | null => {
-  const match = path.match(/^\/(?<name>.*-)?(?<docId>\w+)\/(?<docType>\w+)$/);
+const parseUrl = (url: URL): DocLink | null => {
+  const match = url.pathname.match(/^\/(?<name>.*-)?(?<docId>\w+)$/);
 
   if (!match) {
     return;
   }
 
-  const { docType, docId, name } = match.groups;
+  const { docId, name } = match.groups;
+  const docType = url.searchParams.get("docType");
   const docUrl = `automerge:${docId}` as AutomergeUrl;
 
   if (!isValidAutomergeUrl(docUrl)) {
@@ -275,7 +272,7 @@ const parseUrlPath = (path: string): DocLink | null => {
   };
 };
 
-const parseUrlHash = (hash: string): DocLink => {
+const parseLegacyHashUrl = (hash: string): DocLink => {
   // This is a backwards compatibility shim for old URLs where we
   // only had one parameter, the Automerge URL.
   // We just assume it's a TEE essay in that case.
@@ -323,8 +320,7 @@ const useSelectedDocLink = ({
   rootFolderDoc: FolderDoc;
   changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
 }): [DocLink, (docLink: DocLink) => void] => {
-  const currentUrlPath = useCurrentUrlPath();
-  const currentUrlHash = useCurrentUrlHash();
+  const currentUrl = useCurrentUrl();
 
   const setSelectedDocLink = (docLink: DocLink) => {
     if (
@@ -338,10 +334,7 @@ const useSelectedDocLink = ({
     navigation.navigate(docLinkToUrl(docLink));
   };
 
-  const urlParams = useMemo(
-    () => parseUrlPath(currentUrlPath),
-    [currentUrlPath, currentUrlHash]
-  );
+  const urlParams = useMemo(() => parseUrl(currentUrl), [currentUrl]);
 
   const selectedDocLink = useMemo<DocLink | null>(() => {
     if (!rootFolderDoc || !urlParams) {
@@ -361,19 +354,19 @@ const useSelectedDocLink = ({
 
   // We redirect old hash urls to the new format
   useEffect(() => {
-    if (!currentUrlHash) {
+    if (!currentUrl?.hash) {
       return;
     }
 
     // only parse url as hash if no url path is set
-    if (currentUrlPath === "/" || currentUrlPath === "") {
+    if (currentUrl.pathname === "/" || currentUrl.pathname === "") {
       // redirect to new format
-      const docLink = parseUrlHash(currentUrlHash);
+      const docLink = parseLegacyHashUrl(currentUrl.hash);
       if (docLink) {
         setSelectedDocLink(docLink);
       }
     }
-  }, [currentUrlHash, currentUrlPath]);
+  }, [currentUrl.hash]);
 
   // Whenever the name of the selected document changes,
   // we update the name in the url by replacing the url
@@ -412,5 +405,5 @@ const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
-  return `/${name}${documentId}/${docLink.type}`;
+  return `/${name}${documentId}?docType=${docLink.type}`;
 };

@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react";
 
-export const useCurrentUrlPath = (): string => {
+export const useCurrentUrl = (): URL => {
   // Initialize the state with the current location
-  const [urlPath, setUrlPath] = useState(window.location.pathname);
+  const [url, setUrl] = useState<URL>(() => new URL(location.href));
+
+  console.log();
 
   useEffect(() => {
     const onNavigate = (event: NavigateEvent) => {
+      setUrl(new URL(event.destination.url));
+
       if (shouldNotIntercept(event)) {
         return;
       }
 
-      event.intercept({
-        handler: async () => {
-          setUrlPath(window.location.pathname);
-        },
-      });
+      event.intercept();
     };
 
     navigation.addEventListener("navigate", onNavigate);
@@ -27,30 +27,8 @@ export const useCurrentUrlPath = (): string => {
     };
   }, []);
 
-  return urlPath;
+  return url;
 };
-
-export const useCurrentUrlHash = (): string => {
-  const [hash, setHash] = useState(location.hash);
-
-  useEffect(() => {
-    const hashChangeHandler = () => {
-      setHash(location.hash);
-    };
-
-    // Listen for hash changes
-    window.addEventListener("hashchange", hashChangeHandler, false);
-
-    // Clean up listener on unmount
-    return () => {
-      window.removeEventListener("hashchange", hashChangeHandler, false);
-    };
-  }, []);
-
-  return hash;
-};
-
-export const useActiveDocument = () => {};
 
 const shouldNotIntercept = (navigationEvent) => {
   return (
