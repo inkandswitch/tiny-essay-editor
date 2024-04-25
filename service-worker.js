@@ -118,7 +118,7 @@ self.addEventListener("fetch", async (event) => {
         await assetsHandle.whenReady();
         const assetsDoc = await assetsHandle.doc();
 
-        if (!assetsDoc) {
+        if (!assetsDoc || !assetsDoc.files) {
           return new Response(
             `Document unavailable.\n${assetsHandle.url}: ${assetsHandle.state}`,
             {
@@ -128,14 +128,14 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        const file = assetsDoc.files[decodeURI(path)];
+        const decodedPath = decodeURI(path);
+        const file = assetsDoc.files[decodedPath];
+
         if (!file) {
           return new Response(
-            `Not found\npath: ${path}\nfiles:${JSON.stringify(
-              Object.keys(assetsDoc.files),
-              null,
-              2
-            )}`,
+            `Not found\npath: ${JSON.stringify(
+              decodedPath
+            )}\nfiles:${JSON.stringify(Object.keys(assetsDoc.files), null, 2)}`,
             {
               status: 404,
               headers: { "Content-Type": "text/plain" },
