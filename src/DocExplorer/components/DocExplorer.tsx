@@ -22,7 +22,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
-import { replaceUrl, useCurrentUrl } from "../navigation";
+import { useCurrentUrl } from "../navigation";
 
 export type Tool = {
   id: string;

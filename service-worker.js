@@ -114,6 +114,13 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
+        if (!doc.assetsDocUrl) {
+          return new Response(`Document has no assets doc.\n${automergeUrl}`, {
+            status: 404,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+
         const assetsHandle = (await repo).find(doc.assetsDocUrl);
         await assetsHandle.whenReady();
         const assetsDoc = await assetsHandle.doc();

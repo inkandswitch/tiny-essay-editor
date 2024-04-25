@@ -6,22 +6,24 @@ import {
   ViewUpdate,
   Decoration,
 } from "@codemirror/view";
-import { Range } from "@codemirror/state";
+import { Range, StateEffect, StateField } from "@codemirror/state";
 import {
   AutomergeUrl,
   DocHandle,
   DocHandleChangePayload,
   DocHandleRemoteHeadsPayload,
+  DocumentId,
   Repo,
 } from "@automerge/automerge-repo";
 import { MarkdownDoc } from "../schema";
 import { AssetsDoc } from "../assets";
+import * as A from "@automerge/automerge";
 
 class Image extends WidgetType {
   constructor(
+    protected heads: A.Heads[],
     protected url: string,
-    protected caption: string,
-    protected registerImage: (image: HTMLImageElement) => void
+    protected caption: string
   ) {
     super();
   }
@@ -29,8 +31,6 @@ class Image extends WidgetType {
   toDOM() {
     const wrapper = document.createElement("div");
     const image = document.createElement("img");
-
-    this.registerImage(image);
 
     image.crossOrigin = "anonymous";
     image.src = this.url;
@@ -49,7 +49,11 @@ class Image extends WidgetType {
   }
 
   eq(other: Image) {
-    return other.url === this.url && other.caption === this.caption;
+    return (
+      other.url === this.url &&
+      other.caption === this.caption &&
+      A.equals(other.heads, this.heads)
+    );
   }
 
   ignoreEvent() {
@@ -59,10 +63,7 @@ class Image extends WidgetType {
 
 const MARKDOWN_IMAGE_REGEX = /!\[(?<caption>.*?)\]\((?<url>.*?)\)/gs;
 
-function getImages(
-  view: EditorView,
-  registerImage: (image: HTMLImageElement) => void
-) {
+function getImages(heads: A.Heads, docId: DocumentId, view: EditorView) {
   const decorations: Range<Decoration>[] = [];
 
   for (const { from, to } of view.visibleRanges) {
@@ -74,7 +75,7 @@ function getImages(
 
       const url = match.groups.url;
       const caption = match.groups.caption;
-      const image = new Image(url, caption, registerImage);
+      const image = new Image(heads, docId ? `${docId}/${url}` : "", caption);
       const widget = Decoration.widget({
         widget: image,
         side: -1,
@@ -92,10 +93,26 @@ function getImages(
   return Decoration.set(decorations, true /* = sort decorations */);
 }
 
+export const setAssetHeadsEffect = StateEffect.define<A.Heads>();
+export const assetsHeadsField = StateField.define<A.Heads>({
+  create() {
+    return [];
+  },
+  update(threads, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setAssetHeadsEffect)) {
+        return e.value;
+      }
+    }
+    return threads;
+  },
+});
+
 export const previewImagesPlugin = (
   handle: DocHandle<MarkdownDoc>,
   repo: Repo
-) =>
+) => [
+  assetsHeadsField,
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -103,10 +120,8 @@ export const previewImagesPlugin = (
 
       assetsDocHandle: DocHandle<AssetsDoc>;
 
-      constructor(view: EditorView) {
-        this.decorations = getImages(view, (image) => {
-          this.images.push(image);
-        });
+      constructor(private view: EditorView) {
+        this.decorations = getImages([], handle.documentId, view);
 
         this.onChangeDoc = this.onChangeDoc.bind(this);
         this.onRemoteHeadsChanged = this.onRemoteHeadsChanged.bind(this);
@@ -154,24 +169,27 @@ export const previewImagesPlugin = (
         // client have the same storage id since they are connected to the same indexeddb instance.
         const ownStorageId = await repo.storageId();
         if (ownStorageId === storageId) {
-          this.images.forEach((image) => {
-            const url = image.src;
-            image.src = "";
-            image.src = url;
-          });
+          console.log("change");
+
+          this.view.dispatch({ effects: setAssetHeadsEffect.of(heads) });
         }
       }
 
       update(update: ViewUpdate) {
-        if (update.docChanged || update.viewportChanged) {
-          this.images = [];
-          this.decorations = getImages(update.view, (image) =>
-            this.images.push(image)
-          );
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          update.transactions.some((tr) =>
+            tr.effects.some((e) => e.is(setAssetHeadsEffect))
+          )
+        ) {
+          const heads = update.state.field(assetsHeadsField);
+          this.decorations = getImages(heads, handle.documentId, update.view);
         }
       }
     },
     {
       decorations: (v) => v.decorations,
     }
-  );
+  ),
+];
