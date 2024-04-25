@@ -265,6 +265,14 @@ const parseUrl = (url: URL): DocLink | null => {
     return null;
   }
 
+  // hack: allow to easily switch to patchwork by adding "&patchwork=1" to the url
+  // todo: remove once patchwork is migrated to new url schema
+  if (url.searchParams.get("patchwork")) {
+    navigation.navigate(
+      `https://patchwork.tee.inkandswitch.com/#docType=${docType}&docUrl=${docUrl}`
+    );
+  }
+
   return {
     url: docUrl,
     type: docType,
