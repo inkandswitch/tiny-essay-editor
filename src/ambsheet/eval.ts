@@ -6,11 +6,17 @@ export interface Value {
   rawValue: number;
 }
 
-type Continuation = (value: Value, context: AmbContext) => void;
+interface Position {
+  row: number;
+  col: number;
+}
 
-/** a mapping that tracks which value we've chosen for a given amb node
- *  within the current subtree of the evaluation. (using a numeric index
- *  into the list of values, so that we can disambiguate equivalent values)
+type Continuation = (value: Value, pos: Position, context: AmbContext) => void;
+
+/**
+ * A mapping that tracks which value we've chosen for a given amb node
+ * within the current subtree of the evaluation. (using a numeric index
+ * into the list of values, so that we can disambiguate equivalent values)
  */
 export type AmbContext = Map<AmbNode, number>;
 
@@ -62,8 +68,6 @@ const isReady = (
   cellValues: Value[] | typeof NOT_READY
 ): cellValues is Value[] => cellValues !== NOT_READY;
 
-type Position = { row: number; col: number };
-
 /**
  * An evaluation environment tracking results of evaluated cells
  * during the course of an evaluation pass.
@@ -101,7 +105,12 @@ export class Env {
     this.results[row][col] = values;
   }
 
-  interp(node: Node, context: AmbContext, continuation: Continuation) {
+  interp(
+    node: Node,
+    pos: Position,
+    context: AmbContext,
+    continuation: Continuation
+  ) {
     switch (node.type) {
       case 'num':
         return continuation(
@@ -109,6 +118,7 @@ export class Env {
             rawValue: node.value,
             context,
           },
+          pos,
           context
         );
       case 'ref': {
@@ -124,52 +134,81 @@ export class Env {
             continue;
           }
           const newContext = new Map([...context, ...value.context]);
-          continuation(value, newContext);
+          continuation(value, pos, newContext);
         }
         return;
       }
       case '=':
-        return this.interpBinOp(node, context, continuation, (a, b) =>
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a == b ? 1 : 0
         );
       case '>':
-        return this.interpBinOp(node, context, continuation, (a, b) =>
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a > b ? 1 : 0
         );
       case '>=':
-        return this.interpBinOp(node, context, continuation, (a, b) =>
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a >= b ? 1 : 0
         );
       case '<':
-        return this.interpBinOp(node, context, continuation, (a, b) =>
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a < b ? 1 : 0
         );
       case '<=':
-        return this.interpBinOp(node, context, continuation, (a, b) =>
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a <= b ? 1 : 0
         );
       case '+':
-        return this.interpBinOp(node, context, continuation, (a, b) => a + b);
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a + b
+        );
       case '*':
-        return this.interpBinOp(node, context, continuation, (a, b) => a * b);
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a * b
+        );
       case '-':
-        return this.interpBinOp(node, context, continuation, (a, b) => a - b);
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a - b
+        );
       case '/':
-        return this.interpBinOp(node, context, continuation, (a, b) => a / b);
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a / b
+        );
       case 'if':
-        return this.interp(node.cond, context, (cond, contextAfterCond) =>
-          this.interp(
-            cond.rawValue !== 0 ? node.then : node.else,
-            contextAfterCond,
-            continuation
-          )
+        return this.interp(
+          node.cond,
+          pos,
+          context,
+          (cond, pos, contextAfterCond) =>
+            this.interp(
+              cond.rawValue !== 0 ? node.then : node.else,
+              pos,
+              contextAfterCond,
+              continuation
+            )
         );
       case 'amb':
         // call the continuation for each value in the amb node,
         // tracking which value we've chosen in the context.
         for (const [i, expr] of node.values.entries()) {
           const newContext = new Map([...context, [node, i]]);
-          this.interp(expr, newContext, continuation);
+          this.interp(expr, pos, newContext, continuation);
         }
         return;
       default: {
@@ -181,29 +220,35 @@ export class Env {
 
   interpBinOp(
     node: Node & { left: Node; right: Node },
+    pos: Position,
     context: AmbContext,
     continuation: Continuation,
     op: (x: number, y: number) => number
   ) {
-    this.interp(node.left, context, (left, contextAfterLeft) =>
+    this.interp(node.left, pos, context, (left, pos, contextAfterLeft) =>
       // Any amb choices made by the left side are used to constrain the right side
-      this.interp(node.right, contextAfterLeft, (right, contextAfterRight) =>
-        continuation(
-          {
-            rawValue: op(left.rawValue, right.rawValue),
-            context: contextAfterRight,
-          },
-          contextAfterRight
-        )
+      this.interp(
+        node.right,
+        pos,
+        contextAfterLeft,
+        (right, pos, contextAfterRight) =>
+          continuation(
+            {
+              rawValue: op(left.rawValue, right.rawValue),
+              context: contextAfterRight,
+            },
+            pos,
+            contextAfterRight
+          )
       )
     );
   }
 
   // The outermost continuation just collects up all results from the sub-paths of execution
-  evalNode(node: Node) {
+  evalNode(node: Node, pos: Position) {
     const results: Value[] = [];
     const context = new Map(); // init an empty amb context -- we haven't made any choices yet
-    this.interp(node, context, (value, _context) => results.push(value));
+    this.interp(node, pos, context, (value, _context) => results.push(value));
     return results;
   }
 
@@ -211,7 +256,7 @@ export class Env {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
     const node = parseFormula(formula, pos);
-    return this.evalNode(node);
+    return this.evalNode(node, pos);
   }
 
   eval(): Env {
