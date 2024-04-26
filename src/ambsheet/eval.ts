@@ -211,10 +211,10 @@ export class Env {
     return results;
   }
 
-  evalFormula(formula: string, _pos: { row: number; col: number }) {
+  evalFormula(formula: string, pos: { row: number; col: number }) {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
-    const node = parseFormula(formula);
+    const node = parseFormula(formula, pos);
     return this.evalNode(node);
   }
 

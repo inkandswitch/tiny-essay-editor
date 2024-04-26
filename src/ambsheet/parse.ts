@@ -185,7 +185,10 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
 });
 
-export function parseFormula(formula: string): Node {
+export function parseFormula(
+  formula: string,
+  _pos: { row: number; col: number }
+): Node {
   // TODO: throw on parse error
   const match = g.match(formula);
   return semantics(match).toAst();
