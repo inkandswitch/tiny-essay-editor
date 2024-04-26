@@ -29,6 +29,13 @@ export const dragAndDropImagesPlugin = ({
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
+
+      if (!isSupportedImageFile(file)) {
+        alert(
+          "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
+        );
+      }
+
       if (file.type.startsWith("image/")) {
         createImageReference(file).then((text) => {
           if (text) {
@@ -71,4 +78,19 @@ export const dragAndDropImagesPlugin = ({
       }
     }
   );
+};
+
+const isSupportedImageFile = (file: File) => {
+  switch (file.type) {
+    case "image/png":
+    case "image/jpeg":
+    case "image/gif":
+    case "image/webp":
+    case "image/bmp":
+    case "image/tiff":
+      return true;
+
+    default:
+      return false;
+  }
 };
