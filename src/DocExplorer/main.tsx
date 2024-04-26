@@ -1,4 +1,5 @@
 import * as A from "@automerge/automerge";
+//@ts-ignore
 import * as AW from "@automerge/automerge-wasm";
 import {
   Repo,
