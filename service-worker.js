@@ -80,12 +80,12 @@ self.addEventListener("activate", async (event) => {
   clients.claim();
 });
 
-const ASSETS_REQUEST_URL_REGEX = /^\/(.*-)?(?<docId>\w+)\/assets\/(?<path>.*)$/;
+const ASSETS_REQUEST_URL_REGEX =
+  /^https?:\/\/sync\.automerge\.org\/(?<docId>[a-zA-Z0-9]+)(\/(?<path>.*))?$/;
 
 self.addEventListener("fetch", async (event) => {
-  const url = new URL(event.request.url);
+  const match = event.request.url.match(ASSETS_REQUEST_URL_REGEX);
 
-  const match = url.pathname.match(ASSETS_REQUEST_URL_REGEX);
   if (match) {
     const { docId, path } = match.groups;
 
@@ -116,35 +116,11 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        if (!doc.assetsDocUrl) {
-          return new Response(`Document has no assets doc.\n${automergeUrl}`, {
-            status: 404,
-            headers: { "Content-Type": "text/plain" },
-          });
-        }
-
-        const assetsHandle = (await repo).find(doc.assetsDocUrl);
-        await assetsHandle.whenReady();
-        const assetsDoc = await assetsHandle.doc();
-
-        if (!assetsDoc || !assetsDoc.files) {
-          return new Response(
-            `Document unavailable.\n${assetsHandle.url}: ${assetsHandle.state}`,
-            {
-              status: 500,
-              headers: { "Content-Type": "text/plain" },
-            }
-          );
-        }
-
-        const decodedPath = decodeURI(path);
-        const file = assetsDoc.files[decodedPath];
-
+        const parts = decodeURI(path).split("/");
+        const file = parts.reduce((acc, curr) => acc?.[curr], doc);
         if (!file) {
           return new Response(
-            `Not found\npath: ${JSON.stringify(
-              decodedPath
-            )}\nfiles:${JSON.stringify(Object.keys(assetsDoc.files), null, 2)}`,
+            `Not found\nObject path: ${path}\n${JSON.stringify(doc, null, 2)}`,
             {
               status: 404,
               headers: { "Content-Type": "text/plain" },
@@ -152,21 +128,21 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        if (file.contentType) {
-          return new Response(file.contents, {
-            headers: { "Content-Type": file.contentType },
-          });
+        if (!file.contentType) {
+          return new Response(
+            `Invalid file entry.\n${
+              assetsHandle.url
+            }:\nfileEntry:${JSON.stringify(file)}`,
+            {
+              status: 404,
+              headers: { "Content-Type": "text/plain" },
+            }
+          );
         }
 
-        return new Response(
-          `Invalid file entry.\n${
-            assetsHandle.url
-          }:\nfileEntry:${JSON.stringify(file)}`,
-          {
-            status: 404,
-            headers: { "Content-Type": "text/plain" },
-          }
-        );
+        return new Response(file.contents, {
+          headers: { "Content-Type": file.contentType },
+        });
       })()
     );
   }
