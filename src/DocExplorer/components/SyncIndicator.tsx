@@ -188,9 +188,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   }
 };
 
-const SYNC_SERVER_STORAGE_ID =
-  import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
-  ("3760df37-a4c6-4f66-9ecd-732039a9385d" as StorageId);
+const SYNC_SERVER_STORAGE_ID = (import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
+  "3760df37-a4c6-4f66-9ecd-732039a9385d") as StorageId;
 
 enum SyncState {
   InSync,
@@ -211,8 +210,8 @@ interface SyncIndicatorState {
 function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
   const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
-  const [syncServerHeads, setSyncServerHeads] = useState();
-  const [ownHeads, setOwnHeads] = useState();
+  const [syncServerHeads, setSyncServerHeads] = useState<A.Heads>();
+  const [ownHeads, setOwnHeads] = useState<A.Heads>();
 
   useEffect(() => {
     repo.subscribeToRemotes([SYNC_SERVER_STORAGE_ID]);

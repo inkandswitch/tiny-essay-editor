@@ -10,10 +10,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
 import { Prop } from "@automerge/automerge";
-import {
-  plugin as amgPlugin,
-  PatchSemaphore,
-} from "@automerge/automerge-codemirror";
+import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
 import { CommentThreadForUI, MarkdownDoc } from "../schema";
@@ -82,8 +79,6 @@ export function MarkdownEditor({
     }
     const doc = handle.docSync();
     const source = doc.content; // this should use path
-    const automergePlugin = amgPlugin(doc, path);
-    const semaphore = new PatchSemaphore(automergePlugin);
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -116,7 +111,10 @@ export function MarkdownEditor({
         syntaxHighlighting(markdownStyles),
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
-        automergePlugin,
+        automergeSyncPlugin({
+          handle,
+          path: ["content"],
+        }),
         frontmatterPlugin,
         threadsField,
         threadDecorations,
@@ -143,16 +141,20 @@ export function MarkdownEditor({
               setActiveThreadId(null);
             }
           }
+
           view.update([transaction]);
-          semaphore.reconcile(handle, view);
+
           const selection = view.state.selection.ranges[0];
-          setSelection({
-            from: selection.from,
-            to: selection.to,
-            yCoord:
-              -1 * view.scrollDOM.getBoundingClientRect().top +
-              view.coordsAtPos(selection.from).top,
-          });
+          const cords = view.coordsAtPos(selection.from);
+
+          if (cords) {
+            setSelection({
+              from: selection.from,
+              to: selection.to,
+              yCoord:
+                -1 * view.scrollDOM.getBoundingClientRect().top + cords.top,
+            });
+          }
         } catch (e) {
           // If we hit an error in dispatch, it can lead to bad situations where
           // the editor has crashed and isn't saving data but the user keeps typing.
@@ -177,16 +179,7 @@ export function MarkdownEditor({
 
     view.focus();
 
-    const handleChange = () => {
-      semaphore.reconcile(handle, view);
-    };
-
-    handleChange();
-
-    handle.addListener("change", handleChange);
-
     return () => {
-      handle.removeListener("change", handleChange);
       view.destroy();
     };
   }, [handle, handleReady]);
