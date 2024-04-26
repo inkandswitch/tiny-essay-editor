@@ -73,9 +73,14 @@ async function setupRepo() {
 
 // Re-establish the MessageChannel if the controlling service worker changes.
 navigator.serviceWorker.addEventListener("controllerchange", (event) => {
-  console.log("New service worker took over");
-  const serviceWorker = (event.target as ServiceWorkerContainer).controller;
-  establishMessageChannel(serviceWorker);
+  const newServiceWorker = (event.target as ServiceWorkerContainer).controller;
+  // controllerchange is fired after a new service worker is installed
+  // even if we wait above in setupServiceWorker() until the service worker state changes to activated.
+  // To make sure we don't call establishMessageChannel twice check if this is actually a new service worker
+  if (newServiceWorker !== serviceWorker) {
+    console.log("New service worker took over");
+    establishMessageChannel(serviceWorker);
+  }
 });
 
 // Connects the repo in the tab with the repo in the service worker through a message channel.

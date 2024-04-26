@@ -7,12 +7,14 @@ import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-
 
 const CACHE_NAME = "v6";
 
+const PEER_ID = "service-worker-" + Math.round(Math.random() * 1000000);
+
 async function initializeRepo() {
-  console.log("Creating repo");
+  console.log(`${PEER_ID}: Creating repo`);
   const repo = new Repo({
     storage: new IndexedDBStorageAdapter(),
     network: [new BrowserWebSocketClientAdapter("wss://sync.automerge.org")],
-    peerId: "service-worker-" + Math.round(Math.random() * 1000000),
+    peerId: PEER_ID,
     sharePolicy: async (peerId) => peerId.includes("storage-server"),
     enableRemoteHeadsGossiping: true,
   });
@@ -43,7 +45,7 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("message", async (event) => {
-  console.log("Client messaged", event.data);
+  console.log(`${PEER_ID}: Client messaged`, event.data);
   if (event.data && event.data.type === "INIT_PORT") {
     const clientPort = event.ports[0];
     (await repo).networkSubsystem.addNetworkAdapter(
@@ -73,7 +75,7 @@ async function clearOldCaches() {
 }
 
 self.addEventListener("activate", async (event) => {
-  console.log("Activating service worker.");
+  console.log(`${PEER_ID}: Activating service worker.`);
   await clearOldCaches();
   clients.claim();
 });
