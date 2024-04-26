@@ -78,8 +78,7 @@ navigator.serviceWorker.addEventListener("controllerchange", (event) => {
   // even if we wait above in setupServiceWorker() until the service worker state changes to activated.
   // To make sure we don't call establishMessageChannel twice check if this is actually a new service worker
   if (newServiceWorker !== serviceWorker) {
-    console.log("New service worker took over");
-    establishMessageChannel(serviceWorker);
+    establishMessageChannel(newServiceWorker);
   }
 });
 
@@ -93,7 +92,6 @@ function establishMessageChannel(serviceWorker: ServiceWorker) {
     new MessageChannelNetworkAdapter(messageChannel.port1)
   );
   serviceWorker.postMessage({ type: "INIT_PORT" }, [messageChannel.port2]);
-
   console.log("Connected to service worker");
 }
 
