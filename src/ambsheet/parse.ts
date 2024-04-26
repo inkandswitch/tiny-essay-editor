@@ -4,10 +4,19 @@ export const isFormula = (cell: string) => cell && cell[0] === '=';
 
 export type AmbNode = { type: 'amb'; values: Node[] };
 
+type AddressingMode = 'relative' | 'absolute';
+export type RefNode = {
+  type: 'ref';
+  row: number;
+  rowMode: AddressingMode;
+  col: number;
+  colMode: AddressingMode;
+};
+
 export type Node =
   | { type: 'num'; value: number }
   | AmbNode
-  | { type: 'ref'; row: number; col: number }
+  | RefNode
   | { type: '='; left: Node; right: Node }
   | { type: '>'; left: Node; right: Node }
   | { type: '>='; left: Node; right: Node }
@@ -171,7 +180,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
     return {
       type: 'ref',
       col: col.sourceString.charCodeAt(0) - 'A'.charCodeAt(0),
+      colMode: 'relative',
       row: parseInt(row.sourceString) - 1,
+      rowMode: 'relative',
     };
   },
   NonemptyListOf(x, _sep, xs) {
