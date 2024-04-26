@@ -145,22 +145,29 @@ self.addEventListener("fetch", async (event) => {
         });
       })()
     );
-  }
-  // disable caching other files for now
-  /* else if (event.request.method === "GET" && url.origin === self.location.origin) {
+  } else if (
+    // enable caching only in production
+    import.meta.env.PROD &&
+    event.request.method === "GET" &&
+    url.origin === self.location.origin
+  ) {
     event.respondWith(
       (async () => {
-        const r = await caches.match(event.request)
-        console.log(`[Service Worker] Fetching resource from cache: ${event.request.url}`)
+        const r = await caches.match(event.request);
+        console.log(
+          `[Service Worker] Fetching resource from cache: ${event.request.url}`
+        );
         if (r) {
-          return r
+          return r;
         }
-        const response = await fetch(event.request)
-        const cache = await caches.open(CACHE_NAME)
-        console.log(`[Service Worker] Caching new resource: ${event.request.url}`)
-        cache.put(event.request, response.clone())
-        return response
+        const response = await fetch(event.request);
+        const cache = await caches.open(CACHE_NAME);
+        console.log(
+          `[Service Worker] Caching new resource: ${event.request.url}`
+        );
+        cache.put(event.request, response.clone());
+        return response;
       })()
-    ) 
-  } */
+    );
+  }
 });
