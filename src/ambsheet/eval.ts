@@ -211,7 +211,7 @@ export class Env {
     return results;
   }
 
-  evalFormula(formula: string) {
+  evalFormula(formula: string, _pos: { row: number; col: number }) {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
     const node = parseFormula(formula);
@@ -223,13 +223,11 @@ export class Env {
       let didSomething = false;
       for (let row = 0; row < this.data.length; row++) {
         for (let col = 0; col < this.data[row].length; col++) {
+          const pos = { row, col };
           const cell = this.data[row][col];
-          if (
-            this.getCellValues({ row, col }) === NOT_READY &&
-            isFormula(cell)
-          ) {
+          if (this.getCellValues(pos) === NOT_READY && isFormula(cell)) {
             try {
-              const result = this.evalFormula(cell);
+              const result = this.evalFormula(cell, pos);
               this.setCellValues(col, row, result);
               didSomething = true;
             } catch (error) {
