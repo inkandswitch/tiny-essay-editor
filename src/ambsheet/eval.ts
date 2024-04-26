@@ -62,6 +62,8 @@ const isReady = (
   cellValues: Value[] | typeof NOT_READY
 ): cellValues is Value[] => cellValues !== NOT_READY;
 
+type Position = { row: number; col: number };
+
 /**
  * An evaluation environment tracking results of evaluated cells
  * during the course of an evaluation pass.
@@ -90,13 +92,7 @@ export class Env {
     );
   }
 
-  getCellValues({
-    row,
-    col,
-  }: {
-    row: number;
-    col: number;
-  }): Value[] | typeof NOT_READY {
+  getCellValues({ row, col }: Position): Value[] | typeof NOT_READY {
     // console.log({ results: this.results, row, col });
     return this.results[row][col];
   }
@@ -211,7 +207,7 @@ export class Env {
     return results;
   }
 
-  evalFormula(formula: string, pos: { row: number; col: number }) {
+  evalFormula(formula: string, pos: Position) {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
     const node = parseFormula(formula, pos);
