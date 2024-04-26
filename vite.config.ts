@@ -41,6 +41,13 @@ export default defineConfig({
           // For all other assets, keep the default behavior
           return "assets/[name]-[hash][extname]";
         },
+        entryFileNames: (chunkInfo) => {
+          // Specify output location for service-worker.js
+          if (chunkInfo.name === "service-worker") {
+            return "[name].js"; // This will place service-worker.js directly under dist
+          }
+          return "assets/[name]-[hash].js"; // Default behavior for other entries
+        },
       },
     },
   },

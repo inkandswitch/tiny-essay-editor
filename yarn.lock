@@ -4033,11 +4033,6 @@ natural-compare@^1.4.0:
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
 
-navigation-api-types@^0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/navigation-api-types/-/navigation-api-types-0.5.1.tgz#858a332c28f2421b83345f87667a102a8a902749"
-  integrity sha512-STpzr4JvInYi+GFIckNe/dM5cKc9M7Q/ZLKLWcWxFzOCXCBK5Oog3PzjwXwJ18yCJ1RnPVgdVueQG357PIeiAA==
-
 node-domexception@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/node-domexception/-/node-domexception-1.0.0.tgz#6888db46a1f71c0b76b3f7555016b63fe64766e5"
