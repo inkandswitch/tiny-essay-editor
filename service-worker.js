@@ -84,6 +84,7 @@ const ASSETS_REQUEST_URL_REGEX =
   /^https?:\/\/sync\.automerge\.org\/(?<docId>[a-zA-Z0-9]+)(\/(?<path>.*))?$/;
 
 self.addEventListener("fetch", async (event) => {
+  const url = new URL(event.request.url);
   const match = event.request.url.match(ASSETS_REQUEST_URL_REGEX);
 
   if (match) {
