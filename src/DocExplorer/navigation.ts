@@ -6,8 +6,6 @@ export const useCurrentUrl = (): URL => {
   // Initialize the state with the current location
   const [url, setUrl] = useState<URL>(() => new URL(location.href));
 
-  console.log();
-
   useEffect(() => {
     const onNavigate = (event: NavigateEvent) => {
       setUrl(new URL(event.destination.url));
