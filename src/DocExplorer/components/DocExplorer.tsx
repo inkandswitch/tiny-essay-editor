@@ -1,8 +1,4 @@
-import {
-  AutomergeUrl,
-  DocumentId,
-  isValidAutomergeUrl,
-} from "@automerge/automerge-repo";
+import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Button } from "@/components/ui/button";
@@ -20,9 +16,8 @@ import { Topbar } from "./Topbar";
 import { LoadingScreen } from "./LoadingScreen";
 import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { TLDraw } from "@/tldraw/components/TLDraw";
-
+import { useCurrentUrl, replaceUrl } from "../navigation";
 import queryString from "query-string";
-import { useCurrentUrl } from "../navigation";
 
 export type Tool = {
   id: string;
@@ -268,7 +263,7 @@ const parseUrl = (url: URL): DocLink | null => {
   // hack: allow to easily switch to patchwork by adding "&patchwork=1" to the url
   // todo: remove once patchwork is migrated to new url schema
   if (url.searchParams.get("patchwork")) {
-    navigation.navigate(
+    window.location.assign(
       `https://patchwork.tee.inkandswitch.com/#docType=${docType}&docUrl=${docUrl}`
     );
   }
@@ -280,11 +275,11 @@ const parseUrl = (url: URL): DocLink | null => {
   };
 };
 
-const parseLegacyHashUrl = (hash: string): DocLink => {
+const parseLegacyUrl = (url: URL): DocLink => {
   // This is a backwards compatibility shim for old URLs where we
   // only had one parameter, the Automerge URL.
   // We just assume it's a TEE essay in that case.
-  const possibleAutomergeUrl = hash.slice(1);
+  const possibleAutomergeUrl = url.pathname.slice(1);
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
       url: possibleAutomergeUrl,
@@ -294,15 +289,14 @@ const parseLegacyHashUrl = (hash: string): DocLink => {
   }
 
   // Now on to the main logic where we look for a url and type both.
-  const parsedHash = queryString.parse(hash);
-  const { docUrl, docType } = parsedHash;
+  const { docUrl, docType } = queryString.parse(url.pathname.slice(1));
 
   if (typeof docUrl !== "string" || typeof docType !== "string") {
     return null;
   }
 
   if (typeof docUrl === "string" && !isValidAutomergeUrl(docUrl)) {
-    alert(`Invalid Automerge URL in URL: ${parsedHash.docUrl}`);
+    alert(`Invalid Automerge URL in URL: ${docUrl}`);
     return null;
   }
 
@@ -339,7 +333,7 @@ const useSelectedDocLink = ({
       return;
     }
 
-    navigation.navigate(docLinkToUrl(docLink));
+    location.hash = docLinkToUrl(docLink);
   };
 
   const urlParams = useMemo(() => parseUrl(currentUrl), [currentUrl]);
@@ -360,16 +354,10 @@ const useSelectedDocLink = ({
     };
   }, [urlParams?.type, urlParams?.url, rootFolderDoc]);
 
-  // We redirect old hash urls to the new format
+  // We redirect old urls to the new format
   useEffect(() => {
-    if (!currentUrl?.hash) {
-      return;
-    }
-
-    // only parse url as hash if no url path is set
-    if (currentUrl.pathname === "/" || currentUrl.pathname === "") {
-      // redirect to new format
-      const docLink = parseLegacyHashUrl(currentUrl.hash);
+    if (!urlParams) {
+      const docLink = parseLegacyUrl(currentUrl);
       if (docLink) {
         setSelectedDocLink(docLink);
       }
@@ -384,7 +372,7 @@ const useSelectedDocLink = ({
     }
 
     const url = docLinkToUrl(selectedDocLink);
-    navigation.navigate(url, { history: "replace" });
+    replaceUrl(url);
   }, [selectedDocLink?.name]);
 
   // We check if the current file is already in the root folder
@@ -413,5 +401,5 @@ const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
-  return `/${name}${documentId}?docType=${docLink.type}`;
+  return `${name}${documentId}?docType=${docLink.type}`;
 };

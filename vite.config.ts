@@ -6,9 +6,6 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
-  // We set the app type to mpa (Multi Page Application) so sub routes will all resolve to index.html
-  appType: "mpa",
-
   base: "./",
   plugins: [topLevelAwait(), react()],
   resolve: {
