@@ -71,7 +71,7 @@ const grammarSource = String.raw`
       | digit+             -- whole
     
     cellRef
-      = upper digit+
+      = "$"? upper "$"? digit+
   }
 `;
 
@@ -179,7 +179,8 @@ const semantics = g.createSemantics().addOperation('toAst', {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
-  cellRef(col, row) {
+  cellRef(colIsAsolute, col, rowIsAbsolute, row) {
+    // TODO: pay attention to colIsAbsolute and rowIsAbsolute
     return {
       type: 'ref',
       col: col.sourceString.charCodeAt(0) - 'A'.charCodeAt(0),
