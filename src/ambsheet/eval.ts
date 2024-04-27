@@ -122,7 +122,11 @@ export class Env {
           context
         );
       case 'ref': {
-        const values = this.getCellValues(node);
+        const cellPos = {
+          row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
+          col: node.col + (node.colMode === 'relative' ? pos.col : 0),
+        };
+        const values = this.getCellValues(cellPos);
         if (!isReady(values)) {
           throw NOT_READY;
         }

@@ -81,6 +81,9 @@ const g = ohm.grammar(grammarSource);
 // console.log("match", g.match("=-1 + {2, 3}").succeeded());
 // console.log("match", g.match("=1 + {2, (3 + 4)}").succeeded());
 
+// this is hacky, but it's convenient...
+let pos = { row: 0, col: 0 };
+
 const semantics = g.createSemantics().addOperation('toAst', {
   Formula(_eq, exp) {
     return exp.toAst();
@@ -179,14 +182,19 @@ const semantics = g.createSemantics().addOperation('toAst', {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
-  cellRef(colIsAsolute, col, rowIsAbsolute, row) {
-    // TODO: pay attention to colIsAbsolute and rowIsAbsolute
+  cellRef(cDollar, c, rDollar, r) {
+    const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';
+    const colMode = cDollar.sourceString === '$' ? 'absolute' : 'relative';
     return {
       type: 'ref',
-      col: col.sourceString.charCodeAt(0) - 'A'.charCodeAt(0),
-      colMode: 'relative',
-      row: parseInt(row.sourceString) - 1,
-      rowMode: 'relative',
+      rowMode,
+      row:
+        parseInt(r.sourceString) - 1 - (rowMode === 'absolute' ? 0 : pos.row),
+      colMode,
+      col:
+        c.sourceString.charCodeAt(0) -
+        'A'.charCodeAt(0) -
+        (colMode === 'absolute' ? 0 : pos.col),
     };
   },
   NonemptyListOf(x, _sep, xs) {
@@ -202,9 +210,10 @@ const semantics = g.createSemantics().addOperation('toAst', {
 
 export function parseFormula(
   formula: string,
-  _pos: { row: number; col: number }
+  cellPos: { row: number; col: number }
 ): Node {
   // TODO: throw on parse error
   const match = g.match(formula);
+  pos = cellPos;
   return semantics(match).toAst();
 }
