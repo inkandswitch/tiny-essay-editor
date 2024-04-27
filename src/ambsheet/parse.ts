@@ -64,11 +64,14 @@ const grammarSource = String.raw`
       = number                   -- number
       | "{" ListOf<Exp, ","> "}" -- amb
       | "(" Exp ")"              -- paren
-      | upper digit+             -- cellRef
+      | cellRef
 
     number  (a number)
       = digit* "." digit+  -- fract
       | digit+             -- whole
+    
+    cellRef
+      = upper digit+
   }
 `;
 
@@ -176,7 +179,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
-  PriExp_cellRef(col, row) {
+  cellRef(col, row) {
     return {
       type: 'ref',
       col: col.sourceString.charCodeAt(0) - 'A'.charCodeAt(0),
