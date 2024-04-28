@@ -178,4 +178,12 @@ describe('ambsheet evaluator', () => {
       [['2', '{3,4}', '{23,24}', '{1,1}']]
     );
   });
+
+  it('evaluates references correctly', () => {
+    // TODO: we need a better way to test absolute references
+    assert.deepStrictEqual(
+      evalSheet([['5', '=A1', '=$A$1', '=A$1', '=$A1']]).print(),
+      [['5', '5', '5', '5', '5']]
+    );
+  });
 });
