@@ -72,7 +72,8 @@ const grammarSource = String.raw`
       | cellRef
 
     AmbPart
-      = Exp  -- exp
+      = Exp "x" digit+  -- repeated
+      | Exp             -- single
 
     number  (a number)
       = digit* "." digit+  -- fract
@@ -200,7 +201,10 @@ const semantics = g.createSemantics().addOperation('toAst', {
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
-  AmbPart_exp(exp) {
+  AmbPart_repeated(exp, _x, n) {
+    return { exp: exp.toAst(), numRepeats: parseInt(n.sourceString) };
+  },
+  AmbPart_single(exp) {
     return { exp: exp.toAst(), numRepeats: 1 };
   },
   cellRef(cDollar, c, rDollar, r) {

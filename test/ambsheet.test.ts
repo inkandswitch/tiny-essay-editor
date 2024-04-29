@@ -205,4 +205,13 @@ describe('ambsheet evaluator', () => {
       [['{-7,0,17}', '{-8,-1,16}']]
     );
   });
+
+  it('supports repetition in amb literals', () => {
+    assert.deepStrictEqual(evalSheet([['={9x4}', '=a1+3']]).print(), [
+      ['{9,9,9,9}', '{12,12,12,12}'],
+    ]);
+    assert.deepStrictEqual(evalSheet([['={1,9x4,3}', '=a1+3']]).print(), [
+      ['{1,9,9,9,9,3}', '{4,12,12,12,12,6}'],
+    ]);
+  });
 });
