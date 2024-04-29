@@ -66,16 +66,23 @@ const grammarSource = String.raw`
       | PriExp
 
     PriExp
-      = number                       -- number
-      | "{" ListOf<AmbPart, ","> "}" -- amb
-      | "(" Exp ")"                  -- paren
+      = "{" ListOf<AmbPart, ","> "}"  -- amb
+      | "(" Exp ")"                   -- paren
       | cellRef
+      | RawValueLiteral
 
     AmbPart
-      = Exp "x" digit+  -- repeated
-      | Exp             -- single
+      = RawValueLiteral "x" digit+  -- repeated
+      | RawValueLiteral             -- single
+
+    RawValueLiteral
+      = number
 
     number  (a number)
+      = "-" unsignedNumber   -- negative
+      | "+"? unsignedNumber  -- positive
+
+    unsignedNumber
       = digit* "." digit+  -- fract
       | digit+             -- whole
     
@@ -186,10 +193,10 @@ const semantics = g.createSemantics().addOperation('toAst', {
       right: exp.toAst(),
     };
   },
-  PriExp_number(number) {
+  number(n) {
     return {
       type: 'num',
-      value: parseFloat(number.sourceString),
+      value: parseFloat(n.sourceString),
     };
   },
   PriExp_amb(_lbrace, list, _rbrace) {
