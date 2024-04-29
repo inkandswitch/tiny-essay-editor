@@ -1,4 +1,8 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocumentId,
+  isValidAutomergeUrl,
+} from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Button } from "@/components/ui/button";
@@ -18,6 +22,7 @@ import { TLDraw } from "@/tldraw/components/TLDraw";
 
 import queryString from "query-string";
 import { setUrlHashForDoc } from "../utils";
+import { useCurrentUrlPath } from "../navigation";
 
 export type Tool = {
   id: string;
@@ -94,7 +99,7 @@ export const DocExplorer: React.FC = () => {
       );
 
       // By updating the URL to the new doc, we'll trigger a navigation
-      setUrlHashForDoc({ docUrl: newDocHandle.url, docType: type });
+      selectDoc({ docUrl: newDocHandle.url, docType: type });
     },
     [changeRootFolderDoc, repo, rootFolderDoc]
   );
@@ -238,25 +243,51 @@ export const DocExplorer: React.FC = () => {
   );
 };
 
-export type UrlHashParams = {
-  docUrl: AutomergeUrl;
-  docType: DocType;
-} | null;
+export type UrlParams = {
+  url: AutomergeUrl;
+  type: DocType;
+  name?: string;
+};
 
-const isDocType = (x: string): x is DocType =>
+const isValidDocType = (x: string): x is DocType =>
   Object.keys(docTypes).includes(x as DocType);
 
-const parseCurrentUrlHash = (): UrlHashParams => {
-  const hash = window.location.hash;
+const parseUrlPath = (path: string): UrlParams | null => {
+  const match = path.match(/^\/(?<docType>\w+)\/(?<name>.*-)?(?<docId>\w+)$/);
 
+  if (!match) {
+    return;
+  }
+
+  const { docType, docId, name } = match.groups;
+  const docUrl = `automerge:${docId}` as AutomergeUrl;
+
+  if (!isValidAutomergeUrl(docUrl)) {
+    alert(`Invalid doc id in URL: ${docUrl}`);
+    return null;
+  }
+
+  if (!isValidDocType(docType)) {
+    alert(`Invalid doc type in URL: ${docType}`);
+    return null;
+  }
+
+  return {
+    url: docUrl,
+    type: docType,
+    name,
+  };
+};
+
+const parseUrlHash = (hash: string): UrlParams => {
   // This is a backwards compatibility shim for old URLs where we
   // only had one parameter, the Automerge URL.
   // We just assume it's a TEE essay in that case.
   const possibleAutomergeUrl = hash.slice(1);
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
-      docUrl: possibleAutomergeUrl,
-      docType: "tldraw",
+      url: possibleAutomergeUrl,
+      type: "essay",
     };
   }
 
@@ -273,18 +304,18 @@ const parseCurrentUrlHash = (): UrlHashParams => {
     return null;
   }
 
-  if (typeof docType === "string" && !isDocType(docType)) {
+  if (typeof docType === "string" && !isValidDocType(docType)) {
     alert(`Invalid doc type in URL: ${docType}`);
     return null;
   }
 
   return {
-    docUrl,
-    docType,
+    url: docUrl,
+    type: docType,
   };
 };
 
-// Drive the currently selected doc using the URL hash
+// Drive the currently selected doc using the URL
 // (We encapsulate the selection state in a hook so that the only
 // API for changing the selection is properly thru the URL)
 const useSelectedDoc = ({
@@ -294,7 +325,43 @@ const useSelectedDoc = ({
   rootFolderDoc: FolderDoc;
   changeRootFolderDoc: (fn: (doc: FolderDoc) => void) => void;
 }) => {
-  const [selectedDocUrl, setSelectedDocUrl] = useState<AutomergeUrl>(null);
+  const currentUrlPath = useCurrentUrlPath();
+
+  const setUrl = (
+    params: UrlParams,
+    options: NavigationNavigateOptions = {}
+  ) => {
+    if (params.url === urlParams.url && params.type == urlParams.type) {
+      return;
+    }
+
+    const documentId = params.url.split(":")[1];
+    navigation.navigate(`/${params.type}/${documentId}`, options);
+  };
+
+  const urlParams = useMemo<UrlParams | null>(() => {
+    // todo: handle old url
+    /* if (currentUrlPath === "/" || currentUrlPath === "") {
+      if (window.location.hash) {
+        const params = parseUrlHash(window.location.hash);
+
+        if (params) {
+          removeHash();
+          setUrl(params, { history: "replace" });
+        }
+
+        return params;
+      }
+    } */
+
+    return parseUrlPath(currentUrlPath);
+  }, [currentUrlPath]);
+
+  const selectedDocUrl = urlParams?.url;
+  const selectedDocType = urlParams?.type;
+
+  console.log(selectedDocUrl);
+
   const [selectedDoc] = useDocument(selectedDocUrl);
 
   const selectDoc = (docUrl: AutomergeUrl | null) => {
@@ -307,15 +374,21 @@ const useSelectedDoc = ({
       alert(`Unknown doc type: ${doc.type}`);
       return;
     }
-    setUrlHashForDoc({ docUrl, docType: doc.type });
+    setUrl({
+      url: docUrl,
+      type: doc.type,
+      name: doc.name,
+    });
   };
 
   // Add an existing doc to our collection
   const openDocFromUrl = useCallback(
-    ({ docUrl, docType }: { docUrl: AutomergeUrl; docType: DocType }) => {
+    (params: UrlParams) => {
       if (!rootFolderDoc) {
         return;
       }
+
+      const { type: docType, url: docUrl } = params;
 
       // TODO: validate the doc's data schema here before adding to our collection
       if (!rootFolderDoc?.docs.find((doc) => doc.url === docUrl)) {
@@ -328,34 +401,24 @@ const useSelectedDoc = ({
         );
       }
 
-      setSelectedDocUrl(docUrl);
+      setUrl(params);
     },
     [rootFolderDoc, changeRootFolderDoc, selectDoc]
   );
 
-  // observe the URL hash to change the selected document
-  useEffect(() => {
-    const hashChangeHandler = () => {
-      const urlParams = parseCurrentUrlHash();
-      if (!urlParams) return;
-      openDocFromUrl(urlParams);
-    };
-
-    hashChangeHandler();
-
-    // Listen for hash changes
-    window.addEventListener("hashchange", hashChangeHandler, false);
-
-    // Clean up listener on unmount
-    return () => {
-      window.removeEventListener("hashchange", hashChangeHandler, false);
-    };
-  }, [openDocFromUrl]);
-
   return {
     selectedDocUrl,
+    selectedDocType,
     selectedDoc,
     selectDoc,
     openDocFromUrl,
   };
+};
+
+const removeHash = () => {
+  history.replaceState(
+    "",
+    document.title,
+    window.location.pathname + window.location.search
+  );
 };

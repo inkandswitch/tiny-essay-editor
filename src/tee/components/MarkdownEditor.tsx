@@ -175,14 +175,14 @@ export function MarkdownEditor({
           view.update([transaction]);
 
           const selection = view.state.selection.ranges[0];
-          const cords = view.coordsAtPos(selection.from);
+          const coords = view.coordsAtPos(selection.from);
 
-          if (cords) {
+          if (coords) {
             setSelection({
               from: selection.from,
               to: selection.to,
               yCoord:
-                -1 * view.scrollDOM.getBoundingClientRect().top + cords.top,
+                -1 * view.scrollDOM.getBoundingClientRect().top + coords.top,
             });
           }
         } catch (e) {

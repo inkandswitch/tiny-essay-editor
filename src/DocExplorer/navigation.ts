@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export const useLocation = () => {
+export const useCurrentUrlPath = (): string => {
   // Initialize the state with the current location
   const [location, setLocation] = useState(window.location.pathname);
 
@@ -12,8 +12,11 @@ export const useLocation = () => {
         return;
       }
 
-      event.intercept();
-      setLocation(window.location.pathname);
+      event.intercept({
+        handler: async () => {
+          setLocation(window.location.pathname);
+        },
+      });
     };
 
     navigation.addEventListener("navigate", onNavigate);
@@ -26,6 +29,8 @@ export const useLocation = () => {
 
   return location;
 };
+
+export const useActiveDocument = () => {};
 
 const shouldNotIntercept = (navigationEvent) => {
   return (
