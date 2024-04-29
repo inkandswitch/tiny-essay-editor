@@ -9,7 +9,7 @@ import {
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
-import { Prop } from "@automerge/automerge";
+import { change, Prop } from "@automerge/automerge";
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
@@ -95,8 +95,31 @@ export function MarkdownEditor({
         dropCursor(),
         dragAndDropImagesPlugin({
           onDrop: (file) => {
-            // todo: store file
-            console.log("dropped", file);
+            const doc = handle.docSync();
+            const fileAlreadyExists = doc.assets && doc.assets[file.name];
+            if (fileAlreadyExists) {
+              alert(
+                `a file with the name "${file.name}" already exists in the document`
+              );
+              return;
+            }
+
+            loadFile(file).then((contents) => {
+              handle.change((doc) => {
+                // convert old docs
+                if (!doc.assets) {
+                  doc.assets = {};
+                }
+
+                doc.assets[file.name] = {
+                  contentType: file.type,
+                  contents,
+                };
+              });
+            });
+
+            const markdownImageText = `![${file.name}](${file.name})`;
+            return markdownImageText;
           },
         }),
         indentOnInput(),
@@ -229,3 +252,18 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+const loadFile = (file: File): Promise<Uint8Array> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      // The file's text will be printed here
+      const arrayBuffer = e.target.result as ArrayBuffer;
+
+      // Convert the arrayBuffer to a Uint8Array
+      resolve(new Uint8Array(arrayBuffer));
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+};
