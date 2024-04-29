@@ -29,7 +29,7 @@ export const Stacks = ({
   return (
     <div className="flex flex-wrap gap-2 mb-10">
       {Object.entries(groupedValues).map(([key, values]) => {
-        const stackSize = Math.min(values.length, 5);
+        const stackSize = Math.min(values.length, 4);
         return (
           <div
             key={key}
@@ -51,7 +51,7 @@ export const Stacks = ({
                     selected ? 'bg-red-200' : 'bg-white'
                   }`}
                   style={{
-                    transform: `translate(${index * 3}px, -${index * 3}px)`,
+                    transform: `translate(${index * 2}px, -${index * 2}px)`,
                   }}
                 >
                   {key}
