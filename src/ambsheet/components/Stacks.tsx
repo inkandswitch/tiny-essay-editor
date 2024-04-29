@@ -27,13 +27,15 @@ export const Stacks = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-2 mb-10">
+    <div className="flex flex-wrap gap-2 mb-4">
       {Object.entries(groupedValues).map(([key, values]) => {
         const stackSize = Math.min(values.length, 4);
         return (
           <div
             key={key}
-            className="w-10 h-8 relative cursor-default"
+            className={`w-10 relative cursor-default ${
+              values.length > 1 ? 'h-10' : 'h-8'
+            }`}
             onMouseEnter={() => selectGroup(key)}
             onMouseLeave={() => setFilterSelection(null)}
           >
@@ -58,9 +60,11 @@ export const Stacks = ({
               })}
             </div>
 
-            <div className="text-xs text-gray-400 text-center mb-1">
-              x{values.length}
-            </div>
+            {values.length > 1 && (
+              <div className="text-xs text-gray-400 text-center">
+                x{values.length}
+              </div>
+            )}
           </div>
         );
       })}
