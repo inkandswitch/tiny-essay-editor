@@ -1,7 +1,12 @@
-import * as A from "@automerge/automerge/next";
-import { Repo, AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
-import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
+import * as A from "@automerge/automerge";
+import * as AW from "@automerge/automerge-wasm";
+import {
+  Repo,
+  AutomergeUrl,
+  DocHandle,
+  PeerId,
+} from "@automerge/automerge-repo";
+import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-messagechannel";
 
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { next as Automerge } from "@automerge/automerge";
@@ -11,13 +16,57 @@ import { mount } from "./mount.js";
 import { getAccount } from "./account.js";
 import { timeStamp } from "console";
 
-const repo = new Repo({
-  network: [
-    new BroadcastChannelNetworkAdapter(),
-    new BrowserWebSocketClientAdapter("wss://sync.automerge.org"),
-  ],
-  storage: new IndexedDBStorageAdapter(),
-});
+// First, spawn the serviceworker.
+async function setupServiceWorker() {
+  const registration = await navigator.serviceWorker.register(
+    "service-worker.js",
+    {
+      type: "module",
+    }
+  );
+  console.log(
+    "ServiceWorker registration successful with scope:",
+    registration.scope
+  );
+}
+
+// Then set up an automerge repo (loading with our annoying WASM hack)
+async function setupRepo() {
+  await AW.promise;
+  A.use(AW);
+
+  // no network, no storage... not yet.
+  const repo = new Repo({
+    storage: new IndexedDBStorageAdapter(),
+    network: [],
+    peerId: ("frontend-" + Math.round(Math.random() * 10000)) as PeerId,
+    sharePolicy: async (peerId) => peerId.includes("service-worker"),
+  });
+
+  return repo;
+}
+
+// Now introduce the two to each other. This frontend takes advantage of loaded state in the SW.
+function establishMessageChannel(repo) {
+  if (!navigator.serviceWorker.controller) {
+    console.log("No service worker is controlling this tab right now.");
+    return;
+  }
+
+  // Send one side of a MessageChannel to the service worker and register the other with the repo.
+  const messageChannel = new MessageChannel();
+  repo.networkSubsystem.addNetworkAdapter(
+    new MessageChannelNetworkAdapter(messageChannel.port1)
+  );
+  navigator.serviceWorker.controller.postMessage({ type: "INIT_PORT" }, [
+    messageChannel.port2,
+  ]);
+}
+
+// (Actually do the things above here.)
+await setupServiceWorker();
+const repo = await setupRepo();
+establishMessageChannel(repo);
 
 let author: AutomergeUrl;
 

@@ -7,15 +7,11 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), wasm(), react()],
+  plugins: [topLevelAwait(), react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  worker: {
-    format: "es",
-    plugins: [wasm()],
   },
 
   optimizeDeps: {
@@ -32,6 +28,10 @@ export default defineConfig({
 
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        "service-worker": path.resolve(__dirname, "service-worker.js"),
+      },
       output: {
         // We put index.css in dist instead of dist/assets so that we can link to fonts
         // using relative URLs like "./assets/font.woff2", which is the correct form
