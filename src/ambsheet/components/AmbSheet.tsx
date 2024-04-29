@@ -4,7 +4,7 @@ import { AmbSheetDoc, AmbSheetDocAnchor } from '../datatype';
 import { HotTable } from '@handsontable/react';
 import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/dist/handsontable.full.min.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import * as A from '@automerge/automerge/next';
 import { registerRenderer, textRenderer } from 'handsontable/renderers';
@@ -12,6 +12,9 @@ import { DocEditorProps } from '@/DocExplorer/doctypes';
 import { AmbContext, NOT_READY, Value, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
 import { isFormula } from '../parse';
+import React from 'react';
+import { Stacks } from './Stacks';
+import { RawViewer } from './RawViewer';
 
 // register Handsontable's modules
 registerAllModules();
@@ -102,6 +105,17 @@ registerRenderer(
   }
 );
 
+export type CellSelection = {
+  row: number;
+  col: number;
+};
+
+export type FilterSelection = {
+  row: number;
+  col: number;
+  selectedValueIndexes: number[];
+};
+
 // Here's an overview of how formula evaluation works:
 // - The raw document stores cells as text, including formulas
 // - The data we pass into HOT contains evaluated formula results
@@ -114,11 +128,21 @@ export const AmbSheet = ({
 }: DocEditorProps<AmbSheetDocAnchor, string>) => {
   const [latestDoc] = useDocument<AmbSheetDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<AmbSheetDoc>(docUrl);
-  const [selectedValuesForCells, setSelectedValuesForCells] = useState<
-    { row: number; col: number; selectedValueIndexes: number[] }[]
-  >([]);
+  const [selectedCell, setSelectedCell] = useState<CellSelection | undefined>(
+    undefined
+  );
 
-  console.log({ selectedValuesForCells });
+  const [filteredValues, setFilteredValues] = useState<FilterSelection[]>([]);
+
+  const filterSelectionForSelectedCell = useMemo(() => {
+    return filteredValues.find(
+      (f) => f.row === selectedCell.row && f.col === selectedCell.col
+    );
+  }, [filteredValues, selectedCell]);
+
+  const selectedCellName = selectedCell
+    ? `${String.fromCharCode(65 + selectedCell.col)}${selectedCell.row + 1}`
+    : undefined;
 
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
@@ -132,14 +156,23 @@ export const AmbSheet = ({
     return evalSheet(doc.data).results;
   }, [doc]);
 
+  const selectedCellResult = useMemo(() => {
+    if (!selectedCell) {
+      return undefined;
+    }
+    return evaluatedSheet[selectedCell.row][selectedCell.col];
+  }, [selectedCell, evaluatedSheet]);
+
+  console.log(selectedCellResult);
+
   const filteredResults = useMemo(() => {
-    const filterContexts = selectedValuesForCells.map((f) => {
+    const filterContexts = filteredValues.map((f) => {
       return f.selectedValueIndexes.map(
         (i) => evaluatedSheet[f.row][f.col][i].context
       );
     });
     return filter(evaluatedSheet, filterContexts);
-  }, [evaluatedSheet, selectedValuesForCells]);
+  }, [evaluatedSheet, filteredValues]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -157,31 +190,29 @@ export const AmbSheet = ({
   };
 
   const onAfterSetCellMeta = (row, col, _, value) => {
-    const existingEntryIndex = selectedValuesForCells.findIndex(
+    const existingEntryIndex = filteredValues.findIndex(
       (entry) => entry.row === row && entry.col === col
     );
     if (existingEntryIndex !== -1) {
       if (value.length === 0) {
         // Clear out the existing entry if the value is an empty array
-        setSelectedValuesForCells(
-          selectedValuesForCells.filter(
-            (_, index) => index !== existingEntryIndex
-          )
+        setFilteredValues(
+          filteredValues.filter((_, index) => index !== existingEntryIndex)
         );
       } else {
         // Update existing entry
         const updatedEntry = {
-          ...selectedValuesForCells[existingEntryIndex],
+          ...filteredValues[existingEntryIndex],
           selectedValueIndexes: value,
         };
-        const newFilterContextsForCells = [...selectedValuesForCells];
+        const newFilterContextsForCells = [...filteredValues];
         newFilterContextsForCells[existingEntryIndex] = updatedEntry;
-        setSelectedValuesForCells(newFilterContextsForCells);
+        setFilteredValues(newFilterContextsForCells);
       }
     } else if (value.length > 0) {
       // Add new entry only if value is not an empty array
-      setSelectedValuesForCells([
-        ...selectedValuesForCells,
+      setFilteredValues([
+        ...filteredValues,
         { row, col, selectedValueIndexes: value },
       ]);
     }
@@ -206,12 +237,89 @@ export const AmbSheet = ({
     return false;
   };
 
+  const onAfterSelection = (row, col) => {
+    setSelectedCell({ row, col });
+  };
+
   if (!doc) {
     return null;
   }
 
   return (
-    <div className="w-full h-full overflow-hidden">
+    <div className="w-full h-full flex">
+      <div className="w-3/4 h-full overflow-auto">
+        <MemoizedHOTWrapper
+          doc={doc}
+          filteredResults={filteredResults}
+          filteredValues={filteredValues}
+          onBeforeHotChange={onBeforeHotChange}
+          onBeforeCreateRow={onBeforeCreateRow}
+          onBeforeCreateCol={onBeforeCreateCol}
+          onAfterSetCellMeta={onAfterSetCellMeta}
+          onAfterSelection={onAfterSelection}
+        />
+      </div>
+      <div className="w-1/4 h-full overflow-auto p-2">
+        <div>Cell {selectedCellName}</div>
+
+        {selectedCellResult && selectedCellResult !== NOT_READY && (
+          <div>
+            <div className="my-2">
+              <h2>Stacks</h2>
+              <Stacks
+                values={selectedCellResult as Value[]}
+                filterSelection={filterSelectionForSelectedCell}
+                setFilterSelection={(selection: FilterSelection) => {
+                  setFilteredValues((filteredValues) => {
+                    const index = filteredValues.findIndex(
+                      (f) => f.row === selection.row && f.col === selection.col
+                    );
+                    if (index === -1) {
+                      return [...filteredValues, selection];
+                    }
+                    return filteredValues.map((f) =>
+                      f.row === selection.row && f.col === selection.col
+                        ? selection
+                        : f
+                    );
+                  });
+                }}
+              />
+            </div>
+            <div className="my-2">
+              <h2>Raw</h2>
+              <RawViewer values={selectedCellResult as Value[]} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// This is just a way to avoid HOT from doing expensive 100ms+ rerenders
+// if the data hasn't actually changed at all.
+const MemoizedHOTWrapper = React.memo(
+  ({
+    doc,
+    filteredResults,
+    filteredValues,
+    onBeforeHotChange,
+    onBeforeCreateRow,
+    onBeforeCreateCol,
+    onAfterSetCellMeta,
+    onAfterSelection,
+  }: {
+    doc: AmbSheetDoc;
+    filteredValues: any;
+    filteredResults: any;
+    onBeforeHotChange: any;
+    onBeforeCreateRow: any;
+    onBeforeCreateCol: any;
+    onAfterSetCellMeta: any;
+    onAfterSelection: any;
+  }) => {
+    return (
       <HotTable
         data={filteredResults}
         editor={FormulaEditor}
@@ -219,6 +327,7 @@ export const AmbSheet = ({
         beforeCreateRow={onBeforeCreateRow}
         beforeCreateCol={onBeforeCreateCol}
         afterSetCellMeta={onAfterSetCellMeta}
+        afterSelection={onAfterSelection}
         rowHeaders={true}
         colHeaders={true}
         contextMenu={true}
@@ -232,13 +341,17 @@ export const AmbSheet = ({
         cells={(row, col) => {
           const rawContents = doc.data[row][col];
           const selectedValueIndexes =
-            selectedValuesForCells.find((f) => f.row === row && f.col === col)
+            filteredValues.find((f) => f.row === row && f.col === col)
               ?.selectedValueIndexes || [];
           if (isFormula(rawContents)) {
             return { formula: rawContents, selectedValueIndexes };
           }
         }}
       />
-    </div>
-  );
-};
+    );
+  },
+  (prev, next) =>
+    prev.filteredResults === next.filteredResults &&
+    prev.filteredValues === next.filteredValues &&
+    prev.doc === next.doc
+);
