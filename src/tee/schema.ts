@@ -3,6 +3,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { TextPatch } from "@/patchwork/utils";
 import { Discussion, HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasAssets } from "./assets";
 
 export type Comment = {
   id: string;
@@ -128,14 +129,15 @@ export type User = {
 // todo: split content of document and metadata
 // currently branches copy also global metadata
 // unclear if comments should be part of the doc or the content
-export type MarkdownDoc = HasPatchworkMetadata<MarkdownDocAnchor, string> & {
-  content: string;
-  commentThreads: { [key: string]: ThreadAnnotation };
+export type MarkdownDoc = HasPatchworkMetadata<MarkdownDocAnchor, string> &
+  HasAssets & {
+    content: string;
+    commentThreads: { [key: string]: ThreadAnnotation };
 
-  /** Important note: these are what we call "edit groups" in the UI currently */
-  drafts: { [key: string]: PersistedDraft };
-  users: User[];
-};
+    /** Important note: these are what we call "edit groups" in the UI currently */
+    drafts: { [key: string]: PersistedDraft };
+    users: User[];
+  };
 
 export type MarkdownDocAnchor = {
   fromCursor: A.Cursor;

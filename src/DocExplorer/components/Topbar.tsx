@@ -46,8 +46,8 @@ import { HasPatchworkMetadata } from "@/patchwork/schema";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
-  selectedDocUrl: AutomergeUrl | null;
-  selectDoc: (docUrl: AutomergeUrl | null) => void;
+  selectedDocLink: DocLink;
+  selectDocLink: (docLink: DocLink | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
   setSelectedBranch: (branch: SelectedBranch) => void;
 };
@@ -55,18 +55,16 @@ type TopbarProps = {
 export const Topbar: React.FC<TopbarProps> = ({
   showSidebar,
   setShowSidebar,
-  selectedDocUrl,
-  selectDoc,
+  selectedDocLink,
+  selectDocLink,
   deleteFromAccountDocList,
   setSelectedBranch,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const selectedDocLink = rootFolderDoc?.docs.find(
-    (doc) => doc.url === selectedDocUrl
-  );
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
+  const selectedDocUrl = selectedDocLink?.url;
   const selectedDocHandle =
     useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
@@ -100,7 +98,8 @@ export const Topbar: React.FC<TopbarProps> = ({
     ]);
   }, [selectedDocUrl, selectedDoc]);
 
-  const botDocLinks = rootFolderDoc?.docs.filter((doc) => doc.type === "bot");
+  const botDocLinks =
+    rootFolderDoc?.docs.filter((doc) => doc.type === "bot") ?? [];
 
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
@@ -183,7 +182,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     size={14}
                     className="inline-block ml-2 cursor-pointer"
                     onClick={(e) => {
-                      selectDoc(botDocLink.url);
+                      selectDocLink(botDocLink);
                       e.stopPropagation();
                     }}
                   />
@@ -243,7 +242,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                   doc.docs.splice(index + 1, 0, newDocLink)
                 );
 
-                selectDoc(newDocLink.url);
+                selectDocLink(newDocLink);
               }}
             >
               <GitForkIcon
