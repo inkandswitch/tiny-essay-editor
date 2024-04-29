@@ -91,7 +91,7 @@ const grammarSource = String.raw`
     unsignedNumber
       = digit* "." digit+  -- fract
       | digit+             -- whole
-    
+
     cellRef
       = "$"? letter "$"? digit+
 
@@ -270,3 +270,8 @@ export function parseFormula(formula: string, cellPos: Position): Node {
   pos = cellPos;
   return semantics(match).toAst();
 }
+
+// Get a human readable cell name like B2 given a row and col.
+// Might extend this in the future to support custom cell names?
+export const cellIndexToName = (pos: Position) =>
+  `${String.fromCharCode(65 + pos.col)}${pos.row + 1}`;

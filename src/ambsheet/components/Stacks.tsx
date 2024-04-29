@@ -37,27 +37,30 @@ export const Stacks = ({
             onMouseEnter={() => selectGroup(key)}
             onMouseLeave={() => setFilterSelection(null)}
           >
+            <div className="h-7">
+              {Array.from({ length: stackSize }, (_, index) => {
+                const selected = filterSelection?.selectedValueIndexes.includes(
+                  values[index].indexInCell
+                );
+                return (
+                  <div
+                    key={index}
+                    className={`absolute shadow-sm px-3 rounded-md border border-gray-200 ${
+                      selected ? 'bg-red-200' : 'bg-white'
+                    }`}
+                    style={{
+                      transform: `translate(${index * 2}px, -${index * 2}px)`,
+                    }}
+                  >
+                    {key}
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="text-xs text-gray-400 text-center mb-1">
               x{values.length}
             </div>
-            {Array.from({ length: stackSize }, (_, index) => {
-              const selected = filterSelection?.selectedValueIndexes.includes(
-                values[index].indexInCell
-              );
-              return (
-                <div
-                  key={index}
-                  className={`absolute shadow-sm px-3 rounded-md border border-gray-200 ${
-                    selected ? 'bg-red-200' : 'bg-white'
-                  }`}
-                  style={{
-                    transform: `translate(${index * 2}px, -${index * 2}px)`,
-                  }}
-                >
-                  {key}
-                </div>
-              );
-            })}
           </div>
         );
       })}

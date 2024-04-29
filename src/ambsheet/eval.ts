@@ -1,5 +1,11 @@
 import { AmbSheetDoc, Position, RawValue } from './datatype';
-import { isFormula, parseFormula, Node, AmbNode } from './parse';
+import {
+  isFormula,
+  parseFormula,
+  Node,
+  AmbNode,
+  cellIndexToName,
+} from './parse';
 
 export interface Value {
   context: AmbContext;
@@ -15,10 +21,29 @@ type Continuation = (value: Value, pos: Position, context: AmbContext) => void;
  */
 export type AmbContext = Map<AmbNode, number>;
 
+type CellName = string;
+
+// An Amb context using cell names as keys instead of amb nodes
+export type AmbContextWithResolvedPositions = {
+  [key: CellName]: number;
+};
+
 // Two contexts are "compatible" if they contain no overlapping keys with differing values
-const contextsAreCompatible = (a: AmbContext, b: AmbContext) => {
+export const contextsAreCompatible = (a: AmbContext, b: AmbContext) => {
   for (const [node, value] of a) {
     if (b.has(node) && b.get(node) !== value) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export const contextsWithResolvedPositionsAreCompatible = (
+  a: AmbContextWithResolvedPositions,
+  b: AmbContextWithResolvedPositions
+) => {
+  for (const [cell, value] of Object.entries(a)) {
+    if (b[cell] !== undefined && b[cell] !== value) {
       return false;
     }
   }
@@ -377,5 +402,15 @@ export function printResults(results: Results) {
     })
   );
 }
+
+export const resolvePositionsInContext = (
+  context: AmbContext
+): AmbContextWithResolvedPositions =>
+  Object.fromEntries(
+    Array.from(context.entries()).map(([key, val]) => [
+      cellIndexToName(key.pos),
+      val,
+    ])
+  );
 
 export const evalSheet = (data: AmbSheetDoc['data']) => new Env(data).eval();

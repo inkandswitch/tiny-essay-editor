@@ -1,5 +1,5 @@
 import { useDocument, useHandle } from '@automerge/automerge-repo-react-hooks';
-import { AmbSheetDoc, AmbSheetDocAnchor } from '../datatype';
+import { AmbSheetDoc, AmbSheetDocAnchor, Position } from '../datatype';
 
 import { HotTable } from '@handsontable/react';
 import { registerAllModules } from 'handsontable/registry';
@@ -11,10 +11,11 @@ import { registerRenderer, textRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
 import { AmbContext, NOT_READY, Value, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
-import { isFormula } from '../parse';
+import { cellIndexToName, isFormula } from '../parse';
 import React from 'react';
 import { Stacks } from './Stacks';
 import { RawViewer } from './RawViewer';
+import { TableViewer } from './TableViewer';
 
 // register Handsontable's modules
 registerAllModules();
@@ -105,11 +106,6 @@ registerRenderer(
   }
 );
 
-export type CellSelection = {
-  row: number;
-  col: number;
-};
-
 export type FilterSelection = {
   row: number;
   col: number;
@@ -128,7 +124,7 @@ export const AmbSheet = ({
 }: DocEditorProps<AmbSheetDocAnchor, string>) => {
   const [latestDoc] = useDocument<AmbSheetDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<AmbSheetDoc>(docUrl);
-  const [selectedCell, setSelectedCell] = useState<CellSelection | undefined>(
+  const [selectedCell, setSelectedCell] = useState<Position | undefined>(
     undefined
   );
 
@@ -141,7 +137,7 @@ export const AmbSheet = ({
   }, [filteredValues, selectedCell]);
 
   const selectedCellName = selectedCell
-    ? `${String.fromCharCode(65 + selectedCell.col)}${selectedCell.row + 1}`
+    ? cellIndexToName(selectedCell)
     : undefined;
 
   const doc = useMemo(
@@ -241,13 +237,38 @@ export const AmbSheet = ({
     setSelectedCell({ row, col });
   };
 
+  const onSetSelectedValuesForSelectedCell = (selection: number[] | null) => {
+    setFilteredValues((filteredValues) => {
+      const index = filteredValues.findIndex(
+        (f) => f.row === selectedCell.row && f.col === selectedCell.col
+      );
+      if (index === -1) {
+        return [
+          ...filteredValues,
+          {
+            row: selectedCell.row,
+            col: selectedCell.col,
+            selectedValueIndexes: selection,
+          },
+        ];
+      }
+      return filteredValues.flatMap((f) =>
+        f.row === selectedCell.row && f.col === selectedCell.col
+          ? selection
+            ? [{ ...f, selectedValueIndexes: selection }]
+            : []
+          : f
+      );
+    });
+  };
+
   if (!doc) {
     return null;
   }
 
   return (
     <div className="w-full h-full flex">
-      <div className="w-3/4 h-full overflow-auto">
+      <div className=" grow h-full overflow-auto">
         <MemoizedHOTWrapper
           doc={doc}
           filteredResults={filteredResults}
@@ -259,45 +280,36 @@ export const AmbSheet = ({
           onAfterSelection={onAfterSelection}
         />
       </div>
-      <div className="w-1/4 h-full overflow-auto p-2">
+      <div className="w-[250px] h-full overflow-auto p-2">
         <div>Cell {selectedCellName}</div>
 
         {selectedCellResult && selectedCellResult !== NOT_READY && (
           <div>
             <div className="my-2">
-              <h2>Stacks</h2>
+              <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
+                Stacks
+              </h2>
               <Stacks
                 values={selectedCellResult as Value[]}
                 filterSelection={filterSelectionForSelectedCell}
-                setFilterSelection={(selection: number[] | null) => {
-                  setFilteredValues((filteredValues) => {
-                    const index = filteredValues.findIndex(
-                      (f) =>
-                        f.row === selectedCell.row && f.col === selectedCell.col
-                    );
-                    if (index === -1) {
-                      return [
-                        ...filteredValues,
-                        {
-                          row: selectedCell.row,
-                          col: selectedCell.col,
-                          selectedValueIndexes: selection,
-                        },
-                      ];
-                    }
-                    return filteredValues.flatMap((f) =>
-                      f.row === selectedCell.row && f.col === selectedCell.col
-                        ? selection
-                          ? [{ ...f, selectedValueIndexes: selection }]
-                          : []
-                        : f
-                    );
-                  });
-                }}
+                setFilterSelection={onSetSelectedValuesForSelectedCell}
               />
             </div>
             <div className="my-2">
-              <h2>Raw</h2>
+              <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
+                Table
+              </h2>
+              <TableViewer
+                values={selectedCellResult as Value[]}
+                filterSelection={filterSelectionForSelectedCell}
+                setFilterSelection={onSetSelectedValuesForSelectedCell}
+                evaluatedSheet={evaluatedSheet}
+              />
+            </div>
+            <div className="my-2">
+              <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
+                Raw
+              </h2>
               <RawViewer values={selectedCellResult as Value[]} />
             </div>
           </div>
