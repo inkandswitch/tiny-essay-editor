@@ -1,4 +1,4 @@
-import { AmbSheetDoc } from './datatype';
+import { AmbSheetDoc, Position } from './datatype';
 import { isFormula, parseFormula, Node, AmbNode } from './parse';
 
 type RawValue = number; // TODO: add string and range
@@ -6,11 +6,6 @@ type RawValue = number; // TODO: add string and range
 export interface Value {
   context: AmbContext;
   rawValue: RawValue;
-}
-
-interface Position {
-  row: number;
-  col: number;
 }
 
 type Continuation = (value: Value, pos: Position, context: AmbContext) => void;

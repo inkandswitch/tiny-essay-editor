@@ -1,4 +1,5 @@
 import * as ohm from 'ohm-js';
+import { Position } from './datatype';
 
 export const isFormula = (cell: string) => cell && cell[0] === '=';
 
@@ -10,11 +11,9 @@ export type AmbNode = {
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
   type: 'ref';
-  row: number;
   rowMode: AddressingMode;
-  col: number;
   colMode: AddressingMode;
-};
+} & Position;
 
 export type Node =
   | { type: 'num'; value: number }
@@ -240,10 +239,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
 });
 
-export function parseFormula(
-  formula: string,
-  cellPos: { row: number; col: number }
-): Node {
+export function parseFormula(formula: string, cellPos: Position): Node {
   // TODO: throw on parse error
   const match = g.match(formula);
   pos = cellPos;

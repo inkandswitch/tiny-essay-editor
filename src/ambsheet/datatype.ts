@@ -5,6 +5,11 @@ import { DataType } from '@/DocExplorer/doctypes';
 import { pick } from 'lodash';
 import { Annotation, HasPatchworkMetadata } from '@/patchwork/schema';
 
+export interface Position {
+  row: number;
+  col: number;
+}
+
 export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table
 
