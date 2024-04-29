@@ -4,11 +4,11 @@ import { EditorSelection } from "@codemirror/state";
 type DragAndDropImagePluginConfig = {
   // createImageReference is called whenever an image is dropped into the editor
   // the handle can return a string that will be inserted at the the drop position
-  createImageReference: (file: File) => Promise<string | undefined>;
+  createFileReference: (file: File) => Promise<string | undefined>;
 };
 
-export const dragAndDropImagesPlugin = ({
-  createImageReference,
+export const dragAndDropFilesPlugin = ({
+  createFileReference,
 }: DragAndDropImagePluginConfig) => {
   let view: EditorView;
 
@@ -30,28 +30,18 @@ export const dragAndDropImagesPlugin = ({
     if (files.length > 0) {
       const file = files[0];
 
-      if (!isSupportedImageFile(file)) {
-        alert(
-          "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
-        );
-      }
+      createFileReference(file).then((text) => {
+        if (text) {
+          const pos = view.posAtCoords({
+            x: event.clientX,
+            y: event.clientY,
+          });
 
-      if (file.type.startsWith("image/")) {
-        createImageReference(file).then((text) => {
-          if (text) {
-            const pos = view.posAtCoords({
-              x: event.clientX,
-              y: event.clientY,
-            });
-
-            view.dispatch({
-              changes: { from: pos, insert: text },
-            });
-          }
-        });
-      } else {
-        alert("Only image files are allowed.");
-      }
+          view.dispatch({
+            changes: { from: pos, insert: text },
+          });
+        }
+      });
     }
     return true;
   };
@@ -78,19 +68,4 @@ export const dragAndDropImagesPlugin = ({
       }
     }
   );
-};
-
-const isSupportedImageFile = (file: File) => {
-  switch (file.type) {
-    case "image/png":
-    case "image/jpeg":
-    case "image/gif":
-    case "image/webp":
-    case "image/bmp":
-    case "image/tiff":
-      return true;
-
-    default:
-      return false;
-  }
 };

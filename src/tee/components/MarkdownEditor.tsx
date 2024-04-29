@@ -32,8 +32,8 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { dragAndDropImagesPlugin } from "../codemirrorPlugins/dragAndDropImages";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewImages";
+import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc } from "../assets";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
@@ -94,8 +94,8 @@ export function MarkdownEditor({
         // drawSelection(),
 
         dropCursor(),
-        dragAndDropImagesPlugin({
-          createImageReference: async (file) => {
+        dragAndDropFilesPlugin({
+          createFileReference: async (file) => {
             const doc = handle.docSync();
             let assetsHandle: DocHandle<AssetsDoc>;
 
@@ -115,6 +115,13 @@ export function MarkdownEditor({
             await assetsHandle.whenReady();
             const assetsDoc = assetsHandle.docSync();
 
+            if (!isSupportedImageFile(file)) {
+              alert(
+                "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
+              );
+              return;
+            }
+
             const fileAlreadyExists = assetsDoc.files[file.name];
             if (fileAlreadyExists) {
               alert(
@@ -132,9 +139,7 @@ export function MarkdownEditor({
               });
             });
 
-            const { width, height } = await getDimensionsOfImageFile(file);
-
-            return `<img src="./assets/${file.name}" width="${width}" height="${height}"/>`;
+            return `![](./assets/${file.name})`;
           },
         }),
         indentOnInput(),
@@ -284,20 +289,17 @@ const loadFile = (file: File): Promise<Uint8Array> => {
   });
 };
 
-const getDimensionsOfImageFile = (
-  file: File
-): Promise<{ height: number; width: number }> => {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
+const isSupportedImageFile = (file: File) => {
+  switch (file.type) {
+    case "image/png":
+    case "image/jpeg":
+    case "image/gif":
+    case "image/webp":
+    case "image/bmp":
+    case "image/tiff":
+      return true;
 
-    img.onload = () => {
-      resolve({
-        width: img.width,
-        height: img.height,
-      });
-      URL.revokeObjectURL(img.src);
-    };
-    img.src = url;
-  });
+    default:
+      return false;
+  }
 };

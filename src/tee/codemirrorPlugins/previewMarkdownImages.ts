@@ -23,8 +23,7 @@ class Image extends WidgetType {
   constructor(
     protected heads: A.Heads[],
     protected url: string,
-    protected width: number,
-    protected height: number
+    protected caption: string
   ) {
     super();
   }
@@ -34,8 +33,6 @@ class Image extends WidgetType {
     const image = document.createElement("img");
 
     image.crossOrigin = "anonymous";
-    image.width = this.width;
-    image.height = this.height;
     image.src = this.url;
     image.className = "min-w-0";
     image.onerror = () => {
@@ -45,11 +42,22 @@ class Image extends WidgetType {
     wrapper.append(image);
     wrapper.className = "w-fit border border-gray-200";
 
+    if (this.caption.length > 0) {
+      const captionDiv = document.createElement("div");
+      captionDiv.append(document.createTextNode(this.caption));
+      captionDiv.className = "p-4 bg-gray-100 text-sm font-sans";
+      wrapper.append(captionDiv);
+    }
+
     return wrapper;
   }
 
   eq(other: Image) {
-    return other.url === this.url && A.equals(other.heads, this.heads);
+    return (
+      other.url === this.url &&
+      other.caption === this.caption &&
+      A.equals(other.heads, this.heads)
+    );
   }
 
   ignoreEvent() {
@@ -57,7 +65,7 @@ class Image extends WidgetType {
   }
 }
 
-const IMAGE_TAG_REGEX = /\<img[^>]*\/?>/gs;
+const MARKDOWN_IMAGE_REGEX = /!\[(?<caption>.*?)\]\((?<url>.*?)\)/gs;
 
 function getImages(heads: A.Heads, assetsDocId: DocumentId, view: EditorView) {
   const decorations: Range<Decoration>[] = [];
@@ -66,24 +74,18 @@ function getImages(heads: A.Heads, assetsDocId: DocumentId, view: EditorView) {
     const text = view.state.sliceDoc(from, to);
 
     let match;
-    while ((match = IMAGE_TAG_REGEX.exec(text))) {
+    while ((match = MARKDOWN_IMAGE_REGEX.exec(text))) {
       const position = match.index + from;
 
-      const imageTag = match[0];
-      const imageElement = parseImageTag(imageTag);
-      if (!imageElement) {
-        debugger;
-        continue;
-      }
+      const url = match.groups.url;
+      const caption = match.groups.caption;
 
-      const pathName = new URL(imageElement.src).pathname;
       const image = new Image(
         heads,
-        assetsDocId && pathName.startsWith("/assets")
-          ? `https://automerge/${assetsDocId}/files/${pathName.split("/")[2]}`
+        assetsDocId && url.startsWith("./assets")
+          ? `https://automerge/${assetsDocId}/files/${url.split("/")[2]}`
           : "",
-        imageElement.width,
-        imageElement.height
+        caption
       );
       const widget = Decoration.widget({
         widget: image,
@@ -101,12 +103,6 @@ function getImages(heads: A.Heads, assetsDocId: DocumentId, view: EditorView) {
 
   return Decoration.set(decorations, true /* = sort decorations */);
 }
-
-const parseImageTag = (imageTag: string): HTMLImageElement | undefined => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(imageTag, "text/html");
-  return doc.querySelector("img");
-};
 
 export const setAssetHeadsEffect = StateEffect.define<A.Heads>();
 export const assetsHeadsField = StateField.define<A.Heads>({

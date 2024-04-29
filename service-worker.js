@@ -85,10 +85,7 @@ const ASSETS_REQUEST_URL_REGEX =
 
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
-
   const match = event.request.url.match(ASSETS_REQUEST_URL_REGEX);
-
-  console.log("intercept", url, match);
 
   if (match) {
     const { docId, path } = match.groups;
