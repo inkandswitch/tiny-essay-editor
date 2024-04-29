@@ -80,9 +80,7 @@ function getImages(heads: A.Heads, assetsDocId: DocumentId, view: EditorView) {
       const image = new Image(
         heads,
         assetsDocId && pathName.startsWith("/assets")
-          ? `https://sync.automerge.org/${assetsDocId}/files/${
-              pathName.split("/")[2]
-            }`
+          ? `https://automerge/${assetsDocId}/files/${pathName.split("/")[2]}`
           : "",
         imageElement.width,
         imageElement.height

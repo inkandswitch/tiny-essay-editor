@@ -81,11 +81,14 @@ self.addEventListener("activate", async (event) => {
 });
 
 const ASSETS_REQUEST_URL_REGEX =
-  /^https?:\/\/sync\.automerge\.org\/(?<docId>[a-zA-Z0-9]+)(\/(?<path>.*))?$/;
+  /^https?:\/\/automerge\/(?<docId>[a-zA-Z0-9]+)(\/(?<path>.*))?$/;
 
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
+
   const match = event.request.url.match(ASSETS_REQUEST_URL_REGEX);
+
+  console.log("intercept", url, match);
 
   if (match) {
     const { docId, path } = match.groups;
