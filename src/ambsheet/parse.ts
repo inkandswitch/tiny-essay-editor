@@ -53,7 +53,7 @@ const grammarSource = String.raw`
       | CallExp
 
     CallExp
-      = "if" "(" Exp "," Exp "," Exp ")"  -- if
+      = caseInsensitive<"if"> "(" Exp "," Exp "," Exp ")"  -- if
       | UnExp
 
     UnExp

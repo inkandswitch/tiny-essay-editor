@@ -61,7 +61,7 @@ describe('ambsheet evaluator', () => {
 
   it('can do simple if, v2', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1,2,3}', '=if(A1>1, 111, 222)']]).print(),
+      evalSheet([['={1,2,3}', '=IF(A1>1, 111, 222)']]).print(),
       [['{1,2,3}', '{222,111,111}']]
     );
   });
