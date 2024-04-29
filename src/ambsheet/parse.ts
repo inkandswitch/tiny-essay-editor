@@ -5,6 +5,7 @@ export const isFormula = (cell: string) => cell && cell[0] === '=';
 
 export type AmbNode = {
   type: 'amb';
+  pos: Position;
   values: { exp: Node; numRepeats: number }[];
 };
 
@@ -201,6 +202,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
   PriExp_amb(_lbrace, list, _rbrace) {
     return {
       type: 'amb',
+      pos,
       values: list.toAst(),
     };
   },
