@@ -201,7 +201,7 @@ describe('ambsheet evaluator', () => {
     );
 
     assert.deepStrictEqual(
-      evalSheet([['={-7,0,17}', '=min(A1, A1-1)']]).print(),
+      evalSheet([['={-7,0,17}', '=min(a1, a1-1)']]).print(),
       [['{-7,0,17}', '{-8,-1,16}']]
     );
   });

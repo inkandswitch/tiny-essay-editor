@@ -73,7 +73,7 @@ const grammarSource = String.raw`
       | digit+             -- whole
     
     cellRef
-      = "$"? upper "$"? digit+
+      = "$"? letter "$"? digit+
 
     name
       = letter alnum*
@@ -204,7 +204,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
         parseInt(r.sourceString) - 1 - (rowMode === 'absolute' ? 0 : pos.row),
       colMode,
       col:
-        c.sourceString.charCodeAt(0) -
+        c.sourceString.toUpperCase().charCodeAt(0) -
         'A'.charCodeAt(0) -
         (colMode === 'absolute' ? 0 : pos.col),
     };
