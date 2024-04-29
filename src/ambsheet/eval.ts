@@ -1,9 +1,11 @@
 import { AmbSheetDoc } from './datatype';
 import { isFormula, parseFormula, Node, AmbNode } from './parse';
 
+type RawValue = number; // TODO: add string and range
+
 export interface Value {
   context: AmbContext;
-  rawValue: number;
+  rawValue: RawValue;
 }
 
 interface Position {
@@ -67,6 +69,23 @@ export const NOT_READY = {};
 const isReady = (
   cellValues: Value[] | typeof NOT_READY
 ): cellValues is Value[] => cellValues !== NOT_READY;
+
+const builtInFunctions = {
+  min(xs: RawValue[]) {
+    if (xs.length === 0) {
+      throw new Error('min() requires at least one argument');
+    } else {
+      return Math.min(...xs);
+    }
+  },
+  max(xs: RawValue[]) {
+    if (xs.length === 0) {
+      throw new Error('min() requires at least one argument');
+    } else {
+      return Math.max(...xs);
+    }
+  },
+};
 
 /**
  * An evaluation environment tracking results of evaluated cells
@@ -207,6 +226,14 @@ export class Env {
               continuation
             )
         );
+      case 'call': {
+        const fn = builtInFunctions[node.funcName];
+        if (fn == null) {
+          throw new Error('unsupported built-in function: ' + node.funcName);
+        } else {
+          return this.reduce(node.args, fn, [], pos, context, continuation);
+        }
+      }
       case 'amb':
         // call the continuation for each value in the amb node,
         // tracking which value we've chosen in the context.
@@ -227,7 +254,7 @@ export class Env {
     pos: Position,
     context: AmbContext,
     continuation: Continuation,
-    op: (x: number, y: number) => number
+    op: (x: RawValue, y: RawValue) => RawValue
   ) {
     this.interp(node.left, pos, context, (left, pos, contextAfterLeft) =>
       // Any amb choices made by the left side are used to constrain the right side
@@ -246,6 +273,28 @@ export class Env {
           )
       )
     );
+  }
+
+  reduce(
+    nodes: Node[],
+    fn: (xs: RawValue[]) => RawValue,
+    acc: RawValue[],
+    pos: Position,
+    context: AmbContext,
+    continuation: Continuation
+  ) {
+    return nodes.length === 0
+      ? continuation({ rawValue: fn(acc), context }, pos, context)
+      : this.interp(nodes[0], pos, context, (value, pos, context) =>
+          this.reduce(
+            nodes.slice(1),
+            fn,
+            [...acc, value.rawValue],
+            pos,
+            context,
+            continuation
+          )
+        );
   }
 
   // The outermost continuation just collects up all results from the sub-paths of execution

@@ -186,4 +186,23 @@ describe('ambsheet evaluator', () => {
       [['5', '5', '5', '5', '5']]
     );
   });
+
+  it('evaluates min and max correctly', () => {
+    assert.deepStrictEqual(
+      evalSheet([['5', '=A1+5', '=min(A1, B1)', '=max(A1, B1)']]).print(),
+      [['5', '10', '5', '10']]
+    );
+
+    assert.deepStrictEqual(
+      evalSheet([
+        ['5', '=A1+5', '={-7,0,17}', '=min(A1, B1, C1)', '=max(A1, B1, C1)'],
+      ]).print(),
+      [['5', '10', '{-7,0,17}', '{-7,0,5}', '{10,10,17}']]
+    );
+
+    assert.deepStrictEqual(
+      evalSheet([['={-7,0,17}', '=min(A1, A1-1)']]).print(),
+      [['{-7,0,17}', '{-8,-1,16}']]
+    );
+  });
 });

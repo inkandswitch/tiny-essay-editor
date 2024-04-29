@@ -26,7 +26,8 @@ export type Node =
   | { type: '-'; left: Node; right: Node }
   | { type: '*'; left: Node; right: Node }
   | { type: '/'; left: Node; right: Node }
-  | { type: 'if'; cond: Node; then: Node; else: Node };
+  | { type: 'if'; cond: Node; then: Node; else: Node }
+  | { type: 'call'; funcName: string; args: Node[] };
 
 const grammarSource = String.raw`
   AmbSheets {
@@ -54,6 +55,7 @@ const grammarSource = String.raw`
 
     CallExp
       = caseInsensitive<"if"> "(" Exp "," Exp "," Exp ")"  -- if
+      | name "(" ListOf<Exp, ","> ")"                      -- call
       | UnExp
 
     UnExp
@@ -72,6 +74,9 @@ const grammarSource = String.raw`
     
     cellRef
       = "$"? upper "$"? digit+
+
+    name
+      = letter alnum*
   }
 `;
 
@@ -158,6 +163,13 @@ const semantics = g.createSemantics().addOperation('toAst', {
       cond: cond.toAst(),
       then: thenExp.toAst(),
       else: elseExp.toAst(),
+    };
+  },
+  CallExp_call(fnName, _lparen, args, _rparen) {
+    return {
+      type: 'call',
+      funcName: fnName.sourceString.toLowerCase(),
+      args: args.toAst(),
     };
   },
   UnExp_neg(_op, exp) {
