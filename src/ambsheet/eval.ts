@@ -1,7 +1,5 @@
-import { AmbSheetDoc, Position } from './datatype';
+import { AmbSheetDoc, Position, RawValue } from './datatype';
 import { isFormula, parseFormula, Node, AmbNode } from './parse';
-
-type RawValue = number; // TODO: add string and range
 
 export interface Value {
   context: AmbContext;
@@ -126,7 +124,7 @@ export class Env {
     continuation: Continuation
   ) {
     switch (node.type) {
-      case 'num':
+      case 'rawValueLiteral':
         return continuation(
           {
             rawValue: node.value,
@@ -229,18 +227,35 @@ export class Env {
           return this.reduce(node.args, fn, [], pos, context, continuation);
         }
       }
-      case 'amb':
+      case 'amb': {
         // call the continuation for each value in the amb node,
         // tracking which value we've chosen in the context.
-        for (const [i, { exp, numRepeats }] of node.values.entries()) {
-          const newContext = new Map([...context, [node, i]]);
-          this.interp(exp, pos, newContext, (value, pos, context) => {
-            for (let idx = 0; idx < numRepeats; idx++) {
-              continuation(value, pos, context);
+        let i = 0;
+        for (const part of node.parts) {
+          if (part.type === 'repeat') {
+            for (let idx = 0; idx < part.numRepeats; idx++) {
+              const newContext = new Map([...context, [node, i++]]);
+              continuation(
+                { context: newContext, rawValue: part.value },
+                pos,
+                newContext
+              );
             }
-          });
+          } else {
+            let v = part.from;
+            while (part.from < part.to ? v <= part.to : v >= part.to) {
+              const newContext = new Map([...context, [node, i++]]);
+              continuation(
+                { context: newContext, rawValue: v },
+                pos,
+                newContext
+              );
+              v += part.step;
+            }
+          }
         }
         return;
+      }
       default: {
         const exhaustiveCheck: never = node;
         throw new Error(`Unhandled node type: ${exhaustiveCheck}`);

@@ -1,13 +1,17 @@
 import * as ohm from 'ohm-js';
-import { Position } from './datatype';
+import { Position, RawValue } from './datatype';
 
 export const isFormula = (cell: string) => cell && cell[0] === '=';
 
 export type AmbNode = {
   type: 'amb';
   pos: Position;
-  values: { exp: Node; numRepeats: number }[];
+  parts: AmbNodePart[];
 };
+
+export type AmbNodePart =
+  | { type: 'repeat'; value: RawValue; numRepeats: number }
+  | { type: 'range'; from: number; to: number; step: number };
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
@@ -17,7 +21,7 @@ export type RefNode = {
 } & Position;
 
 export type Node =
-  | { type: 'num'; value: number }
+  | { type: 'rawValueLiteral'; value: number }
   | AmbNode
   | RefNode
   | { type: '='; left: Node; right: Node }
@@ -72,8 +76,10 @@ const grammarSource = String.raw`
       | RawValueLiteral
 
     AmbPart
-      = RawValueLiteral "x" digit+  -- repeated
-      | RawValueLiteral             -- single
+      = number "to" number "by" number  -- rangeWithStep
+      | number "to" number              -- rangeAutoStep
+      | number "x" digit+               -- repeated
+      | number                          -- single
 
     RawValueLiteral
       = number
@@ -189,31 +195,48 @@ const semantics = g.createSemantics().addOperation('toAst', {
   UnExp_neg(_op, exp) {
     return {
       type: '-',
-      left: { type: 'num', value: 0 },
+      left: { type: 'rawValueLiteral', value: 0 },
       right: exp.toAst(),
     };
   },
   number(n) {
-    return {
-      type: 'num',
-      value: parseFloat(n.sourceString),
-    };
+    return parseFloat(n.sourceString);
   },
   PriExp_amb(_lbrace, list, _rbrace) {
     return {
       type: 'amb',
       pos,
-      values: list.toAst(),
+      parts: list.toAst(),
     };
   },
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
   AmbPart_repeated(exp, _x, n) {
-    return { exp: exp.toAst(), numRepeats: parseInt(n.sourceString) };
+    return {
+      type: 'repeat',
+      value: exp.toAst(),
+      numRepeats: parseInt(n.sourceString),
+    };
   },
   AmbPart_single(exp) {
-    return { exp: exp.toAst(), numRepeats: 1 };
+    return { type: 'repeat', value: exp.toAst(), numRepeats: 1 };
+  },
+  AmbPart_rangeAutoStep(fromNode, _sep, toNode) {
+    const from = parseFloat(fromNode.sourceString);
+    const to = parseFloat(toNode.sourceString);
+    return { type: 'range', from, to, step: from < to ? 1 : -1 };
+  },
+  AmbPart_rangeWithStep(from, _to, to, _by, step) {
+    return {
+      type: 'range',
+      from: parseFloat(from.sourceString),
+      to: parseFloat(to.sourceString),
+      step: parseFloat(step.sourceString),
+    };
+  },
+  RawValueLiteral(v) {
+    return { type: 'rawValueLiteral', value: v.toAst() };
   },
   cellRef(cDollar, c, rDollar, r) {
     const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';
