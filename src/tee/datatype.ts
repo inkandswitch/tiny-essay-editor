@@ -5,10 +5,19 @@
 import { Text } from "lucide-react";
 import { MarkdownDoc } from "./schema";
 import { splice } from "@automerge/automerge/next";
+import { Repo } from "@automerge/automerge-repo";
+import { AssetsDoc } from "./assets";
 
-export const init = (doc: any) => {
+export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
+
+  const handle = repo.create<AssetsDoc>();
+  handle.change((doc) => {
+    doc.files = {};
+  });
+
+  doc.assetsDocUrl = handle.url;
 };
 
 // When a copy of the document has been made,

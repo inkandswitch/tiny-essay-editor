@@ -34,27 +34,23 @@ import { MarkdownDoc } from "@/tee/schema";
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
-  selectedDocUrl: AutomergeUrl | null;
-  selectDoc: (docUrl: AutomergeUrl | null) => void;
+  selectedDocLink: DocLink;
+  selectDocLink: (docLink: DocLink | null) => void;
   deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
-  addNewDocument: (doc: { type: DocType }) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
   showSidebar,
   setShowSidebar,
-  selectedDocUrl,
-  selectDoc,
+  selectedDocLink,
+  selectDocLink,
   deleteFromAccountDocList,
-  addNewDocument,
 }) => {
   const repo = useRepo();
   const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const selectedDocLink = rootFolderDoc?.docs.find(
-    (doc) => doc.url === selectedDocUrl
-  );
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
+  const selectedDocUrl = selectedDocLink?.url;
   const selectedDocHandle = useHandle(selectedDocUrl);
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
@@ -144,7 +140,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                   doc.docs.splice(index + 1, 0, newDocLink)
                 );
 
-                selectDoc(newDocLink.url);
+                selectDocLink(newDocLink);
               }}
             >
               <GitForkIcon

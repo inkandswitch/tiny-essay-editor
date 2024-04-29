@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import {
-  EditorView,
-  keymap,
-  drawSelection,
-  dropCursor,
-} from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
-import { Prop } from "@automerge/automerge";
+import { change, Prop } from "@automerge/automerge";
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { indentWithTab } from "@codemirror/commands";
 import { type DocHandle } from "@automerge/automerge-repo";
@@ -36,6 +32,11 @@ import {
   threadsField,
 } from "../codemirrorPlugins/commentThreads";
 import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
+import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AssetsDoc } from "../assets";
+import { dropCursor } from "../codemirrorPlugins/dropCursor";
 
 export type TextSelection = {
   from: number;
@@ -60,6 +61,7 @@ export function MarkdownEditor({
   setActiveThreadId,
   threadsWithPositions,
 }: EditorProps) {
+  const repo = useRepo();
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
@@ -92,6 +94,54 @@ export function MarkdownEditor({
         // drawSelection(),
 
         dropCursor(),
+        dragAndDropFilesPlugin({
+          createFileReference: async (file) => {
+            const doc = handle.docSync();
+            let assetsHandle: DocHandle<AssetsDoc>;
+
+            if (!doc.assetsDocUrl) {
+              // add assets doc to old documents
+              assetsHandle = repo.create<AssetsDoc>();
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files = {};
+              });
+              handle.change((doc) => {
+                doc.assetsDocUrl = assetsHandle.url;
+              });
+            } else {
+              assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
+            }
+
+            await assetsHandle.whenReady();
+            const assetsDoc = assetsHandle.docSync();
+
+            if (!isSupportedImageFile(file)) {
+              alert(
+                "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
+              );
+              return;
+            }
+
+            const fileAlreadyExists = assetsDoc.files[file.name];
+            if (fileAlreadyExists) {
+              alert(
+                `a file with the name "${file.name}" already exists in the document`
+              );
+              return;
+            }
+
+            loadFile(file).then((contents) => {
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files[file.name] = {
+                  contentType: file.type,
+                  contents,
+                };
+              });
+            });
+
+            return `![](./assets/${file.name})`;
+          },
+        }),
         indentOnInput(),
         keymap.of([
           ...standardKeymap,
@@ -123,6 +173,7 @@ export function MarkdownEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
+        previewImagesPlugin(handle, repo),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
@@ -145,14 +196,14 @@ export function MarkdownEditor({
           view.update([transaction]);
 
           const selection = view.state.selection.ranges[0];
-          const cords = view.coordsAtPos(selection.from);
+          const coords = view.coordsAtPos(selection.from);
 
-          if (cords) {
+          if (coords) {
             setSelection({
               from: selection.from,
               to: selection.to,
               yCoord:
-                -1 * view.scrollDOM.getBoundingClientRect().top + cords.top,
+                -1 * view.scrollDOM.getBoundingClientRect().top + coords.top,
             });
           }
         } catch (e) {
@@ -222,3 +273,33 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+const loadFile = (file: File): Promise<Uint8Array> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      // The file's text will be printed here
+      const arrayBuffer = e.target.result as ArrayBuffer;
+
+      // Convert the arrayBuffer to a Uint8Array
+      resolve(new Uint8Array(arrayBuffer));
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const isSupportedImageFile = (file: File) => {
+  switch (file.type) {
+    case "image/png":
+    case "image/jpeg":
+    case "image/gif":
+    case "image/webp":
+    case "image/bmp":
+    case "image/tiff":
+      return true;
+
+    default:
+      return false;
+  }
+};

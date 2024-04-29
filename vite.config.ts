@@ -7,17 +7,12 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), wasm(), react()],
+  plugins: [topLevelAwait(), react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  worker: {
-    format: "es",
-    plugins: [wasm()],
-  },
-
   optimizeDeps: {
     // This is necessary because otherwise `vite dev` includes two separate
     // versions of the JS wrapper. This causes problems because the JS
@@ -29,9 +24,12 @@ export default defineConfig({
       "@syntect/wasm",
     ],
   },
-
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        "service-worker": path.resolve(__dirname, "service-worker.js"),
+      },
       output: {
         // We put index.css in dist instead of dist/assets so that we can link to fonts
         // using relative URLs like "./assets/font.woff2", which is the correct form
@@ -42,6 +40,13 @@ export default defineConfig({
           }
           // For all other assets, keep the default behavior
           return "assets/[name]-[hash][extname]";
+        },
+        entryFileNames: (chunkInfo) => {
+          // Specify output location for service-worker.js
+          if (chunkInfo.name === "service-worker") {
+            return "[name].js"; // This will place service-worker.js directly under dist
+          }
+          return "assets/[name]-[hash].js"; // Default behavior for other entries
         },
       },
     },

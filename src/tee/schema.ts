@@ -1,4 +1,5 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import { HasAssets } from "./assets";
 
 export type Comment = {
   id: string;
@@ -33,7 +34,7 @@ export type User = {
   name: string;
 };
 
-export type MarkdownDoc = {
+export type MarkdownDoc = HasAssets & {
   content: string;
   commentThreads: { [key: string]: CommentThread };
   users: User[];
