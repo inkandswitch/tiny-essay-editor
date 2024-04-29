@@ -269,17 +269,27 @@ export const AmbSheet = ({
               <Stacks
                 values={selectedCellResult as Value[]}
                 filterSelection={filterSelectionForSelectedCell}
-                setFilterSelection={(selection: FilterSelection) => {
+                setFilterSelection={(selection: number[] | null) => {
                   setFilteredValues((filteredValues) => {
                     const index = filteredValues.findIndex(
-                      (f) => f.row === selection.row && f.col === selection.col
+                      (f) =>
+                        f.row === selectedCell.row && f.col === selectedCell.col
                     );
                     if (index === -1) {
-                      return [...filteredValues, selection];
+                      return [
+                        ...filteredValues,
+                        {
+                          row: selectedCell.row,
+                          col: selectedCell.col,
+                          selectedValueIndexes: selection,
+                        },
+                      ];
                     }
-                    return filteredValues.map((f) =>
-                      f.row === selection.row && f.col === selection.col
+                    return filteredValues.flatMap((f) =>
+                      f.row === selectedCell.row && f.col === selectedCell.col
                         ? selection
+                          ? [{ ...f, selectedValueIndexes: selection }]
+                          : []
                         : f
                     );
                   });

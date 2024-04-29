@@ -10,7 +10,7 @@ export const Stacks = ({
 }: {
   values: Value[];
   filterSelection: FilterSelection;
-  setFilterSelection: (filterSelection: FilterSelection) => void;
+  setFilterSelection: (selectedIndexes: number[]) => void;
 }) => {
   const groupedValues = useMemo(() => {
     return groupBy(
@@ -19,12 +19,24 @@ export const Stacks = ({
     );
   }, [values]);
 
+  const selectGroup = (groupValue: any) => {
+    const group = groupedValues[groupValue];
+    if (!group) return;
+    const selectedIndexes = group.map((v) => v.indexInCell);
+    setFilterSelection(selectedIndexes);
+  };
+
   return (
     <div className="flex flex-wrap gap-2 mb-10">
       {Object.entries(groupedValues).map(([key, values]) => {
         const stackSize = Math.min(values.length, 5);
         return (
-          <div key={key} className="w-10 h-8 relative cursor-default">
+          <div
+            key={key}
+            className="w-10 h-8 relative cursor-default"
+            onMouseEnter={() => selectGroup(key)}
+            onMouseLeave={() => setFilterSelection(null)}
+          >
             <div className="text-xs text-gray-400 text-center mb-1">
               x{values.length}
             </div>
