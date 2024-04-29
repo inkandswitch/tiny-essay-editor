@@ -2,7 +2,10 @@ import * as ohm from 'ohm-js';
 
 export const isFormula = (cell: string) => cell && cell[0] === '=';
 
-export type AmbNode = { type: 'amb'; values: Node[] };
+export type AmbNode = {
+  type: 'amb';
+  values: { exp: Node; numRepeats: number }[];
+};
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
@@ -63,10 +66,13 @@ const grammarSource = String.raw`
       | PriExp
 
     PriExp
-      = number                   -- number
-      | "{" ListOf<Exp, ","> "}" -- amb
-      | "(" Exp ")"              -- paren
+      = number                       -- number
+      | "{" ListOf<AmbPart, ","> "}" -- amb
+      | "(" Exp ")"                  -- paren
       | cellRef
+
+    AmbPart
+      = Exp  -- exp
 
     number  (a number)
       = digit* "." digit+  -- fract
@@ -193,6 +199,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
+  },
+  AmbPart_exp(exp) {
+    return { exp: exp.toAst(), numRepeats: 1 };
   },
   cellRef(cDollar, c, rDollar, r) {
     const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';

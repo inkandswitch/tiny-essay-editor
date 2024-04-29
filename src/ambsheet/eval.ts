@@ -237,9 +237,13 @@ export class Env {
       case 'amb':
         // call the continuation for each value in the amb node,
         // tracking which value we've chosen in the context.
-        for (const [i, expr] of node.values.entries()) {
+        for (const [i, { exp, numRepeats }] of node.values.entries()) {
           const newContext = new Map([...context, [node, i]]);
-          this.interp(expr, pos, newContext, continuation);
+          this.interp(exp, pos, newContext, (value, pos, context) => {
+            for (let idx = 0; idx < numRepeats; idx++) {
+              continuation(value, pos, context);
+            }
+          });
         }
         return;
       default: {
