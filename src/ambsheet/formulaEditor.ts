@@ -18,8 +18,6 @@ class FormulaEditor extends Handsontable.editors.TextEditor {
 
   // If cell contains a formula, edit the formula, not the value
   beginEditing(newValue, event) {
-    alert('Sorry, use the sidebar to edit for now, gotta fix this');
-    return;
     let valueToEdit = newValue;
 
     if (this.formula) {
