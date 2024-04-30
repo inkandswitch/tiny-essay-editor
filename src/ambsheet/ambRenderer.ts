@@ -29,20 +29,30 @@ export const ambRenderer = (
   container.style.flexDirection = 'row';
   container.style.justifyContent = 'flex-start';
   container.style.alignItems = 'center';
-  container.style.fontSize = '16px';
+  container.style.fontSize = '14px';
   container.style.maxWidth = '400px';
   container.style.overflowY = 'hidden';
 
   // Adjusting styles to compensate for removed gap
   container.className = 'value-container';
 
+  if (filteredResult.length === 1) {
+    container.innerText = filteredResult[0].value.rawValue;
+    td.innerHTML = '';
+    td.appendChild(container);
+    return td;
+  }
+
   filteredResult.forEach((val, i) => {
     const valueElement = document.createElement('div');
     valueElement.innerText = val.value.rawValue;
-    valueElement.style.padding = '1px 4px';
+    valueElement.style.padding = '1px 5px';
+    valueElement.style.border = '1px solid #ddd';
+    valueElement.style.margin = '2px';
     valueElement.setAttribute('data-context', JSON.stringify(val.context));
     if (!val.include) {
       valueElement.style.color = '#ddd';
+      valueElement.style.border = '1px solid #eee';
     }
     if (selectedValueIndexes.includes(i)) {
       valueElement.style.background = '#e5f6ff';

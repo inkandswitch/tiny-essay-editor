@@ -55,7 +55,7 @@ export const CellDetails = ({
           htmlFor="cellContent"
           className="block text-xs text-gray-500 font-bold uppercase mb-3"
         >
-          Cell {selectedCellName}
+          {selectedCellName}
         </label>
         <input
           type="text"
