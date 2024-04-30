@@ -268,8 +268,48 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(evalSheet([['=not(false)']]).print(), [['true']]);
   });
 
-  it('supports range values', () => {
-    assert.deepStrictEqual(evalSheet([['=A2:C5']]).print(), [['A2:C5']]);
-    assert.deepStrictEqual(evalSheet([['=A2:A2']]).print(), [['A2:A2']]);
+  it('supports vlookup', () => {
+    assert.deepStrictEqual(
+      evalSheet([
+        ['="one"', '111', '=B1*1000'],
+        ['="two"', '222', '=B2*1000'],
+        ['="three"', '333', '=B3*1000'],
+        ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
+      ]).print(),
+      [
+        ['one', '111', '111000'],
+        ['two', '222', '222000'],
+        ['three', '333', '333000'],
+        ['222333'],
+      ]
+    );
+    assert.deepStrictEqual(
+      evalSheet([
+        ['="one"', '111', '=B1*1000'],
+        ['="two"', '222', '=B2*1000'],
+        ['="three"', '={333,444}', '=B3*1000'],
+        ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
+      ]).print(),
+      [
+        ['one', '111', '111000'],
+        ['two', '222', '222000'],
+        ['three', '{333,444}', '{333000,444000}'],
+        ['{222333,222444}'],
+      ]
+    );
+    assert.deepStrictEqual(
+      evalSheet([
+        ['="one"', '111', '=B1*1000'],
+        ['="two"', '={222,555}', '=B2*1000'],
+        ['="three"', '={333,444}', '=B3*1000'],
+        ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
+      ]).print(),
+      [
+        ['one', '111', '111000'],
+        ['two', '{222,555}', '{222000,555000}'],
+        ['three', '{333,444}', '{333000,444000}'],
+        ['{222333,222444,555333,555444}'],
+      ]
+    );
   });
 });

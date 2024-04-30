@@ -226,7 +226,6 @@ export class Env {
           return this.collectRange(
             topLeft,
             bottomRight,
-            [],
             pos,
             context,
             continuation
@@ -421,12 +420,41 @@ export class Env {
   collectRange(
     topLeft: Position,
     bottomRight: Position,
-    range: BasicRawValue[][],
     pos: Position,
     context: AmbContext,
     continuation: Continuation
   ) {
-    // TODO
+    const expandedRefs: RefNode[] = [];
+    for (let row = topLeft.row; row <= bottomRight.row; row++) {
+      for (let col = topLeft.col; col <= bottomRight.col; col++) {
+        expandedRefs.push({
+          type: 'ref',
+          row,
+          col,
+          rowMode: 'absolute',
+          colMode: 'absolute',
+        });
+      }
+    }
+    if (expandedRefs.length === 0) {
+      return;
+    }
+
+    const numCols = bottomRight.col - topLeft.col + 1;
+    return this.reduce(
+      expandedRefs,
+      (xs: BasicRawValue[]) => {
+        const rows: BasicRawValue[][] = [];
+        while (xs.length > 0) {
+          rows.push(xs.splice(0, numCols));
+        }
+        return rows;
+      },
+      [],
+      pos,
+      context,
+      continuation
+    );
   }
 
   // The outermost continuation just collects up all results from the sub-paths of execution
