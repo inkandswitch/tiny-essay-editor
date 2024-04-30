@@ -1,4 +1,4 @@
-import { AmbSheetDoc, Position, RawValue } from './datatype';
+import { AmbSheetDoc, Position, Range, RawValue } from './datatype';
 import {
   isFormula,
   parseFormula,
@@ -199,10 +199,10 @@ export class Env {
         return;
       }
       case 'range': {
-        const rawValue = {
-          topLeft: toCellPosition(node.topLeft, pos),
-          bottomRight: toCellPosition(node.bottomRight, pos),
-        };
+        const rawValue = new Range(
+          toCellPosition(node.topLeft, pos),
+          toCellPosition(node.bottomRight, pos)
+        );
         return continuation({ rawValue, context }, pos, context);
       }
       case '=':

@@ -267,4 +267,8 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(evalSheet([['=not(true)']]).print(), [['false']]);
     assert.deepStrictEqual(evalSheet([['=not(false)']]).print(), [['true']]);
   });
+
+  it('supports range values', () => {
+    assert.deepStrictEqual(evalSheet([['=A2:C5']]).print(), [['A2:C5']]);
+  });
 });

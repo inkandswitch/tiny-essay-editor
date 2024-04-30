@@ -10,9 +10,21 @@ export interface Position {
   col: number;
 }
 
-export interface Range {
-  topLeft: Position;
-  bottomRight: Position;
+export class Range {
+  constructor(readonly topLeft: Position, readonly bottomRight: Position) {}
+  toJSON() {
+    return this.toString();
+  }
+  toString() {
+    return (
+      this.positionToCellName(this.topLeft) +
+      ':' +
+      this.positionToCellName(this.bottomRight)
+    );
+  }
+  private positionToCellName({ row, col }: Position) {
+    return String.fromCharCode('A'.charCodeAt(0) + col) + '' + (row + 1);
+  }
 }
 
 export type RawValue = number | boolean | string | Range;
