@@ -444,8 +444,12 @@ export class Env {
       const node = parseFormula(formula, pos);
       return this.evalNode(node, pos);
     } catch (e) {
-      console.error(e);
-      return [];
+      if (e === NOT_READY) {
+        throw e;
+      } else {
+        console.error(e);
+        return [];
+      }
     }
   }
 
