@@ -12,7 +12,7 @@ import {
   Node,
   AmbNode,
   RefNode,
-  cellIndexToName,
+  cellPositionToName,
 } from './parse';
 
 export interface Value {
@@ -545,7 +545,7 @@ export const resolvePositionsInContext = (
 ): AmbContextWithResolvedPositions =>
   Object.fromEntries(
     Array.from(context.entries()).map(([key, val]) => [
-      cellIndexToName(key.pos),
+      cellPositionToName(key.pos),
       val,
     ])
   );

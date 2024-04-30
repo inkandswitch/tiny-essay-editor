@@ -9,7 +9,8 @@ import {
 } from '../eval';
 import { chain, groupBy, uniq } from 'lodash';
 import { FilterSelection } from './AmbSheet';
-import { cellIndexToName } from '../parse';
+import { cellPositionToName } from '../parse';
+import { Position } from '../datatype';
 
 function findAllIndexes(arr, predicate) {
   const indexes = [];
@@ -24,14 +25,19 @@ function findAllIndexes(arr, predicate) {
 }
 
 export const TableViewer = ({
+  selectedCell,
   values,
   filterSelection,
-  setFilterSelection,
+  setFilterSelectionForCell,
   evaluatedSheet,
 }: {
+  selectedCell: Position;
   values: Value[];
   filterSelection: FilterSelection;
-  setFilterSelection: (selectedIndexes: number[]) => void;
+  setFilterSelectionForCell: (
+    cell: Position,
+    selectedIndexes: number[]
+  ) => void;
   evaluatedSheet: Results;
 }) => {
   const valuesWithResolvedContexts = values.map((value) => ({
@@ -40,8 +46,6 @@ export const TableViewer = ({
   }));
 
   const ambDimensions = uniq(values.flatMap((v) => [...v.context.keys()]));
-
-  console.log({ ambDimensions, evaluatedSheet });
 
   const [xDim, setXDim] = useState(ambDimensions[0] ?? null);
   const [yDim, setYDim] = useState(ambDimensions[1] ?? null);
@@ -70,8 +74,6 @@ export const TableViewer = ({
   const xDimChoices = evaluatedSheet[xDim.pos.row][xDim.pos.col] as Value[];
   const yDimChoices = evaluatedSheet[yDim.pos.row][yDim.pos.col] as Value[];
 
-  console.log({ ambDimensions, xDimChoices, yDimChoices });
-
   return (
     <div className="grid grid-cols-2 grid-rows-2 items-center grid-rows-[auto_1fr] grid-cols-[auto_1fr]">
       <div className="col-start-1 col-end-2 row-start-1 row-end-2">
@@ -80,10 +82,10 @@ export const TableViewer = ({
       <div className="col-start-2 col-end-3 row-start-1 row-end-2 text-center text-xs font-medium text-gray-500 uppercase p-1">
         <select
           className="text-xs font-medium text-gray-500 uppercase p-1"
-          value={cellIndexToName(xDim.pos)}
+          value={cellPositionToName(xDim.pos)}
           onChange={(e) => {
             const newXDim = ambDimensions.find(
-              (dim) => cellIndexToName(dim.pos) === e.target.value
+              (dim) => cellPositionToName(dim.pos) === e.target.value
             );
             if (newXDim) {
               setXDim(newXDim);
@@ -91,8 +93,8 @@ export const TableViewer = ({
           }}
         >
           {ambDimensions.map((dim, index) => (
-            <option key={index} value={cellIndexToName(dim.pos)}>
-              {cellIndexToName(dim.pos)}
+            <option key={index} value={cellPositionToName(dim.pos)}>
+              {cellPositionToName(dim.pos)}
             </option>
           ))}
         </select>
@@ -100,10 +102,10 @@ export const TableViewer = ({
       <div className="col-start-1 col-end-2 row-start-2 row-end-3  text-center text-xs font-medium text-gray-500 uppercase p-1">
         <select
           className="text-xs font-medium text-gray-500 uppercase p-1"
-          value={cellIndexToName(yDim.pos)}
+          value={cellPositionToName(yDim.pos)}
           onChange={(e) => {
             const newYDim = ambDimensions.find(
-              (dim) => cellIndexToName(dim.pos) === e.target.value
+              (dim) => cellPositionToName(dim.pos) === e.target.value
             );
             if (newYDim) {
               setYDim(newYDim);
@@ -111,8 +113,8 @@ export const TableViewer = ({
           }}
         >
           {ambDimensions.map((dim, index) => (
-            <option key={index} value={cellIndexToName(dim.pos)}>
-              {cellIndexToName(dim.pos)}
+            <option key={index} value={cellPositionToName(dim.pos)}>
+              {cellPositionToName(dim.pos)}
             </option>
           ))}
         </select>
@@ -128,15 +130,18 @@ export const TableViewer = ({
                   className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-300"
                   onMouseEnter={() => {
                     const context = {
-                      [cellIndexToName(xDim.pos)]: index,
+                      [cellPositionToName(xDim.pos)]: index,
                     };
                     const filterSelectionIndexes = valuesForContext(
                       context
                     ).map((v) => v.index);
-                    setFilterSelection(filterSelectionIndexes);
+                    setFilterSelectionForCell(
+                      selectedCell,
+                      filterSelectionIndexes
+                    );
                   }}
                   onMouseLeave={() => {
-                    setFilterSelection(null);
+                    setFilterSelectionForCell(selectedCell, null);
                   }}
                 >
                   {xChoice.rawValue}
@@ -151,23 +156,26 @@ export const TableViewer = ({
                   className="text-center hover:bg-gray-300 text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 "
                   onMouseEnter={() => {
                     const context = {
-                      [cellIndexToName(yDim.pos)]: rowIndex,
+                      [cellPositionToName(yDim.pos)]: rowIndex,
                     };
                     const filterSelectionIndexes = valuesForContext(
                       context
                     ).map((v) => v.index);
-                    setFilterSelection(filterSelectionIndexes);
+                    setFilterSelectionForCell(
+                      selectedCell,
+                      filterSelectionIndexes
+                    );
                   }}
                   onMouseLeave={() => {
-                    setFilterSelection(null);
+                    setFilterSelectionForCell(selectedCell, null);
                   }}
                 >
                   {yChoice.rawValue}
                 </td>
                 {xDimChoices.map((xChoice, colIndex) => {
                   const resultValues = valuesForContext({
-                    [cellIndexToName(xDim.pos)]: colIndex,
-                    [cellIndexToName(yDim.pos)]: rowIndex,
+                    [cellPositionToName(xDim.pos)]: colIndex,
+                    [cellPositionToName(yDim.pos)]: rowIndex,
                   });
                   return (
                     <td
@@ -182,7 +190,10 @@ export const TableViewer = ({
                           : 'text-gray-500'
                       }`}
                       onMouseEnter={() => {
-                        setFilterSelection(resultValues.map((v) => v.index));
+                        setFilterSelectionForCell(
+                          selectedCell,
+                          resultValues.map((v) => v.index)
+                        );
                       }}
                     >
                       {resultValues.map((v) => v.rawValue).join(' | ')}

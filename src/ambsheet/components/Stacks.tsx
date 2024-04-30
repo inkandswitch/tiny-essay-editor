@@ -2,15 +2,21 @@ import React, { useMemo } from 'react';
 import { Value } from '../eval';
 import { groupBy } from 'lodash';
 import { FilterSelection } from './AmbSheet';
+import { Position } from '../datatype';
 
 export const Stacks = ({
+  selectedCell,
   values,
   filterSelection,
-  setFilterSelection,
+  setFilterSelectionForCell,
 }: {
+  selectedCell: Position;
   values: Value[];
   filterSelection: FilterSelection;
-  setFilterSelection: (selectedIndexes: number[]) => void;
+  setFilterSelectionForCell: (
+    cell: Position,
+    selectedIndexes: number[]
+  ) => void;
 }) => {
   const groupedValues = useMemo(() => {
     return groupBy(
@@ -23,7 +29,7 @@ export const Stacks = ({
     const group = groupedValues[groupValue];
     if (!group) return;
     const selectedIndexes = group.map((v) => v.indexInCell);
-    setFilterSelection(selectedIndexes);
+    setFilterSelectionForCell(selectedCell, selectedIndexes);
   };
 
   return (
@@ -37,7 +43,7 @@ export const Stacks = ({
               values.length > 1 ? 'h-10' : 'h-8'
             }`}
             onMouseEnter={() => selectGroup(key)}
-            onMouseLeave={() => setFilterSelection(null)}
+            onMouseLeave={() => setFilterSelectionForCell(selectedCell, null)}
           >
             <div className="h-7">
               {Array.from({ length: stackSize }, (_, index) => {

@@ -9,14 +9,13 @@ import { useEffect, useMemo, useState } from 'react';
 import * as A from '@automerge/automerge/next';
 import { registerRenderer, textRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
-import { AmbContext, NOT_READY, Value, evalSheet, filter } from '../eval';
+import { AmbContext, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
-import { cellIndexToName, isFormula } from '../parse';
+import { isFormula } from '../parse';
 import React from 'react';
-import { Stacks } from './Stacks';
-import { RawViewer } from './RawViewer';
-import { TableViewer } from './TableViewer';
 import { ambRenderer } from '../ambRenderer';
+import { CellDetails } from './CellDetails';
+import { Filters } from './Filters';
 
 // register Handsontable's modules
 registerAllModules();
@@ -43,17 +42,7 @@ export const AmbSheet = ({
     undefined
   );
 
-  const [filteredValues, setFilteredValues] = useState<FilterSelection[]>([]);
-
-  const filterSelectionForSelectedCell = useMemo(() => {
-    return filteredValues.find(
-      (f) => f.row === selectedCell.row && f.col === selectedCell.col
-    );
-  }, [filteredValues, selectedCell]);
-
-  const selectedCellName = selectedCell
-    ? cellIndexToName(selectedCell)
-    : undefined;
+  const [filterSelection, setFilterSelection] = useState<FilterSelection[]>([]);
 
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),
@@ -67,23 +56,14 @@ export const AmbSheet = ({
     return evalSheet(doc.data).results;
   }, [doc]);
 
-  const selectedCellResult = useMemo(() => {
-    if (!selectedCell) {
-      return undefined;
-    }
-    return evaluatedSheet[selectedCell.row][selectedCell.col];
-  }, [selectedCell, evaluatedSheet]);
-
-  console.log(selectedCellResult);
-
   const filteredResults = useMemo(() => {
-    const filterContexts = filteredValues.map((f) => {
+    const filterContexts = filterSelection.map((f) => {
       return f.selectedValueIndexes.map(
         (i) => evaluatedSheet[f.row][f.col][i].context
       );
     });
     return filter(evaluatedSheet, filterContexts);
-  }, [evaluatedSheet, filteredValues]);
+  }, [evaluatedSheet, filterSelection]);
 
   const onBeforeHotChange = (changes) => {
     handle.change((doc) => {
@@ -101,29 +81,29 @@ export const AmbSheet = ({
   };
 
   const onAfterSetCellMeta = (row, col, _, value) => {
-    const existingEntryIndex = filteredValues.findIndex(
+    const existingEntryIndex = filterSelection.findIndex(
       (entry) => entry.row === row && entry.col === col
     );
     if (existingEntryIndex !== -1) {
       if (value.length === 0) {
         // Clear out the existing entry if the value is an empty array
-        setFilteredValues(
-          filteredValues.filter((_, index) => index !== existingEntryIndex)
+        setFilterSelection(
+          filterSelection.filter((_, index) => index !== existingEntryIndex)
         );
       } else {
         // Update existing entry
         const updatedEntry = {
-          ...filteredValues[existingEntryIndex],
+          ...filterSelection[existingEntryIndex],
           selectedValueIndexes: value,
         };
-        const newFilterContextsForCells = [...filteredValues];
+        const newFilterContextsForCells = [...filterSelection];
         newFilterContextsForCells[existingEntryIndex] = updatedEntry;
-        setFilteredValues(newFilterContextsForCells);
+        setFilterSelection(newFilterContextsForCells);
       }
     } else if (value.length > 0) {
       // Add new entry only if value is not an empty array
-      setFilteredValues([
-        ...filteredValues,
+      setFilterSelection([
+        ...filterSelection,
         { row, col, selectedValueIndexes: value },
       ]);
     }
@@ -152,23 +132,26 @@ export const AmbSheet = ({
     setSelectedCell({ row, col });
   };
 
-  const onSetSelectedValuesForSelectedCell = (selection: number[] | null) => {
-    setFilteredValues((filteredValues) => {
+  const setFilterSelectionForCell = (
+    cell: Position,
+    selection: number[] | null
+  ) => {
+    setFilterSelection((filteredValues) => {
       const index = filteredValues.findIndex(
-        (f) => f.row === selectedCell.row && f.col === selectedCell.col
+        (f) => f.row === cell.row && f.col === cell.col
       );
       if (index === -1) {
         return [
           ...filteredValues,
           {
-            row: selectedCell.row,
-            col: selectedCell.col,
+            row: cell.row,
+            col: cell.col,
             selectedValueIndexes: selection,
           },
         ];
       }
       return filteredValues.flatMap((f) =>
-        f.row === selectedCell.row && f.col === selectedCell.col
+        f.row === cell.row && f.col === cell.col
           ? selection
             ? [{ ...f, selectedValueIndexes: selection }]
             : []
@@ -183,11 +166,25 @@ export const AmbSheet = ({
 
   return (
     <div className="w-full h-full flex">
+      <div className="w-[200px] h-full overflow-hidden">
+        <div className="text-xs text-gray-500 font-bold uppercase mb-3 p-1">
+          Filters
+        </div>
+        <div className="h-full overflow-auto">
+          <Filters
+            handle={handle}
+            selectedCell={selectedCell}
+            filterSelection={filterSelection}
+            setFilterSelectionForCell={setFilterSelectionForCell}
+            evaluatedSheet={evaluatedSheet}
+          />
+        </div>
+      </div>
       <div className=" grow h-full overflow-auto">
         <MemoizedHOTWrapper
           doc={doc}
           filteredResults={filteredResults}
-          filteredValues={filteredValues}
+          filteredValues={filterSelection}
           onBeforeHotChange={onBeforeHotChange}
           onBeforeCreateRow={onBeforeCreateRow}
           onBeforeCreateCol={onBeforeCreateCol}
@@ -197,61 +194,14 @@ export const AmbSheet = ({
       </div>
       <div className="w-[350px] h-full overflow-auto p-2">
         {selectedCell && (
-          <div className="flex flex-col gap-4">
-            <div className="">
-              <label
-                htmlFor="cellContent"
-                className="block text-sm font-medium text-gray-700"
-              >
-                {selectedCellName}
-              </label>
-              <input
-                type="text"
-                id="cellContent"
-                name="cellContent"
-                value={doc.data[selectedCell.row][selectedCell.col]}
-                onChange={(e) =>
-                  handle.change((d) => {
-                    d.data[selectedCell.row][selectedCell.col] = e.target.value;
-                  })
-                }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
-            {selectedCellResult && selectedCellResult !== NOT_READY && (
-              <div className="">
-                <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
-                  Stacks
-                </h2>
-                <Stacks
-                  values={selectedCellResult as Value[]}
-                  filterSelection={filterSelectionForSelectedCell}
-                  setFilterSelection={onSetSelectedValuesForSelectedCell}
-                />
-              </div>
-            )}
-            {selectedCellResult && selectedCellResult !== NOT_READY && (
-              <div className="">
-                <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
-                  Table
-                </h2>
-                <TableViewer
-                  values={selectedCellResult as Value[]}
-                  filterSelection={filterSelectionForSelectedCell}
-                  setFilterSelection={onSetSelectedValuesForSelectedCell}
-                  evaluatedSheet={evaluatedSheet}
-                />
-              </div>
-            )}
-            {selectedCellResult && selectedCellResult !== NOT_READY && (
-              <div className="">
-                <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
-                  Raw
-                </h2>
-                <RawViewer values={selectedCellResult as Value[]} />
-              </div>
-            )}
-          </div>
+          <CellDetails
+            key={JSON.stringify(selectedCell)}
+            handle={handle}
+            selectedCell={selectedCell}
+            filterSelection={filterSelection}
+            setFilterSelectionForCell={setFilterSelectionForCell}
+            evaluatedSheet={evaluatedSheet}
+          />
         )}
       </div>
     </div>
