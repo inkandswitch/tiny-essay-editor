@@ -261,6 +261,28 @@ describe('ambsheet evaluator', () => {
     );
   });
 
+  it('supports sum()', () => {
+    assert.deepStrictEqual(evalSheet([['=sum(1, 2)']]).print(), [['3']]);
+    assert.deepStrictEqual(evalSheet([['1', '2', '=sum(A1:B1)']]).print(), [
+      ['1', '2', '3'],
+    ]);
+    assert.deepStrictEqual(
+      evalSheet([['1', '2', '=sum(5, A1:B1, 6)']]).print(),
+      [['1', '2', '14']]
+    );
+  });
+
+  it('supports product()', () => {
+    assert.deepStrictEqual(evalSheet([['=product(2, 3)']]).print(), [['6']]);
+    assert.deepStrictEqual(evalSheet([['2', '3', '=product(A1:B1)']]).print(), [
+      ['2', '3', '6'],
+    ]);
+    assert.deepStrictEqual(
+      evalSheet([['2', '3', '=product(A1:B1, 4)']]).print(),
+      [['2', '3', '24']]
+    );
+  });
+
   it('supports or()', () => {
     assert.deepStrictEqual(evalSheet([['=or()']]).print(), [['false']]);
     assert.deepStrictEqual(evalSheet([['=or(1<2)']]).print(), [['true']]);

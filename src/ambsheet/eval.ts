@@ -98,39 +98,56 @@ const isReady = (
 ): cellValues is Value[] => cellValues !== NOT_READY;
 
 const builtInFunctions = {
+  sum(xs: RawValue[]) {
+    if (xs.length === 0) {
+      throw new Error('sum() requires at least one argument');
+    } else {
+      return (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
+    }
+  },
+  product(xs: RawValue[]) {
+    if (xs.length === 0) {
+      throw new Error('product() requires at least one argument');
+    } else {
+      return (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
+    }
+  },
   min(xs: RawValue[]) {
     if (xs.length === 0) {
       throw new Error('min() requires at least one argument');
+    } else {
+      return Math.min(...(flatten(xs) as number[]));
     }
-
-    return Math.min(...(flatten(xs) as number[]));
   },
   max(xs: RawValue[]) {
     if (xs.length === 0) {
       throw new Error('max() requires at least one argument');
+    } else {
+      return Math.max(...(flatten(xs) as number[]));
     }
-
-    return Math.max(...(flatten(xs) as number[]));
   },
   and(xs: RawValue[]) {
     const args = flatten(xs);
     if (!args.every((arg) => typeof arg === 'boolean')) {
       throw new Error('and() requires boolean arguments');
+    } else {
+      return args.reduce((a, b) => a && b, true);
     }
-    return args.reduce((a, b) => a && b, true);
   },
   or(xs: RawValue[]) {
     const args = flatten(xs);
     if (!args.every((arg) => typeof arg === 'boolean')) {
       throw new Error('or() requires boolean arguments');
+    } else {
+      return args.reduce((a, b) => a || b, false);
     }
-    return args.reduce((a, b) => a || b, false);
   },
   not(xs: RawValue[]) {
     if (xs.length !== 1 || typeof xs[0] !== 'boolean') {
       throw new Error('not() requires a single boolean argument');
+    } else {
+      return !xs[0];
     }
-    return !xs[0];
   },
   concat(xs: RawValue[]) {
     return flatten(xs).join('');
