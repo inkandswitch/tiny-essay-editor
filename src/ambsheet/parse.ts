@@ -1,6 +1,3 @@
-// TODO: add boolean operators
-// TODO: add string operators + functions
-
 import * as ohm from 'ohm-js';
 import { Position, RawValue } from './datatype';
 

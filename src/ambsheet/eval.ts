@@ -103,6 +103,24 @@ const builtInFunctions = {
       return Math.max(...(xs as number[]));
     }
   },
+  and(xs: RawValue[]) {
+    if (!xs.every((x) => typeof x === 'boolean')) {
+      throw new Error('and() requires boolean arguments');
+    }
+    return xs.reduce((a, b) => a && b, true);
+  },
+  or(xs: RawValue[]) {
+    if (!xs.every((x) => typeof x === 'boolean')) {
+      throw new Error('or() requires boolean arguments');
+    }
+    return xs.reduce((a, b) => a || b, false);
+  },
+  not(xs: RawValue[]) {
+    if (xs.length !== 1 || typeof xs[0] !== 'boolean') {
+      throw new Error('not() requires a single boolean argument');
+    }
+    return !xs[0];
+  },
   concat(xs: RawValue[]) {
     return xs.join('');
   },

@@ -244,4 +244,27 @@ describe('ambsheet evaluator', () => {
       [['{"+","-","*","/"}', '{"5+6","5-6","5*6","5/6"}']]
     );
   });
+
+  it('supports or()', () => {
+    assert.deepStrictEqual(evalSheet([['=or()']]).print(), [['false']]);
+    assert.deepStrictEqual(evalSheet([['=or(1<2)']]).print(), [['true']]);
+    assert.deepStrictEqual(evalSheet([['=or(1>2)']]).print(), [['false']]);
+    assert.deepStrictEqual(evalSheet([['=or(1>2, 2>3, 100>5)']]).print(), [
+      ['true'],
+    ]);
+  });
+
+  it('supports and()', () => {
+    assert.deepStrictEqual(evalSheet([['=and()']]).print(), [['true']]);
+    assert.deepStrictEqual(evalSheet([['=and(1<2)']]).print(), [['true']]);
+    assert.deepStrictEqual(evalSheet([['=and(1>2)']]).print(), [['false']]);
+    assert.deepStrictEqual(evalSheet([['=and(1<2, 2<3, 100>5)']]).print(), [
+      ['true'],
+    ]);
+  });
+
+  it('supports not()', () => {
+    assert.deepStrictEqual(evalSheet([['=not(true)']]).print(), [['false']]);
+    assert.deepStrictEqual(evalSheet([['=not(false)']]).print(), [['true']]);
+  });
 });
