@@ -183,6 +183,10 @@ export class Env {
         return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a == b ? 1 : 0
         );
+      case '<>':
+        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
+          a != b ? 1 : 0
+        );
       case '>':
         return this.interpBinOp(node, pos, context, continuation, (a, b) =>
           a > b ? 1 : 0

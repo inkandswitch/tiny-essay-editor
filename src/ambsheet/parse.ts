@@ -25,6 +25,7 @@ export type Node =
   | RefNode
   | { type: 'const'; value: number }
   | { type: '='; left: Node; right: Node }
+  | { type: '<>'; left: Node; right: Node }
   | { type: '>'; left: Node; right: Node }
   | { type: '>='; left: Node; right: Node }
   | { type: '<'; left: Node; right: Node }
@@ -44,6 +45,7 @@ const grammarSource = String.raw`
 
     RelExp
       = AddExp "="  AddExp  -- eq
+      | AddExp "<>" AddExp  -- neq
       | AddExp ">=" AddExp  -- ge
       | AddExp ">"  AddExp  -- gt
       | AddExp "<=" AddExp  -- le
@@ -130,6 +132,13 @@ const semantics = g.createSemantics().addOperation('toAst', {
   RelExp_eq(left, _op, right) {
     return {
       type: '=',
+      left: left.toAst(),
+      right: right.toAst(),
+    };
+  },
+  RelExp_neq(left, _op, right) {
+    return {
+      type: '<>',
       left: left.toAst(),
       right: right.toAst(),
     };
