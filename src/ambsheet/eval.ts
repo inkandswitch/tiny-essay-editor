@@ -4,6 +4,7 @@ import {
   parseFormula,
   Node,
   AmbNode,
+  RefNode,
   cellIndexToName,
 } from './parse';
 
@@ -180,10 +181,7 @@ export class Env {
           context
         );
       case 'ref': {
-        const cellPos = {
-          row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
-          col: node.col + (node.colMode === 'relative' ? pos.col : 0),
-        };
+        const cellPos = toCellPosition(node, pos);
         const values = this.getCellValues(cellPos);
         if (!isReady(values)) {
           throw NOT_READY;
@@ -199,6 +197,13 @@ export class Env {
           continuation(value, pos, newContext);
         }
         return;
+      }
+      case 'range': {
+        const rawValue = {
+          topLeft: toCellPosition(node.topLeft, pos),
+          bottomRight: toCellPosition(node.bottomRight, pos),
+        };
+        return continuation({ rawValue, context }, pos, context);
       }
       case '=':
         return this.interpBinOp(
@@ -434,6 +439,13 @@ export class Env {
   print() {
     return printResults(this.results);
   }
+}
+
+function toCellPosition(node: RefNode, pos: Position): Position {
+  return {
+    row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
+    col: node.col + (node.colMode === 'relative' ? pos.col : 0),
+  };
 }
 
 export function printResults(results: Results) {

@@ -23,6 +23,7 @@ export type RefNode = {
 export type Node =
   | AmbNode
   | RefNode
+  | { type: 'range'; topLeft: RefNode; bottomRight: RefNode }
   | { type: 'const'; value: number }
   | { type: '='; left: Node; right: Node }
   | { type: '<>'; left: Node; right: Node }
@@ -75,7 +76,7 @@ const grammarSource = String.raw`
       = "{" ListOf<AmbPart, ","> "}"  -- amb
       | "(" Exp ")"                   -- paren
       | const                         -- const
-      | cellRef
+      | RangeOrCellRef
 
     AmbPart
       = number to number by number  -- rangeWithStep
@@ -102,6 +103,10 @@ const grammarSource = String.raw`
 
     string  (a string literal)
       = "\"" (~"\"" ~"\n" any)* "\""
+
+    RangeOrCellRef
+      = cellRef ":" cellRef  -- range
+      | cellRef
 
     cellRef
       = "$"? letter "$"? digit+
@@ -288,6 +293,13 @@ const semantics = g.createSemantics().addOperation('toAst', {
       chars.push(c);
     }
     return chars.join('');
+  },
+  RangeOrCellRef_range(topLeft, _colon, bottomRight) {
+    return {
+      type: 'range',
+      topLeft: topLeft.toAst(),
+      bottomRight: bottomRight.toAst(),
+    };
   },
   cellRef(cDollar, c, rDollar, r) {
     const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';
