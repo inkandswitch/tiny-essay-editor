@@ -60,20 +60,20 @@ describe('ambsheet evaluator', () => {
 
   it('can do simple if, v1', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1,2,3}', '=if(A1>1, 111, {})']]).print(),
+      evalSheet([['{1,2,3}', '=if(A1>1, 111, {})']]).print(),
       [['{1,2,3}', '{111,111}']]
     );
   });
 
   it('can do simple if, v2', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1,2,3}', '=IF(A1>1, 111, 222)']]).print(),
+      evalSheet([['{1,2,3}', '=IF(A1>1, 111, 222)']]).print(),
       [['{1,2,3}', '{222,111,111}']]
     );
   });
 
   it('reuses the same choice for a given amb within a cell', () => {
-    assert.deepStrictEqual(evalSheet([['={1, 2, 3}', '=A1 * A1']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{1, 2, 3}', '=A1 * A1']]).print(), [
       ['{1,2,3}', '{1,4,9}'],
     ]);
   });
@@ -82,21 +82,21 @@ describe('ambsheet evaluator', () => {
     // All the results are only 1-dimensional (with 3 values) because there's
     // only 1 amb literal in the entire sheet.
     assert.deepStrictEqual(
-      evalSheet([['={1, 2, 3}', '=A1 * A1', '=B1 + A1']]).print(),
+      evalSheet([['{1, 2, 3}', '=A1 * A1', '=B1 + A1']]).print(),
       [['{1,2,3}', '{1,4,9}', '{2,6,12}']]
     );
   });
 
   it('does not reuse the amb choice given a fresh amb', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1, 2, 3}', '=A1 * A1', '=B1 + {1, 2, 3}']]).print(),
+      evalSheet([['{1, 2, 3}', '=A1 * A1', '=B1 + {1, 2, 3}']]).print(),
       [['{1,2,3}', '{1,4,9}', '{2,3,4,5,6,7,10,11,12}']]
     );
   });
 
   it('reuses amb choices across cell refs', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1, 2}', '={5, 6}', '=A1+1', '=B1+1', '=C1+D1']]).print(),
+      evalSheet([['{1, 2}', '{5, 6}', '=A1+1', '=B1+1', '=C1+D1']]).print(),
       [['{1,2}', '{5,6}', '{2,3}', '{6,7}', '{8,9,9,10}']]
     );
   });
@@ -107,14 +107,14 @@ describe('ambsheet evaluator', () => {
       // so we end up with 4 values (2x2) in the final result.
       // Notably, in cell B1, we reuse amb choices for A1, but we create fresh
       // amb choices for the new amb literal.
-      evalSheet([['={1, 2}', '=A1*(A1+{3, 4})']]).print(),
+      evalSheet([['{1, 2}', '=A1*(A1+{3, 4})']]).print(),
       [['{1,2}', '{4,5,10,12}']]
     );
   });
 
   it('reuses amb choices from conditionals', () => {
     assert.deepStrictEqual(
-      evalSheet([['={1, 2}', '=if(A1>1, A1, 5)']]).print(),
+      evalSheet([['{1, 2}', '=if(A1>1, A1, 5)']]).print(),
       [['{1,2}', '{5,2}']]
     );
   });
@@ -136,7 +136,7 @@ describe('ambsheet evaluator', () => {
 
   it('filters values correctly', () => {
     const results = evalSheet([
-      ['={1, 2}', '={3, 4}', '=A1*10+B1', '=C1>20'],
+      ['{1, 2}', '{3, 4}', '=A1*10+B1', '=C1>20'],
     ]).results;
 
     assert.deepStrictEqual(printResults(results), [
@@ -201,46 +201,46 @@ describe('ambsheet evaluator', () => {
 
     assert.deepStrictEqual(
       evalSheet([
-        ['5', '=A1+5', '={-7,0,17}', '=min(A1, B1, C1)', '=max(A1, B1, C1)'],
+        ['5', '=A1+5', '{-7,0,17}', '=min(A1, B1, C1)', '=max(A1, B1, C1)'],
       ]).print(),
       [['5', '10', '{-7,0,17}', '{-7,0,5}', '{10,10,17}']]
     );
 
     assert.deepStrictEqual(
-      evalSheet([['={-7,0,17}', '=min(a1, a1-1)']]).print(),
+      evalSheet([['{-7,0,17}', '=min(a1, a1-1)']]).print(),
       [['{-7,0,17}', '{-8,-1,16}']]
     );
   });
 
   it('supports repetition and ranges in amb literals', () => {
-    assert.deepStrictEqual(evalSheet([['={9x4}', '=a1+3']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{9x4}', '=a1+3']]).print(), [
       ['{9,9,9,9}', '{12,12,12,12}'],
     ]);
-    assert.deepStrictEqual(evalSheet([['={1,9x4,3}', '=a1+3']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{1,9x4,3}', '=a1+3']]).print(), [
       ['{1,9,9,9,9,3}', '{4,12,12,12,12,6}'],
     ]);
-    assert.deepStrictEqual(evalSheet([['={1 to 3}', '=a1*2']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{1 to 3}', '=a1*2']]).print(), [
       ['{1,2,3}', '{2,4,6}'],
     ]);
     assert.deepStrictEqual(
-      evalSheet([['={0x3, 1 to 10 by 2, -2x3, -8 to 2 by 3}']]).print(),
+      evalSheet([['{0x3, 1 to 10 by 2, -2x3, -8 to 2 by 3}']]).print(),
       [['{0,0,0,1,3,5,7,9,-2,-2,-2,-8,-5,-2,1}']]
     );
-    assert.deepStrictEqual(evalSheet([['={10 to 0}']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{10 to 0}']]).print(), [
       ['{10,9,8,7,6,5,4,3,2,1,0}'],
     ]);
   });
 
   it('supports strings', () => {
     assert.deepStrictEqual(evalSheet([['hello']]).print(), [['hello']]);
-    assert.deepStrictEqual(evalSheet([['={"hello","world"}']]).print(), [
+    assert.deepStrictEqual(evalSheet([['{"hello","world"}']]).print(), [
       ['{"hello","world"}'],
     ]);
   });
 
   it('supports concat() for strings', () => {
     assert.deepStrictEqual(
-      evalSheet([['={"+","-","*","/"}', '=concat("5", A1, "6")']]).print(),
+      evalSheet([['{"+","-","*","/"}', '=concat("5", A1, "6")']]).print(),
       [['{"+","-","*","/"}', '{"5+6","5-6","5*6","5/6"}']]
     );
   });
@@ -287,7 +287,7 @@ describe('ambsheet evaluator', () => {
       evalSheet([
         ['one', '111', '=B1*1000'],
         ['two', '222', '=B2*1000'],
-        ['three', '={333,444}', '=B3*1000'],
+        ['three', '{333,444}', '=B3*1000'],
         ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
       ]).print(),
       [
@@ -300,8 +300,8 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(
       evalSheet([
         ['one', '111', '=B1*1000'],
-        ['two', '={222,555}', '=B2*1000'],
-        ['three', '={333,444}', '=B3*1000'],
+        ['two', '{222,555}', '=B2*1000'],
+        ['three', '{333,444}', '=B3*1000'],
         ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
       ]).print(),
       [

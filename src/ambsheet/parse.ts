@@ -1,8 +1,6 @@
 import * as ohm from 'ohm-js';
 import { Position, RawValue } from './datatype';
 
-export const isFormula = (cell: string) => cell?.trim().startsWith('=');
-
 export type AmbNode = {
   type: 'amb';
   pos: Position;
@@ -40,7 +38,9 @@ export type Node =
 
 const grammarSource = String.raw`
   AmbSheets {
-    Formula = "=" Exp
+    Formula
+      = "=" Exp  -- expression
+      | Amb
 
     Exp = RelExp
 
@@ -73,10 +73,13 @@ const grammarSource = String.raw`
       | PriExp
 
     PriExp
-      = "{" ListOf<AmbPart, ","> "}"  -- amb
+      = Amb
       | "(" Exp ")"                   -- paren
       | const                         -- const
       | RangeOrCellRef
+
+    Amb
+      = "{" ListOf<AmbPart, ","> "}"
 
     AmbPart
       = number to number by number  -- rangeWithStep
@@ -126,11 +129,13 @@ const grammarSource = String.raw`
 
 const g = ohm.grammar(grammarSource);
 
+export const isFormula = (input: string) => g.match(input).succeeded();
+
 // this is hacky, but it's convenient...
 let pos = { row: 0, col: 0 };
 
 const semantics = g.createSemantics().addOperation('toAst', {
-  Formula(_eq, exp) {
+  Formula_expression(_eq, exp) {
     return exp.toAst();
   },
 
@@ -226,18 +231,18 @@ const semantics = g.createSemantics().addOperation('toAst', {
       right: exp.toAst(),
     };
   },
-  PriExp_amb(_lbrace, list, _rbrace) {
-    return {
-      type: 'amb',
-      pos,
-      parts: list.toAst(),
-    };
-  },
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
   },
   PriExp_const(v) {
     return { type: 'const', value: v.toAst() };
+  },
+  Amb(_lbrace, list, _rbrace) {
+    return {
+      type: 'amb',
+      pos,
+      parts: list.toAst(),
+    };
   },
   AmbPart_repeated(exp, _x, n) {
     return {

@@ -488,7 +488,7 @@ export class Env {
         for (let col = 0; col < this.data[row].length; col++) {
           const pos = { row, col };
           const cell = this.data[row][col];
-          if (this.getCellValues(pos) === NOT_READY && isFormula(cell)) {
+          if (this.getCellValues(pos) === NOT_READY) {
             try {
               const result = this.evalFormula(cell, pos);
               this.setCellValues(col, row, result);
