@@ -4,7 +4,7 @@
 import * as ohm from 'ohm-js';
 import { Position, RawValue } from './datatype';
 
-export const isFormula = (cell: string) => cell?.startsWith('=');
+export const isFormula = (cell: string) => cell?.trim().startsWith('=');
 
 export type AmbNode = {
   type: 'amb';
