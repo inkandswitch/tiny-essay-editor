@@ -195,7 +195,7 @@ export const AmbSheet = ({
           onAfterSelection={onAfterSelection}
         />
       </div>
-      <div className="w-[250px] h-full overflow-auto p-2">
+      <div className="w-[350px] h-full overflow-auto p-2">
         {selectedCell && (
           <div className="flex flex-col gap-4">
             <div className="">
