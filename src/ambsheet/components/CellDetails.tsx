@@ -1,7 +1,13 @@
 import { DocHandle } from '@automerge/automerge-repo';
 import { useMemo } from 'react';
 import { AmbSheetDoc, Position } from '../datatype';
-import { Results, NOT_READY, Value } from '../eval';
+import {
+  Results,
+  NOT_READY,
+  Value,
+  FilteredResultsForCell,
+  FilteredResults,
+} from '../eval';
 import { cellPositionToName } from '../parse';
 import { RawViewer } from './RawViewer';
 import { Stacks } from './Stacks';
@@ -13,7 +19,7 @@ export const CellDetails = ({
   selectedCell,
   filterSelection,
   setFilterSelectionForCell,
-  evaluatedSheet,
+  filteredResults,
 }: {
   handle: DocHandle<AmbSheetDoc>;
   selectedCell: Position;
@@ -22,7 +28,7 @@ export const CellDetails = ({
     cell: Position,
     selection: number[] | null
   ) => void;
-  evaluatedSheet: Results;
+  filteredResults: FilteredResults;
 }) => {
   const filterSelectionForSelectedCell = useMemo(() => {
     return filterSelection.find(
@@ -35,11 +41,12 @@ export const CellDetails = ({
     : undefined;
 
   const selectedCellResult = useMemo(() => {
-    if (!selectedCell) {
+    const cellResults = filteredResults[selectedCell.row][selectedCell.col];
+    if (cellResults === null || cellResults === NOT_READY) {
       return undefined;
     }
-    return evaluatedSheet[selectedCell.row][selectedCell.col];
-  }, [selectedCell, evaluatedSheet]);
+    return cellResults as { value: Value; include: boolean }[];
+  }, [selectedCell, filteredResults]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -70,7 +77,7 @@ export const CellDetails = ({
           </h2>
           <Stacks
             selectedCell={selectedCell}
-            values={selectedCellResult as Value[]}
+            results={selectedCellResult}
             filterSelection={filterSelectionForSelectedCell}
             setFilterSelectionForCell={setFilterSelectionForCell}
           />
@@ -83,21 +90,21 @@ export const CellDetails = ({
           </h2>
           <TableViewer
             selectedCell={selectedCell}
-            values={selectedCellResult as Value[]}
+            results={selectedCellResult}
             filterSelection={filterSelectionForSelectedCell}
             setFilterSelectionForCell={setFilterSelectionForCell}
-            evaluatedSheet={evaluatedSheet}
+            filteredResults={filteredResults}
           />
         </div>
       )}
-      {selectedCellResult && selectedCellResult !== NOT_READY && (
+      {/* {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="">
           <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
             Raw
           </h2>
           <RawViewer values={selectedCellResult as Value[]} />
         </div>
-      )}
+      )} */}
     </div>
   );
 };

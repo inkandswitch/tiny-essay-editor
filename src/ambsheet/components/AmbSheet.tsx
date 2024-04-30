@@ -200,7 +200,7 @@ export const AmbSheet = ({
             selectedCell={selectedCell}
             filterSelection={filterSelection}
             setFilterSelectionForCell={setFilterSelectionForCell}
-            evaluatedSheet={evaluatedSheet}
+            filteredResults={filteredResults}
           />
         )}
       </div>

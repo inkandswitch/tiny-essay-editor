@@ -61,11 +61,11 @@ export const contextsWithResolvedPositionsAreCompatible = (
 
 export type Results = (Value[] | typeof NOT_READY | null)[][];
 
-export type FilteredResults = (
+export type FilteredResultsForCell =
   | { value: Value; include: boolean }[]
   | typeof NOT_READY
-  | null
-)[][];
+  | null;
+export type FilteredResults = FilteredResultsForCell[][];
 
 // AND of ORs
 export function filter(

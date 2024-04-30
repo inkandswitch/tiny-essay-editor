@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
-import { Value } from '../eval';
+import { FilteredResultsForCell, Value } from '../eval';
 import { groupBy } from 'lodash';
 import { FilterSelection } from './AmbSheet';
 import { Position } from '../datatype';
 
 export const Stacks = ({
   selectedCell,
-  values,
+  results,
   filterSelection,
   setFilterSelectionForCell,
 }: {
   selectedCell: Position;
-  values: Value[];
+  results: { value: Value; include: boolean }[];
   filterSelection: FilterSelection;
   setFilterSelectionForCell: (
     cell: Position,
@@ -20,10 +20,10 @@ export const Stacks = ({
 }) => {
   const groupedValues = useMemo(() => {
     return groupBy(
-      values.map((v, i) => ({ ...v, indexInCell: i })),
-      (value) => value.rawValue
+      results.map((v, i) => ({ ...v, indexInCell: i })),
+      (value) => value.value.rawValue
     );
-  }, [values]);
+  }, [results]);
 
   const selectGroup = (groupValue: any) => {
     const group = groupedValues[groupValue];
@@ -50,12 +50,13 @@ export const Stacks = ({
                 const selected = filterSelection?.selectedValueIndexes.includes(
                   values[index].indexInCell
                 );
+                const greyedOut = values.every((v) => !v.include);
                 return (
                   <div
                     key={index}
                     className={`absolute shadow-sm px-3 rounded-md border border-gray-200 ${
-                      selected ? 'bg-red-200' : 'bg-white'
-                    }`}
+                      selected ? 'bg-blue-100' : 'bg-white'
+                    } ${greyedOut ? 'text-gray-300' : ''}`}
                     style={{
                       transform: `translate(${index * 2}px, -${index * 2}px)`,
                     }}

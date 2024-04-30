@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   AmbContextWithResolvedPositions,
+  FilteredResults,
   Results,
   Value,
   contextsAreCompatible,
@@ -26,26 +27,31 @@ function findAllIndexes(arr, predicate) {
 
 export const TableViewer = ({
   selectedCell,
-  values,
+  results,
   filterSelection,
   setFilterSelectionForCell,
-  evaluatedSheet,
+  filteredResults,
 }: {
   selectedCell: Position;
-  values: Value[];
+  results: { value: Value; include: boolean }[];
   filterSelection: FilterSelection;
   setFilterSelectionForCell: (
     cell: Position,
     selectedIndexes: number[]
   ) => void;
-  evaluatedSheet: Results;
+  filteredResults: FilteredResults;
 }) => {
-  const valuesWithResolvedContexts = values.map((value) => ({
+  const valuesWithResolvedContexts = results.map((value) => ({
     ...value,
-    context: resolvePositionsInContext(value.context),
+    value: {
+      ...value.value,
+      context: resolvePositionsInContext(value.value.context),
+    },
   }));
 
-  const ambDimensions = uniq(values.flatMap((v) => [...v.context.keys()]));
+  const ambDimensions = uniq(
+    results.flatMap((v) => [...v.value.context.keys()])
+  );
 
   const [xDim, setXDim] = useState(ambDimensions[0] ?? null);
   const [yDim, setYDim] = useState(ambDimensions[1] ?? null);
@@ -60,19 +66,24 @@ export const TableViewer = ({
 
   const valuesForContext = (
     context: AmbContextWithResolvedPositions
-  ): { rawValue: number; index: number }[] => {
+  ): { rawValue: number; include: boolean; index: number }[] => {
     const indexes = findAllIndexes(valuesWithResolvedContexts, (v) =>
-      contextsWithResolvedPositionsAreCompatible(v.context, context)
+      contextsWithResolvedPositionsAreCompatible(v.value.context, context)
     );
 
     return indexes.map((index) => ({
-      rawValue: valuesWithResolvedContexts[index].rawValue,
+      rawValue: valuesWithResolvedContexts[index].value.rawValue,
+      include: valuesWithResolvedContexts[index].include,
       index,
     }));
   };
 
-  const xDimChoices = evaluatedSheet[xDim.pos.row][xDim.pos.col] as Value[];
-  const yDimChoices = evaluatedSheet[yDim.pos.row][yDim.pos.col] as Value[];
+  const xDimChoices = filteredResults[xDim.pos.row][xDim.pos.col].map(
+    (v) => v.value
+  ) as Value[];
+  const yDimChoices = filteredResults[yDim.pos.row][yDim.pos.col].map(
+    (v) => v.value
+  ) as Value[];
 
   return (
     <div className="grid grid-cols-2 grid-rows-2 items-center grid-rows-[auto_1fr] grid-cols-[auto_1fr]">
@@ -186,7 +197,7 @@ export const TableViewer = ({
                             filterSelection?.selectedValueIndexes ?? []
                           ).includes(v.index)
                         )
-                          ? 'bg-red-200'
+                          ? 'bg-blue-100'
                           : 'text-gray-500'
                       }`}
                       onMouseEnter={() => {
@@ -196,7 +207,17 @@ export const TableViewer = ({
                         );
                       }}
                     >
-                      {resultValues.map((v) => v.rawValue).join(' | ')}
+                      <div>
+                        {resultValues.map((v) => (
+                          <span
+                            className={`${
+                              v.include ? '' : 'text-gray-200'
+                            } px-1`}
+                          >
+                            {v.rawValue}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                   );
                 })}

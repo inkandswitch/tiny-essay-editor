@@ -44,7 +44,7 @@ export const ambRenderer = (
       valueElement.style.color = '#ddd';
     }
     if (selectedValueIndexes.includes(i)) {
-      valueElement.style.background = 'rgb(255 0 0 / 10%)';
+      valueElement.style.background = '#e5f6ff';
     }
     valueElement.addEventListener('click', () => {
       const valueIndex = selectedValueIndexes.indexOf(i);
