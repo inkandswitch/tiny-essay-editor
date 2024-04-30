@@ -121,25 +121,27 @@ export const TableViewer = ({
                 {yChoice.rawValue}
               </td>
               {xDimChoices.map((xChoice, colIndex) => {
-                const resultValue = valuesForContext({
+                const resultValues = valuesForContext({
                   [cellIndexToName(xDim.pos)]: colIndex,
                   [cellIndexToName(yDim.pos)]: rowIndex,
-                })[0];
+                });
                 return (
                   <td
                     key={colIndex}
                     className={`whitespace-nowrap text-sm text-center ${
-                      (filterSelection?.selectedValueIndexes ?? []).includes(
-                        resultValue.index
+                      resultValues.some((v) =>
+                        (filterSelection?.selectedValueIndexes ?? []).includes(
+                          v.index
+                        )
                       )
                         ? 'bg-red-200'
                         : 'text-gray-500'
                     }`}
                     onMouseEnter={() => {
-                      setFilterSelection([resultValue.index]);
+                      setFilterSelection(resultValues.map((v) => v.index));
                     }}
                   >
-                    {resultValue.rawValue ?? 'N/A'}
+                    {resultValues.map((v) => v.rawValue).join(' | ')}
                   </td>
                 );
               })}
