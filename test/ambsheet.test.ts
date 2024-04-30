@@ -230,4 +230,18 @@ describe('ambsheet evaluator', () => {
       ['{10,9,8,7,6,5,4,3,2,1,0}'],
     ]);
   });
+
+  it('supports strings', () => {
+    assert.deepStrictEqual(evalSheet([['="hello"']]).print(), [['hello']]);
+    assert.deepStrictEqual(evalSheet([['={"hello","world"}']]).print(), [
+      ['{"hello","world"}'],
+    ]);
+  });
+
+  it('supports concat() for strings', () => {
+    assert.deepStrictEqual(
+      evalSheet([['={"+","-","*","/"}', '=concat("5", A1, "6")']]).print(),
+      [['{"+","-","*","/"}', '{"5+6","5-6","5*6","5/6"}']]
+    );
+  });
 });

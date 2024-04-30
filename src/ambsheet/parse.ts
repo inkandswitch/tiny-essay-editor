@@ -270,7 +270,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
     return false;
   },
   string(_oq, csNode, _cq) {
-    const cs: string[] = csNode.toAST();
+    const cs: string[] = csNode.toAst();
     const chars: string[] = [];
     let idx = 0;
     while (idx < cs.length) {
@@ -315,6 +315,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
   _iter(...children) {
     return children.map((c) => c.toAst());
+  },
+  _terminal() {
+    return this.sourceString;
   },
 });
 

@@ -103,6 +103,9 @@ const builtInFunctions = {
       return Math.max(...(xs as number[]));
     }
   },
+  concat(xs: RawValue[]) {
+    return xs.join('');
+  },
 };
 
 /**
@@ -425,7 +428,9 @@ export function printResults(results: Results) {
       } else if (cell.length === 1) {
         return '' + cell[0].rawValue;
       } else {
-        return '{' + cell.map((v) => v.rawValue).join(',') + '}';
+        return (
+          '{' + cell.map((v) => JSON.stringify(v.rawValue)).join(',') + '}'
+        );
       }
     })
   );
