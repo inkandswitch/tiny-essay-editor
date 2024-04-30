@@ -31,7 +31,7 @@ export const ambRenderer = (
   container.style.alignItems = 'center';
   container.style.fontSize = '14px';
   container.style.maxWidth = '400px';
-  container.style.overflowY = 'hidden';
+  container.style.overflowX = 'auto';
 
   // Adjusting styles to compensate for removed gap
   container.className = 'value-container';
