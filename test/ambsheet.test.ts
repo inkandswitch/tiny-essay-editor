@@ -39,6 +39,12 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(evalSheet([['5', '=A1+1']]).print(), [['5', '6']]);
   });
 
+  it('can do a cell ref where deps are in order of naive eval', () => {
+    assert.deepStrictEqual(evalSheet([['5', '=A1+2', '=B1+1']]).print(), [
+      ['5', '7', '8'],
+    ]);
+  });
+
   it('can do a cell ref where deps are not in order of naive eval', () => {
     assert.deepStrictEqual(evalSheet([['5', '=C1+1', '=A1+2']]).print(), [
       ['5', '8', '7'],

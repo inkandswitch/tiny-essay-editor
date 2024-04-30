@@ -1,7 +1,7 @@
 import * as ohm from 'ohm-js';
 import { Position, RawValue } from './datatype';
 
-export const isFormula = (cell: string) => cell && cell[0] === '=';
+export const isFormula = (cell: string) => cell?.startsWith('=');
 
 export type AmbNode = {
   type: 'amb';
@@ -21,9 +21,9 @@ export type RefNode = {
 } & Position;
 
 export type Node =
-  | { type: 'rawValueLiteral'; value: number }
   | AmbNode
   | RefNode
+  | { type: 'const'; value: number }
   | { type: '='; left: Node; right: Node }
   | { type: '>'; left: Node; right: Node }
   | { type: '>='; left: Node; right: Node }
@@ -61,8 +61,8 @@ const grammarSource = String.raw`
       | CallExp
 
     CallExp
-      = caseInsensitive<"if"> "(" Exp "," Exp "," Exp ")"  -- if
-      | name "(" ListOf<Exp, ","> ")"                      -- call
+      = if "(" Exp "," Exp "," Exp ")"  -- if
+      | ident "(" ListOf<Exp, ","> ")"  -- call
       | UnExp
 
     UnExp
@@ -72,17 +72,19 @@ const grammarSource = String.raw`
     PriExp
       = "{" ListOf<AmbPart, ","> "}"  -- amb
       | "(" Exp ")"                   -- paren
+      | const                         -- const
       | cellRef
-      | RawValueLiteral
 
     AmbPart
-      = number "to" number "by" number  -- rangeWithStep
-      | number "to" number              -- rangeAutoStep
-      | number "x" digit+               -- repeated
-      | number                          -- single
+      = number to number by number  -- rangeWithStep
+      | number to number            -- rangeAutoStep
+      | const x digit+              -- repeated
+      | const                       -- single
 
-    RawValueLiteral
+    const
       = number
+      | boolean
+      | string
 
     number  (a number)
       = "-" unsignedNumber   -- negative
@@ -92,19 +94,30 @@ const grammarSource = String.raw`
       = digit* "." digit+  -- fract
       | digit+             -- whole
 
+    boolean
+      = true   -- true
+      | false  -- false
+
+    string  (a string literal)
+      = "\"" (~"\"" ~"\n" any)* "\""
+
     cellRef
       = "$"? letter "$"? digit+
 
-    name
+    ident  (an identifier)
       = letter alnum*
+
+    // keywords
+    by = caseInsensitive<"by"> ~alnum
+    if = caseInsensitive<"if"> ~alnum
+    false = caseInsensitive<"false"> ~alnum
+    to = caseInsensitive<"to"> ~alnum
+    true = caseInsensitive<"true"> ~alnum
+    x = caseInsensitive<"x"> ~letter
   }
 `;
 
 const g = ohm.grammar(grammarSource);
-
-// console.log("match", g.match("=1 + {2, 3}").succeeded());
-// console.log("match", g.match("=-1 + {2, 3}").succeeded());
-// console.log("match", g.match("=1 + {2, (3 + 4)}").succeeded());
 
 // this is hacky, but it's convenient...
 let pos = { row: 0, col: 0 };
@@ -195,12 +208,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
   UnExp_neg(_op, exp) {
     return {
       type: '-',
-      left: { type: 'rawValueLiteral', value: 0 },
+      left: { type: 'const', value: 0 },
       right: exp.toAst(),
     };
-  },
-  number(n) {
-    return parseFloat(n.sourceString);
   },
   PriExp_amb(_lbrace, list, _rbrace) {
     return {
@@ -211,6 +221,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
   PriExp_paren(_lparen, exp, _rparen) {
     return exp.toAst();
+  },
+  PriExp_const(v) {
+    return { type: 'const', value: v.toAst() };
   },
   AmbPart_repeated(exp, _x, n) {
     return {
@@ -235,8 +248,37 @@ const semantics = g.createSemantics().addOperation('toAst', {
       step: parseFloat(step.sourceString),
     };
   },
-  RawValueLiteral(v) {
-    return { type: 'rawValueLiteral', value: v.toAst() };
+  number(n) {
+    return parseFloat(n.sourceString);
+  },
+  boolean_true(_t) {
+    return true;
+  },
+  boolean_false(_f) {
+    return false;
+  },
+  string(_oq, csNode, _cq) {
+    const cs: string[] = csNode.toAST();
+    const chars: string[] = [];
+    let idx = 0;
+    while (idx < cs.length) {
+      let c = cs[idx++];
+      if (c === '\\' && idx < cs.length) {
+        c = cs[idx++];
+        switch (c) {
+          case 'n':
+            c = '\n';
+            break;
+          case 't':
+            c = '\t';
+            break;
+          default:
+            idx--;
+        }
+      }
+      chars.push(c);
+    }
+    return chars.join('');
   },
   cellRef(cDollar, c, rDollar, r) {
     const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';

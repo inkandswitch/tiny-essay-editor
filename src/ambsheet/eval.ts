@@ -149,7 +149,7 @@ export class Env {
     continuation: Continuation
   ) {
     switch (node.type) {
-      case 'rawValueLiteral':
+      case 'const':
         return continuation(
           {
             rawValue: node.value,
@@ -351,7 +351,7 @@ export class Env {
       const node = parseFormula(formula, pos);
       return this.evalNode(node, pos);
     } catch (e) {
-      console.error(e);
+      console.error('eeep!', e);
       return [];
     }
   }
