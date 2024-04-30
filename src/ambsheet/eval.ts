@@ -401,8 +401,13 @@ export class Env {
   evalFormula(formula: string, pos: Position) {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
-    const node = parseFormula(formula, pos);
-    return this.evalNode(node, pos);
+    try {
+      const node = parseFormula(formula, pos);
+      return this.evalNode(node, pos);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
   }
 
   eval(): Env {
