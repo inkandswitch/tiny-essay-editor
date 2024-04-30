@@ -11,7 +11,11 @@ export interface Position {
 }
 
 export class Range {
-  constructor(readonly topLeft: Position, readonly bottomRight: Position) {}
+  constructor(readonly topLeft: Position, readonly bottomRight: Position) {
+    if (topLeft.col > bottomRight.col || topLeft.row > bottomRight.row) {
+      throw new Error('invalid range');
+    }
+  }
   toJSON() {
     return this.toString();
   }

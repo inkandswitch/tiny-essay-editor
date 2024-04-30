@@ -270,5 +270,6 @@ describe('ambsheet evaluator', () => {
 
   it('supports range values', () => {
     assert.deepStrictEqual(evalSheet([['=A2:C5']]).print(), [['A2:C5']]);
+    assert.deepStrictEqual(evalSheet([['=A2:A2']]).print(), [['A2:A2']]);
   });
 });
