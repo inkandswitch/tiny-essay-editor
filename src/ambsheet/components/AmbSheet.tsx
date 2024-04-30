@@ -4,12 +4,12 @@ import { AmbSheetDoc, AmbSheetDocAnchor, Position } from '../datatype';
 import { HotTable } from '@handsontable/react';
 import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/dist/handsontable.full.min.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import * as A from '@automerge/automerge/next';
-import { registerRenderer, textRenderer } from 'handsontable/renderers';
+import { registerRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
-import { AmbContext, evalSheet, filter } from '../eval';
+import { evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
 import { isFormula } from '../parse';
 import React from 'react';
@@ -230,9 +230,14 @@ const MemoizedHOTWrapper = React.memo(
     onAfterSetCellMeta: any;
     onAfterSelection: any;
   }) => {
+    // IMPORTANT NOTE: the data getting passed into the spreadsheet is just the raw cell contents.
+    // All the evaluated results are passed in through cell *metadata*.
+    // The reason for this is that HOT doesn't deal well with objects as cell data.
+    // Our custom cell renderer displays the cell value using the cell metadata field.
+
     return (
       <HotTable
-        data={filteredResults}
+        data={doc.data}
         editor={FormulaEditor}
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}
@@ -248,15 +253,18 @@ const MemoizedHOTWrapper = React.memo(
         autoWrapCol={false}
         licenseKey="non-commercial-and-evaluation"
         renderer="amb"
-        // Attach raw formula results to the cell metadata
+        // Construct cell metadata, including evaluated results
         cells={(row, col) => {
+          const filteredResult = filteredResults[row][col];
           const rawContents = doc.data[row][col];
           const selectedValueIndexes =
             filteredValues.find((f) => f.row === row && f.col === col)
               ?.selectedValueIndexes || [];
-          if (isFormula(rawContents)) {
-            return { formula: rawContents, selectedValueIndexes };
-          }
+          return {
+            filteredResult,
+            formula: rawContents,
+            selectedValueIndexes,
+          };
         }}
       />
     );

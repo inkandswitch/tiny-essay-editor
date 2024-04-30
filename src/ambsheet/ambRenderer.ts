@@ -10,14 +10,15 @@ export const ambRenderer = (
   value,
   cellProperties
 ) => {
-  const selectedValueIndexes =
-    instance.getCellMeta(row, col)['selectedValueIndexes'] || [];
-  if (value === null) {
+  const filteredResult = cellProperties?.filteredResult ?? null;
+
+  const selectedValueIndexes = cellProperties?.selectedValueIndexes ?? [];
+  if (filteredResult === null) {
     td.innerText = '';
     return td;
   }
 
-  if (value === NOT_READY) {
+  if (filteredResult === NOT_READY) {
     // todo: is this right? need to consider when NOT_READY gets returned...
     td.innerText = '!ERROR';
     return td;
@@ -35,7 +36,7 @@ export const ambRenderer = (
   // Adjusting styles to compensate for removed gap
   container.className = 'value-container';
 
-  value.forEach((val, i) => {
+  filteredResult.forEach((val, i) => {
     const valueElement = document.createElement('div');
     valueElement.innerText = val.value.rawValue;
     valueElement.style.padding = '1px 4px';
