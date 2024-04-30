@@ -210,6 +210,21 @@ describe('ambsheet evaluator', () => {
       evalSheet([['{-7,0,17}', '=min(a1, a1-1)']]).print(),
       [['{-7,0,17}', '{-8,-1,16}']]
     );
+
+    assert.deepStrictEqual(
+      evalSheet([['5', '-3', '8', '2', '=min(A1:D1)']]).print(),
+      [['5', '-3', '8', '2', '-3']]
+    );
+
+    assert.deepStrictEqual(
+      evalSheet([['5', '-3', '8', '2', '=min(A1:D1, 6)']]).print(),
+      [['5', '-3', '8', '2', '-3']]
+    );
+
+    assert.deepStrictEqual(
+      evalSheet([['5', '-3', '8', '2', '=min(A1:D1, -6)']]).print(),
+      [['5', '-3', '8', '2', '-6']]
+    );
   });
 
   it('supports repetition and ranges in amb literals', () => {

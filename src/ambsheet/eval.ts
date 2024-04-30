@@ -101,16 +101,16 @@ const builtInFunctions = {
   min(xs: RawValue[]) {
     if (xs.length === 0) {
       throw new Error('min() requires at least one argument');
-    } else {
-      return Math.min(...(xs as number[]));
     }
+
+    return Math.min(...(flatten(xs) as number[]));
   },
   max(xs: RawValue[]) {
     if (xs.length === 0) {
-      throw new Error('min() requires at least one argument');
-    } else {
-      return Math.max(...(xs as number[]));
+      throw new Error('max() requires at least one argument');
     }
+
+    return Math.max(...(flatten(xs) as number[]));
   },
   and(xs: RawValue[]) {
     if (!xs.every((x) => typeof x === 'boolean')) {
@@ -147,6 +147,20 @@ const builtInFunctions = {
   },
   // TODO: hlookup
 };
+
+function flatten(args: RawValue[]): BasicRawValue[] {
+  const values: BasicRawValue[] = [];
+  for (const arg of args) {
+    if (Array.isArray(arg)) {
+      for (const vs of arg) {
+        values.push(...vs);
+      }
+    } else {
+      values.push(arg);
+    }
+  }
+  return values;
+}
 
 /**
  * An evaluation environment tracking results of evaluated cells
