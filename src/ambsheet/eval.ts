@@ -8,6 +8,7 @@ import {
 import {
   isFormula,
   parseFormula,
+  parseLiteral,
   Node,
   AmbNode,
   RefNode,
@@ -155,17 +156,16 @@ export class Env {
   public results: Results;
 
   constructor(private data: AmbSheetDoc['data']) {
-    this.results = data.map((row) =>
-      row.map((cell) => {
+    this.results = data.map((cells, row) =>
+      cells.map((cell, col) => {
         if (cell === '' || cell === null) {
           return null;
         } else if (isFormula(cell)) {
           return NOT_READY;
         } else {
-          const value = parseFloat(cell);
           return [
             {
-              rawValue: value,
+              rawValue: parseLiteral(cell, { row, col }),
               context: new Map(),
             },
           ];

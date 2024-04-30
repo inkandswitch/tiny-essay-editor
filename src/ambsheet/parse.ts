@@ -262,6 +262,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
       step: parseFloat(step.sourceString),
     };
   },
+  const(v) {
+    return v.toAst();
+  },
   number(n) {
     return parseFloat(n.sourceString);
   },
@@ -335,6 +338,16 @@ export function parseFormula(formula: string, cellPos: Position): Node {
   const match = g.match(formula);
   pos = cellPos;
   return semantics(match).toAst();
+}
+
+export function parseLiteral(input: string, cellPos: Position) {
+  const match = g.match(input, 'const');
+  if (match.succeeded()) {
+    pos = cellPos;
+    return semantics(match).toAst();
+  } else {
+    return input;
+  }
 }
 
 // Get a human readable cell name like B2 given a row and col.

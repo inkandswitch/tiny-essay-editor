@@ -232,7 +232,7 @@ describe('ambsheet evaluator', () => {
   });
 
   it('supports strings', () => {
-    assert.deepStrictEqual(evalSheet([['="hello"']]).print(), [['hello']]);
+    assert.deepStrictEqual(evalSheet([['hello']]).print(), [['hello']]);
     assert.deepStrictEqual(evalSheet([['={"hello","world"}']]).print(), [
       ['{"hello","world"}'],
     ]);
@@ -271,9 +271,9 @@ describe('ambsheet evaluator', () => {
   it('supports vlookup', () => {
     assert.deepStrictEqual(
       evalSheet([
-        ['="one"', '111', '=B1*1000'],
-        ['="two"', '222', '=B2*1000'],
-        ['="three"', '333', '=B3*1000'],
+        ['one', '111', '=B1*1000'],
+        ['two', '222', '=B2*1000'],
+        ['three', '333', '=B3*1000'],
         ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
       ]).print(),
       [
@@ -285,9 +285,9 @@ describe('ambsheet evaluator', () => {
     );
     assert.deepStrictEqual(
       evalSheet([
-        ['="one"', '111', '=B1*1000'],
-        ['="two"', '222', '=B2*1000'],
-        ['="three"', '={333,444}', '=B3*1000'],
+        ['one', '111', '=B1*1000'],
+        ['two', '222', '=B2*1000'],
+        ['three', '={333,444}', '=B3*1000'],
         ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
       ]).print(),
       [
@@ -299,9 +299,9 @@ describe('ambsheet evaluator', () => {
     );
     assert.deepStrictEqual(
       evalSheet([
-        ['="one"', '111', '=B1*1000'],
-        ['="two"', '={222,555}', '=B2*1000'],
-        ['="three"', '={333,444}', '=B3*1000'],
+        ['one', '111', '=B1*1000'],
+        ['two', '={222,555}', '=B2*1000'],
+        ['three', '={333,444}', '=B3*1000'],
         ['=vlookup("two", A1:C3, 3) + vlookup("three", A1:C3, 2)'],
       ]).print(),
       [
