@@ -10,7 +10,7 @@ export interface Position {
   col: number;
 }
 
-export type RawValue = number; // TODO: add string, boolean, and range
+export type RawValue = number | boolean | string; // TODO: add range
 
 export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table

@@ -140,7 +140,7 @@ describe('ambsheet evaluator', () => {
     ]).results;
 
     assert.deepStrictEqual(printResults(results), [
-      ['{1,2}', '{3,4}', '{13,14,23,24}', '{0,0,1,1}'],
+      ['{1,2}', '{3,4}', '{13,14,23,24}', '{false,false,true,true}'],
     ]);
 
     const cellC1 = results[0][2]; // C1
@@ -155,7 +155,7 @@ describe('ambsheet evaluator', () => {
           ])
         )
       ),
-      [['{1,2}', '{3,4}', '{14,23}', '{0,1}']]
+      [['{1,2}', '{3,4}', '{14,23}', '{false,true}']]
     );
 
     assert.deepStrictEqual(
@@ -167,7 +167,7 @@ describe('ambsheet evaluator', () => {
           ])
         )
       ),
-      [['1', '{3,4}', '{13,14}', '{0,0}']]
+      [['1', '{3,4}', '{13,14}', '{false,false}']]
     );
 
     assert.deepStrictEqual(
@@ -176,12 +176,12 @@ describe('ambsheet evaluator', () => {
           filter(results, [
             // select D1=1 in the result cell
             (cellD1 as Value[])
-              .filter((v) => v.rawValue === 1)
+              .filter((v) => v.rawValue === true)
               .map((v) => v.context),
           ])
         )
       ),
-      [['2', '{3,4}', '{23,24}', '{1,1}']]
+      [['2', '{3,4}', '{23,24}', '{true,true}']]
     );
   });
 

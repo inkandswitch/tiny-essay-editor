@@ -93,14 +93,14 @@ const builtInFunctions = {
     if (xs.length === 0) {
       throw new Error('min() requires at least one argument');
     } else {
-      return Math.min(...xs);
+      return Math.min(...(xs as number[]));
     }
   },
   max(xs: RawValue[]) {
     if (xs.length === 0) {
       throw new Error('min() requires at least one argument');
     } else {
-      return Math.max(...xs);
+      return Math.max(...(xs as number[]));
     }
   },
 };
@@ -180,28 +180,52 @@ export class Env {
         return;
       }
       case '=':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a == b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a == b
         );
       case '<>':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a != b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a != b
         );
       case '>':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a > b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a > b
         );
       case '>=':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a >= b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a >= b
         );
       case '<':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a < b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a < b
         );
       case '<=':
-        return this.interpBinOp(node, pos, context, continuation, (a, b) =>
-          a <= b ? 1 : 0
+        return this.interpBinOp(
+          node,
+          pos,
+          context,
+          continuation,
+          (a, b) => a <= b
         );
       case '+':
         return this.interpBinOp(
@@ -209,7 +233,7 @@ export class Env {
           pos,
           context,
           continuation,
-          (a, b) => a + b
+          (a: number, b: number) => a + b
         );
       case '*':
         return this.interpBinOp(
@@ -217,7 +241,7 @@ export class Env {
           pos,
           context,
           continuation,
-          (a, b) => a * b
+          (a: number, b: number) => a * b
         );
       case '-':
         return this.interpBinOp(
@@ -225,7 +249,7 @@ export class Env {
           pos,
           context,
           continuation,
-          (a, b) => a - b
+          (a: number, b: number) => a - b
         );
       case '/':
         return this.interpBinOp(
@@ -233,7 +257,7 @@ export class Env {
           pos,
           context,
           continuation,
-          (a, b) => a / b
+          (a: number, b: number) => a / b
         );
       case 'if':
         return this.interp(
@@ -242,7 +266,7 @@ export class Env {
           context,
           (cond, pos, contextAfterCond) =>
             this.interp(
-              cond.rawValue !== 0 ? node.then : node.else,
+              cond.rawValue ? node.then : node.else,
               pos,
               contextAfterCond,
               continuation
