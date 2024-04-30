@@ -1,4 +1,10 @@
-import { AmbSheetDoc, Position, Range, RawValue } from './datatype';
+import {
+  AmbSheetDoc,
+  BasicRawValue,
+  Position,
+  Range,
+  RawValue,
+} from './datatype';
 import {
   isFormula,
   parseFormula,
@@ -125,6 +131,19 @@ const builtInFunctions = {
   concat(xs: RawValue[]) {
     return xs.join('');
   },
+  vlookup([key, range, index, _isOrdered]: [RawValue, Range, number, boolean]) {
+    // TODO: if isOrdered, do binary search
+    const col = index - 1;
+    if (0 <= col && col < range[0].length) {
+      for (const row of range) {
+        if (key === row[0]) {
+          return row[col];
+        }
+      }
+    }
+    throw new Error('N/A');
+  },
+  // TODO: hlookup
 };
 
 /**
@@ -199,11 +218,20 @@ export class Env {
         return;
       }
       case 'range': {
-        const rawValue = new Range(
-          toCellPosition(node.topLeft, pos),
-          toCellPosition(node.bottomRight, pos)
-        );
-        return continuation({ rawValue, context }, pos, context);
+        const topLeft = toCellPosition(node.topLeft, pos);
+        const bottomRight = toCellPosition(node.bottomRight, pos);
+        if (topLeft.col > bottomRight.col || topLeft.row > bottomRight.row) {
+          throw new Error('invalid range');
+        } else {
+          return this.collectRange(
+            topLeft,
+            bottomRight,
+            [],
+            pos,
+            context,
+            continuation
+          );
+        }
       }
       case '=':
         return this.interpBinOp(
@@ -388,6 +416,17 @@ export class Env {
             continuation
           )
         );
+  }
+
+  collectRange(
+    topLeft: Position,
+    bottomRight: Position,
+    range: BasicRawValue[][],
+    pos: Position,
+    context: AmbContext,
+    continuation: Continuation
+  ) {
+    // TODO
   }
 
   // The outermost continuation just collects up all results from the sub-paths of execution

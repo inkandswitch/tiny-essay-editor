@@ -10,27 +10,8 @@ export interface Position {
   col: number;
 }
 
-export class Range {
-  constructor(readonly topLeft: Position, readonly bottomRight: Position) {
-    if (topLeft.col > bottomRight.col || topLeft.row > bottomRight.row) {
-      throw new Error('invalid range');
-    }
-  }
-  toJSON() {
-    return this.toString();
-  }
-  toString() {
-    return (
-      this.positionToCellName(this.topLeft) +
-      ':' +
-      this.positionToCellName(this.bottomRight)
-    );
-  }
-  private positionToCellName({ row, col }: Position) {
-    return String.fromCharCode('A'.charCodeAt(0) + col) + '' + (row + 1);
-  }
-}
-
+export type BasicRawValue = number | boolean | string;
+export type Range = BasicRawValue[][];
 export type RawValue = number | boolean | string | Range;
 
 export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
