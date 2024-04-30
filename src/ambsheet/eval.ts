@@ -175,7 +175,6 @@ export class Env {
   }
 
   getCellValues({ row, col }: Position): Value[] | typeof NOT_READY {
-    // console.log({ results: this.results, row, col });
     return this.results[row][col];
   }
 
@@ -496,7 +495,6 @@ export class Env {
             } catch (error) {
               if (error === NOT_READY) {
                 // if NOT_READY, just continue to the next cell
-                // console.log('not ready, skip');
               } else {
                 throw error; // rethrow unexpected errors
               }
