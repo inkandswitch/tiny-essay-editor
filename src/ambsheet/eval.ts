@@ -11,6 +11,7 @@ import {
   parseLiteral,
   Node,
   AmbNode,
+  AmbRangePart,
   RefNode,
   cellPositionToName,
 } from './parse';
@@ -346,7 +347,7 @@ export class Env {
                 newContext
               );
             }
-          } else {
+          } else if (isSensibleRange(part)) {
             let v = part.from;
             while (part.from < part.to ? v <= part.to : v >= part.to) {
               const newContext = new Map([...context, [node, i++]]);
@@ -513,6 +514,13 @@ export class Env {
   print() {
     return printResults(this.results);
   }
+}
+
+function isSensibleRange(part: AmbRangePart) {
+  return (
+    (part.from <= part.to && part.step > 0) ||
+    (part.from >= part.to && part.step < 0)
+  );
 }
 
 function toCellPosition(node: RefNode, pos: Position): Position {

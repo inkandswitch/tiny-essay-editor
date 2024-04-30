@@ -7,9 +7,18 @@ export type AmbNode = {
   parts: AmbNodePart[];
 };
 
-export type AmbNodePart =
-  | { type: 'repeat'; value: RawValue; numRepeats: number }
-  | { type: 'range'; from: number; to: number; step: number };
+export interface AmbRangePart {
+  type: 'range';
+  from: number;
+  to: number;
+  step: number;
+}
+export interface AmbRepeatPart {
+  type: 'repeat';
+  value: RawValue;
+  numRepeats: number;
+}
+export type AmbNodePart = AmbRepeatPart | AmbRangePart;
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {

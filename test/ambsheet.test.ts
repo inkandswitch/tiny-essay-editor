@@ -229,6 +229,7 @@ describe('ambsheet evaluator', () => {
     assert.deepStrictEqual(evalSheet([['{10 to 0}']]).print(), [
       ['{10,9,8,7,6,5,4,3,2,1,0}'],
     ]);
+    assert.deepStrictEqual(evalSheet([['{50 to 10 by 10}']]).print(), [['{}']]);
   });
 
   it('supports strings', () => {
