@@ -8,7 +8,7 @@ import {
   contextsWithResolvedPositionsAreCompatible,
   resolvePositionsInContext,
 } from '../eval';
-import { chain, groupBy, uniq } from 'lodash';
+import { chain, groupBy, max, mean, min, sum, uniq } from 'lodash';
 import { FilterSelection } from './AmbSheet';
 import { cellPositionToName } from '../parse';
 import { Position } from '../datatype';
@@ -24,6 +24,28 @@ function findAllIndexes(arr, predicate) {
 
   return indexes;
 }
+
+type Aggregation = 'average' | 'min' | 'max' | 'count' | 'sum';
+
+const aggregateValues = (values: number[], aggregation: Aggregation) => {
+  switch (aggregation) {
+    case 'average': {
+      return mean(values);
+    }
+    case 'min': {
+      return min(values);
+    }
+    case 'max': {
+      return max(values);
+    }
+    case 'count': {
+      return values.length;
+    }
+    case 'sum': {
+      return sum(values);
+    }
+  }
+};
 
 export const TableViewer = ({
   selectedCell,
@@ -41,6 +63,7 @@ export const TableViewer = ({
   ) => void;
   filteredResults: FilteredResults;
 }) => {
+  const [aggregation, setAggregation] = useState<Aggregation>('average');
   const valuesWithResolvedContexts = results.map((value) => ({
     ...value,
     value: {
@@ -86,145 +109,162 @@ export const TableViewer = ({
   ) as Value[];
 
   return (
-    <div className="grid grid-cols-2 grid-rows-2 items-center grid-rows-[auto_1fr] grid-cols-[auto_1fr]">
-      <div className="col-start-1 col-end-2 row-start-1 row-end-2">
-        {/* empty */}
-      </div>
-      <div className="col-start-2 col-end-3 row-start-1 row-end-2 text-center text-xs font-medium text-gray-500 uppercase p-1">
-        <select
-          className="text-xs font-medium text-gray-500 uppercase p-1"
-          value={cellPositionToName(xDim.pos)}
-          onChange={(e) => {
-            const newXDim = ambDimensions.find(
-              (dim) => cellPositionToName(dim.pos) === e.target.value
-            );
-            if (newXDim) {
-              setXDim(newXDim);
-            }
-          }}
+    <div>
+      <div className="col-start-1 col-end-3 row-start-1 row-end-2 p-2">
+        <label
+          htmlFor="aggregation-select"
+          className="text-xs font-medium text-gray-500 mr-2"
         >
-          {ambDimensions.map((dim, index) => (
-            <option key={index} value={cellPositionToName(dim.pos)}>
-              {cellPositionToName(dim.pos)}
-            </option>
-          ))}
+          Aggregate:
+        </label>
+        <select
+          id="aggregation-select"
+          className="text-xs font-medium text-gray-500 uppercase p-1 border border-gray-300 rounded"
+          value={aggregation}
+          onChange={(e) => setAggregation(e.target.value as Aggregation)}
+        >
+          <option value="average">Average</option>
+          <option value="sum">Sum</option>
+          <option value="count">Count</option>
+          <option value="min">Min</option>
+          <option value="max">Max</option>
         </select>
       </div>
-      <div className="col-start-1 col-end-2 row-start-2 row-end-3  text-center text-xs font-medium text-gray-500 uppercase p-1">
-        <select
-          className="text-xs font-medium text-gray-500 uppercase p-1"
-          value={cellPositionToName(yDim.pos)}
-          onChange={(e) => {
-            const newYDim = ambDimensions.find(
-              (dim) => cellPositionToName(dim.pos) === e.target.value
-            );
-            if (newYDim) {
-              setYDim(newYDim);
-            }
-          }}
-        >
-          {ambDimensions.map((dim, index) => (
-            <option key={index} value={cellPositionToName(dim.pos)}>
-              {cellPositionToName(dim.pos)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="col-start-2 col-end-3 row-start-2 row-end-3 overflow-auto">
-        <table className="min-w-full divide-x divide-y divide-gray-200 cursor-default text-center">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-center"></th>
-              {xDimChoices.map((xChoice, index) => (
-                <th
-                  key={index}
-                  className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-300"
-                  onMouseEnter={() => {
-                    const context = {
-                      [cellPositionToName(xDim.pos)]: index,
-                    };
-                    const filterSelectionIndexes = valuesForContext(
-                      context
-                    ).map((v) => v.index);
-                    setFilterSelectionForCell(
-                      selectedCell,
-                      filterSelectionIndexes
-                    );
-                  }}
-                  onMouseLeave={() => {
-                    setFilterSelectionForCell(selectedCell, null);
-                  }}
-                >
-                  {xChoice.rawValue}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-x divide-y divide-gray-200">
-            {yDimChoices.map((yChoice, rowIndex) => (
-              <tr key={rowIndex}>
-                <td
-                  className="text-center hover:bg-gray-300 text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 "
-                  onMouseEnter={() => {
-                    const context = {
-                      [cellPositionToName(yDim.pos)]: rowIndex,
-                    };
-                    const filterSelectionIndexes = valuesForContext(
-                      context
-                    ).map((v) => v.index);
-                    setFilterSelectionForCell(
-                      selectedCell,
-                      filterSelectionIndexes
-                    );
-                  }}
-                  onMouseLeave={() => {
-                    setFilterSelectionForCell(selectedCell, null);
-                  }}
-                >
-                  {yChoice.rawValue}
-                </td>
-                {xDimChoices.map((xChoice, colIndex) => {
-                  const resultValues = valuesForContext({
-                    [cellPositionToName(xDim.pos)]: colIndex,
-                    [cellPositionToName(yDim.pos)]: rowIndex,
-                  });
-                  return (
-                    <td
-                      key={colIndex}
-                      className={`whitespace-nowrap text-sm text-center ${
-                        resultValues.some((v) =>
-                          (
-                            filterSelection?.selectedValueIndexes ?? []
-                          ).includes(v.index)
-                        )
-                          ? 'bg-blue-100'
-                          : 'text-gray-500'
-                      }`}
-                      onMouseEnter={() => {
-                        setFilterSelectionForCell(
-                          selectedCell,
-                          resultValues.map((v) => v.index)
-                        );
-                      }}
-                    >
-                      <div>
-                        {resultValues.map((v) => (
-                          <span
-                            className={`${
-                              v.include ? '' : 'text-gray-200'
-                            } px-1`}
-                          >
-                            {v.rawValue}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
+      <div className="grid grid-cols-2 grid-rows-2 items-center grid-rows-[auto_1fr] grid-cols-[auto_1fr]">
+        <div className="col-start-1 col-end-2 row-start-1 row-end-2">
+          {/* empty */}
+        </div>
+        <div className="col-start-2 col-end-3 row-start-1 row-end-2 text-center text-xs font-medium text-gray-500 uppercase p-1">
+          <select
+            className="text-xs font-medium text-gray-500 uppercase p-1"
+            value={cellPositionToName(xDim.pos)}
+            onChange={(e) => {
+              const newXDim = ambDimensions.find(
+                (dim) => cellPositionToName(dim.pos) === e.target.value
+              );
+              if (newXDim) {
+                setXDim(newXDim);
+              }
+            }}
+          >
+            {ambDimensions.map((dim, index) => (
+              <option key={index} value={cellPositionToName(dim.pos)}>
+                {cellPositionToName(dim.pos)}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </div>
+        <div className="col-start-1 col-end-2 row-start-2 row-end-3  text-center text-xs font-medium text-gray-500 uppercase p-1">
+          <select
+            className="text-xs font-medium text-gray-500 uppercase p-1"
+            value={cellPositionToName(yDim.pos)}
+            onChange={(e) => {
+              const newYDim = ambDimensions.find(
+                (dim) => cellPositionToName(dim.pos) === e.target.value
+              );
+              if (newYDim) {
+                setYDim(newYDim);
+              }
+            }}
+          >
+            {ambDimensions.map((dim, index) => (
+              <option key={index} value={cellPositionToName(dim.pos)}>
+                {cellPositionToName(dim.pos)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-start-2 col-end-3 row-start-2 row-end-3 overflow-auto">
+          <table className="min-w-full divide-x divide-y divide-gray-200 cursor-default text-center">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-center"></th>
+                {xDimChoices.map((xChoice, index) => (
+                  <th
+                    key={index}
+                    className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-300"
+                    onMouseEnter={() => {
+                      const context = {
+                        [cellPositionToName(xDim.pos)]: index,
+                      };
+                      const filterSelectionIndexes = valuesForContext(
+                        context
+                      ).map((v) => v.index);
+                      setFilterSelectionForCell(
+                        selectedCell,
+                        filterSelectionIndexes
+                      );
+                    }}
+                    onMouseLeave={() => {
+                      setFilterSelectionForCell(selectedCell, null);
+                    }}
+                  >
+                    {xChoice.rawValue}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-x divide-y divide-gray-200">
+              {yDimChoices.map((yChoice, rowIndex) => (
+                <tr key={rowIndex}>
+                  <td
+                    className="text-center hover:bg-gray-300 text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 "
+                    onMouseEnter={() => {
+                      const context = {
+                        [cellPositionToName(yDim.pos)]: rowIndex,
+                      };
+                      const filterSelectionIndexes = valuesForContext(
+                        context
+                      ).map((v) => v.index);
+                      setFilterSelectionForCell(
+                        selectedCell,
+                        filterSelectionIndexes
+                      );
+                    }}
+                    onMouseLeave={() => {
+                      setFilterSelectionForCell(selectedCell, null);
+                    }}
+                  >
+                    {yChoice.rawValue}
+                  </td>
+                  {xDimChoices.map((xChoice, colIndex) => {
+                    const resultValues = valuesForContext({
+                      [cellPositionToName(xDim.pos)]: colIndex,
+                      [cellPositionToName(yDim.pos)]: rowIndex,
+                    });
+                    return (
+                      <td
+                        key={colIndex}
+                        className={`whitespace-nowrap text-sm text-center ${
+                          resultValues.some((v) =>
+                            (
+                              filterSelection?.selectedValueIndexes ?? []
+                            ).includes(v.index)
+                          )
+                            ? 'bg-blue-100'
+                            : 'text-gray-500'
+                        }`}
+                        onMouseEnter={() => {
+                          setFilterSelectionForCell(
+                            selectedCell,
+                            resultValues.map((v) => v.index)
+                          );
+                        }}
+                      >
+                        <div>
+                          {aggregateValues(
+                            resultValues.map((v) => v.rawValue),
+                            aggregation
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

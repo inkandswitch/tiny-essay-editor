@@ -85,9 +85,7 @@ export const CellDetails = ({
       )}
       {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="">
-          <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
-            Table
-          </h2>
+          <h2 className="text-xs text-gray-500 font-bold uppercase">Table</h2>
           <TableViewer
             selectedCell={selectedCell}
             results={selectedCellResult}
