@@ -1,5 +1,5 @@
 import { DocHandle } from '@automerge/automerge-repo';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AmbSheetDoc, Position } from '../datatype';
 import { Results, NOT_READY, Value } from '../eval';
 import { cellPositionToName } from '../parse';
@@ -64,12 +64,28 @@ export const Filters = ({
     [filterableCells, inputAmbCells]
   );
 
-  console.log({ filterableCells, inputAmbCells, outputCells });
-
   return (
     <div>
-      <div className="text-xs font-medium text-gray-800 uppercase">
-        Input Cells
+      <div className="h-3 text-gray-600 px-1 text-xs">
+        {filterSelection.length > 0 && (
+          <div>
+            {filterSelection.length} filters{' '}
+            <span
+              onClick={() => {
+                for (const f of filterSelection) {
+                  setFilterSelectionForCell({ row: f.row, col: f.col }, null);
+                }
+              }}
+              className="underline text-gray-500 cursor-pointer"
+            >
+              Clear
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="text-sm font-medium text-gray-800 uppercase mt-3 mb-1 px-1">
+        Inputs
       </div>
       {inputAmbCells.map((cell) => (
         <FiltersForCell
@@ -79,8 +95,8 @@ export const Filters = ({
           setFilterSelectionForCell={setFilterSelectionForCell}
         />
       ))}
-      <div className="text-xs font-medium text-gray-800 uppercase mt-8">
-        Output Cells
+      <div className="text-sm font-medium text-gray-800 uppercase mt-3 mb-1 px-1">
+        Outputs
       </div>
       {outputCells.map((cell) => (
         <FiltersForCell
@@ -108,6 +124,7 @@ const FiltersForCell = ({
     selection: number[] | null
   ) => void;
 }) => {
+  const [expanded, setExpanded] = useState(false);
   const values = useMemo(() => {
     return evaluatedSheet[cell.row][cell.col];
   }, [evaluatedSheet, cell]);
@@ -164,13 +181,19 @@ const FiltersForCell = ({
     (f) => f.row === cell.row && f.col === cell.col
   );
 
+  const groups = useMemo(() => {
+    const items = Object.entries(groupedValues);
+    if (expanded) return items;
+    return items.slice(0, 5);
+  }, [groupedValues, expanded]);
+
   return (
     <div>
       <div className="text-sm font-medium text-gray-700 bg-gray-100 px-1 mb-1">
         {cellPositionToName(cell)}
       </div>
       <div className="px-1">
-        {Object.entries(groupedValues).map(([groupValue, groupItems]) => {
+        {groups.map(([groupValue, groupItems]) => {
           // This group is shown as selected if any value in the group is allowed by the filter
           const thisGroupSelected = filterForCell?.selectedValueIndexes?.some(
             (index) => groupItems.find((v) => v.indexInCell === index)
@@ -209,6 +232,22 @@ const FiltersForCell = ({
           );
         })}
       </div>
+      {!expanded && Object.entries(groupedValues).length > 5 && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="px-1 text-sm font-medium text-gray-600"
+        >
+          + Show {Object.entries(groupedValues).length - 5} more
+        </button>
+      )}
+      {expanded && Object.entries(groupedValues).length > 5 && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="px-1 text-sm font-medium text-gray-600"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 };

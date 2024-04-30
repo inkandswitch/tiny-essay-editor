@@ -166,8 +166,8 @@ export const AmbSheet = ({
 
   return (
     <div className="w-full h-full flex">
-      <div className="w-[200px] h-full overflow-hidden">
-        <div className="text-xs text-gray-500 font-bold uppercase mb-3 p-1">
+      <div className="w-[200px] h-full overflow-hidden flex flex-col">
+        <div className="text-xs text-gray-500 font-bold uppercase p-1">
           Filters
         </div>
         <div className="h-full overflow-auto">

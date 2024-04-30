@@ -29,6 +29,8 @@ export const ambRenderer = (
   container.style.justifyContent = 'flex-start';
   container.style.alignItems = 'center';
   container.style.fontSize = '16px';
+  container.style.maxWidth = '400px';
+  container.style.overflowY = 'hidden';
 
   // Adjusting styles to compensate for removed gap
   container.className = 'value-container';
