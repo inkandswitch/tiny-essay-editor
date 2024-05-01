@@ -365,32 +365,29 @@ export class Env {
               }
               break;
             }
-            case 'normal': {
-              // TODO: try/catch, turn exceptions into ASErrors
-              const normalGenerator = d3.randomNormal.source(
-                d3.randomLcg(RANDOM_SEED)
-              )(part.mean, part.stdev);
-              const values = Array.from(
-                { length: part.samples },
-                normalGenerator
-              );
-
-              for (const value of values) {
-                const newContext = new Map([...context, [node, i++]]);
-                continuation(
-                  { context: newContext, rawValue: value },
-                  pos,
-                  newContext
-                );
-              }
-              break;
-            }
           }
         }
         return;
       }
       case 'ambify': {
         throw new Error('TODO: implement ambify');
+      }
+      case 'normal': {
+        // TODO: try/catch, turn exceptions into ASErrors
+        const normalGenerator = d3.randomNormal.source(
+          d3.randomLcg(RANDOM_SEED)
+        )(node.mean, node.stdev);
+        const values = Array.from({ length: node.samples }, normalGenerator);
+        let i = 0;
+        for (const value of values) {
+          const newContext = new Map([...context, [node, i++]]);
+          continuation(
+            { context: newContext, rawValue: value },
+            pos,
+            newContext
+          );
+        }
+        return;
       }
       default: {
         const exhaustiveCheck: never = node;

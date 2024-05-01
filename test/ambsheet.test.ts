@@ -362,7 +362,7 @@ describe('ambsheet evaluator', () => {
       1
     );
     const expected = Array.from({ length: 5 }, normalGenerator).join(',');
-    assert.deepStrictEqual(evalSheet([['{normal(0, 1, 5)}']]).print(), [
+    assert.deepStrictEqual(evalSheet([['=normal(0, 1, 5)']]).print(), [
       [`{${expected}}`],
     ]);
   });

@@ -1,7 +1,7 @@
 import * as ohm from 'ohm-js';
 import { Position, RawValue } from './datatype';
 
-export type AmbNode = {
+export type AmbLiteralNode = {
   type: 'amb';
   pos: Position;
   parts: AmbNodePart[];
@@ -18,13 +18,23 @@ export interface AmbRepeatPart {
   value: RawValue;
   numRepeats: number;
 }
-export interface AmbNormalPart {
+export type AmbNodePart = AmbRepeatPart | AmbRangePart;
+
+export interface AmbifyNode {
+  type: 'ambify';
+  pos: Position;
+  range: RangeNode;
+}
+
+export interface NormalDistributionNode {
   type: 'normal';
+  pos: Position;
   mean: number;
   stdev: number;
   samples: number;
 }
-export type AmbNodePart = AmbRepeatPart | AmbRangePart | AmbNormalPart;
+
+export type AmbNode = AmbLiteralNode | AmbifyNode | NormalDistributionNode;
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
@@ -43,7 +53,6 @@ export type Node =
   | AmbNode
   | RefNode
   | RangeNode
-  | { type: 'ambify'; range: RangeNode }
   | { type: 'const'; value: number }
   | { type: 'if'; cond: Node; then: Node; else: Node }
   | { type: 'call'; funcName: string; args: Node[] };
@@ -51,8 +60,9 @@ export type Node =
 const grammarSource = String.raw`
   AmbSheets {
     Formula
-      = "=" ambify "(" CellRange ")"  -- ambify
-      | "=" Exp                       -- expression
+      = "=" ambify "(" CellRange ")"                     -- ambify
+      | "=" normal "(" number "," number "," number ")"  -- normal
+      | "=" Exp                                          -- expression
       | Amb
 
     Exp = RelExp
@@ -96,7 +106,6 @@ const grammarSource = String.raw`
     AmbPart
       = number to number by number                   -- rangeWithStep
       | number to number                             -- rangeAutoStep
-      | normal "(" number "," number "," number ")"  -- normal
       | Literal x digit+                             -- repeated
       | Literal                                      -- single
 
@@ -153,6 +162,25 @@ export const isFormula = (input: string) => g.match(input).succeeded();
 let pos = { row: 0, col: 0 };
 
 const semantics = g.createSemantics().addOperation('toAst', {
+  Formula_normal(
+    _eq,
+    _normal,
+    _lparen,
+    mean,
+    _c1,
+    stdev,
+    _c2,
+    samples,
+    _rparen
+  ) {
+    return {
+      type: 'normal',
+      mean: parseFloat(mean.sourceString),
+      stdev: parseFloat(stdev.sourceString),
+      samples: parseInt(samples.sourceString),
+    };
+  },
+
   Formula_expression(_eq, exp) {
     return exp.toAst();
   },
@@ -283,14 +311,6 @@ const semantics = g.createSemantics().addOperation('toAst', {
       from: parseFloat(from.sourceString),
       to: parseFloat(to.sourceString),
       step: parseFloat(step.sourceString),
-    };
-  },
-  AmbPart_normal(_normal, _lparen, mean, _c1, stdev, _c2, samples, _rparen) {
-    return {
-      type: 'normal',
-      mean: parseFloat(mean.sourceString),
-      stdev: parseFloat(stdev.sourceString),
-      samples: parseInt(samples.sourceString),
     };
   },
   Literal(v) {
