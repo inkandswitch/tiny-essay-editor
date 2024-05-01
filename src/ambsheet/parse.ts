@@ -82,9 +82,8 @@ const grammarSource = String.raw`
       | PriExp
 
     PriExp
-      = Amb
-      | "(" Exp ")"                   -- paren
-      | const                         -- const
+      = "(" Exp ")"     -- paren
+      | Literal         -- const
       | RangeOrCellRef
 
     Amb
@@ -93,10 +92,10 @@ const grammarSource = String.raw`
     AmbPart
       = number to number by number  -- rangeWithStep
       | number to number            -- rangeAutoStep
-      | const x digit+              -- repeated
-      | const                       -- single
+      | Literal x digit+            -- repeated
+      | Literal                     -- single
 
-    const
+    Literal
       = number
       | boolean
       | string
@@ -276,7 +275,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
       step: parseFloat(step.sourceString),
     };
   },
-  const(v) {
+  Literal(v) {
     return v.toAst();
   },
   number(n) {
@@ -355,7 +354,7 @@ export function parseFormula(formula: string, cellPos: Position): Node {
 }
 
 export function parseLiteral(input: string, cellPos: Position) {
-  const match = g.match(input, 'const');
+  const match = g.match(input, 'Literal');
   if (match.succeeded()) {
     pos = cellPos;
     return semantics(match).toAst();

@@ -20,19 +20,22 @@ describe('ambsheet evaluator', () => {
   });
 
   it('handles one amb', () => {
-    assert.deepStrictEqual(evalSheet([['={1, 2, 3} * 5']]).print(), [
-      ['{5,10,15}'],
+    assert.deepStrictEqual(evalSheet([['{1, 2, 3}', '=A1*5']]).print(), [
+      ['{1,2,3}', '{5,10,15}'],
     ]);
   });
 
   it('handles two ambs', () => {
-    assert.deepStrictEqual(evalSheet([['={2, 3} * {5, 6}']]).print(), [
-      ['{10,12,15,18}'],
-    ]);
+    assert.deepStrictEqual(
+      evalSheet([['{2, 3}', '{5, 6}', '=A1*B1']]).print(),
+      [['{2,3}', '{5,6}', '{10,12,15,18}']]
+    );
   });
 
   it('handles empty amb', () => {
-    assert.deepStrictEqual(evalSheet([['=2 * {}']]).print(), [['{}']]);
+    assert.deepStrictEqual(evalSheet([['{}', '=2 * A1']]).print(), [
+      ['{}', '{}'],
+    ]);
   });
 
   it('can do a cell ref', () => {
@@ -60,8 +63,8 @@ describe('ambsheet evaluator', () => {
 
   it('can do simple if, v1', () => {
     assert.deepStrictEqual(
-      evalSheet([['{1,2,3}', '=if(A1>1, 111, {})']]).print(),
-      [['{1,2,3}', '{111,111}']]
+      evalSheet([['{1,2,3}', '{}', '=if(A1>1, 111, B1)']]).print(),
+      [['{1,2,3}', '{}', '{111,111}']]
     );
   });
 
@@ -89,8 +92,8 @@ describe('ambsheet evaluator', () => {
 
   it('does not reuse the amb choice given a fresh amb', () => {
     assert.deepStrictEqual(
-      evalSheet([['{1, 2, 3}', '=A1 * A1', '=B1 + {1, 2, 3}']]).print(),
-      [['{1,2,3}', '{1,4,9}', '{2,3,4,5,6,7,10,11,12}']]
+      evalSheet([['{1, 2, 3}', '=A1 * A1', '{1, 2, 3}', '=B1 + C1']]).print(),
+      [['{1,2,3}', '{1,4,9}', '{1,2,3}', '{2,3,4,5,6,7,10,11,12}']]
     );
   });
 
@@ -107,8 +110,8 @@ describe('ambsheet evaluator', () => {
       // so we end up with 4 values (2x2) in the final result.
       // Notably, in cell B1, we reuse amb choices for A1, but we create fresh
       // amb choices for the new amb literal.
-      evalSheet([['{1, 2}', '=A1*(A1+{3, 4})']]).print(),
-      [['{1,2}', '{4,5,10,12}']]
+      evalSheet([['{1, 2}', '{3, 4}', '=A1*(A1+B1)']]).print(),
+      [['{1,2}', '{3,4}', '{4,5,10,12}']]
     );
   });
 
