@@ -264,6 +264,14 @@ describe('ambsheet evaluator', () => {
       evalSheet([['{"+","-","*","/"}', '=concat("5", A1, "6")']]).print(),
       [['{"+","-","*","/"}', '{"5+6","5-6","5*6","5/6"}']]
     );
+    assert.deepStrictEqual(
+      evalSheet([['foo', '', 'bar', 'baz', '=concat(A1, B1, C1, D1)']]).print(),
+      [['foo', '', 'bar', 'baz', 'foobarbaz']]
+    );
+    assert.deepStrictEqual(
+      evalSheet([['foo', '', 'bar', 'baz', '=concat(A1:D1)']]).print(),
+      [['foo', '', 'bar', 'baz', 'foobarbaz']]
+    );
   });
 
   it('supports count()', () => {

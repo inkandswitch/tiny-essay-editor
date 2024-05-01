@@ -190,7 +190,7 @@ const builtInFunctions = {
       : !xs[0];
   },
   concat(xs: RawValue[]) {
-    return flatten(xs).join('');
+    return flatten(xs).filter(notNull).join('');
   },
   vlookup([key, range, index, _isOrdered]: [RawValue, Range, number, boolean]) {
     // TODO: if isOrdered, do binary search
