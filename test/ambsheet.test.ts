@@ -282,6 +282,18 @@ describe('ambsheet evaluator', () => {
     ]);
   });
 
+  it('supports avg()', () => {
+    assert.deepStrictEqual(evalSheet([['=avg(1, 2)']]).print(), [['1.5']]);
+    assert.deepStrictEqual(
+      evalSheet([['1', '2', '9', '=avg(A1:C1)']]).print(),
+      [['1', '2', '9', '4']]
+    );
+    assert.deepStrictEqual(
+      evalSheet([['1', '', '7', '4', '=avg(A1:D1)']]).print(),
+      [['1', '', '7', '4', '4']]
+    );
+  });
+
   it('supports sum()', () => {
     assert.deepStrictEqual(evalSheet([['=sum(1, 2)']]).print(), [['3']]);
     assert.deepStrictEqual(evalSheet([['1', '2', '=sum(A1:B1)']]).print(), [

@@ -156,7 +156,12 @@ const builtInFunctions = {
   count(xs: RawValue[]) {
     return flatten(xs).filter(notNull).length;
   },
-  // TODO: add avg
+  avg(xs: RawValue[]) {
+    const sum = builtInFunctions.sum(xs);
+    return sum instanceof ASError
+      ? sum
+      : builtInFunctions['/']([sum, builtInFunctions.count(xs)]);
+  },
   min(xs: RawValue[]) {
     return xs.length === 0
       ? new ASError('#N/A', 'min() expects at least one argument')
