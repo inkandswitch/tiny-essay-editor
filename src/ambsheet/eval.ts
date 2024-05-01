@@ -1,5 +1,3 @@
-// TODO: +, -, ... require numbers (throw otherwise)
-
 import {
   ASError,
   AmbSheetDoc,
@@ -105,71 +103,81 @@ const isReady = (
 ): cellValues is Value[] => cellValues !== NOT_READY;
 
 const builtInFunctions = {
-  '+'([x, y]: number[]) {
-    return x + y;
+  '+'([x, y]: RawValue[]) {
+    return typeof x !== 'number' || typeof y !== 'number'
+      ? new ASError('+ expects numeric operands')
+      : x + y;
   },
-  '-'([x, y]: number[]) {
-    return x - y;
+  '-'([x, y]: RawValue[]) {
+    return typeof x !== 'number' || typeof y !== 'number'
+      ? new ASError('- expects numeric operands')
+      : x - y;
   },
-  '*'([x, y]: number[]) {
-    return x * y;
+  '*'([x, y]: RawValue[]) {
+    return typeof x !== 'number' || typeof y !== 'number'
+      ? new ASError('* expects numeric operands')
+      : x * y;
   },
-  '/'([x, y]: number[]) {
-    return y == 0 ? new ASError('divide by zero') : x / y;
+  '/'([x, y]: RawValue[]) {
+    return typeof x !== 'number' || typeof y !== 'number'
+      ? new ASError('/ expects numeric operands')
+      : y == 0
+      ? new ASError('divide by zero')
+      : x / y;
   },
-  '='([x, y]: number[]) {
+  '='([x, y]: RawValue[]) {
     return x == y;
   },
-  '<>'([x, y]: number[]) {
+  '<>'([x, y]: RawValue[]) {
     return x != y;
   },
-  '>'([x, y]: number[]) {
+  '>'([x, y]: RawValue[]) {
     return x > y;
   },
-  '>='([x, y]: number[]) {
+  '>='([x, y]: RawValue[]) {
     return x >= y;
   },
-  '<'([x, y]: number[]) {
+  '<'([x, y]: RawValue[]) {
     return x < y;
   },
-  '<='([x, y]: number[]) {
+  '<='([x, y]: RawValue[]) {
     return x <= y;
   },
   sum(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('sum() requires at least one argument')
+      ? new ASError('sum() expects at least one argument')
       : (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
   },
   product(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('product() requires at least one argument')
+      ? new ASError('product() expects at least one argument')
       : (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
   },
   min(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('min() requires at least one argument')
+      ? new ASError('min() expects at least one argument')
       : Math.min(...(flatten(xs) as number[]));
   },
   max(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('max() requires at least one argument')
+      ? new ASError('max() expects at least one argument')
       : Math.max(...(flatten(xs) as number[]));
   },
   and(xs: RawValue[]) {
     const args = flatten(xs);
     return !args.every((arg) => typeof arg === 'boolean')
-      ? new ASError('and() requires boolean arguments')
+      ? new ASError('and() expects boolean arguments')
       : args.reduce((a, b) => a && b, true);
   },
   or(xs: RawValue[]) {
     const args = flatten(xs);
     return !args.every((arg) => typeof arg === 'boolean')
-      ? new ASError('or() requires boolean arguments')
+      ? new ASError('or() expects boolean arguments')
       : args.reduce((a, b) => a || b, false);
   },
   not(xs: RawValue[]) {
     return xs.length !== 1 || typeof xs[0] !== 'boolean'
-      ? new ASError('not() requires a single boolean argument')
+      ? new ASError('not() expects a single boolean argument')
       : !xs[0];
   },
   concat(xs: RawValue[]) {
