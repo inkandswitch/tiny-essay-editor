@@ -266,6 +266,22 @@ describe('ambsheet evaluator', () => {
     );
   });
 
+  it('supports count()', () => {
+    assert.deepStrictEqual(evalSheet([['=count(1, 2)']]).print(), [['2']]);
+    assert.deepStrictEqual(evalSheet([['1', '2', '=count(A1:B1)']]).print(), [
+      ['1', '2', '2'],
+    ]);
+    assert.deepStrictEqual(evalSheet([['1', '', '=count(A1:B1)']]).print(), [
+      ['1', '', '1'],
+    ]);
+    assert.deepStrictEqual(evalSheet([['', '2', '=count(A1:B1)']]).print(), [
+      ['', '2', '1'],
+    ]);
+    assert.deepStrictEqual(evalSheet([['', '', '=count(A1:B1)']]).print(), [
+      ['', '', '0'],
+    ]);
+  });
+
   it('supports sum()', () => {
     assert.deepStrictEqual(evalSheet([['=sum(1, 2)']]).print(), [['3']]);
     assert.deepStrictEqual(evalSheet([['1', '2', '=sum(A1:B1)']]).print(), [

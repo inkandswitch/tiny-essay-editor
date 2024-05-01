@@ -153,7 +153,9 @@ const builtInFunctions = {
       ? new ASError('#N/A', 'product() expects at least one argument')
       : (flatten(xs) as number[]).reduce((x, y) => x * (y ?? 1), 1);
   },
-  // TODO: add count
+  count(xs: RawValue[]) {
+    return flatten(xs).filter(notNull).length;
+  },
   // TODO: add avg
   min(xs: RawValue[]) {
     return xs.length === 0
