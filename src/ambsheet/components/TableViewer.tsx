@@ -8,10 +8,10 @@ import {
   contextsWithResolvedPositionsAreCompatible,
   resolvePositionsInContext,
 } from '../eval';
-import { chain, groupBy, max, mean, min, sum, uniq } from 'lodash';
+import { chain, groupBy, isNumber, max, mean, min, sum, uniq } from 'lodash';
 import { FilterSelection } from './AmbSheet';
 import { cellPositionToName } from '../parse';
-import { Position } from '../datatype';
+import { Position, RawValue } from '../datatype';
 import { printRawValue } from '../print';
 
 function findAllIndexes(arr, predicate) {
@@ -90,7 +90,7 @@ export const TableViewer = ({
 
   const valuesForContext = (
     context: AmbContextWithResolvedPositions
-  ): { rawValue: number; include: boolean; index: number }[] => {
+  ): { rawValue: RawValue; include: boolean; index: number }[] => {
     const indexes = findAllIndexes(valuesWithResolvedContexts, (v) =>
       contextsWithResolvedPositionsAreCompatible(v.value.context, context)
     );
@@ -102,9 +102,11 @@ export const TableViewer = ({
     }));
   };
 
+  // @ts-expect-error we know that the amb literal cell for the dimension has an eval'd value
   const xDimChoices = filteredResults[xDim.pos.row][xDim.pos.col].map(
     (v) => v.value
   ) as Value[];
+  // @ts-expect-error we know that the amb literal cell for the dimension has an eval'd value
   const yDimChoices = filteredResults[yDim.pos.row][yDim.pos.col].map(
     (v) => v.value
   ) as Value[];
@@ -263,7 +265,9 @@ export const TableViewer = ({
                         <div>
                           {printRawValue(
                             aggregateValues(
-                              resultValues.map((v) => v.rawValue),
+                              resultValues
+                                .map((v) => v.rawValue)
+                                .filter(isNumber),
                               aggregation
                             )
                           )}

@@ -1,4 +1,4 @@
-import { RawValue } from './datatype';
+import { ASError, RawValue } from './datatype';
 
 function roundNumber(num) {
   // Rounding to 4 significant figures
@@ -26,6 +26,6 @@ export const printRawValue = (value: RawValue): string => {
     }
     return formatNumber(value);
   } else {
-    return value;
+    return value.toString();
   }
 };
