@@ -5,7 +5,6 @@ export const RawViewer = ({ values }: { values: Value[] }) => {
     ...value,
     context: resolvePositionsInContext(value.context),
   }));
-  console.log({ values, valuesWithAmbNodePositions });
   return (
     <pre className="text-xs overflow-auto max-h-[300px] border border-gray-300">
       {JSON.stringify(valuesWithAmbNodePositions, null, 2)}

@@ -33,7 +33,7 @@ export const ResultHistogram = ({
       setFilterSelectionForCell(selectedCell, null);
     } else {
       const numbersToSelect = numbers.filter(
-        (n) => n >= range.min && n <= range.max
+        (n) => n >= range.min && n < range.max
       );
 
       const indexesToSelect = [];

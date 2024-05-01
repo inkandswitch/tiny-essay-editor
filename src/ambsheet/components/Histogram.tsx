@@ -30,23 +30,22 @@ export const Histogram = ({
   const bucketGenerator = useMemo(() => {
     const minData = Math.min(...data);
     const maxData = Math.max(...data);
-    const step = (maxData - minData) / 10;
+    const numBuckets = 10;
+    const step = (maxData - minData) / numBuckets;
     const thresholds = Array.from(
-      { length: 10 },
-      (_, i) => minData + step * (i + 1)
+      { length: numBuckets + 1 },
+      (_, i) => minData + step * i
     );
     return d3
       .bin()
       .value((d) => d)
-      .domain([Math.min(...data), Math.max(...data)])
+      .domain([minData, maxData])
       .thresholds(thresholds);
   }, [data]);
 
   const buckets = useMemo(() => {
     return bucketGenerator(data);
   }, [data, bucketGenerator]);
-
-  console.log('buckets', buckets);
 
   const filteredBuckets = useMemo(() => {
     return bucketGenerator(filteredData);

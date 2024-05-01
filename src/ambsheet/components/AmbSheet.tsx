@@ -56,11 +56,8 @@ export const AmbSheet = ({
     return evalSheet(doc.data).results;
   }, [doc]);
 
-  console.log(filterSelection);
-
   const filteredResults = useMemo(() => {
     const filterContexts = filterSelection.map((f) => {
-      console.log(f);
       return f.selectedValueIndexes.map(
         (i) => evaluatedSheet[f.row][f.col][i].context
       );
@@ -139,7 +136,6 @@ export const AmbSheet = ({
     cell: Position,
     selection: number[] | null
   ) => {
-    console.log('setFSFC', cell, selection);
     setFilterSelection((filteredValues) => {
       const index = filteredValues.findIndex(
         (f) => f.row === cell.row && f.col === cell.col
