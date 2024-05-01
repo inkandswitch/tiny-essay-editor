@@ -76,7 +76,7 @@ export const Histogram = ({
         strokeWidth="2"
         x={xScale(bucket.x0) + BUCKET_PADDING / 2}
         width={xScale(bucket.x1) - xScale(bucket.x0) - BUCKET_PADDING}
-        y={yScale(bucket.length) - 10}
+        y={yScale(bucket.length) - 12}
         height={height - yScale(bucket.length)}
         onMouseEnter={() =>
           selectValuesBetween({ min: bucket.x0, max: bucket.x1 })
@@ -103,7 +103,7 @@ export const Histogram = ({
         strokeWidth="2"
         x={xScale(bucket.x0) + BUCKET_PADDING / 2}
         width={xScale(bucket.x1) - xScale(bucket.x0) - BUCKET_PADDING}
-        y={yScale(bucket.length) - 10}
+        y={yScale(bucket.length) - 12}
         height={height - yScale(bucket.length)}
       />
     );
@@ -113,10 +113,10 @@ export const Histogram = ({
     <svg width={width} height={height}>
       {allRects}
       {filteredRects}
-      <text x="0" y={height} className="text-xs fill-gray-500">
+      <text x="0" y={height - 2} className="text-xs fill-gray-500">
         {printRawValue(Math.min(...data))}
       </text>
-      <text x={width - 50} y={height} className="text-xs fill-gray-500">
+      <text x={width - 50} y={height - 2} className="text-xs fill-gray-500">
         {printRawValue(Math.max(...data))}
       </text>
     </svg>

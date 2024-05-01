@@ -12,6 +12,7 @@ import { chain, groupBy, max, mean, min, sum, uniq } from 'lodash';
 import { FilterSelection } from './AmbSheet';
 import { cellPositionToName } from '../parse';
 import { Position } from '../datatype';
+import { printRawValue } from '../print';
 
 function findAllIndexes(arr, predicate) {
   const indexes = [];
@@ -207,7 +208,7 @@ export const TableViewer = ({
                       setFilterSelectionForCell(selectedCell, null);
                     }}
                   >
-                    {xChoice.rawValue}
+                    {printRawValue(xChoice.rawValue)}
                   </th>
                 ))}
               </tr>
@@ -233,7 +234,7 @@ export const TableViewer = ({
                       setFilterSelectionForCell(selectedCell, null);
                     }}
                   >
-                    {yChoice.rawValue}
+                    {printRawValue(yChoice.rawValue)}
                   </td>
                   {xDimChoices.map((xChoice, colIndex) => {
                     const resultValues = valuesForContext({
@@ -260,9 +261,11 @@ export const TableViewer = ({
                         }}
                       >
                         <div>
-                          {aggregateValues(
-                            resultValues.map((v) => v.rawValue),
-                            aggregation
+                          {printRawValue(
+                            aggregateValues(
+                              resultValues.map((v) => v.rawValue),
+                              aggregation
+                            )
                           )}
                         </div>
                       </td>
