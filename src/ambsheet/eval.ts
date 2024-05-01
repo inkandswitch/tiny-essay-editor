@@ -16,7 +16,7 @@ import {
   AmbRangePart,
   RefNode,
 } from './parse';
-import { displayNameForCell, simpleNameForCell } from './print';
+import { simpleNameForCell } from './print';
 
 export interface Value {
   context: AmbContext;
