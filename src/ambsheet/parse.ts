@@ -318,8 +318,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
     };
   },
   cellRef(cDollar, c, rDollar, r) {
-    const rowMode = rDollar.sourceString === '$' ? 'absolute' : 'relative';
-    const colMode = cDollar.sourceString === '$' ? 'absolute' : 'relative';
+    const [rowMode, colMode] = [rDollar, cDollar].map((dollar) =>
+      dollar.sourceString === '$' ? 'absolute' : 'relative'
+    );
     return {
       type: 'ref',
       rowMode,
