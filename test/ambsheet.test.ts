@@ -366,4 +366,13 @@ describe('ambsheet evaluator', () => {
       [`{${expected}}`],
     ]);
   });
+
+  it('supports ambify', () => {
+    assert.deepStrictEqual(
+      evalSheet([
+        ['5', '-2', '8', '0', '3', '=ambify(A1:E1)', '=F1*2'],
+      ]).print(),
+      [['5', '-2', '8', '0', '3', '{5,-2,8,0,3}', '{10,-4,16,0,6}']]
+    );
+  });
 });

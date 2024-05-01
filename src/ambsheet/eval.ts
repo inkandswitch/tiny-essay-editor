@@ -370,7 +370,19 @@ export class Env {
         return;
       }
       case 'ambify': {
-        throw new Error('TODO: implement ambify');
+        return this.interp(node.range, pos, context, (value, pos, context) => {
+          if (!Array.isArray(value.rawValue)) {
+            throw new Error(
+              'huh? this was supposed to be a BasicRawValue[][]!'
+            );
+          }
+
+          for (const row of value.rawValue) {
+            for (const value of row) {
+              continuation({ context, rawValue: value }, pos, context);
+            }
+          }
+        });
       }
       case 'normal': {
         // TODO: try/catch, turn exceptions into ASErrors
