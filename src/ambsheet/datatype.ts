@@ -12,7 +12,20 @@ export interface Position {
 
 export type BasicRawValue = number | boolean | string;
 export type Range = BasicRawValue[][];
-export type RawValue = number | boolean | string | Range;
+export class ASError {
+  public msg: string;
+  constructor(public readonly raw: any) {
+    this.msg = raw instanceof Error ? raw.message : '' + raw;
+  }
+  toString() {
+    return this.msg;
+  }
+  toJSON() {
+    return this.toString();
+  }
+}
+// TODO: add null? (for references to empty cells)
+export type RawValue = number | boolean | string | Range | ASError;
 
 export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table

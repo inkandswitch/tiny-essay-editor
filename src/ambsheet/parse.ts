@@ -38,16 +38,6 @@ export type Node =
   | RefNode
   | { type: 'range'; topLeft: RefNode; bottomRight: RefNode }
   | { type: 'const'; value: number }
-  | { type: '='; left: Node; right: Node }
-  | { type: '<>'; left: Node; right: Node }
-  | { type: '>'; left: Node; right: Node }
-  | { type: '>='; left: Node; right: Node }
-  | { type: '<'; left: Node; right: Node }
-  | { type: '<='; left: Node; right: Node }
-  | { type: '+'; left: Node; right: Node }
-  | { type: '-'; left: Node; right: Node }
-  | { type: '*'; left: Node; right: Node }
-  | { type: '/'; left: Node; right: Node }
   | { type: 'if'; cond: Node; then: Node; else: Node }
   | { type: 'call'; funcName: string; args: Node[] };
 
@@ -157,72 +147,72 @@ const semantics = g.createSemantics().addOperation('toAst', {
 
   RelExp_eq(left, _op, right) {
     return {
-      type: '=',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '=',
+      args: [left.toAst(), right.toAst()],
     };
   },
   RelExp_neq(left, _op, right) {
     return {
-      type: '<>',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '<>',
+      args: [left.toAst(), right.toAst()],
     };
   },
   RelExp_ge(left, _op, right) {
     return {
-      type: '>=',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '>=',
+      args: [left.toAst(), right.toAst()],
     };
   },
   RelExp_gt(left, _op, right) {
     return {
-      type: '>',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '>',
+      args: [left.toAst(), right.toAst()],
     };
   },
   RelExp_le(left, _op, right) {
     return {
-      type: '<=',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '<=',
+      args: [left.toAst(), right.toAst()],
     };
   },
   RelExp_lt(left, _op, right) {
     return {
-      type: '<',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '<',
+      args: [left.toAst(), right.toAst()],
     };
   },
   AddExp_plus(left, _op, right) {
     return {
-      type: '+',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '+',
+      args: [left.toAst(), right.toAst()],
     };
   },
   AddExp_minus(left, _op, right) {
     return {
-      type: '-',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '-',
+      args: [left.toAst(), right.toAst()],
     };
   },
   MulExp_times(left, _op, right) {
     return {
-      type: '*',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '*',
+      args: [left.toAst(), right.toAst()],
     };
   },
   MulExp_div(left, _op, right) {
     return {
-      type: '/',
-      left: left.toAst(),
-      right: right.toAst(),
+      type: 'call',
+      funcName: '/',
+      args: [left.toAst(), right.toAst()],
     };
   },
   CallExp_if(_if, _lparen, cond, _c1, thenExp, _c2, elseExp, _rparen) {
@@ -242,9 +232,9 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
   UnExp_neg(_op, exp) {
     return {
-      type: '-',
-      left: { type: 'const', value: 0 },
-      right: exp.toAst(),
+      type: 'call',
+      funcName: '-',
+      args: [{ type: 'const', value: 0 }, exp.toAst()],
     };
   },
   PriExp_paren(_lparen, exp, _rparen) {

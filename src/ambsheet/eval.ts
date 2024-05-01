@@ -1,4 +1,7 @@
+// TODO: +, -, ... require numbers (throw otherwise)
+
 import {
+  ASError,
   AmbSheetDoc,
   BasicRawValue,
   Position,
@@ -102,56 +105,72 @@ const isReady = (
 ): cellValues is Value[] => cellValues !== NOT_READY;
 
 const builtInFunctions = {
+  '+'([x, y]: number[]) {
+    return x + y;
+  },
+  '-'([x, y]: number[]) {
+    return x - y;
+  },
+  '*'([x, y]: number[]) {
+    return x * y;
+  },
+  '/'([x, y]: number[]) {
+    return y == 0 ? new ASError('divide by zero') : x / y;
+  },
+  '='([x, y]: number[]) {
+    return x == y;
+  },
+  '<>'([x, y]: number[]) {
+    return x != y;
+  },
+  '>'([x, y]: number[]) {
+    return x > y;
+  },
+  '>='([x, y]: number[]) {
+    return x >= y;
+  },
+  '<'([x, y]: number[]) {
+    return x < y;
+  },
+  '<='([x, y]: number[]) {
+    return x <= y;
+  },
   sum(xs: RawValue[]) {
-    if (xs.length === 0) {
-      throw new Error('sum() requires at least one argument');
-    } else {
-      return (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
-    }
+    return xs.length === 0
+      ? new ASError('sum() requires at least one argument')
+      : (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
   },
   product(xs: RawValue[]) {
-    if (xs.length === 0) {
-      throw new Error('product() requires at least one argument');
-    } else {
-      return (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
-    }
+    return xs.length === 0
+      ? new ASError('product() requires at least one argument')
+      : (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
   },
   min(xs: RawValue[]) {
-    if (xs.length === 0) {
-      throw new Error('min() requires at least one argument');
-    } else {
-      return Math.min(...(flatten(xs) as number[]));
-    }
+    return xs.length === 0
+      ? new ASError('min() requires at least one argument')
+      : Math.min(...(flatten(xs) as number[]));
   },
   max(xs: RawValue[]) {
-    if (xs.length === 0) {
-      throw new Error('max() requires at least one argument');
-    } else {
-      return Math.max(...(flatten(xs) as number[]));
-    }
+    return xs.length === 0
+      ? new ASError('max() requires at least one argument')
+      : Math.max(...(flatten(xs) as number[]));
   },
   and(xs: RawValue[]) {
     const args = flatten(xs);
-    if (!args.every((arg) => typeof arg === 'boolean')) {
-      throw new Error('and() requires boolean arguments');
-    } else {
-      return args.reduce((a, b) => a && b, true);
-    }
+    return !args.every((arg) => typeof arg === 'boolean')
+      ? new ASError('and() requires boolean arguments')
+      : args.reduce((a, b) => a && b, true);
   },
   or(xs: RawValue[]) {
     const args = flatten(xs);
-    if (!args.every((arg) => typeof arg === 'boolean')) {
-      throw new Error('or() requires boolean arguments');
-    } else {
-      return args.reduce((a, b) => a || b, false);
-    }
+    return !args.every((arg) => typeof arg === 'boolean')
+      ? new ASError('or() requires boolean arguments')
+      : args.reduce((a, b) => a || b, false);
   },
   not(xs: RawValue[]) {
-    if (xs.length !== 1 || typeof xs[0] !== 'boolean') {
-      throw new Error('not() requires a single boolean argument');
-    } else {
-      return !xs[0];
-    }
+    return xs.length !== 1 || typeof xs[0] !== 'boolean'
+      ? new ASError('not() requires a single boolean argument')
+      : !xs[0];
   },
   concat(xs: RawValue[]) {
     return flatten(xs).join('');
@@ -166,7 +185,7 @@ const builtInFunctions = {
         }
       }
     }
-    throw new Error('N/A');
+    return new ASError('N/A');
   },
   // TODO: hlookup
 };
@@ -179,11 +198,32 @@ function flatten(args: RawValue[]): BasicRawValue[] {
         values.push(...vs);
       }
     } else {
-      values.push(arg);
+      values.push(arg as BasicRawValue);
     }
   }
   return values;
 }
+
+function isError(rawValue: RawValue): rawValue is ASError {
+  return rawValue instanceof ASError;
+}
+
+// function getFirstError(args: RawValue[]): ASError | null {
+//   for (const arg of args) {
+//     if (Array.isArray(arg)) {
+//       for (const values of arg) {
+//         for (const value of values) {
+//           if (isError(value)) {
+//             return value;
+//           }
+//         }
+//       }
+//     } else if (isError(arg)) {
+//       return arg;
+//     }
+//   }
+//   return null;
+// }
 
 /**
  * An evaluation environment tracking results of evaluated cells
@@ -212,8 +252,13 @@ export class Env {
     );
   }
 
-  getCellValues({ row, col }: Position): Value[] | typeof NOT_READY {
-    return this.results[row][col];
+  getCellValues({ row, col }: Position): Value[] | null | typeof NOT_READY {
+    return 0 <= row &&
+      row < this.results.length &&
+      0 <= col &&
+      col < this.results[row].length
+      ? this.results[row][col]
+      : null;
   }
 
   setCellValues(col: number, row: number, values: Value[]) {
@@ -241,16 +286,23 @@ export class Env {
         const values = this.getCellValues(cellPos);
         if (!isReady(values)) {
           throw NOT_READY;
-        }
-        for (const value of values) {
-          // This is important: if the current execution context is not compatible
-          // with this value we're trying to iterate over, we skip executing it.
-          // This ensures that we respect any previous amb choices from this execution.
-          if (!contextsAreCompatible(context, value.context)) {
-            continue;
+        } else if (values == null) {
+          continuation(
+            { context, rawValue: new ASError('invalid cell reference') },
+            pos,
+            context
+          );
+        } else {
+          for (const value of values) {
+            // This is important: if the current execution context is not compatible
+            // with this value we're trying to iterate over, we skip executing it.
+            // This ensures that we respect any previous amb choices from this execution.
+            if (!contextsAreCompatible(context, value.context)) {
+              continue;
+            }
+            const newContext = new Map([...context, ...value.context]);
+            continuation(value, pos, newContext);
           }
-          const newContext = new Map([...context, ...value.context]);
-          continuation(value, pos, newContext);
         }
         return;
       }
@@ -269,86 +321,6 @@ export class Env {
           );
         }
       }
-      case '=':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a == b
-        );
-      case '<>':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a != b
-        );
-      case '>':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a > b
-        );
-      case '>=':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a >= b
-        );
-      case '<':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a < b
-        );
-      case '<=':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a, b) => a <= b
-        );
-      case '+':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a: number, b: number) => a + b
-        );
-      case '*':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a: number, b: number) => a * b
-        );
-      case '-':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a: number, b: number) => a - b
-        );
-      case '/':
-        return this.interpBinOp(
-          node,
-          pos,
-          context,
-          continuation,
-          (a: number, b: number) => a / b
-        );
       case 'if':
         return this.interp(
           node.cond,
@@ -364,11 +336,9 @@ export class Env {
         );
       case 'call': {
         const fn = builtInFunctions[node.funcName];
-        if (fn == null) {
-          throw new Error('unsupported built-in function: ' + node.funcName);
-        } else {
-          return this.reduce(node.args, fn, [], pos, context, continuation);
-        }
+        return fn == null
+          ? new ASError('unsupported built-in function: ' + node.funcName)
+          : this.reduce(node.args, fn, [], pos, context, continuation);
       }
       case 'amb': {
         // call the continuation for each value in the amb node,
@@ -434,32 +404,6 @@ export class Env {
     }
   }
 
-  interpBinOp(
-    node: Node & { left: Node; right: Node },
-    pos: Position,
-    context: AmbContext,
-    continuation: Continuation,
-    op: (x: RawValue, y: RawValue) => RawValue
-  ) {
-    this.interp(node.left, pos, context, (left, pos, contextAfterLeft) =>
-      // Any amb choices made by the left side are used to constrain the right side
-      this.interp(
-        node.right,
-        pos,
-        contextAfterLeft,
-        (right, pos, contextAfterRight) =>
-          continuation(
-            {
-              rawValue: op(left.rawValue, right.rawValue),
-              context: contextAfterRight,
-            },
-            pos,
-            contextAfterRight
-          )
-      )
-    );
-  }
-
   reduce(
     nodes: Node[],
     fn: (xs: RawValue[]) => RawValue,
@@ -470,16 +414,20 @@ export class Env {
   ) {
     return nodes.length === 0
       ? continuation({ rawValue: fn(acc), context }, pos, context)
-      : this.interp(nodes[0], pos, context, (value, pos, context) =>
-          this.reduce(
-            nodes.slice(1),
-            fn,
-            [...acc, value.rawValue],
-            pos,
-            context,
-            continuation
-          )
-        );
+      : this.interp(nodes[0], pos, context, (value, pos, context) => {
+          if (isError(value.rawValue)) {
+            continuation(value, pos, context);
+          } else {
+            this.reduce(
+              nodes.slice(1),
+              fn,
+              [...acc, value.rawValue],
+              pos,
+              context,
+              continuation
+            );
+          }
+        });
   }
 
   collectRange(
@@ -533,17 +481,8 @@ export class Env {
   evalFormula(formula: string, pos: Position) {
     // TODO: consider caching "nodes"
     // (parse eagerly and cache, whenever the formula changes)
-    try {
-      const node = parseFormula(formula, pos);
-      return this.evalNode(node, pos);
-    } catch (e) {
-      if (e === NOT_READY) {
-        throw e;
-      } else {
-        console.error(e);
-        return [];
-      }
-    }
+    const node = parseFormula(formula, pos);
+    return this.evalNode(node, pos);
   }
 
   eval(): Env {
