@@ -66,6 +66,7 @@ export const AmbSheet = ({
   }, [evaluatedSheet, filterSelection]);
 
   const onBeforeHotChange = (changes) => {
+    console.log(changes);
     handle.change((doc) => {
       changes.forEach(([row, column, , newValue]) => {
         if (column > doc.data[0].length) {

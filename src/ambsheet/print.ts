@@ -1,4 +1,4 @@
-import { ASError, RawValue } from './datatype';
+import { ASError, CellName, Position, RawValue } from './datatype';
 
 function roundNumber(num) {
   // Rounding to 4 significant figures
@@ -28,4 +28,21 @@ export const printRawValue = (value: RawValue): string => {
   } else {
     return value.toString();
   }
+}; // Get a human readable cell name like B2 given a row and col.
+// Might extend this in the future to support custom cell names?
+
+export const displayNameForCell = (pos: Position, cellNames?: CellName[]) => {
+  const explicitName = cellNames?.find(
+    (cellName) => cellName.row === pos.row && cellName.col === pos.col
+  )?.name;
+  const simpleName = simpleNameForCell(pos);
+
+  if (explicitName) {
+    return `${explicitName} (${simpleName})`;
+  }
+  return simpleName;
+};
+
+export const simpleNameForCell = (pos: Position) => {
+  return `${String.fromCharCode(65 + pos.col)}${pos.row + 1}`;
 };

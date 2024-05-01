@@ -381,8 +381,3 @@ export function parseLiteral(input: string, cellPos: Position) {
     return input;
   }
 }
-
-// Get a human readable cell name like B2 given a row and col.
-// Might extend this in the future to support custom cell names?
-export const cellPositionToName = (pos: Position) =>
-  `${String.fromCharCode(65 + pos.col)}${pos.row + 1}`;

@@ -15,8 +15,8 @@ import {
   AmbNode,
   AmbRangePart,
   RefNode,
-  cellPositionToName,
 } from './parse';
+import { displayNameForCell, simpleNameForCell } from './print';
 
 export interface Value {
   context: AmbContext;
@@ -552,7 +552,7 @@ export const resolvePositionsInContext = (
 ): AmbContextWithResolvedPositions =>
   Object.fromEntries(
     Array.from(context.entries()).map(([key, val]) => [
-      cellPositionToName(key.pos),
+      simpleNameForCell(key.pos),
       val,
     ])
   );

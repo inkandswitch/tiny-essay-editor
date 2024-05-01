@@ -2,12 +2,9 @@ import { DocHandle } from '@automerge/automerge-repo';
 import { useMemo, useState } from 'react';
 import { AmbSheetDoc, Position } from '../datatype';
 import { Results, NOT_READY, Value } from '../eval';
-import { cellPositionToName } from '../parse';
-import { RawViewer } from './RawViewer';
-import { Stacks } from './Stacks';
-import { TableViewer } from './TableViewer';
+import { displayNameForCell } from '../print';
 import { FilterSelection } from './AmbSheet';
-import { filter, groupBy, uniq } from 'lodash';
+import { groupBy, uniq } from 'lodash';
 import { printRawValue } from '../print';
 
 export const Filters = ({
@@ -90,6 +87,8 @@ export const Filters = ({
       </div>
       {inputAmbCells.map((cell) => (
         <FiltersForCell
+          key={displayNameForCell(cell)}
+          handle={handle}
           cell={cell}
           evaluatedSheet={evaluatedSheet}
           filterSelection={filterSelection}
@@ -101,6 +100,8 @@ export const Filters = ({
       </div>
       {outputCells.map((cell) => (
         <FiltersForCell
+          key={displayNameForCell(cell)}
+          handle={handle}
           cell={cell}
           evaluatedSheet={evaluatedSheet}
           filterSelection={filterSelection}
@@ -112,11 +113,13 @@ export const Filters = ({
 };
 
 const FiltersForCell = ({
+  handle,
   cell,
   evaluatedSheet,
   filterSelection,
   setFilterSelectionForCell,
 }: {
+  handle: DocHandle<AmbSheetDoc>;
   cell: Position;
   evaluatedSheet: Results;
   filterSelection: FilterSelection[];
@@ -190,7 +193,7 @@ const FiltersForCell = ({
   return (
     <div>
       <div className="text-sm font-medium text-gray-700 bg-gray-100 px-1 mb-1">
-        {cellPositionToName(cell)}
+        {displayNameForCell(cell, handle.docSync().cellNames)}
       </div>
       <div className="px-1">
         {groups.map(([groupValue, groupItems]) => {

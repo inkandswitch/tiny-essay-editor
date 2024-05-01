@@ -8,11 +8,22 @@ import {
   contextsWithResolvedPositionsAreCompatible,
   resolvePositionsInContext,
 } from '../eval';
-import { chain, groupBy, isNumber, max, mean, min, sum, uniq } from 'lodash';
+import {
+  chain,
+  groupBy,
+  isNumber,
+  max,
+  mean,
+  min,
+  sum,
+  truncate,
+  uniq,
+} from 'lodash';
 import { FilterSelection } from './AmbSheet';
-import { cellPositionToName } from '../parse';
-import { Position, RawValue } from '../datatype';
+import { displayNameForCell, simpleNameForCell } from '../print';
+import { AmbSheetDoc, Position, RawValue } from '../datatype';
 import { printRawValue } from '../print';
+import { Doc } from '@automerge/automerge';
 
 function findAllIndexes(arr, predicate) {
   const indexes = [];
@@ -49,12 +60,14 @@ const aggregateValues = (values: number[], aggregation: Aggregation) => {
 };
 
 export const TableViewer = ({
+  doc,
   selectedCell,
   results,
   filterSelection,
   setFilterSelectionForCell,
   filteredResults,
 }: {
+  doc: Doc<AmbSheetDoc>;
   selectedCell: Position;
   results: { value: Value; include: boolean }[];
   filterSelection: FilterSelection;
@@ -111,13 +124,7 @@ export const TableViewer = ({
     (v) => v.value
   ) as Value[];
 
-  if (xDimChoices.length > 15 || yDimChoices.length > 15) {
-    return (
-      <div className="text-xs text-gray-400">
-        Too many distinct choices to display a table
-      </div>
-    );
-  }
+  const hideTable = xDimChoices.length > 15 || yDimChoices.length > 15;
 
   return (
     <div>
@@ -145,13 +152,13 @@ export const TableViewer = ({
         <div className="col-start-1 col-end-2 row-start-1 row-end-2">
           {/* empty */}
         </div>
-        <div className="col-start-2 col-end-3 row-start-1 row-end-2 text-center text-xs font-medium text-gray-500 uppercase p-1">
+        <div className="col-start-2 col-end-3 row-start-1 row-end-2 text-center text-xs font-medium text-gray-500 p-1">
           <select
-            className="text-xs font-medium text-gray-500 uppercase p-1"
-            value={cellPositionToName(xDim.pos)}
+            className="text-xs font-medium text-gray-500 p-1"
+            value={simpleNameForCell(xDim.pos)}
             onChange={(e) => {
               const newXDim = ambDimensions.find(
-                (dim) => cellPositionToName(dim.pos) === e.target.value
+                (dim) => simpleNameForCell(dim.pos) === e.target.value
               );
               if (newXDim) {
                 setXDim(newXDim);
@@ -159,126 +166,138 @@ export const TableViewer = ({
             }}
           >
             {ambDimensions.map((dim, index) => (
-              <option key={index} value={cellPositionToName(dim.pos)}>
-                {cellPositionToName(dim.pos)}
+              <option key={index} value={simpleNameForCell(dim.pos)}>
+                {displayNameForCell(dim.pos, doc?.cellNames)}
               </option>
             ))}
           </select>
         </div>
-        <div className="col-start-1 col-end-2 row-start-2 row-end-3  text-center text-xs font-medium text-gray-500 uppercase p-1">
-          <select
-            className="text-xs font-medium text-gray-500 uppercase p-1"
-            value={cellPositionToName(yDim.pos)}
-            onChange={(e) => {
-              const newYDim = ambDimensions.find(
-                (dim) => cellPositionToName(dim.pos) === e.target.value
-              );
-              if (newYDim) {
-                setYDim(newYDim);
-              }
-            }}
-          >
-            {ambDimensions.map((dim, index) => (
-              <option key={index} value={cellPositionToName(dim.pos)}>
-                {cellPositionToName(dim.pos)}
-              </option>
-            ))}
-          </select>
+        <div className="col-start-1 col-end-2 row-start-2 row-end-3  text-center text-xs font-medium text-gray-500 p-1">
+          <div className="block overflow-visible -rotate-90 origin-center">
+            <select
+              className="text-xs font-medium text-gray-500 p-1 max-w-20 -ml-4"
+              value={simpleNameForCell(yDim.pos)}
+              onChange={(e) => {
+                const newYDim = ambDimensions.find(
+                  (dim) => simpleNameForCell(dim.pos) === e.target.value
+                );
+                if (newYDim) {
+                  setYDim(newYDim);
+                }
+              }}
+            >
+              {ambDimensions.map((dim, index) => (
+                <option key={index} value={simpleNameForCell(dim.pos)}>
+                  {truncate(displayNameForCell(dim.pos, doc?.cellNames), {
+                    length: 10,
+                  })}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="col-start-2 col-end-3 row-start-2 row-end-3 overflow-auto">
-          <table className="min-w-full divide-x divide-y divide-gray-200 cursor-default text-center">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-center"></th>
-                {xDimChoices.map((xChoice, index) => (
-                  <th
-                    key={index}
-                    className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-300"
-                    onMouseEnter={() => {
-                      const context = {
-                        [cellPositionToName(xDim.pos)]: index,
-                      };
-                      const filterSelectionIndexes = valuesForContext(
-                        context
-                      ).map((v) => v.index);
-                      setFilterSelectionForCell(
-                        selectedCell,
-                        filterSelectionIndexes
-                      );
-                    }}
-                    onMouseLeave={() => {
-                      setFilterSelectionForCell(selectedCell, null);
-                    }}
-                  >
-                    {printRawValue(xChoice.rawValue)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-x divide-y divide-gray-200">
-              {yDimChoices.map((yChoice, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td
-                    className="text-center hover:bg-gray-300 text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 "
-                    onMouseEnter={() => {
-                      const context = {
-                        [cellPositionToName(yDim.pos)]: rowIndex,
-                      };
-                      const filterSelectionIndexes = valuesForContext(
-                        context
-                      ).map((v) => v.index);
-                      setFilterSelectionForCell(
-                        selectedCell,
-                        filterSelectionIndexes
-                      );
-                    }}
-                    onMouseLeave={() => {
-                      setFilterSelectionForCell(selectedCell, null);
-                    }}
-                  >
-                    {printRawValue(yChoice.rawValue)}
-                  </td>
-                  {xDimChoices.map((xChoice, colIndex) => {
-                    const resultValues = valuesForContext({
-                      [cellPositionToName(xDim.pos)]: colIndex,
-                      [cellPositionToName(yDim.pos)]: rowIndex,
-                    });
-                    const blueHighlight = resultValues.some((v) =>
-                      (filterSelection?.selectedValueIndexes ?? []).includes(
-                        v.index
-                      )
-                    );
-                    const greyOut = resultValues.every((v) => !v.include);
-                    return (
-                      <td
-                        key={colIndex}
-                        className={`whitespace-nowrap text-sm text-center ${
-                          blueHighlight ? 'bg-blue-100' : ''
-                        } ${greyOut ? 'text-gray-300' : ''}`}
-                        onMouseEnter={() => {
-                          setFilterSelectionForCell(
-                            selectedCell,
-                            resultValues.map((v) => v.index)
-                          );
-                        }}
-                      >
-                        <div>
-                          {printRawValue(
-                            aggregateValues(
-                              resultValues
-                                .map((v) => v.rawValue)
-                                .filter(isNumber),
-                              aggregation
-                            )
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
+          {hideTable && (
+            <div className="text-xs text-gray-400">
+              Too many distinct choices to display a table
+            </div>
+          )}
+
+          {!hideTable && (
+            <table className="min-w-full divide-x divide-y divide-gray-200 cursor-default text-center">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-center"></th>
+                  {xDimChoices.map((xChoice, index) => (
+                    <th
+                      key={index}
+                      className="text-center text-xs font-medium text-gray-500 tracking-wider hover:bg-gray-300"
+                      onMouseEnter={() => {
+                        const context = {
+                          [displayNameForCell(xDim.pos)]: index,
+                        };
+                        const filterSelectionIndexes = valuesForContext(
+                          context
+                        ).map((v) => v.index);
+                        setFilterSelectionForCell(
+                          selectedCell,
+                          filterSelectionIndexes
+                        );
+                      }}
+                      onMouseLeave={() => {
+                        setFilterSelectionForCell(selectedCell, null);
+                      }}
+                    >
+                      {printRawValue(xChoice.rawValue)}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-x divide-y divide-gray-200">
+                {yDimChoices.map((yChoice, rowIndex) => (
+                  <tr key={rowIndex}>
+                    <td
+                      className="text-center hover:bg-gray-300 text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 "
+                      onMouseEnter={() => {
+                        const context = {
+                          [displayNameForCell(yDim.pos)]: rowIndex,
+                        };
+                        const filterSelectionIndexes = valuesForContext(
+                          context
+                        ).map((v) => v.index);
+                        setFilterSelectionForCell(
+                          selectedCell,
+                          filterSelectionIndexes
+                        );
+                      }}
+                      onMouseLeave={() => {
+                        setFilterSelectionForCell(selectedCell, null);
+                      }}
+                    >
+                      {printRawValue(yChoice.rawValue)}
+                    </td>
+                    {xDimChoices.map((xChoice, colIndex) => {
+                      const resultValues = valuesForContext({
+                        [displayNameForCell(xDim.pos)]: colIndex,
+                        [displayNameForCell(yDim.pos)]: rowIndex,
+                      });
+                      const blueHighlight = resultValues.some((v) =>
+                        (filterSelection?.selectedValueIndexes ?? []).includes(
+                          v.index
+                        )
+                      );
+                      const greyOut = resultValues.every((v) => !v.include);
+                      return (
+                        <td
+                          key={colIndex}
+                          className={`whitespace-nowrap text-sm text-center ${
+                            blueHighlight ? 'bg-blue-100' : ''
+                          } ${greyOut ? 'text-gray-300' : ''}`}
+                          onMouseEnter={() => {
+                            setFilterSelectionForCell(
+                              selectedCell,
+                              resultValues.map((v) => v.index)
+                            );
+                          }}
+                        >
+                          <div>
+                            {printRawValue(
+                              aggregateValues(
+                                resultValues
+                                  .map((v) => v.rawValue)
+                                  .filter(isNumber),
+                                aggregation
+                              )
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
