@@ -366,7 +366,7 @@ export class Env {
               break;
             }
             case 'normal': {
-              console.log('normal');
+              // TODO: try/catch, turn exceptions into ASErrors
               const normalGenerator = d3.randomNormal.source(
                 d3.randomLcg(RANDOM_SEED)
               )(part.mean, part.stdev);
@@ -374,7 +374,6 @@ export class Env {
                 { length: part.samples },
                 normalGenerator
               );
-              console.log(values);
 
               for (const value of values) {
                 const newContext = new Map([...context, [node, i++]]);
