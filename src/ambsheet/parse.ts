@@ -162,6 +162,14 @@ export const isFormula = (input: string) => g.match(input).succeeded();
 let pos = { row: 0, col: 0 };
 
 const semantics = g.createSemantics().addOperation('toAst', {
+  Formula_ambify(_eq, _ambify, _lparen, range, _rparen) {
+    return {
+      type: 'ambify',
+      pos,
+      range: range.toAst(),
+    };
+  },
+
   Formula_normal(
     _eq,
     _normal,
