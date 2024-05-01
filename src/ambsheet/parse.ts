@@ -33,10 +33,17 @@ export type RefNode = {
   colMode: AddressingMode;
 } & Position;
 
+interface RangeNode {
+  type: 'range';
+  topLeft: RefNode;
+  bottomRight: RefNode;
+}
+
 export type Node =
   | AmbNode
   | RefNode
-  | { type: 'range'; topLeft: RefNode; bottomRight: RefNode }
+  | RangeNode
+  | { type: 'ambify'; range: RangeNode }
   | { type: 'const'; value: number }
   | { type: 'if'; cond: Node; then: Node; else: Node }
   | { type: 'call'; funcName: string; args: Node[] };
@@ -44,7 +51,8 @@ export type Node =
 const grammarSource = String.raw`
   AmbSheets {
     Formula
-      = "=" Exp  -- expression
+      = "=" ambify "(" CellRange ")"  -- ambify
+      | "=" Exp                       -- expression
       | Amb
 
     Exp = RelExp
@@ -80,7 +88,7 @@ const grammarSource = String.raw`
     PriExp
       = "(" Exp ")"     -- paren
       | Literal         -- const
-      | RangeOrCellRef
+      | CellRangeOrRef
 
     Amb
       = "{" ListOf<AmbPart, ","> "}"
@@ -112,9 +120,12 @@ const grammarSource = String.raw`
     string  (a string literal)
       = "\"" (~"\"" ~"\n" any)* "\""
 
-    RangeOrCellRef
-      = cellRef ":" cellRef  -- range
+    CellRangeOrRef
+      = CellRange
       | cellRef
+
+    CellRange
+      = cellRef ":" cellRef
 
     cellRef
       = "$"? letter "$"? digit+
@@ -123,6 +134,7 @@ const grammarSource = String.raw`
       = letter alnum*
 
     // keywords
+    ambify = caseInsensitive<"ambify"> ~alnum
     by = caseInsensitive<"by"> ~alnum
     if = caseInsensitive<"if"> ~alnum
     false = caseInsensitive<"false"> ~alnum
@@ -316,7 +328,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
     }
     return chars.join('');
   },
-  RangeOrCellRef_range(topLeft, _colon, bottomRight) {
+  CellRange(topLeft, _colon, bottomRight) {
     return {
       type: 'range',
       topLeft: topLeft.toAst(),

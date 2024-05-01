@@ -389,6 +389,9 @@ export class Env {
         }
         return;
       }
+      case 'ambify': {
+        throw new Error('TODO: implement ambify');
+      }
       default: {
         const exhaustiveCheck: never = node;
         throw new Error(`Unhandled node type: ${exhaustiveCheck}`);
