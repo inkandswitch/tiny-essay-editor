@@ -232,18 +232,18 @@ export const TableViewer = ({
                       [cellPositionToName(xDim.pos)]: colIndex,
                       [cellPositionToName(yDim.pos)]: rowIndex,
                     });
+                    const blueHighlight = resultValues.some((v) =>
+                      (filterSelection?.selectedValueIndexes ?? []).includes(
+                        v.index
+                      )
+                    );
+                    const greyOut = resultValues.every((v) => !v.include);
                     return (
                       <td
                         key={colIndex}
                         className={`whitespace-nowrap text-sm text-center ${
-                          resultValues.some((v) =>
-                            (
-                              filterSelection?.selectedValueIndexes ?? []
-                            ).includes(v.index)
-                          )
-                            ? 'bg-blue-100'
-                            : 'text-gray-500'
-                        }`}
+                          blueHighlight ? 'bg-blue-100' : ''
+                        } ${greyOut ? 'text-gray-300' : ''}`}
                         onMouseEnter={() => {
                           setFilterSelectionForCell(
                             selectedCell,

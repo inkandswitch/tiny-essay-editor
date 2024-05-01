@@ -1,18 +1,13 @@
 import { DocHandle } from '@automerge/automerge-repo';
 import { useMemo } from 'react';
 import { AmbSheetDoc, Position } from '../datatype';
-import {
-  Results,
-  NOT_READY,
-  Value,
-  FilteredResultsForCell,
-  FilteredResults,
-} from '../eval';
+import { NOT_READY, Value, FilteredResults } from '../eval';
 import { cellPositionToName } from '../parse';
 import { RawViewer } from './RawViewer';
 import { Stacks } from './Stacks';
 import { TableViewer } from './TableViewer';
 import { FilterSelection } from './AmbSheet';
+import { ResultHistogram } from './ResultHistogram';
 
 export const CellDetails = ({
   handle,
@@ -73,9 +68,9 @@ export const CellDetails = ({
       {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="">
           <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
-            Stacks
+            Histogram
           </h2>
-          <Stacks
+          <ResultHistogram
             selectedCell={selectedCell}
             results={selectedCellResult}
             filterSelection={filterSelectionForSelectedCell}
@@ -83,6 +78,7 @@ export const CellDetails = ({
           />
         </div>
       )}
+
       {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="">
           <h2 className="text-xs text-gray-500 font-bold uppercase">Table</h2>
@@ -92,6 +88,19 @@ export const CellDetails = ({
             filterSelection={filterSelectionForSelectedCell}
             setFilterSelectionForCell={setFilterSelectionForCell}
             filteredResults={filteredResults}
+          />
+        </div>
+      )}
+      {selectedCellResult && selectedCellResult !== NOT_READY && (
+        <div className="">
+          <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
+            Stacks
+          </h2>
+          <Stacks
+            selectedCell={selectedCell}
+            results={selectedCellResult}
+            filterSelection={filterSelectionForSelectedCell}
+            setFilterSelectionForCell={setFilterSelectionForCell}
           />
         </div>
       )}
