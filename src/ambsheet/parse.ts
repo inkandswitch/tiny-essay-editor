@@ -86,11 +86,11 @@ const grammarSource = String.raw`
       = "{" ListOf<AmbPart, ","> "}"
 
     AmbPart
-      = number to number by number  -- rangeWithStep
-      | number to number            -- rangeAutoStep
+      = number to number by number                   -- rangeWithStep
+      | number to number                             -- rangeAutoStep
       | normal "(" number "," number "," number ")"  -- normal
-      | Literal x digit+            -- repeated
-      | Literal                     -- single
+      | Literal x digit+                             -- repeated
+      | Literal                                      -- single
 
     Literal
       = number
