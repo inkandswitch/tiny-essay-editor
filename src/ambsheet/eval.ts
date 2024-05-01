@@ -314,15 +314,15 @@ export class Env {
         return;
       }
       case 'range': {
-        const topLeft = toCellPosition(node.topLeft, pos);
-        const bottomRight = toCellPosition(node.bottomRight, pos);
-        return topLeft.col > bottomRight.col || topLeft.row > bottomRight.row
-          ? continuation(
-              { context, rawValue: new ASError('#REF!', 'invalid range') },
-              pos,
-              context
-            )
-          : this.collectRange(topLeft, bottomRight, pos, context, continuation);
+        const c1 = toCellPosition(node.topLeft, pos);
+        const c2 = toCellPosition(node.bottomRight, pos);
+        return this.collectRange(
+          { row: Math.min(c1.row, c2.row), col: Math.min(c1.col, c2.col) },
+          { row: Math.max(c1.row, c2.row), col: Math.max(c1.col, c2.col) },
+          pos,
+          context,
+          continuation
+        );
       }
       case 'if':
         return this.interp(
