@@ -216,23 +216,6 @@ function isError(rawValue: RawValue): rawValue is ASError {
   return rawValue instanceof ASError;
 }
 
-// function getFirstError(args: RawValue[]): ASError | null {
-//   for (const arg of args) {
-//     if (Array.isArray(arg)) {
-//       for (const values of arg) {
-//         for (const value of values) {
-//           if (isError(value)) {
-//             return value;
-//           }
-//         }
-//       }
-//     } else if (isError(arg)) {
-//       return arg;
-//     }
-//   }
-//   return null;
-// }
-
 /**
  * An evaluation environment tracking results of evaluated cells
  * during the course of an evaluation pass.
