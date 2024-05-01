@@ -51,8 +51,6 @@ export const Histogram = ({
     return bucketGenerator(filteredData);
   }, [filteredData, bucketGenerator]);
 
-  console.log(filteredBuckets.map((b) => b.length));
-
   const yScale = useMemo(() => {
     const max = Math.max(...buckets.map((bucket) => bucket?.length));
     return d3
