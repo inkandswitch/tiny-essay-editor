@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import * as d3 from 'd3';
+import { printRawValue } from '../print';
 
 const BUCKET_PADDING = 0;
 
@@ -113,10 +114,10 @@ export const Histogram = ({
       {allRects}
       {filteredRects}
       <text x="0" y={height} className="text-xs fill-gray-500">
-        {Math.min(...data)}
+        {printRawValue(Math.min(...data))}
       </text>
       <text x={width - 50} y={height} className="text-xs fill-gray-500">
-        {Math.max(...data)}
+        {printRawValue(Math.max(...data))}
       </text>
     </svg>
   );

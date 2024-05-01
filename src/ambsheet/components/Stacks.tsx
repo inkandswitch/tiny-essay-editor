@@ -32,6 +32,14 @@ export const Stacks = ({
     setFilterSelectionForCell(selectedCell, selectedIndexes);
   };
 
+  if (Object.keys(groupedValues).length > 15) {
+    return (
+      <div className="text-xs text-gray-400">
+        Too many distinct values to show Stacks
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       {Object.entries(groupedValues).map(([key, values]) => {

@@ -1,5 +1,6 @@
 import { NOT_READY } from './eval';
 import './ambRenderer.css';
+import { printRawValue } from './print';
 
 export const ambRenderer = (
   instance,
@@ -43,9 +44,9 @@ export const ambRenderer = (
     return td;
   }
 
-  filteredResult.forEach((val, i) => {
+  filteredResult.slice(0, 10).forEach((val, i) => {
     const valueElement = document.createElement('div');
-    valueElement.innerText = val.value.rawValue;
+    valueElement.innerText = printRawValue(val.value.rawValue);
     valueElement.style.padding = '1px 5px';
     valueElement.style.border = '1px solid #ddd';
     valueElement.style.margin = '2px';
@@ -73,6 +74,14 @@ export const ambRenderer = (
     });
     container.appendChild(valueElement);
   });
+
+  if (filteredResult.length > 10) {
+    const moreElement = document.createElement('div');
+    moreElement.innerText = `...and ${filteredResult.length - 10} more`;
+    moreElement.style.whiteSpace = 'nowrap';
+    container.appendChild(moreElement);
+  }
+
   td.innerHTML = '';
   td.appendChild(container);
 

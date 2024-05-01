@@ -108,6 +108,14 @@ export const TableViewer = ({
     (v) => v.value
   ) as Value[];
 
+  if (xDimChoices.length > 15 || yDimChoices.length > 15) {
+    return (
+      <div className="text-xs text-gray-400">
+        Too many distinct choices to display a table
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="col-start-1 col-end-3 row-start-1 row-end-2 p-2">

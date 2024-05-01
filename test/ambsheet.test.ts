@@ -3,12 +3,14 @@ import { describe, it } from 'vitest';
 import {
   FilteredResults,
   NOT_READY,
+  RANDOM_SEED,
   Results,
   Value,
   evalSheet,
   filter,
   printResults,
 } from '@/ambsheet/eval.js';
+import * as d3 from 'd3';
 
 describe('ambsheet evaluator', () => {
   it('handles basic addition', () => {
@@ -352,5 +354,16 @@ describe('ambsheet evaluator', () => {
         ['{222333,222444,555333,555444}'],
       ]
     );
+  });
+
+  it('generates a normal distribution', () => {
+    const normalGenerator = d3.randomNormal.source(d3.randomLcg(RANDOM_SEED))(
+      0,
+      1
+    );
+    const expected = Array.from({ length: 5 }, normalGenerator).join(',');
+    assert.deepStrictEqual(evalSheet([['{normal(0, 1, 5)}']]).print(), [
+      [`{${expected}}`],
+    ]);
   });
 });

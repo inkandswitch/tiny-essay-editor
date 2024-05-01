@@ -8,6 +8,7 @@ import { Stacks } from './Stacks';
 import { TableViewer } from './TableViewer';
 import { FilterSelection } from './AmbSheet';
 import { filter, groupBy, uniq } from 'lodash';
+import { printRawValue } from '../print';
 
 export const Filters = ({
   handle,
@@ -133,7 +134,7 @@ const FiltersForCell = ({
     if (!Array.isArray(values)) return {};
     return groupBy(
       values.map((v, i) => ({ ...v, indexInCell: i })),
-      (value) => value.rawValue
+      (value) => printRawValue(value.rawValue)
     );
   }, [values]);
 
@@ -141,7 +142,6 @@ const FiltersForCell = ({
     const group = groupedValues[groupValue];
     if (!group) return;
     const selectedIndexes = group.map((v) => v.indexInCell);
-    console.log({ selectedIndexes });
 
     // Retrieve the current selection for the cell, if any
     const currentSelection =

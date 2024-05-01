@@ -18,7 +18,13 @@ export interface AmbRepeatPart {
   value: RawValue;
   numRepeats: number;
 }
-export type AmbNodePart = AmbRepeatPart | AmbRangePart;
+export interface AmbNormalPart {
+  type: 'normal';
+  mean: number;
+  stdev: number;
+  samples: number;
+}
+export type AmbNodePart = AmbRepeatPart | AmbRangePart | AmbNormalPart;
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
@@ -92,6 +98,7 @@ const grammarSource = String.raw`
     AmbPart
       = number to number by number  -- rangeWithStep
       | number to number            -- rangeAutoStep
+      | normal "(" number "," number "," number ")"  -- normal
       | Literal x digit+            -- repeated
       | Literal                     -- single
 
@@ -131,6 +138,7 @@ const grammarSource = String.raw`
     false = caseInsensitive<"false"> ~alnum
     to = caseInsensitive<"to"> ~alnum
     true = caseInsensitive<"true"> ~alnum
+    normal = caseInsensitive<"normal"> ~alnum
     x = caseInsensitive<"x"> ~letter
   }
 `;
@@ -273,6 +281,14 @@ const semantics = g.createSemantics().addOperation('toAst', {
       from: parseFloat(from.sourceString),
       to: parseFloat(to.sourceString),
       step: parseFloat(step.sourceString),
+    };
+  },
+  AmbPart_normal(_normal, _lparen, mean, _c1, stdev, _c2, samples, _rparen) {
+    return {
+      type: 'normal',
+      mean: parseFloat(mean.sourceString),
+      stdev: parseFloat(stdev.sourceString),
+      samples: parseInt(samples.sourceString),
     };
   },
   Literal(v) {

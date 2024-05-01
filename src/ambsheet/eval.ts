@@ -5,6 +5,7 @@ import {
   Range,
   RawValue,
 } from './datatype';
+import * as d3 from 'd3';
 import {
   isFormula,
   parseFormula,
@@ -22,6 +23,9 @@ export interface Value {
 }
 
 type Continuation = (value: Value, pos: Position, context: AmbContext) => void;
+
+// We fix a random seed so that random distributions return the same values across evals.
+export const RANDOM_SEED = 0.5;
 
 /**
  * A mapping that tracks which value we've chosen for a given amb node
@@ -371,25 +375,53 @@ export class Env {
         // tracking which value we've chosen in the context.
         let i = 0;
         for (const part of node.parts) {
-          if (part.type === 'repeat') {
-            for (let idx = 0; idx < part.numRepeats; idx++) {
-              const newContext = new Map([...context, [node, i++]]);
-              continuation(
-                { context: newContext, rawValue: part.value },
-                pos,
-                newContext
-              );
+          switch (part.type) {
+            case 'repeat': {
+              for (let idx = 0; idx < part.numRepeats; idx++) {
+                const newContext = new Map([...context, [node, i++]]);
+                continuation(
+                  { context: newContext, rawValue: part.value },
+                  pos,
+                  newContext
+                );
+              }
+              break;
             }
-          } else if (isSensibleRange(part)) {
-            let v = part.from;
-            while (part.from < part.to ? v <= part.to : v >= part.to) {
-              const newContext = new Map([...context, [node, i++]]);
-              continuation(
-                { context: newContext, rawValue: v },
-                pos,
-                newContext
+            case 'range': {
+              if (isSensibleRange(part)) {
+                let v = part.from;
+                while (part.from < part.to ? v <= part.to : v >= part.to) {
+                  const newContext = new Map([...context, [node, i++]]);
+                  continuation(
+                    { context: newContext, rawValue: v },
+                    pos,
+                    newContext
+                  );
+                  v += part.step;
+                }
+              }
+              break;
+            }
+            case 'normal': {
+              console.log('normal');
+              const normalGenerator = d3.randomNormal.source(
+                d3.randomLcg(RANDOM_SEED)
+              )(part.mean, part.stdev);
+              const values = Array.from(
+                { length: part.samples },
+                normalGenerator
               );
-              v += part.step;
+              console.log(values);
+
+              for (const value of values) {
+                const newContext = new Map([...context, [node, i++]]);
+                continuation(
+                  { context: newContext, rawValue: value },
+                  pos,
+                  newContext
+                );
+              }
+              break;
             }
           }
         }
