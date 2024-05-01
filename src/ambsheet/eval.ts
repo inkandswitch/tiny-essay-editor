@@ -105,24 +105,24 @@ const isReady = (
 const builtInFunctions = {
   '+'([x, y]: RawValue[]) {
     return typeof x !== 'number' || typeof y !== 'number'
-      ? new ASError('+ expects numeric operands')
+      ? new ASError('#VALUE!', '+ expects numeric operands')
       : x + y;
   },
   '-'([x, y]: RawValue[]) {
     return typeof x !== 'number' || typeof y !== 'number'
-      ? new ASError('- expects numeric operands')
+      ? new ASError('#VALUE!', '- expects numeric operands')
       : x - y;
   },
   '*'([x, y]: RawValue[]) {
     return typeof x !== 'number' || typeof y !== 'number'
-      ? new ASError('* expects numeric operands')
+      ? new ASError('#VALUE!', '* expects numeric operands')
       : x * y;
   },
   '/'([x, y]: RawValue[]) {
     return typeof x !== 'number' || typeof y !== 'number'
-      ? new ASError('/ expects numeric operands')
+      ? new ASError('#VALUE!', '/ expects numeric operands')
       : y == 0
-      ? new ASError('divide by zero')
+      ? new ASError('#DIV/0!', 'divide by zero')
       : x / y;
   },
   '='([x, y]: RawValue[]) {
@@ -145,39 +145,39 @@ const builtInFunctions = {
   },
   sum(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('sum() expects at least one argument')
+      ? new ASError('#N/A', 'sum() expects at least one argument')
       : (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
   },
   product(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('product() expects at least one argument')
+      ? new ASError('#N/A', 'product() expects at least one argument')
       : (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
   },
   min(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('min() expects at least one argument')
+      ? new ASError('#N/A', 'min() expects at least one argument')
       : Math.min(...(flatten(xs) as number[]));
   },
   max(xs: RawValue[]) {
     return xs.length === 0
-      ? new ASError('max() expects at least one argument')
+      ? new ASError('#N/A', 'max() expects at least one argument')
       : Math.max(...(flatten(xs) as number[]));
   },
   and(xs: RawValue[]) {
     const args = flatten(xs);
     return !args.every((arg) => typeof arg === 'boolean')
-      ? new ASError('and() expects boolean arguments')
+      ? new ASError('#VALUE!', 'and() expects boolean arguments')
       : args.reduce((a, b) => a && b, true);
   },
   or(xs: RawValue[]) {
     const args = flatten(xs);
     return !args.every((arg) => typeof arg === 'boolean')
-      ? new ASError('or() expects boolean arguments')
+      ? new ASError('#VALUE!', 'or() expects boolean arguments')
       : args.reduce((a, b) => a || b, false);
   },
   not(xs: RawValue[]) {
     return xs.length !== 1 || typeof xs[0] !== 'boolean'
-      ? new ASError('not() expects a single boolean argument')
+      ? new ASError('#VALUE!', 'not() expects a single boolean argument')
       : !xs[0];
   },
   concat(xs: RawValue[]) {
@@ -193,7 +193,7 @@ const builtInFunctions = {
         }
       }
     }
-    return new ASError('N/A');
+    return new ASError('#N/A', 'key not found');
   },
   // TODO: hlookup
 };
@@ -296,7 +296,10 @@ export class Env {
           throw NOT_READY;
         } else if (values == null) {
           continuation(
-            { context, rawValue: new ASError('invalid cell reference') },
+            {
+              context,
+              rawValue: new ASError('#REF!', 'invalid cell reference'),
+            },
             pos,
             context
           );
@@ -317,17 +320,13 @@ export class Env {
       case 'range': {
         const topLeft = toCellPosition(node.topLeft, pos);
         const bottomRight = toCellPosition(node.bottomRight, pos);
-        if (topLeft.col > bottomRight.col || topLeft.row > bottomRight.row) {
-          throw new Error('invalid range');
-        } else {
-          return this.collectRange(
-            topLeft,
-            bottomRight,
-            pos,
-            context,
-            continuation
-          );
-        }
+        return topLeft.col > bottomRight.col || topLeft.row > bottomRight.row
+          ? continuation(
+              { context, rawValue: new ASError('#REF!', 'invalid range') },
+              pos,
+              context
+            )
+          : this.collectRange(topLeft, bottomRight, pos, context, continuation);
       }
       case 'if':
         return this.interp(
@@ -345,7 +344,10 @@ export class Env {
       case 'call': {
         const fn = builtInFunctions[node.funcName];
         return fn == null
-          ? new ASError('unsupported built-in function: ' + node.funcName)
+          ? new ASError(
+              '#NAME?',
+              'unsupported built-in function: ' + node.funcName
+            )
           : this.reduce(node.args, fn, [], pos, context, continuation);
       }
       case 'amb': {

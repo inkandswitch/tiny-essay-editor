@@ -13,12 +13,9 @@ export interface Position {
 export type BasicRawValue = number | boolean | string;
 export type Range = BasicRawValue[][];
 export class ASError {
-  public msg: string;
-  constructor(public readonly raw: any) {
-    this.msg = raw instanceof Error ? raw.message : '' + raw;
-  }
+  constructor(public readonly shortMsg: string, public readonly msg: string) {}
   toString() {
-    return this.msg;
+    return this.shortMsg;
   }
   toJSON() {
     return this.toString();
