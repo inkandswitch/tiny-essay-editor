@@ -66,8 +66,12 @@ export const ResultHistogram = ({
     }
   }, [filterBarLimits]);
 
-  if (numbers.length === 0) {
-    return <div className="text-gray-600 text-xs">No numbers to display</div>;
+  if (numbers.length < 2) {
+    return (
+      <div className="text-gray-400 text-xs">
+        Need at least two numbers to display a histogram
+      </div>
+    );
   }
 
   return (

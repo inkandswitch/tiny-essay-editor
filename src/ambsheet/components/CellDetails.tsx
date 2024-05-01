@@ -67,7 +67,7 @@ export const CellDetails = ({
       </div>
       {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="">
-          <h2 className="text-xs text-gray-500 font-bold uppercase mb-3">
+          <h2 className="text-xs text-gray-500 font-bold uppercase">
             Histogram
           </h2>
           <ResultHistogram

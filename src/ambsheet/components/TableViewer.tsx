@@ -81,7 +81,7 @@ export const TableViewer = ({
 
   if (ambDimensions.length < 2) {
     return (
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-gray-400">
         Need at least 2 amb dimensions to show a table
       </div>
     );
