@@ -140,16 +140,17 @@ const grammarSource = String.raw`
       = "$"? letter "$"? digit+
 
     ident  (an identifier)
-      = letter alnum*
+      = ~keyword letter alnum*
 
     // keywords
+    keyword = ambify | by | false | if | normal | to | true | x
     ambify = caseInsensitive<"ambify"> ~alnum
     by = caseInsensitive<"by"> ~alnum
-    if = caseInsensitive<"if"> ~alnum
     false = caseInsensitive<"false"> ~alnum
+    if = caseInsensitive<"if"> ~alnum
+    normal = caseInsensitive<"normal"> ~alnum
     to = caseInsensitive<"to"> ~alnum
     true = caseInsensitive<"true"> ~alnum
-    normal = caseInsensitive<"normal"> ~alnum
     x = caseInsensitive<"x"> ~letter
   }
 `;
