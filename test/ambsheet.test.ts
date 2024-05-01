@@ -275,6 +275,10 @@ describe('ambsheet evaluator', () => {
       evalSheet([['1', '2', '=sum(5, A1:B1, 6)']]).print(),
       [['1', '2', '14']]
     );
+    assert.deepStrictEqual(
+      evalSheet([['1', '2', '', '3', '=sum(A1:D1)']]).print(),
+      [['1', '2', '', '3', '6']]
+    );
   });
 
   it('supports product()', () => {

@@ -10,7 +10,7 @@ export interface Position {
   col: number;
 }
 
-export type BasicRawValue = number | boolean | string;
+export type BasicRawValue = number | boolean | string | null;
 export type Range = BasicRawValue[][];
 export class ASError {
   constructor(public readonly shortMsg: string, public readonly msg: string) {}

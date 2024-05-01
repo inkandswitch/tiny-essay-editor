@@ -146,22 +146,24 @@ const builtInFunctions = {
   sum(xs: RawValue[]) {
     return xs.length === 0
       ? new ASError('#N/A', 'sum() expects at least one argument')
-      : (flatten(xs) as number[]).reduce((x, y) => x + y, 0);
+      : (flatten(xs) as number[]).reduce((x, y) => x + (y ?? 0), 0);
   },
   product(xs: RawValue[]) {
     return xs.length === 0
       ? new ASError('#N/A', 'product() expects at least one argument')
-      : (flatten(xs) as number[]).reduce((x, y) => x * y, 1);
+      : (flatten(xs) as number[]).reduce((x, y) => x * (y ?? 1), 1);
   },
+  // TODO: add count
+  // TODO: add avg
   min(xs: RawValue[]) {
     return xs.length === 0
       ? new ASError('#N/A', 'min() expects at least one argument')
-      : Math.min(...(flatten(xs) as number[]));
+      : Math.min(...(flatten(xs).filter(notNull) as number[]));
   },
   max(xs: RawValue[]) {
     return xs.length === 0
       ? new ASError('#N/A', 'max() expects at least one argument')
-      : Math.max(...(flatten(xs) as number[]));
+      : Math.max(...(flatten(xs).filter(notNull) as number[]));
   },
   and(xs: RawValue[]) {
     const args = flatten(xs);
@@ -197,6 +199,10 @@ const builtInFunctions = {
   },
   // TODO: hlookup
 };
+
+function notNull<T>(x: T | null): x is T {
+  return x != null;
+}
 
 function flatten(args: RawValue[]): BasicRawValue[] {
   const values: BasicRawValue[] = [];
@@ -281,7 +287,7 @@ export class Env {
           continuation(
             {
               context,
-              rawValue: new ASError('#REF!', 'invalid cell reference'),
+              rawValue: null, // new ASError('#REF!', 'invalid cell reference'),
             },
             pos,
             context
