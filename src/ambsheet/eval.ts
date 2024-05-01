@@ -369,7 +369,7 @@ export class Env {
         }
         return;
       }
-      case 'ambify': {
+      case 'ambify':
         return this.interp(node.range, pos, context, (value, pos, context) => {
           if (!Array.isArray(value.rawValue)) {
             throw new Error(
@@ -383,7 +383,8 @@ export class Env {
             }
           }
         });
-      }
+      case 'deambify':
+        throw new Error('TODO: implement deambify');
       case 'normal': {
         // TODO: try/catch, turn exceptions into ASErrors
         const normalGenerator = d3.randomNormal.source(

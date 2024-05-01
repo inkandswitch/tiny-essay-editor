@@ -26,6 +26,12 @@ export interface AmbifyNode {
   range: RangeNode;
 }
 
+export interface DeambifyNode {
+  type: 'deambify';
+  pos: Position;
+  ref: RefNode;
+}
+
 export interface NormalDistributionNode {
   type: 'normal';
   pos: Position;
@@ -34,7 +40,11 @@ export interface NormalDistributionNode {
   samples: number;
 }
 
-export type AmbNode = AmbLiteralNode | AmbifyNode | NormalDistributionNode;
+export type AmbNode =
+  | AmbLiteralNode
+  | AmbifyNode
+  | DeambifyNode
+  | NormalDistributionNode;
 
 type AddressingMode = 'relative' | 'absolute';
 export type RefNode = {
@@ -61,6 +71,7 @@ const grammarSource = String.raw`
   AmbSheets {
     Formula
       = "=" ambify "(" CellRange ")"                     -- ambify
+      | "=" deambify "(" cellRef ")"                     -- deambify
       | "=" normal "(" number "," number "," number ")"  -- normal
       | "=" Exp                                          -- expression
       | Amb
@@ -143,8 +154,9 @@ const grammarSource = String.raw`
       = ~keyword letter alnum*
 
     // keywords
-    keyword = ambify | by | false | if | normal | to | true | x
+    keyword = ambify | by | deambify | false | if | normal | to | true | x
     ambify = caseInsensitive<"ambify"> ~alnum
+    deambify = caseInsensitive<"deambify"> ~alnum
     by = caseInsensitive<"by"> ~alnum
     false = caseInsensitive<"false"> ~alnum
     if = caseInsensitive<"if"> ~alnum
