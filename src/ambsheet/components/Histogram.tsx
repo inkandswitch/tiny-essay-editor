@@ -45,6 +45,8 @@ export const Histogram = ({
     return bucketGenerator(data);
   }, [data, bucketGenerator]);
 
+  console.log('buckets', buckets);
+
   const filteredBuckets = useMemo(() => {
     return bucketGenerator(filteredData);
   }, [filteredData, bucketGenerator]);
