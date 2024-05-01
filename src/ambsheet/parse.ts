@@ -178,6 +178,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
       mean: parseFloat(mean.sourceString),
       stdev: parseFloat(stdev.sourceString),
       samples: parseInt(samples.sourceString),
+      pos,
     };
   },
 
