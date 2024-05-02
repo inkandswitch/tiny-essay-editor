@@ -52,6 +52,7 @@ export const contextsAreCompatible = (a: AmbContext, b: AmbContext) => {
   return true;
 };
 
+// TODO: ask Geoffrey about this -- needing this function seems like a code smell!
 export const contextsWithResolvedPositionsAreCompatible = (
   a: AmbContextWithResolvedPositions,
   b: AmbContextWithResolvedPositions
