@@ -183,6 +183,14 @@ const semantics = g.createSemantics().addOperation('toAst', {
     };
   },
 
+  Formula_deambify(_eq, _ambify, _lparen, ref, _rparen) {
+    return {
+      type: 'deambify',
+      pos,
+      ref: ref.toAst(),
+    };
+  },
+
   Formula_normal(
     _eq,
     _normal,
