@@ -49,7 +49,7 @@ const ValueList = ({ filteredResult, selectedValueIndexes }) => {
         ))}
         {valuesToShow.length < filteredResult.length && (
           <div className="text-xs font-medium">
-            ... and {filteredResult.length - valuesToShow.length} more
+            + {filteredResult.length - valuesToShow.length} more
           </div>
         )}
       </div>
