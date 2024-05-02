@@ -566,9 +566,12 @@ export class Env {
   >();
 
   public getCellNameAt({ row, col }: Position): string | null {
-    for (const [name, { pos }] of this.cellPosByName.entries()) {
+    for (const {
+      pos,
+      name: nameWithCapitalization,
+    } of this.cellPosByName.values()) {
       if (pos.row === row && pos.col === col) {
-        return name;
+        return nameWithCapitalization;
       }
     }
     return null;
