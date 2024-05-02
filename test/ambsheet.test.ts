@@ -415,4 +415,21 @@ describe('ambsheet evaluator', () => {
       [['5', '-2', '8', '0', '3', '{5,-2,8,0,3}', '{10,-4,16,0,6}']]
     );
   });
+
+  it('supports deambify', () => {
+    assert.deepStrictEqual(
+      evalSheet([
+        ['{1,2,3,4,5}', '=deambify(A1)', '=sum(B1)', '=count(B1)', '=avg(B1)'],
+      ]).print(),
+      [
+        [
+          '{1,2,3,4,5}',
+          '1,2,3,4,5', // TODO: decide how to print range values!
+          '15',
+          '5',
+          '3',
+        ],
+      ]
+    );
+  });
 });

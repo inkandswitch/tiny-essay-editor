@@ -396,8 +396,28 @@ export class Env {
             }
           }
         });
-      case 'deambify':
-        throw new Error('TODO: implement deambify');
+      case 'deambify': {
+        let error: ASError | null = null;
+        const values: BasicRawValue[] = [];
+        this.interp(node.ref, pos, context, (value) => {
+          if (value.rawValue instanceof ASError) {
+            if (error == null) {
+              error = value.rawValue;
+            }
+          } else if (Array.isArray(value.rawValue)) {
+            for (const row of value.rawValue) {
+              values.push(...row);
+            }
+          } else {
+            values.push(value.rawValue);
+          }
+        });
+        return continuation(
+          { context, rawValue: error ?? [values] },
+          pos,
+          context
+        );
+      }
       case 'normal': {
         // TODO: try/catch, turn exceptions into ASErrors
         const normalGenerator = d3.randomNormal.source(
