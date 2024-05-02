@@ -30,22 +30,26 @@ export const Histogram = ({
   const bucketGenerator = useMemo(() => {
     const minData = Math.min(...data);
     const maxData = Math.max(...data);
-    const numBuckets = 10;
+    // const numBuckets = Math.min(data.length, 15);
+    const numBuckets = 15;
     const step = (maxData - minData) / numBuckets;
     const thresholds = Array.from(
-      { length: numBuckets + 1 },
+      { length: numBuckets + 2 },
       (_, i) => minData + step * i
     );
+    console.log('thresholds', thresholds);
     return d3
       .bin()
       .value((d) => d)
       .domain([minData, maxData])
-      .thresholds(thresholds);
+      .thresholds(d3.range(minData, maxData, (maxData - minData) / numBuckets));
   }, [data]);
 
   const buckets = useMemo(() => {
     return bucketGenerator(data);
   }, [data, bucketGenerator]);
+
+  console.log('buckets', buckets);
 
   const filteredBuckets = useMemo(() => {
     return bucketGenerator(filteredData);
@@ -53,10 +57,7 @@ export const Histogram = ({
 
   const yScale = useMemo(() => {
     const max = Math.max(...buckets.map((bucket) => bucket?.length));
-    return d3
-      .scaleLinear()
-      .range([height - 20, 20])
-      .domain([0, max]); // Added 20px margin on top and bottom
+    return d3.scaleLinear().range([height, 0]).domain([0, max]); // Added 20px margin on top and bottom
   }, [buckets, height]);
 
   const allRects = buckets.map((bucket, i) => {
@@ -73,8 +74,8 @@ export const Histogram = ({
         className="fill-gray-400 hover:fill-blue-200"
         stroke="white"
         strokeWidth="2"
-        x={xScale(bucket.x0) + BUCKET_PADDING / 2}
-        width={xScale(bucket.x1) - xScale(bucket.x0) - BUCKET_PADDING}
+        x={xScale(bucket.x0)}
+        width={xScale(bucket.x1) - xScale(bucket.x0)}
         y={yScale(bucket.length) - 12}
         height={height - yScale(bucket.length)}
         onMouseEnter={() =>
@@ -100,8 +101,8 @@ export const Histogram = ({
         className="fill-blue-200 pointer-events-none"
         stroke="white"
         strokeWidth="2"
-        x={xScale(bucket.x0) + BUCKET_PADDING / 2}
-        width={xScale(bucket.x1) - xScale(bucket.x0) - BUCKET_PADDING}
+        x={xScale(bucket.x0)}
+        width={xScale(bucket.x1) - xScale(bucket.x0)}
         y={yScale(bucket.length) - 12}
         height={height - yScale(bucket.length)}
       />
@@ -112,10 +113,15 @@ export const Histogram = ({
     <svg width={width} height={height}>
       {allRects}
       {filteredRects}
-      <text x="0" y={height - 2} className="text-xs fill-gray-500">
+      <text x={10} y={height - 2} className="text-xs fill-gray-500">
         {printRawValue(Math.min(...data))}
       </text>
-      <text x={width - 50} y={height - 2} className="text-xs fill-gray-500">
+      <text
+        x={width - 10}
+        y={height - 2}
+        className="text-xs fill-gray-500"
+        textAnchor="end"
+      >
         {printRawValue(Math.max(...data))}
       </text>
     </svg>
