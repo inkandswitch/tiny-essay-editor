@@ -150,12 +150,16 @@ const grammarSource = String.raw`
     CellRangeOrRef
       = CellRange
       | cellRef
+      | namedCellRef
 
     CellRange
       = cellRef ":" cellRef
 
     cellRef
       = "$"? letter "$"? digit+
+
+    namedCellRef
+      = ident
 
     ident  (an identifier)
       = ~keyword letter alnum*
@@ -415,6 +419,12 @@ const semantics = g.createSemantics().addOperation('toAst', {
         c.sourceString.toUpperCase().charCodeAt(0) -
         'A'.charCodeAt(0) -
         (colMode === 'absolute' ? 0 : pos.col),
+    };
+  },
+  namedCellRef(name) {
+    return {
+      type: 'namedCellRef',
+      name: name.sourceString,
     };
   },
   NonemptyListOf(x, _sep, xs) {

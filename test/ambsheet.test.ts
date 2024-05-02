@@ -432,4 +432,21 @@ describe('ambsheet evaluator', () => {
       ]
     );
   });
+
+  it('supports named cells', () => {
+    assert.deepStrictEqual(
+      evalSheet([['numZofts=123', '=numZofts+1']]).print(),
+      [['123', '124']]
+    );
+    assert.deepStrictEqual(
+      evalSheet([['numZofts={123, 5}', '=numZofts+1']]).print(),
+      [['{123,5}', '{124,6}']]
+    );
+    assert.deepStrictEqual(
+      evalSheet([
+        ['numZofts=1+2', 'multiplier=4', '=numZofts*multiplier'],
+      ]).print(),
+      [['3', '4', '12']]
+    );
+  });
 });
