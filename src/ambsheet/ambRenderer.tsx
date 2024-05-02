@@ -54,16 +54,16 @@ const ValueList = ({ filteredResult, selectedValueIndexes }) => {
         )}
       </div>
       {numbers.length > 0 && (
-        <div className="flex-shrink-0 bg-gray-100 px-1 py-0.5 mt-auto border-t border-gray-200">
-          <div className="flex flex-row items-center justify-start text-xs">
+        <div className="flex-shrink-0 px-1 py-0.5 mt-auto bg-purple-50">
+          <div className="flex flex-row items-center justify-start text-xs ">
             <div className="border-r-2 border-white px-1">
-              MIN <span className="font-medium">{printRawValue(min)}</span>
+              min <span className="font-medium">{printRawValue(min)}</span>
             </div>
             <div className="border-r-2 border-white px-1">
-              AVG <span className="font-medium">{printRawValue(avg)}</span>
+              avg <span className="font-medium">{printRawValue(avg)}</span>
             </div>
             <div className="px-1">
-              MAX <span className="font-medium">{printRawValue(max)}</span>
+              max <span className="font-medium">{printRawValue(max)}</span>
             </div>
           </div>
         </div>
