@@ -390,10 +390,11 @@ export class Env {
           let i = 0;
           for (const row of value.rawValue) {
             for (const value of row) {
+              const newContext = new Map([...context, [node, i++]]);
               continuation(
-                { context, rawValue: value },
+                { context: newContext, rawValue: value },
                 pos,
-                new Map([...context, [node, i++]])
+                newContext
               );
             }
           }
