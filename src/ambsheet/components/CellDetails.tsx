@@ -97,7 +97,7 @@ export const CellDetails = ({
         <div className="">
           <h2 className="text-xs text-gray-500 font-bold uppercase">Table</h2>
           <TableViewer
-            doc={doc}
+            sheet={sheet}
             selectedCell={selectedCell}
             results={selectedCellResult}
             filterSelection={filterSelectionForSelectedCell}

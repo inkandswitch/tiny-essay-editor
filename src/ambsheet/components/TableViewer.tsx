@@ -8,22 +8,11 @@ import {
   contextsWithResolvedPositionsAreCompatible,
   resolvePositionsInContext,
 } from '../eval';
-import {
-  chain,
-  groupBy,
-  isNumber,
-  max,
-  mean,
-  min,
-  sum,
-  truncate,
-  uniq,
-} from 'lodash';
+import { isNumber, max, mean, min, sum, truncate, uniq } from 'lodash';
 import { FilterSelection } from './AmbSheet';
 import { displayNameForCell, simpleNameForCell } from '../print';
-import { AmbSheetDoc, Position, RawValue } from '../datatype';
+import { Position, RawValue } from '../datatype';
 import { printRawValue } from '../print';
-import { Doc } from '@automerge/automerge';
 
 function findAllIndexes(arr, predicate) {
   const indexes = [];
@@ -60,14 +49,14 @@ const aggregateValues = (values: number[], aggregation: Aggregation) => {
 };
 
 export const TableViewer = ({
-  doc,
+  sheet,
   selectedCell,
   results,
   filterSelection,
   setFilterSelectionForCell,
   filteredResults,
 }: {
-  doc: Doc<AmbSheetDoc>;
+  sheet: Env;
   selectedCell: Position;
   results: { value: Value; include: boolean }[];
   filterSelection: FilterSelection;
@@ -167,7 +156,7 @@ export const TableViewer = ({
           >
             {ambDimensions.map((dim, index) => (
               <option key={index} value={simpleNameForCell(dim.pos)}>
-                {displayNameForCell(dim.pos, doc?.cellNames)}
+                {displayNameForCell(dim.pos)}
               </option>
             ))}
           </select>
@@ -188,7 +177,7 @@ export const TableViewer = ({
             >
               {ambDimensions.map((dim, index) => (
                 <option key={index} value={simpleNameForCell(dim.pos)}>
-                  {truncate(displayNameForCell(dim.pos, doc?.cellNames), {
+                  {truncate(displayNameForCell(dim.pos), {
                     length: 10,
                   })}
                 </option>
