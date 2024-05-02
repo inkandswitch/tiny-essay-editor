@@ -2,6 +2,7 @@ import { NOT_READY } from './eval';
 import './ambRenderer.css';
 import { printRawValue } from './print';
 import { renderToString } from 'react-dom/server';
+import { isNumber, mean } from 'lodash';
 
 // Helper function to convert JSX to HTML
 function jsxToHtml(Component, props = {}) {
@@ -9,27 +10,62 @@ function jsxToHtml(Component, props = {}) {
 }
 
 // ValueList Component
-const ValueList = ({ filteredResult, selectedValueIndexes, onClickValue }) => {
+const ValueList = ({ filteredResult, selectedValueIndexes }) => {
   if (!filteredResult) return '';
 
+  if (filteredResult.length === 1) {
+    return (
+      <div className="px-1">
+        {printRawValue(filteredResult[0].value.rawValue)}
+      </div>
+    );
+  }
+
+  const numbers = filteredResult
+    .map((val) => val.value.rawValue)
+    .filter(isNumber);
+  const min = Math.min(...numbers);
+  const avg = mean(numbers);
+  const max = Math.max(...numbers);
+
+  const valuesToShow =
+    filteredResult.length < 10 ? filteredResult : filteredResult.slice(0, 3);
+
   return (
-    <div className="flex flex-row items-center justify-start text-sm max-w-[400px] overflow-auto">
-      {filteredResult.slice(0, 10).map((val, i) => (
-        <div
-          key={i}
-          className={`px-1 py-0.5 border m-0.5 ${
-            selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'border-gray-200'
-          }
+    <div className="flex flex-col justify-start h-full gap-1">
+      <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto ">
+        {valuesToShow.map((val, i) => (
+          <div
+            key={i}
+            className={`px-1 py-0.5 m-0.5 rounded-sm ${
+              selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'bg-gray-100'
+            }
                       ${!val.include ? 'text-gray-300' : ''}`}
-          data-context={JSON.stringify(val.context)}
-          data-index={i} // Add a custom attribute to map this element to its index
-        >
-          {printRawValue(val.value.rawValue)}
-        </div>
-      ))}
-      {filteredResult.length > 10 && (
-        <div className="whitespace-nowrap">
-          ...and {filteredResult.length - 10} more
+            data-context={JSON.stringify(val.context)}
+            data-index={i} // Add a custom attribute to map this element to its index
+          >
+            {printRawValue(val.value.rawValue)}
+          </div>
+        ))}
+        {valuesToShow.length < filteredResult.length && (
+          <div className="text-xs font-medium">
+            ... and {filteredResult.length - valuesToShow.length} more
+          </div>
+        )}
+      </div>
+      {numbers.length > 0 && (
+        <div className="flex-shrink-0 bg-gray-100 px-1 py-0.5 mt-auto border-t border-gray-200">
+          <div className="flex flex-row items-center justify-start text-xs">
+            <div className="border-r-2 border-white px-1">
+              MIN <span className="font-medium">{printRawValue(min)}</span>
+            </div>
+            <div className="border-r-2 border-white px-1">
+              AVG <span className="font-medium">{printRawValue(avg)}</span>
+            </div>
+            <div className="px-1">
+              MAX <span className="font-medium">{printRawValue(max)}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -89,6 +125,7 @@ export const ambRenderer = (
 
   // Insert the HTML content into the `td`
   td.innerHTML = contentHtml;
+  td.style.padding = '0px';
 
   // Bind the click events manually
   bindClickEvents(td, selectedValueIndexes, instance, row, col);
