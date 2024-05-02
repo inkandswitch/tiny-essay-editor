@@ -295,7 +295,20 @@ export class Env {
         );
       }
       case 'namedCellRef': {
-        throw new Error('TODO: implement named cell ref');
+        const cellPos = this.cellPosByName.get(node.name);
+        return cellPos != null
+          ? this.interpCellAtPosition(cellPos, pos, context, continuation)
+          : continuation(
+              {
+                context,
+                rawValue: new ASError(
+                  '#REF!',
+                  'undeclared cell name ' + node.name
+                ),
+              },
+              pos,
+              context
+            );
       }
       case 'range': {
         const c1 = toCellPosition(node.topLeft, pos);
@@ -541,34 +554,61 @@ export class Env {
     return this.evalNode(node, pos);
   }
 
+  public readonly cellPosByName = new Map<string, Position>();
+
+  public getCellNameAt({ row, col }: Position): string | null {
+    for (const [name, pos] of this.cellPosByName.entries()) {
+      if (pos.row === row && pos.col === col) {
+        return name;
+      }
+    }
+    return null;
+  }
+
   eval(): Env {
+    this.cellPosByName.clear();
+    this.forEachCell((pos, cell) => {
+      if (!isFormula(cell)) {
+        return;
+      }
+
+      const node = parseFormula(cell, pos);
+      if (node.type === 'named') {
+        this.cellPosByName.set(node.name, pos);
+      }
+    });
+
     while (true) {
       let didSomething = false;
-      for (let row = 0; row < this.data.length; row++) {
-        for (let col = 0; col < this.data[row].length; col++) {
-          const pos = { row, col };
-          const cell = this.data[row][col];
-          if (this.getCellValues(pos) === NOT_READY) {
-            try {
-              const result = this.evalFormula(cell, pos);
-              this.setCellValues(col, row, result);
-              didSomething = true;
-            } catch (error) {
-              if (error === NOT_READY) {
-                // if NOT_READY, just continue to the next cell
-              } else {
-                throw error; // rethrow unexpected errors
-              }
+      this.forEachCell((pos, cell) => {
+        if (this.getCellValues(pos) === NOT_READY) {
+          try {
+            const result = this.evalFormula(cell, pos);
+            this.setCellValues(pos.col, pos.row, result);
+            didSomething = true;
+          } catch (error) {
+            if (error === NOT_READY) {
+              // if NOT_READY, just continue to the next cell
+            } else {
+              throw error; // rethrow unexpected errors
             }
           }
         }
-      }
+      });
       if (!didSomething) {
         break;
       }
     }
 
     return this;
+  }
+
+  forEachCell(fn: (pos: Position, cell: string) => void) {
+    for (let row = 0; row < this.data.length; row++) {
+      for (let col = 0; col < this.data[row].length; col++) {
+        fn({ row, col }, this.data[row][col]);
+      }
+    }
   }
 
   print() {
