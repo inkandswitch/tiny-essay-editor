@@ -387,9 +387,14 @@ export class Env {
             );
           }
 
+          let i = 0;
           for (const row of value.rawValue) {
             for (const value of row) {
-              continuation({ context, rawValue: value }, pos, context);
+              continuation(
+                { context, rawValue: value },
+                pos,
+                new Map([...context, [node, i++]])
+              );
             }
           }
         });
