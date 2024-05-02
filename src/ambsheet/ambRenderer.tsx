@@ -33,7 +33,19 @@ const ValueList = ({ filteredResult, selectedValueIndexes }) => {
 
   return (
     <div className="flex flex-col justify-start h-full gap-1">
-      <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto ">
+      <div className="text-xs text-gray-500 p-0.5 flex flex-row">
+        <div>CellName</div>
+        {numbers.length > 0 && (
+          <div className="flex-shrink-0 ml-auto  text-gray-500">
+            <div className="flex flex-row items-center justify-start text-xs ">
+              <div className="border-r-2 border-white px-1">
+                {printRawValue(avg)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto">
         {valuesToShow.map((val, i) => (
           <div
             key={i}
@@ -53,21 +65,6 @@ const ValueList = ({ filteredResult, selectedValueIndexes }) => {
           </div>
         )}
       </div>
-      {numbers.length > 0 && (
-        <div className="flex-shrink-0 px-1 py-0.5 mt-auto bg-purple-50">
-          <div className="flex flex-row items-center justify-start text-xs ">
-            <div className="border-r-2 border-white px-1">
-              min <span className="font-medium">{printRawValue(min)}</span>
-            </div>
-            <div className="border-r-2 border-white px-1">
-              avg <span className="font-medium">{printRawValue(avg)}</span>
-            </div>
-            <div className="px-1">
-              max <span className="font-medium">{printRawValue(max)}</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
