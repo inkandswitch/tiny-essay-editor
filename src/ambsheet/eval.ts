@@ -295,7 +295,7 @@ export class Env {
         );
       }
       case 'namedCellRef': {
-        const cellPos = this.cellPosByName.get(node.name);
+        const cellPos = this.cellPosByName.get(node.name.toLowerCase())?.pos;
         return cellPos != null
           ? this.interpCellAtPosition(cellPos, pos, context, continuation)
           : continuation(
@@ -554,10 +554,13 @@ export class Env {
     return this.evalNode(node, pos);
   }
 
-  public readonly cellPosByName = new Map<string, Position>();
+  public readonly cellPosByName = new Map<
+    string,
+    { pos: Position; name: string }
+  >();
 
   public getCellNameAt({ row, col }: Position): string | null {
-    for (const [name, pos] of this.cellPosByName.entries()) {
+    for (const [name, { pos }] of this.cellPosByName.entries()) {
       if (pos.row === row && pos.col === col) {
         return name;
       }
@@ -574,7 +577,10 @@ export class Env {
 
       const node = parseFormula(cell, pos);
       if (node.type === 'named') {
-        this.cellPosByName.set(node.name, pos);
+        this.cellPosByName.set(node.name.toLowerCase(), {
+          name: node.name,
+          pos,
+        });
       }
     });
 
