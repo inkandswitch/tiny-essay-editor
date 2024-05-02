@@ -6,7 +6,7 @@ import { Histogram } from './Histogram';
 
 import RangeSlider from 'react-range-slider-input';
 import '../range-slider.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export const ResultHistogram = ({
   selectedCell,
@@ -22,7 +22,10 @@ export const ResultHistogram = ({
     selectedIndexes: number[]
   ) => void;
 }) => {
-  const numbers = results.map((r) => r.value.rawValue).filter(isNumber);
+  const numbers = useMemo(
+    () => results.map((r) => r.value.rawValue).filter(isNumber),
+    [results]
+  );
   const filteredNumbers = results
     .filter((n, i) => filterSelection?.selectedValueIndexes.includes(i))
     .map((n) => n.value.rawValue)
@@ -47,13 +50,17 @@ export const ResultHistogram = ({
     }
   };
 
-  const numbersMin = Math.min(...numbers);
-  const numbersMax = Math.max(...numbers);
+  const numbersMin = useMemo(() => Math.min(...numbers), [numbers]);
+  const numbersMax = useMemo(() => Math.max(...numbers), [numbers]);
 
   const [filterBarLimits, setFilterBarLimits] = useState<{
     min: number;
     max: number;
   }>({ min: numbersMin, max: numbersMax });
+
+  useEffect(() => {
+    setFilterBarLimits({ min: numbersMin, max: numbersMax });
+  }, [numbersMin, numbersMax]);
 
   useEffect(() => {
     if (

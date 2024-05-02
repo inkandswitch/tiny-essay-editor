@@ -9,17 +9,8 @@ function jsxToHtml(Component, props = {}) {
   return renderToString(<Component {...props} />);
 }
 
-// ValueList Component
-const ValueList = ({ filteredResult, selectedValueIndexes }) => {
+const Cell = ({ cellName, filteredResult, selectedValueIndexes }) => {
   if (!filteredResult) return '';
-
-  if (filteredResult.length === 1) {
-    return (
-      <div className="px-1">
-        {printRawValue(filteredResult[0].value.rawValue)}
-      </div>
-    );
-  }
 
   const numbers = filteredResult
     .map((val) => val.value.rawValue)
@@ -33,38 +24,49 @@ const ValueList = ({ filteredResult, selectedValueIndexes }) => {
 
   return (
     <div className="flex flex-col justify-start h-full gap-1">
-      <div className="text-xs text-gray-500 p-0.5 flex flex-row">
-        <div>CellName</div>
-        {numbers.length > 0 && (
-          <div className="flex-shrink-0 ml-auto  text-gray-500">
-            <div className="flex flex-row items-center justify-start text-xs ">
-              <div className="border-r-2 border-white px-1">
-                {printRawValue(avg)}
+      {(cellName || numbers.length > 1) && (
+        <div className="text-xs text-gray-500 px-0.5 flex flex-row">
+          <div>{cellName}</div>
+          {numbers.length > 1 && (
+            <div className="flex-shrink-0 ml-auto  text-gray-500">
+              <div className="flex flex-row items-center justify-start text-xs ">
+                <div className="border-r-2 border-white px-1">
+                  {/* <span className="overline">x</span> = {printRawValue(avg)} */}
+                  <span className="font-serif italic">x̄</span> ={' '}
+                  {printRawValue(avg)}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto">
-        {valuesToShow.map((val, i) => (
-          <div
-            key={i}
-            className={`px-1 py-0.5 m-0.5 rounded-sm ${
-              selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'bg-gray-100'
-            }
+          )}
+        </div>
+      )}
+      {filteredResult.length === 1 && (
+        <div className="px-1">
+          {printRawValue(filteredResult[0].value.rawValue)}
+        </div>
+      )}
+      {filteredResult.length > 1 && (
+        <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto">
+          {valuesToShow.map((val, i) => (
+            <div
+              key={i}
+              className={`px-1 py-0.5 m-0.5 rounded-sm ${
+                selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'bg-gray-100'
+              }
                       ${!val.include ? 'text-gray-300' : ''}`}
-            data-context={JSON.stringify(val.context)}
-            data-index={i} // Add a custom attribute to map this element to its index
-          >
-            {printRawValue(val.value.rawValue)}
-          </div>
-        ))}
-        {valuesToShow.length < filteredResult.length && (
-          <div className="text-xs font-medium">
-            + {filteredResult.length - valuesToShow.length} more
-          </div>
-        )}
-      </div>
+              data-context={JSON.stringify(val.context)}
+              data-index={i} // Add a custom attribute to map this element to its index
+            >
+              {printRawValue(val.value.rawValue)}
+            </div>
+          ))}
+          {valuesToShow.length < filteredResult.length && (
+            <div className="text-xs font-medium">
+              + {filteredResult.length - valuesToShow.length} more
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -115,7 +117,8 @@ export const ambRenderer = (
   }
 
   // Create HTML content from the JSX component
-  const contentHtml = jsxToHtml(ValueList, {
+  const contentHtml = jsxToHtml(Cell, {
+    cellName: cellProperties.cellName,
     filteredResult,
     selectedValueIndexes,
   });

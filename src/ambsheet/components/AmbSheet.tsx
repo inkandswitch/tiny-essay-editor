@@ -187,6 +187,7 @@ export const AmbSheet = ({
       <div className=" grow h-full overflow-auto">
         <MemoizedHOTWrapper
           doc={doc}
+          sheet={sheet}
           filteredResults={filteredResults}
           filteredValues={filterSelection}
           onBeforeHotChange={onBeforeHotChange}
@@ -218,6 +219,7 @@ export const AmbSheet = ({
 const MemoizedHOTWrapper = React.memo(
   ({
     doc,
+    sheet,
     filteredResults,
     filteredValues,
     onBeforeHotChange,
@@ -227,6 +229,7 @@ const MemoizedHOTWrapper = React.memo(
     onAfterSelection,
   }: {
     doc: AmbSheetDoc;
+    sheet: Env;
     filteredValues: any;
     filteredResults: any;
     onBeforeHotChange: any;
@@ -269,6 +272,7 @@ const MemoizedHOTWrapper = React.memo(
             filteredResult,
             formula: rawContents,
             selectedValueIndexes,
+            cellName: sheet.getCellNameAt({ row, col }),
           };
         }}
       />
