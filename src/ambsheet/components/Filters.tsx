@@ -89,6 +89,7 @@ export const Filters = ({
       </div>
       {inputAmbCells.map((cell) => (
         <FiltersForCell
+          sheet={sheet}
           key={displayNameForCell(cell)}
           handle={handle}
           cell={cell}
@@ -102,6 +103,7 @@ export const Filters = ({
       </div>
       {outputCells.map((cell) => (
         <FiltersForCell
+          sheet={sheet}
           key={displayNameForCell(cell)}
           handle={handle}
           cell={cell}
@@ -115,12 +117,14 @@ export const Filters = ({
 };
 
 const FiltersForCell = ({
+  sheet,
   handle,
   cell,
   evaluatedSheet,
   filterSelection,
   setFilterSelectionForCell,
 }: {
+  sheet: Env;
   handle: DocHandle<AmbSheetDoc>;
   cell: Position;
   evaluatedSheet: Results;
@@ -195,7 +199,7 @@ const FiltersForCell = ({
   return (
     <div>
       <div className="text-sm font-medium text-gray-700 bg-gray-100 px-1 mb-1">
-        {displayNameForCell(cell)}
+        {displayNameForCell(cell, sheet)}
       </div>
       <div className="px-1">
         {groups.map(([groupValue, groupItems]) => {

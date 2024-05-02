@@ -31,10 +31,8 @@ export const printRawValue = (value: RawValue): string => {
 }; // Get a human readable cell name like B2 given a row and col.
 // Might extend this in the future to support custom cell names?
 
-export const displayNameForCell = (pos: Position, cellNames?: CellName[]) => {
-  const explicitName = cellNames?.find(
-    (cellName) => cellName.row === pos.row && cellName.col === pos.col
-  )?.name;
+export const displayNameForCell = (pos: Position, sheet?: Env) => {
+  const explicitName = sheet?.getCellNameAt(pos);
   const simpleName = simpleNameForCell(pos);
 
   if (explicitName) {

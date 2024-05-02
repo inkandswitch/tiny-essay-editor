@@ -185,7 +185,10 @@ const grammarSource = String.raw`
 
 const g = ohm.grammar(grammarSource);
 
-export const isFormula = (input: string) => g.match(input).succeeded();
+export const isFormula = (input: string) => {
+  if (!input) return false;
+  return g.match(input).succeeded();
+};
 
 // this is hacky, but it's convenient...
 let pos = { row: 0, col: 0 };

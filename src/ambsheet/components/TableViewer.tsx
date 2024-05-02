@@ -157,7 +157,7 @@ export const TableViewer = ({
           >
             {ambDimensions.map((dim, index) => (
               <option key={index} value={simpleNameForCell(dim.pos)}>
-                {displayNameForCell(dim.pos)}
+                {displayNameForCell(dim.pos, sheet)}
               </option>
             ))}
           </select>
@@ -178,7 +178,7 @@ export const TableViewer = ({
             >
               {ambDimensions.map((dim, index) => (
                 <option key={index} value={simpleNameForCell(dim.pos)}>
-                  {truncate(displayNameForCell(dim.pos), {
+                  {truncate(displayNameForCell(dim.pos, sheet), {
                     length: 10,
                   })}
                 </option>

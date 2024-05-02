@@ -58,7 +58,8 @@ export const CellDetails = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="text-xs text-gray-500 font-bold uppercase">
-        Cell Details {`: ${selectedCell && displayNameForCell(selectedCell)}`}
+        Cell Details{' '}
+        {`: ${selectedCell && displayNameForCell(selectedCell, sheet)}`}
       </div>
       <div className="text-xs text-gray-600"></div>
       <div className="">
