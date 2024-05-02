@@ -14,7 +14,7 @@ import {
   Node,
   AmbNode,
   AmbRangePart,
-  RefNode,
+  CellRefNode,
 } from './parse';
 import { simpleNameForCell } from './print';
 
@@ -286,7 +286,7 @@ export class Env {
           pos,
           context
         );
-      case 'ref': {
+      case 'cellRef': {
         const cellPos = toCellPosition(node, pos);
         const values = this.getCellValues(cellPos);
         if (!isReady(values)) {
@@ -313,6 +313,9 @@ export class Env {
           }
         }
         return;
+      }
+      case 'namedCellRef': {
+        throw new Error('TODO: implement named cell ref');
       }
       case 'range': {
         const c1 = toCellPosition(node.topLeft, pos);
@@ -479,11 +482,11 @@ export class Env {
     context: AmbContext,
     continuation: Continuation
   ) {
-    const expandedRefs: RefNode[] = [];
+    const expandedRefs: CellRefNode[] = [];
     for (let row = topLeft.row; row <= bottomRight.row; row++) {
       for (let col = topLeft.col; col <= bottomRight.col; col++) {
         expandedRefs.push({
-          type: 'ref',
+          type: 'cellRef',
           row,
           col,
           rowMode: 'absolute',
@@ -569,7 +572,7 @@ function isSensibleRange(part: AmbRangePart) {
   );
 }
 
-function toCellPosition(node: RefNode, pos: Position): Position {
+function toCellPosition(node: CellRefNode, pos: Position): Position {
   return {
     row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
     col: node.col + (node.colMode === 'relative' ? pos.col : 0),

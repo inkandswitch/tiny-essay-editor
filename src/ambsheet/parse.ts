@@ -29,7 +29,7 @@ export interface AmbifyNode {
 export interface DeambifyNode {
   type: 'deambify';
   pos: Position;
-  ref: RefNode;
+  ref: CellRefNode;
 }
 
 export interface NormalDistributionNode {
@@ -47,21 +47,26 @@ export type AmbNode =
   | NormalDistributionNode;
 
 type AddressingMode = 'relative' | 'absolute';
-export type RefNode = {
-  type: 'ref';
+export type CellRefNode = {
+  type: 'cellRef';
   rowMode: AddressingMode;
   colMode: AddressingMode;
 } & Position;
+export type NamedCellRefNode = {
+  type: 'namedCellRef';
+  name: string;
+};
 
 interface RangeNode {
   type: 'range';
-  topLeft: RefNode;
-  bottomRight: RefNode;
+  topLeft: CellRefNode;
+  bottomRight: CellRefNode;
 }
 
 export type Node =
   | AmbNode
-  | RefNode
+  | CellRefNode
+  | NamedCellRefNode
   | RangeNode
   | { type: 'const'; value: number }
   | { type: 'if'; cond: Node; then: Node; else: Node }
@@ -401,7 +406,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
       dollar.sourceString === '$' ? 'absolute' : 'relative'
     );
     return {
-      type: 'ref',
+      type: 'cellRef',
       rowMode,
       row:
         parseInt(r.sourceString) - 1 - (rowMode === 'absolute' ? 0 : pos.row),
