@@ -70,10 +70,11 @@ export type Node =
 const grammarSource = String.raw`
   AmbSheets {
     Formula
-      = "=" ambify "(" CellRange ")"                     -- ambify
-      | "=" deambify "(" cellRef ")"                     -- deambify
-      | "=" normal "(" number "," number "," number ")"  -- normal
-      | "=" Exp                                          -- expression
+      = ident? "=" ambify "(" CellRange ")"                     -- ambify
+      | ident? "=" deambify "(" cellRef ")"                     -- deambify
+      | ident? "=" normal "(" number "," number "," number ")"  -- normal
+      | ident? "=" Exp                                          -- expression
+      | ident? "=" Amb                                          -- amb
       | Amb
 
     Exp = RelExp
@@ -175,7 +176,7 @@ export const isFormula = (input: string) => g.match(input).succeeded();
 let pos = { row: 0, col: 0 };
 
 const semantics = g.createSemantics().addOperation('toAst', {
-  Formula_ambify(_eq, _ambify, _lparen, range, _rparen) {
+  Formula_ambify(name, _eq, _ambify, _lparen, range, _rparen) {
     return {
       type: 'ambify',
       pos,
@@ -183,7 +184,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
     };
   },
 
-  Formula_deambify(_eq, _ambify, _lparen, ref, _rparen) {
+  Formula_deambify(name, _eq, _ambify, _lparen, ref, _rparen) {
     return {
       type: 'deambify',
       pos,
@@ -192,6 +193,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
   },
 
   Formula_normal(
+    name,
     _eq,
     _normal,
     _lparen,
@@ -211,8 +213,12 @@ const semantics = g.createSemantics().addOperation('toAst', {
     };
   },
 
-  Formula_expression(_eq, exp) {
+  Formula_expression(name, _eq, exp) {
     return exp.toAst();
+  },
+
+  Formula_amb(name, _eq, amb) {
+    return amb.toAst();
   },
 
   RelExp_eq(left, _op, right) {
