@@ -436,6 +436,9 @@ export class Env {
         }
         return;
       }
+      case 'named': {
+        throw new Error('TODO: implement named');
+      }
       default: {
         const exhaustiveCheck: never = node;
         throw new Error(`Unhandled node type: ${exhaustiveCheck}`);

@@ -65,7 +65,8 @@ export type Node =
   | RangeNode
   | { type: 'const'; value: number }
   | { type: 'if'; cond: Node; then: Node; else: Node }
-  | { type: 'call'; funcName: string; args: Node[] };
+  | { type: 'call'; funcName: string; args: Node[] }
+  | { type: 'named'; node: Node };
 
 const grammarSource = String.raw`
   AmbSheets {
@@ -175,21 +176,25 @@ export const isFormula = (input: string) => g.match(input).succeeded();
 // this is hacky, but it's convenient...
 let pos = { row: 0, col: 0 };
 
+function withName(name: ohm.Node, ast: Node): Node {
+  return name.sourceString === '' ? ast : { type: 'named', node: ast };
+}
+
 const semantics = g.createSemantics().addOperation('toAst', {
   Formula_ambify(name, _eq, _ambify, _lparen, range, _rparen) {
-    return {
+    return withName(name, {
       type: 'ambify',
       pos,
       range: range.toAst(),
-    };
+    });
   },
 
   Formula_deambify(name, _eq, _ambify, _lparen, ref, _rparen) {
-    return {
+    return withName(name, {
       type: 'deambify',
       pos,
       ref: ref.toAst(),
-    };
+    });
   },
 
   Formula_normal(
@@ -204,21 +209,21 @@ const semantics = g.createSemantics().addOperation('toAst', {
     samples,
     _rparen
   ) {
-    return {
+    return withName(name, {
       type: 'normal',
       mean: parseFloat(mean.sourceString),
       stdev: parseFloat(stdev.sourceString),
       samples: parseInt(samples.sourceString),
       pos,
-    };
+    });
   },
 
   Formula_expression(name, _eq, exp) {
-    return exp.toAst();
+    return withName(name, exp.toAst());
   },
 
   Formula_amb(name, _eq, amb) {
-    return amb.toAst();
+    return withName(name, amb.toAst());
   },
 
   RelExp_eq(left, _op, right) {
