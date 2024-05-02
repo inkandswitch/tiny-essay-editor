@@ -287,32 +287,12 @@ export class Env {
           context
         );
       case 'cellRef': {
-        const cellPos = toCellPosition(node, pos);
-        const values = this.getCellValues(cellPos);
-        if (!isReady(values)) {
-          throw NOT_READY;
-        } else if (values == null) {
-          continuation(
-            {
-              context,
-              rawValue: null, // new ASError('#REF!', 'invalid cell reference'),
-            },
-            pos,
-            context
-          );
-        } else {
-          for (const value of values) {
-            // This is important: if the current execution context is not compatible
-            // with this value we're trying to iterate over, we skip executing it.
-            // This ensures that we respect any previous amb choices from this execution.
-            if (!contextsAreCompatible(context, value.context)) {
-              continue;
-            }
-            const newContext = new Map([...context, ...value.context]);
-            continuation(value, pos, newContext);
-          }
-        }
-        return;
+        return this.interpCellAtPosition(
+          toCellPosition(node, pos),
+          pos,
+          context,
+          continuation
+        );
       }
       case 'namedCellRef': {
         throw new Error('TODO: implement named cell ref');
@@ -439,12 +419,43 @@ export class Env {
         }
         return;
       }
-      case 'named': {
-        throw new Error('TODO: implement named');
-      }
+      case 'named':
+        return this.interp(node.node, pos, context, continuation);
       default: {
         const exhaustiveCheck: never = node;
         throw new Error(`Unhandled node type: ${exhaustiveCheck}`);
+      }
+    }
+  }
+
+  interpCellAtPosition(
+    cellPos: Position,
+    pos: Position,
+    context: AmbContext,
+    continuation: Continuation
+  ) {
+    const values = this.getCellValues(cellPos);
+    if (!isReady(values)) {
+      throw NOT_READY;
+    } else if (values == null) {
+      continuation(
+        {
+          context,
+          rawValue: null, // new ASError('#REF!', 'invalid cell reference'),
+        },
+        pos,
+        context
+      );
+    } else {
+      for (const value of values) {
+        // This is important: if the current execution context is not compatible
+        // with this value we're trying to iterate over, we skip executing it.
+        // This ensures that we respect any previous amb choices from this execution.
+        if (!contextsAreCompatible(context, value.context)) {
+          continue;
+        }
+        const newContext = new Map([...context, ...value.context]);
+        continuation(value, pos, newContext);
       }
     }
   }
