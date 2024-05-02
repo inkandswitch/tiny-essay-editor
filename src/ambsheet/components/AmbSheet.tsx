@@ -9,9 +9,8 @@ import { useMemo, useState } from 'react';
 import * as A from '@automerge/automerge/next';
 import { registerRenderer } from 'handsontable/renderers';
 import { DocEditorProps } from '@/DocExplorer/doctypes';
-import { evalSheet, filter } from '../eval';
+import { Env, evalSheet, filter } from '../eval';
 import { FormulaEditor } from '../formulaEditor';
-import { isFormula } from '../parse';
 import React from 'react';
 import { ambRenderer } from '../ambRenderer';
 import { CellDetails } from './CellDetails';
@@ -49,21 +48,24 @@ export const AmbSheet = ({
     [latestDoc, docHeads]
   );
 
-  const evaluatedSheet = useMemo(() => {
-    if (!doc) {
-      return [];
+  const sheet = useMemo(() => {
+    if (!doc || !doc.data) {
+      return new Env([[]]);
     }
-    return evalSheet(doc.data).results;
+    const sheet = evalSheet(doc.data);
+    return sheet;
   }, [doc]);
+
+  const results = sheet.results;
 
   const filteredResults = useMemo(() => {
     const filterContexts = filterSelection.map((f) => {
       return f.selectedValueIndexes.map(
-        (i) => evaluatedSheet[f.row][f.col][i].context
+        (i) => results[f.row][f.col][i].context
       );
     });
-    return filter(evaluatedSheet, filterContexts);
-  }, [evaluatedSheet, filterSelection]);
+    return filter(results, filterContexts);
+  }, [results, filterSelection]);
 
   const onBeforeHotChange = (changes) => {
     console.log(changes);
@@ -173,11 +175,12 @@ export const AmbSheet = ({
         </div>
         <div className="h-full overflow-auto">
           <Filters
+            sheet={sheet}
             handle={handle}
             selectedCell={selectedCell}
             filterSelection={filterSelection}
             setFilterSelectionForCell={setFilterSelectionForCell}
-            evaluatedSheet={evaluatedSheet}
+            results={results}
           />
         </div>
       </div>
@@ -198,6 +201,7 @@ export const AmbSheet = ({
           <CellDetails
             key={JSON.stringify(selectedCell)}
             handle={handle}
+            sheet={sheet}
             selectedCell={selectedCell}
             filterSelection={filterSelection}
             setFilterSelectionForCell={setFilterSelectionForCell}

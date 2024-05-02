@@ -34,10 +34,6 @@ export type AmbSheetDoc = HasPatchworkMetadata<never, never> & {
   // arbitrary lists to do that in Automerge:
   // https://mattweidner.com/2022/02/10/collaborative-data-design.html#case-study-a-collaborative-spreadsheet
   data: any[][]; // The data for the table
-
-  // NOTE: These cell names won't automatically move along if cells are moved,
-  // because of the CRDT issue above.
-  cellNames: CellName[];
 };
 // These are bad unstable anchors but we don't have
 // anything better until we model the spreadsheet data in a better way (see above)
@@ -66,7 +62,6 @@ export const init = (doc: any) => {
   doc.data = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => defaultValue)
   );
-  doc.cellNames = [];
 };
 
 export const includeChangeInHistory = (

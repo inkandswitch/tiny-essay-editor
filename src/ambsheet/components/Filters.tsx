@@ -1,19 +1,21 @@
 import { DocHandle } from '@automerge/automerge-repo';
 import { useMemo, useState } from 'react';
 import { AmbSheetDoc, Position } from '../datatype';
-import { Results, NOT_READY, Value } from '../eval';
+import { Results, NOT_READY, Value, Env } from '../eval';
 import { displayNameForCell } from '../print';
 import { FilterSelection } from './AmbSheet';
 import { groupBy, uniq } from 'lodash';
 import { printRawValue } from '../print';
 
 export const Filters = ({
+  sheet,
   handle,
   selectedCell,
   filterSelection,
   setFilterSelectionForCell,
-  evaluatedSheet,
+  results,
 }: {
+  sheet: Env;
   handle: DocHandle<AmbSheetDoc>;
   selectedCell: Position;
   filterSelection: FilterSelection[];
@@ -21,25 +23,25 @@ export const Filters = ({
     cell: Position,
     selection: number[] | null
   ) => void;
-  evaluatedSheet: Results;
+  results: Results;
 }) => {
   const filterableCells = useMemo(() => {
     const positions = [];
-    for (let row = 0; row < evaluatedSheet.length; row++) {
-      for (let col = 0; col < evaluatedSheet[row].length; col++) {
-        const cellResults = evaluatedSheet[row][col];
+    for (let row = 0; row < results.length; row++) {
+      for (let col = 0; col < results[row].length; col++) {
+        const cellResults = results[row][col];
         if (Array.isArray(cellResults) && cellResults.length > 1) {
           positions.push({ row, col });
         }
       }
     }
     return positions;
-  }, [evaluatedSheet]);
+  }, [results]);
 
   const inputAmbCells = useMemo(
     () =>
       uniq(
-        evaluatedSheet?.flatMap((row) =>
+        results?.flatMap((row) =>
           row.flatMap((cell) =>
             !cell || cell === NOT_READY
               ? []
@@ -47,7 +49,7 @@ export const Filters = ({
           )
         )
       ).map((node) => node.pos),
-    [evaluatedSheet]
+    [results]
   );
 
   const outputCells = useMemo(
@@ -90,7 +92,7 @@ export const Filters = ({
           key={displayNameForCell(cell)}
           handle={handle}
           cell={cell}
-          evaluatedSheet={evaluatedSheet}
+          evaluatedSheet={results}
           filterSelection={filterSelection}
           setFilterSelectionForCell={setFilterSelectionForCell}
         />
@@ -103,7 +105,7 @@ export const Filters = ({
           key={displayNameForCell(cell)}
           handle={handle}
           cell={cell}
-          evaluatedSheet={evaluatedSheet}
+          evaluatedSheet={results}
           filterSelection={filterSelection}
           setFilterSelectionForCell={setFilterSelectionForCell}
         />
@@ -193,7 +195,7 @@ const FiltersForCell = ({
   return (
     <div>
       <div className="text-sm font-medium text-gray-700 bg-gray-100 px-1 mb-1">
-        {displayNameForCell(cell, handle.docSync().cellNames)}
+        {displayNameForCell(cell)}
       </div>
       <div className="px-1">
         {groups.map(([groupValue, groupItems]) => {
