@@ -647,19 +647,15 @@ function toCellPosition(node: CellRefNode, pos: Position): Position {
 
 export function printResults(results: Results) {
   return results.map((row) =>
-    row.map((cell) => {
-      if (!isReady(cell)) {
-        return 'ERROR!';
-      } else if (cell === null) {
-        return '';
-      } else if (cell.length === 1) {
-        return '' + cell[0].rawValue;
-      } else {
-        return (
-          '{' + cell.map((v) => JSON.stringify(v.rawValue)).join(',') + '}'
-        );
-      }
-    })
+    row.map((cell) =>
+      !isReady(cell)
+        ? 'ERROR!'
+        : cell === null
+        ? ''
+        : cell.length === 1
+        ? '' + cell[0].rawValue
+        : '{' + cell.map((v) => JSON.stringify(v.rawValue)).join(',') + '}'
+    )
   );
 }
 
