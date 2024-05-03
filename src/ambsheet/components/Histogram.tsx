@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import * as d3 from 'd3';
 import { printRawValue } from '../print';
 
-const BUCKET_PADDING = 0;
-
 type HistogramProps = {
   width: number;
   height: number;
