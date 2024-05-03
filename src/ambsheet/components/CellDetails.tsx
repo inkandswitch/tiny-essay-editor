@@ -8,7 +8,7 @@ import { TableViewer } from './TableViewer';
 import { FilterSelection } from './AmbSheet';
 import { ResultHistogram } from './ResultHistogram';
 import { useDocument } from '@/useDocumentVendored';
-import { isNumber } from 'lodash';
+import { isEqual, isNumber } from 'lodash';
 
 export const CellDetails = ({
   handle,
@@ -55,6 +55,10 @@ export const CellDetails = ({
     handle.change((d) => {
       d.data[selectedCell.row][selectedCell.col] = e.target.value;
     });
+
+  const ambDependencies = sheet
+    .getCellAmbDimensions(selectedCell)
+    .filter((dim) => !isEqual(dim.pos, selectedCell));
 
   return (
     <div className="flex flex-col gap-3">
@@ -139,23 +143,25 @@ export const CellDetails = ({
         </div>
       )}
 
-      {selectedCellResult && selectedCellResult !== NOT_READY && (
-        <div className="border-b border-gray-300 pb-3 text-xs text-gray-500">
-          <h2 className="text-xs text-gray-500 font-medium uppercase">
-            Choice Dependencies
-          </h2>
-          <div>
-            <div>This result depends on choices made in:</div>
-            <ul>
-              {sheet.getCellAmbDimensions(selectedCell).map((dim) => (
-                <li className="list-disc ml-4">
-                  {displayNameForCell(dim.pos, sheet)}
-                </li>
-              ))}
-            </ul>
+      {ambDependencies.length > 0 &&
+        selectedCellResult &&
+        selectedCellResult !== NOT_READY && (
+          <div className="border-b border-gray-300 pb-3 text-xs text-gray-500">
+            <h2 className="text-xs text-gray-500 font-medium uppercase">
+              Choice Dependencies
+            </h2>
+            <div>
+              <div>This result depends on choices made in:</div>
+              <ul>
+                {ambDependencies.map((dim) => (
+                  <li className="list-disc ml-4">
+                    {displayNameForCell(dim.pos, sheet)}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {selectedCellResult && selectedCellResult !== NOT_READY && (
         <div className="border-b border-gray-300 pb-3">
