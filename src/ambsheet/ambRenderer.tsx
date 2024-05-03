@@ -24,9 +24,9 @@ const Cell = ({ cellName, filteredResult, selectedValueIndexes }) => {
     filteredResult.length < 10 ? filteredResult : filteredResult.slice(0, 3);
 
   return (
-    <div className="flex flex-col justify-start h-full ">
+    <div className="flex flex-col justify-start h-full">
       {(cellName || numbers.length > 1) && (
-        <div className="text-xs text-gray-500 px-0.5 flex flex-row">
+        <div className="text-xs text-gray-500 px-0.5 flex flex-row pt-1 px-1">
           <div>{cellName}</div>
           {numbers.length > 1 && (
             <div className="flex-shrink-0 ml-auto  text-gray-500">
@@ -47,12 +47,12 @@ const Cell = ({ cellName, filteredResult, selectedValueIndexes }) => {
         </div>
       )}
       {filteredResult.length > 1 && (
-        <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto">
+        <div className="flex flex-row flex-grow items-center justify-start text-sm overflow-auto px-1 pb-1">
           {valuesToShow.map((val, i) => (
             <div
               key={i}
-              className={`px-1 py-0.5 m-0.5 rounded-sm ${
-                selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'bg-gray-100'
+              className={`px-1 py-0.5 m-0.5 rounded-sm border border-gray-300  ${
+                selectedValueIndexes.includes(i) ? 'bg-blue-100' : 'bg-white'
               }
                       ${!val.include ? 'text-gray-300' : ''}`}
               data-context={JSON.stringify(val.context)}
