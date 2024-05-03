@@ -593,27 +593,27 @@ export class Env {
       }
     });
 
-    while (true) {
-      let didSomething = false;
+    let didSomething = false;
+    do {
+      didSomething = false;
       this.forEachCell((pos, cell) => {
-        if (this.getCellValues(pos) === NOT_READY) {
-          try {
-            const result = this.evalFormula(cell, pos);
-            this.setCellValues(pos.col, pos.row, result);
-            didSomething = true;
-          } catch (error) {
-            if (error === NOT_READY) {
-              // if NOT_READY, just continue to the next cell
-            } else {
-              throw error; // rethrow unexpected errors
-            }
+        if (this.getCellValues(pos) !== NOT_READY) {
+          return;
+        }
+
+        try {
+          const result = this.evalFormula(cell, pos);
+          this.setCellValues(pos.col, pos.row, result);
+          didSomething = true;
+        } catch (error) {
+          if (error === NOT_READY) {
+            // if NOT_READY, just continue to the next cell
+          } else {
+            throw error; // rethrow unexpected errors
           }
         }
       });
-      if (!didSomething) {
-        break;
-      }
-    }
+    } while (didSomething);
 
     return this;
   }
