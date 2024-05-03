@@ -127,10 +127,10 @@ const grammarSource = String.raw`
       = "{" ListOf<AmbPart, ","> "}"
 
     AmbPart
-      = number to number by number                   -- rangeWithStep
-      | number to number                             -- rangeAutoStep
-      | Literal x digit+                             -- repeated
-      | Literal                                      -- single
+      = number to number by number  -- rangeWithStep
+      | number to number            -- rangeAutoStep
+      | Literal x digit+            -- repeated
+      | Literal                     -- single
 
     Literal
       = number
