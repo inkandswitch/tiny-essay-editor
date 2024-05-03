@@ -21,11 +21,8 @@ export class ASError {
     return this.toString();
   }
 }
-
-type RGBColor = { type: 'rgb'; r: number; g: number; b: number };
-
 // TODO: add null? (for references to empty cells)
-export type RawValue = number | boolean | string | Range | ASError | RGBColor;
+export type RawValue = number | boolean | string | Range | ASError;
 
 export type CellName = { row: number; col: number; name: string };
 

@@ -206,9 +206,7 @@ const builtInFunctions = {
     }
     return new ASError('#N/A', 'key not found');
   },
-  rgb([r, g, b]: [number, number, number]) {
-    return { type: 'rgb', r, g, b };
-  },
+  // TODO: hlookup
 };
 
 function notNull<T>(x: T | null): x is T {

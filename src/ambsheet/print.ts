@@ -1,5 +1,4 @@
 import { ASError, CellName, Position, RawValue } from './datatype';
-import React from 'react';
 import { Env } from './eval';
 
 function roundNumber(num) {
@@ -21,21 +20,12 @@ function formatNumber(num) {
   return formatter.format(num);
 }
 
-export const printRawValue = (value: RawValue): string | JSX.Element => {
+export const printRawValue = (value: RawValue): string => {
   if (typeof value === 'number') {
     if (!Number.isInteger(value)) {
       return formatNumber(roundNumber(value));
     }
     return formatNumber(value);
-  } else if (value['type'] === 'rgb') {
-    return (
-      <div
-        className="w-5 h-5"
-        style={{
-          backgroundColor: `rgb(${value['r']}, ${value['g']}, ${value['b']})`,
-        }}
-      />
-    );
   } else {
     return value.toString();
   }
