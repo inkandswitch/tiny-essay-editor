@@ -37,7 +37,6 @@ export const Histogram = ({
       { length: numBuckets + 2 },
       (_, i) => minData + step * i
     );
-    console.log('thresholds', thresholds);
     return d3
       .bin()
       .value((d) => d)
@@ -48,8 +47,6 @@ export const Histogram = ({
   const buckets = useMemo(() => {
     return bucketGenerator(data);
   }, [data, bucketGenerator]);
-
-  console.log('buckets', buckets);
 
   const filteredBuckets = useMemo(() => {
     return bucketGenerator(filteredData);

@@ -197,7 +197,7 @@ export const AmbSheet = ({
           onAfterSelection={onAfterSelection}
         />
       </div>
-      <div className="w-[350px] h-full overflow-auto p-2">
+      <div className="w-[350px] h-full overflow-auto p-2 border-l border-gray-300">
         {selectedCell && (
           <CellDetails
             key={JSON.stringify(selectedCell)}
