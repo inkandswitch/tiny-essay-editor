@@ -68,7 +68,6 @@ export const AmbSheet = ({
   }, [results, filterSelection]);
 
   const onBeforeHotChange = (changes) => {
-    console.log(changes);
     handle.change((doc) => {
       changes.forEach(([row, column, , newValue]) => {
         if (column > doc.data[0].length) {
@@ -246,6 +245,7 @@ const MemoizedHOTWrapper = React.memo(
     return (
       <HotTable
         data={doc.data}
+        outsideClickDeselects={false}
         editor={FormulaEditor}
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}

@@ -3,6 +3,7 @@ import './ambRenderer.css';
 import { printRawValue } from './print';
 import { renderToString } from 'react-dom/server';
 import { isNumber, mean } from 'lodash';
+import { HandsontableEditor } from 'handsontable/editors';
 
 // Helper function to convert JSX to HTML
 function jsxToHtml(Component, props = {}) {
@@ -23,7 +24,7 @@ const Cell = ({ cellName, filteredResult, selectedValueIndexes }) => {
     filteredResult.length < 10 ? filteredResult : filteredResult.slice(0, 3);
 
   return (
-    <div className="flex flex-col justify-start h-full gap-1">
+    <div className="flex flex-col justify-start h-full ">
       {(cellName || numbers.length > 1) && (
         <div className="text-xs text-gray-500 px-0.5 flex flex-row">
           <div>{cellName}</div>

@@ -17,6 +17,7 @@ import {
   CellRefNode,
 } from './parse';
 import { simpleNameForCell } from './print';
+import { uniq } from 'lodash';
 
 export interface Value {
   context: AmbContext;
@@ -575,6 +576,15 @@ export class Env {
       }
     }
     return null;
+  }
+
+  // Get the set of all amb nodes that this cell depends on
+  public getCellAmbDimensions(pos: Position): AmbNode[] {
+    const results = this.getCellValues(pos);
+    if (results == null || !isReady(results)) {
+      return [];
+    }
+    return uniq(results.flatMap((v) => [...v.context.keys()]));
   }
 
   eval(): Env {

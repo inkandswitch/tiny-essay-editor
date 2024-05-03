@@ -27,11 +27,11 @@ function findAllIndexes(arr, predicate) {
   return indexes;
 }
 
-type Aggregation = 'average' | 'min' | 'max' | 'count' | 'sum';
+type Aggregation = 'avg' | 'min' | 'max' | 'count' | 'sum';
 
 const aggregateValues = (values: number[], aggregation: Aggregation) => {
   switch (aggregation) {
-    case 'average': {
+    case 'avg': {
       return mean(values);
     }
     case 'min': {
@@ -67,7 +67,7 @@ export const TableViewer = ({
   ) => void;
   filteredResults: FilteredResults;
 }) => {
-  const [aggregation, setAggregation] = useState<Aggregation>('average');
+  const [aggregation, setAggregation] = useState<Aggregation>('avg');
   const valuesWithResolvedContexts = results.map((value) => ({
     ...value,
     value: {
@@ -76,9 +76,7 @@ export const TableViewer = ({
     },
   }));
 
-  const ambDimensions = uniq(
-    results.flatMap((v) => [...v.value.context.keys()])
-  );
+  const ambDimensions = sheet.getCellAmbDimensions(selectedCell);
 
   const [xDim, setXDim] = useState(ambDimensions[0] ?? null);
   const [yDim, setYDim] = useState(ambDimensions[1] ?? null);
@@ -127,15 +125,15 @@ export const TableViewer = ({
         </label>
         <select
           id="aggregation-select"
-          className="text-xs font-medium text-gray-500 uppercase p-1 border border-gray-300 rounded"
+          className="text-xs font-medium text-gray-500 p-1 border border-gray-300 rounded"
           value={aggregation}
           onChange={(e) => setAggregation(e.target.value as Aggregation)}
         >
-          <option value="average">Average</option>
-          <option value="sum">Sum</option>
-          <option value="count">Count</option>
-          <option value="min">Min</option>
-          <option value="max">Max</option>
+          <option value="avg">avg</option>
+          <option value="sum">sum</option>
+          <option value="count">count</option>
+          <option value="min">min</option>
+          <option value="max">max</option>
         </select>
       </div>
       <div className="grid grid-cols-2 grid-rows-2 items-center grid-rows-[auto_1fr] grid-cols-[auto_1fr]">
