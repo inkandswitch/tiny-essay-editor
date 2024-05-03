@@ -49,21 +49,6 @@ const aggregateValues = (values: number[], aggregation: Aggregation) => {
   }
 };
 
-const aggregateColors = (
-  values: { rawValue: { r: number; g: number; b: number } }[]
-) => {
-  const total = values.length;
-  const draft = values
-    .map((v) => v.rawValue)
-    .reduce(
-      (acc, v) => {
-        return { r: acc.r + v.r, g: acc.g + v.g, b: acc.b + v.b };
-      },
-      { r: 0, g: 0, b: 0 }
-    );
-  return `rgb(${draft.r / total}, ${draft.g / total}, ${draft.b / total})`;
-};
-
 export const TableViewer = ({
   sheet,
   selectedCell,
@@ -269,30 +254,7 @@ export const TableViewer = ({
                           v.index
                         )
                       );
-                      let valuesToAggregate;
-                      let aggregationType;
-                      if (
-                        resultValues.filter((v) => isNumber(v.rawValue))
-                          .length > 0
-                      ) {
-                        valuesToAggregate = resultValues.filter((v) =>
-                          isNumber(v.rawValue)
-                        );
-                        aggregationType = 'number';
-                      } else if (
-                        resultValues.filter((v) => v.rawValue['type'] === 'rgb')
-                          .length > 0
-                      ) {
-                        valuesToAggregate = resultValues.filter(
-                          (v) => v.rawValue['type'] === 'rgb'
-                        );
-                        aggregationType = 'color';
-                      } else {
-                        valuesToAggregate = [];
-                        aggregationType = 'none';
-                      }
                       const greyOut = resultValues.every((v) => !v.include);
-
                       return (
                         <td
                           key={colIndex}
@@ -305,17 +267,17 @@ export const TableViewer = ({
                               resultValues.map((v) => v.index)
                             );
                           }}
-                          style={{
-                            backgroundColor:
-                              aggregationType === 'color'
-                                ? aggregateColors(valuesToAggregate)
-                                : undefined,
-                          }}
                         >
-                          {aggregationType === 'number' &&
-                            printRawValue(
-                              aggregateValues(valuesToAggregate, aggregation)
+                          <div>
+                            {printRawValue(
+                              aggregateValues(
+                                resultValues
+                                  .map((v) => v.rawValue)
+                                  .filter(isNumber),
+                                aggregation
+                              )
                             )}
+                          </div>
                         </td>
                       );
                     })}
