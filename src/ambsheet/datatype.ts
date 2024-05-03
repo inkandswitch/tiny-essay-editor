@@ -21,8 +21,7 @@ export class ASError {
     return this.toString();
   }
 }
-// TODO: add null? (for references to empty cells)
-export type RawValue = number | boolean | string | Range | ASError;
+export type RawValue = BasicRawValue | Range | ASError;
 
 export type CellName = { row: number; col: number; name: string };
 
