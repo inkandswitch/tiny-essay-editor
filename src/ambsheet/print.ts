@@ -1,4 +1,5 @@
 import { ASError, CellName, Position, RawValue } from './datatype';
+import { Env } from './eval';
 
 function roundNumber(num) {
   // Rounding to 4 significant figures
