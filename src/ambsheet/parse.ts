@@ -82,7 +82,7 @@ const grammarSource = String.raw`
   AmbSheets {
     Formula
       = ident? "=" ambify "(" CellRange ")"                     -- ambify
-      | ident? "=" deambify "(" cellRef ")"                     -- deambify
+      | ident? "=" deambify "(" (cellRef | namedCellRef) ")"                     -- deambify
       | ident? "=" normal "(" number "," number "," number ")"  -- normal
       | ident? "=" Exp                                          -- expression
       | ident? "=" Amb                                          -- amb
