@@ -207,6 +207,10 @@ const builtInFunctions = {
     return new ASError('#N/A', 'key not found');
   },
   // TODO: hlookup
+  unique(xs: RawValue[]) {
+    const nonNulls = flatten(xs).filter(notNull);
+    return nonNulls.length === new Set(nonNulls).size;
+  },
 };
 
 function notNull<T>(x: T | null): x is T {
