@@ -14,7 +14,8 @@ import {
   Node,
   AmbNode,
   AmbRangePart,
-  CellRefNode,
+  PositionalCellRefNode,
+  NamedCellRefNode,
 } from './parse';
 import { simpleNameForCell } from './print';
 import { uniq } from 'lodash';
@@ -291,33 +292,31 @@ export class Env {
           pos,
           context
         );
-      case 'cellRef': {
+      case 'positionalCellRef': {
         return this.interpCellAtPosition(
-          toCellPosition(node, pos),
+          this.toCellPosition(node, pos),
           pos,
           context,
           continuation
         );
       }
       case 'namedCellRef': {
-        const cellPos = this.cellPosByName.get(node.name.toLowerCase())?.pos;
-        return cellPos != null
-          ? this.interpCellAtPosition(cellPos, pos, context, continuation)
-          : continuation(
-              {
-                context,
-                rawValue: new ASError(
-                  '#REF!',
-                  'undeclared cell name ' + node.name
-                ),
-              },
-              pos,
-              context
-            );
+        return this.interpCellAtPosition(
+          this.toCellPosition(node, pos),
+          pos,
+          context,
+          continuation
+        );
       }
       case 'range': {
-        const c1 = toCellPosition(node.topLeft, pos);
-        const c2 = toCellPosition(node.bottomRight, pos);
+        const c1 = this.toCellPosition(node.topLeft, pos);
+        if (c1 instanceof ASError) {
+          return continuation({ context, rawValue: c1 }, pos, context);
+        }
+        const c2 = this.toCellPosition(node.bottomRight, pos);
+        if (c2 instanceof ASError) {
+          return continuation({ context, rawValue: c2 }, pos, context);
+        }
         return this.collectRange(
           { row: Math.min(c1.row, c2.row), col: Math.min(c1.col, c2.col) },
           { row: Math.max(c1.row, c2.row), col: Math.max(c1.col, c2.col) },
@@ -453,11 +452,15 @@ export class Env {
   }
 
   interpCellAtPosition(
-    cellPos: Position,
+    cellPos: Position | ASError,
     pos: Position,
     context: AmbContext,
     continuation: Continuation
   ) {
+    if (cellPos instanceof ASError) {
+      return continuation({ context, rawValue: cellPos }, pos, context);
+    }
+
     const values = this.getCellValues(cellPos);
     if (!isReady(values)) {
       throw NOT_READY;
@@ -517,11 +520,11 @@ export class Env {
     context: AmbContext,
     continuation: Continuation
   ) {
-    const expandedRefs: CellRefNode[] = [];
+    const expandedRefs: PositionalCellRefNode[] = [];
     for (let row = topLeft.row; row <= bottomRight.row; row++) {
       for (let col = topLeft.col; col <= bottomRight.col; col++) {
         expandedRefs.push({
-          type: 'cellRef',
+          type: 'positionalCellRef',
           row,
           col,
           rowMode: 'absolute',
@@ -643,6 +646,29 @@ export class Env {
   print() {
     return printResults(this.results);
   }
+
+  toCellPosition(
+    node: NamedCellRefNode | PositionalCellRefNode,
+    pos: Position
+  ): Position | ASError {
+    if (node.type === 'positionalCellRef') {
+      const cellPos = {
+        row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
+        col: node.col + (node.colMode === 'relative' ? pos.col : 0),
+      };
+      return 0 <= cellPos.row &&
+        cellPos.row < this.results.length &&
+        0 <= cellPos.col &&
+        cellPos.col < this.results[cellPos.row].length
+        ? cellPos
+        : new ASError('#REF!', 'reference does not exist');
+    } else {
+      const cellPos = this.cellPosByName.get(node.name.toLowerCase())?.pos;
+      return (
+        cellPos ?? new ASError('#REF!', 'undeclared cell name ' + node.name)
+      );
+    }
+  }
 }
 
 function isSensibleRange(part: AmbRangePart) {
@@ -650,13 +676,6 @@ function isSensibleRange(part: AmbRangePart) {
     (part.from <= part.to && part.step > 0) ||
     (part.from >= part.to && part.step < 0)
   );
-}
-
-function toCellPosition(node: CellRefNode, pos: Position): Position {
-  return {
-    row: node.row + (node.rowMode === 'relative' ? pos.row : 0),
-    col: node.col + (node.colMode === 'relative' ? pos.col : 0),
-  };
 }
 
 export function printResults(results: Results) {

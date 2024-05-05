@@ -29,7 +29,7 @@ export interface AmbifyNode {
 export interface DeambifyNode {
   type: 'deambify';
   pos: Position;
-  ref: CellRefNode;
+  ref: PositionalCellRefNode;
 }
 
 export interface NormalDistributionNode {
@@ -47,8 +47,8 @@ export type AmbNode =
   | NormalDistributionNode;
 
 type AddressingMode = 'relative' | 'absolute';
-export type CellRefNode = {
-  type: 'cellRef';
+export type PositionalCellRefNode = {
+  type: 'positionalCellRef';
   rowMode: AddressingMode;
   colMode: AddressingMode;
 } & Position;
@@ -59,13 +59,13 @@ export type NamedCellRefNode = {
 
 interface RangeNode {
   type: 'range';
-  topLeft: CellRefNode;
-  bottomRight: CellRefNode;
+  topLeft: PositionalCellRefNode;
+  bottomRight: PositionalCellRefNode;
 }
 
 export type Node =
   | AmbNode
-  | CellRefNode
+  | PositionalCellRefNode
   | NamedCellRefNode
   | RangeNode
   | { type: 'const'; value: number }
@@ -82,7 +82,7 @@ const grammarSource = String.raw`
   AmbSheets {
     Formula
       = ident? "=" ambify "(" CellRange ")"                     -- ambify
-      | ident? "=" deambify "(" (cellRef | namedCellRef) ")"    -- deambify
+      | ident? "=" deambify "(" cellRef ")"                     -- deambify
       | ident? "=" normal "(" number "," number "," number ")"  -- normal
       | ident? "=" Exp                                          -- expression
       | ident? "=" Amb                                          -- amb
@@ -121,7 +121,8 @@ const grammarSource = String.raw`
     PriExp
       = "(" Exp ")"     -- paren
       | Literal         -- const
-      | CellRangeOrRef
+      | CellRange
+      | cellRef
 
     Amb
       = "{" ListOf<AmbPart, ","> "}"
@@ -152,19 +153,12 @@ const grammarSource = String.raw`
     string  (a string literal)
       = "\"" (~"\"" ~"\n" any)* "\""
 
-    CellRangeOrRef
-      = CellRange
-      | cellRef
-      | namedCellRef
-
     CellRange
       = cellRef ":" cellRef
 
     cellRef
-      = "$"? letter "$"? digit+
-
-    namedCellRef
-      = ident
+      = "$"? letter "$"? digit+  -- positional
+      | ident                    -- named
 
     ident  (an identifier)
       = ~keyword letter alnum*
@@ -415,12 +409,12 @@ const semantics = g.createSemantics().addOperation('toAst', {
       bottomRight: bottomRight.toAst(),
     };
   },
-  cellRef(cDollar, c, rDollar, r) {
+  cellRef_positional(cDollar, c, rDollar, r) {
     const [rowMode, colMode] = [rDollar, cDollar].map((dollar) =>
       dollar.sourceString === '$' ? 'absolute' : 'relative'
     );
     return {
-      type: 'cellRef',
+      type: 'positionalCellRef',
       rowMode,
       row:
         parseInt(r.sourceString) - 1 - (rowMode === 'absolute' ? 0 : pos.row),
@@ -431,7 +425,7 @@ const semantics = g.createSemantics().addOperation('toAst', {
         (colMode === 'absolute' ? 0 : pos.col),
     };
   },
-  namedCellRef(name) {
+  cellRef_named(name) {
     return {
       type: 'namedCellRef',
       name: name.sourceString,

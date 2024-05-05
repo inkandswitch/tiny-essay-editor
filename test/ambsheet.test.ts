@@ -448,5 +448,18 @@ describe('ambsheet evaluator', () => {
       ]).print(),
       [['3', '4', '12']]
     );
+    assert.deepStrictEqual(
+      evalSheet([
+        [
+          'numZofts=1+2',
+          'multiplier=4',
+          '1234',
+          '=5+6',
+          'zzz=numZofts*multiplier',
+          '=sum(numZofts:zzz)',
+        ],
+      ]).print(),
+      [['3', '4', '1234', '11', '12', '1264']]
+    );
   });
 });
