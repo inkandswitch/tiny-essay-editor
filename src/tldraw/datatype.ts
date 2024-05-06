@@ -255,7 +255,15 @@ const editor = new Editor({
 });
 
 const getBounds = (shape: TLShape): Bounds => {
-  const geometry = editor.shapeUtils[shape.type].getGeometry(shape);
+  let geometry;
+
+  // hack: getGeometry throws an error for some shape types because we don't have a proper editor instance here.
+  // we just create an empty editor so we can call the getGeometry function
+  try {
+    geometry = editor.shapeUtils[shape.type].getGeometry(shape);
+  } catch (err) {
+    return { x: 0, y: 0, w: 0, h: 0 };
+  }
 
   return {
     x: shape.x,
