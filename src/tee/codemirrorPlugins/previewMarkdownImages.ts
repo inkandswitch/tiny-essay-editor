@@ -166,6 +166,10 @@ export const previewImagesPlugin = (
           this.assetsDocHandle.off("remote-heads", this.onRemoteHeadsChanged);
         }
 
+        if (!url) {
+          return;
+        }
+
         this.assetsDocHandle = repo.find<AssetsDoc>(url);
         this.assetsDocHandle.on("remote-heads", this.onRemoteHeadsChanged);
 
