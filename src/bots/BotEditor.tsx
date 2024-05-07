@@ -6,6 +6,7 @@ import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { Bot } from "lucide-react";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
 import { MarkdownDoc, MarkdownDocAnchor } from "@/tee/schema";
+import { docLinkToUrl } from "@/DocExplorer/components/DocExplorer";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const [doc, changeDoc] = useDocument<EssayEditingBotDoc>(docUrl);
@@ -47,8 +48,11 @@ export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
           <a
             className="cursor-pointer"
             onClick={() => {
-              /* todo fix bot editor
-              setUrlHashForDoc({ docUrl: doc.promptUrl, docType: "essay" }) */
+              window.location.hash = docLinkToUrl({
+                name: "",
+                url: doc.promptUrl,
+                type: "essay",
+              });
             }}
           >
             Open as doc

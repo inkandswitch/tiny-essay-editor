@@ -1,10 +1,6 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  useDocument,
-  useHandle,
-  useRepo,
-} from "@automerge/automerge-repo-react-hooks";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 // import { init } from "../../tee/datatype";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,31 +21,12 @@ import queryString from "query-string";
 import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { useStaticCallback } from "@/tee/utils";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
 import { useCurrentUrl, replaceUrl } from "../navigation";
 
 export type Tool = {
   id: string;
   name: string;
   component: React.FC;
-};
-
-const TOOLS = {
-  essay: [
-    {
-      id: "essay",
-      name: "Editor",
-      component: TinyEssayEditor,
-    },
-  ],
-  tldraw: [
-    {
-      id: "tldraw",
-      name: "Drawing",
-      component: TLDraw,
-    },
-  ],
 };
 
 export const DocExplorer: React.FC = () => {
@@ -85,17 +62,6 @@ export const DocExplorer: React.FC = () => {
   }, [selectedDocLink?.branchUrl]);
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocType = selectedDocLink?.type;
-
-  const availableTools = useMemo(() => {
-    return selectedDocType ? TOOLS[selectedDocType] : [];
-  }, [selectedDocType]);
-
-  const [activeTool, setActiveTool] = useState(availableTools[0] ?? null);
-  useEffect(() => {
-    setActiveTool(availableTools[0]);
-  }, [availableTools]);
-
-  const ToolComponent = activeTool?.component;
 
   const addNewDocument = useCallback(
     ({ type }: { type: DocType }) => {
@@ -262,7 +228,7 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && selectedBranch && (
                 <PatchworkDocEditor
-                  docType={selectedDocLink?.type}
+                  docType={selectedDocType}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
                   selectedBranch={selectedBranch}
@@ -451,7 +417,7 @@ const useSelectedDocLink = ({
   return [selectedDocLink, setSelectedDocLink];
 };
 
-const docLinkToUrl = (docLink: DocLink): string => {
+export const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
