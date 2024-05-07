@@ -4,10 +4,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { dropCursor, EditorView, keymap } from "@codemirror/view";
 
-import {
-  plugin as amgPlugin,
-  PatchSemaphore,
-} from "@automerge/automerge-codemirror";
+import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { completionKeymap } from "@codemirror/autocomplete";
@@ -136,8 +133,6 @@ export function MarkdownEditor({
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
 
-    const automergePlugin = amgPlugin(doc, path);
-    const semaphore = new PatchSemaphore(automergePlugin);
     const view = new EditorView({
       doc: source,
       extensions: [
@@ -176,7 +171,10 @@ export function MarkdownEditor({
         syntaxHighlighting(markdownStyles),
 
         // Now our custom stuff: Automerge collab, comment threads, etc.
-        automergePlugin,
+        automergeSyncPlugin({
+          handle,
+          path: ["content"],
+        }),
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
@@ -208,8 +206,6 @@ export function MarkdownEditor({
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           view.update([transaction]);
-
-          semaphore.reconcile(handle, view);
 
           // only update selection if it has changed and the editor is focused
           // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar
@@ -255,16 +251,7 @@ export function MarkdownEditor({
 
     view.focus();
 
-    const handleChange = () => {
-      semaphore.reconcile(handle, view);
-    };
-
-    handleChange();
-
-    handle.addListener("change", handleChange);
-
     return () => {
-      handle.removeListener("change", handleChange);
       view.destroy();
     };
   }, [handle, handleReady, docHeads, editorContainer]);
