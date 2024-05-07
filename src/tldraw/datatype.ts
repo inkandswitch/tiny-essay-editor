@@ -13,6 +13,10 @@ const getTitle = (doc: any) => {
   return doc.store["page:page"].name || "Drawing";
 };
 
+export const setTitle = (doc: any, title: string) => {
+  doc.store["page:page"].name = title;
+};
+
 export const init = (doc: any) => {
   tldrawinit(doc);
   doc.store["page:page"].name = "Drawing";
@@ -24,5 +28,6 @@ export const TLDrawDatatype = {
   icon: PenLine,
   init,
   getTitle,
+  setTitle,
   markCopy, // TODO: this shouldn't be here
 };

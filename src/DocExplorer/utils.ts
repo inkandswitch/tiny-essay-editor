@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import queryString from "query-string";
 
 export interface FileDoc {
   type: string;

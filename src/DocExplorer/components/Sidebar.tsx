@@ -1,18 +1,17 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useState } from "react";
-import {
-  ChevronsLeft,
-  FileQuestionIcon,
-  FolderInput,
-  Plus,
-  Text,
-} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronsLeft, FileQuestionIcon, FolderInput } from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
 
-import { DocLink, useCurrentRootFolderDoc } from "../account";
-import { DocType, docTypes } from "../doctypes";
+import {
+  DocLink,
+  DocLinkWithFolderPath,
+  FolderDoc,
+  FolderDocWithChildren,
+} from "@/folders/datatype";
+import { DatatypeId, datatypes } from "../../datatypes";
 
 import {
   Popover,
@@ -21,9 +20,14 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { structuredClone } from "@tldraw/tldraw";
+import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
+import { capitalize } from "lodash";
 
-function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
-  const Icon = docTypes[node.data.type]?.icon ?? FileQuestionIcon;
+const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
+  const { node, style, dragHandle } = props;
+  const Icon = datatypes[node.data.type]?.icon ?? FileQuestionIcon;
 
   return (
     <div
@@ -34,34 +38,96 @@ function Node({ node, style, dragHandle }: NodeRendererProps<DocLink>) {
           ? " bg-gray-300 hover:bg-gray-300 text-gray-900"
           : "text-gray-600 hover:bg-gray-200"
       }`}
+      onDoubleClick={() => node.edit()}
     >
       <Icon
-        size={12}
+        size={14}
         className={`${
           node.isSelected ? "text-gray-800" : "text-gray-500"
         } inline-block align-top mt-[3px] ml-2 mx-2`}
       />
-      {docTypes[node.data.type]
-        ? node.data.name
-        : `Unknown type: ${node.data.type}`}
+      {!node.isEditing && (
+        <span>
+          {datatypes[node.data.type]
+            ? node.data.name
+            : `Unknown type: ${node.data.type}`}
+        </span>
+      )}
+      {node.isEditing && <Edit {...props} />}
     </div>
   );
-}
+};
+
+const Edit = ({ node }: NodeRendererProps<DocLink>) => {
+  const input = useRef<any>();
+
+  useEffect(() => {
+    input.current?.focus();
+    input.current?.select();
+  }, []);
+
+  return (
+    <input
+      ref={input}
+      defaultValue={node.data.name}
+      onBlur={() => node.reset()}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") node.reset();
+        if (e.key === "Enter") node.submit(input.current?.value || "");
+      }}
+    ></input>
+  );
+};
 
 type SidebarProps = {
-  selectedDocUrl: AutomergeUrl | null;
-  selectDocLink: (docLink: DocLink | null) => void;
+  rootFolderDoc: FolderDocWithMetadata;
+  selectedDocLink: DocLinkWithFolderPath | null;
+  selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
   hideSidebar: () => void;
-  addNewDocument: (doc: { type: DocType }) => void;
+  addNewDocument: (doc: { type: DatatypeId }) => void;
+};
+
+const prepareDataForTree = (
+  folderDoc: FolderDocWithChildren,
+  folderPath: AutomergeUrl[]
+) => {
+  if (!folderDoc) {
+    return [];
+  }
+  return folderDoc.docs.map((docLink) => ({
+    ...docLink,
+    folderPath,
+    children:
+      docLink.type === "folder" && docLink.folderContents
+        ? prepareDataForTree(docLink.folderContents, [
+            ...folderPath,
+            docLink.url,
+          ])
+        : undefined,
+  }));
+};
+
+const idAccessor = (item: DocLinkWithFolderPath) => {
+  return JSON.stringify({
+    url: item.url,
+    folderPath: item.folderPath,
+  });
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  selectedDocUrl,
+  selectedDocLink,
   selectDocLink,
   hideSidebar,
   addNewDocument,
+  rootFolderDoc,
 }) => {
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
+  const repo = useRepo();
+  const {
+    doc: rootFolderDocWithChildren,
+    status,
+    rootFolderUrl,
+    flatDocLinks,
+  } = rootFolderDoc;
 
   // state related to open popover
   const [openNewDocPopoverVisible, setOpenNewDocPopoverVisible] =
@@ -77,13 +143,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ? automergeUrlMatch[1]
       : null;
 
-  if (!rootFolderDoc) {
+  // Show a loading spinner until we've recursively loaded all folder contents
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-400 text-sm">Loading...</p>
       </div>
     );
   }
+
+  const onMove = ({ parentNode, index: dragTargetIndex, dragNodes }) => {
+    for (const dragNode of dragNodes) {
+      const currentParentUrl =
+        dragNode.parent.level < 0
+          ? rootFolderUrl
+          : (dragNode.parent.data.url as AutomergeUrl);
+      const currentParentHandle = repo.find<FolderDoc>(currentParentUrl);
+      const dragItemIndex = currentParentHandle
+        .docSync()
+        .docs.findIndex((item) => item.url === dragNode.data.url);
+
+      const newParentUrl =
+        !parentNode || parentNode.level < 0
+          ? rootFolderUrl
+          : (parentNode.data.url as AutomergeUrl);
+      const newParentHandle = repo.find<FolderDoc>(newParentUrl);
+
+      if (dragItemIndex === undefined) {
+        return;
+      }
+
+      // If we're dragging later within the same folder, we need to account for
+      // the fact that the array will be shorter after we remove the original element
+      const adjustedTargetIndex =
+        currentParentUrl === newParentUrl && dragItemIndex < dragTargetIndex
+          ? dragTargetIndex - 1
+          : dragTargetIndex;
+
+      let removedItem;
+      currentParentHandle.change((d) => {
+        const spliceResult = d.docs.splice(dragItemIndex, 1);
+        removedItem = structuredClone({ ...spliceResult[0] });
+      });
+
+      newParentHandle.change((d) => {
+        d.docs.splice(adjustedTargetIndex, 0, removedItem);
+      });
+    }
+  };
+
+  const dataForTree = prepareDataForTree(rootFolderDocWithChildren, [
+    rootFolderUrl,
+  ]);
+
+  const treeSelection = selectedDocLink ? idAccessor(selectedDocLink) : null;
+
   return (
     <div className="flex flex-col h-screen">
       <div className="h-10 py-2 px-4 font-semibold text-gray-500 text-sm flex">
@@ -98,12 +212,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(docTypes).map(([id, docType]) => (
+        {Object.entries(datatypes).map(([id, docType]) => (
           <div key={docType.id}>
             {" "}
             <div
               className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-              onClick={() => addNewDocument({ type: id as DocType })}
+              onClick={() => addNewDocument({ type: id as DatatypeId })}
             >
               <docType.icon
                 size={14}
@@ -166,18 +280,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {({ width, height }) => {
             return (
               <Tree
-                data={rootFolderDoc.docs}
+                data={dataForTree}
                 width={width}
                 height={height}
                 rowHeight={28}
-                selection={selectedDocUrl}
-                idAccessor={(item) => item.url}
+                selection={treeSelection}
+                idAccessor={idAccessor}
                 onSelect={(selections) => {
-                  if (!selections) {
+                  if (!selections || selections.length === 0) {
                     return false;
                   }
-                  if (isValidAutomergeUrl(selections[0]?.id)) {
-                    selectDocLink(selections[0].data);
+                  const newlySelectedDocLink = selections[0].data;
+                  if (isValidAutomergeUrl(newlySelectedDocLink.url)) {
+                    selectDocLink(newlySelectedDocLink);
                   }
                 }}
                 // For now, don't allow deleting w/ backspace key in the sidebar—
@@ -187,35 +302,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 //     deleteFromAccountDocList(id as AutomergeUrl);
                 //   }
                 // }}
-                onMove={({ dragIds, parentId, index: dragTargetIndex }) => {
-                  if (parentId !== null) {
-                    // shouldn't get here since we don't do directories yet
+                onMove={onMove}
+                onRename={({ node, name }) => {
+                  const docLink = flatDocLinks.find(
+                    (doc) => doc.url === node.data.url
+                  );
+                  const datatype = datatypes[docLink.type];
+
+                  if (!datatype.setTitle) {
+                    alert(
+                      `${capitalize(
+                        datatype.name
+                      )} documents can only be renamed in the main editor, not the sidebar.`
+                    );
                     return;
                   }
 
-                  for (const dragId of dragIds) {
-                    const dragItemIndex = rootFolderDoc.docs.findIndex(
-                      (item) => item.url === dragId
-                    );
-                    if (dragItemIndex !== undefined) {
-                      // TODO: is this the right way to do an array move in automerge?
-                      // Pretty sure it is, since there's no array move operation?
-                      const copiedItem = JSON.parse(
-                        JSON.stringify(rootFolderDoc.docs[dragItemIndex])
-                      );
-
-                      // If we're dragging to the right of the array, we need to account for
-                      // the fact that the array will be shorter after we remove the original element
-                      const adjustedTargetIndex =
-                        dragItemIndex < dragTargetIndex
-                          ? dragTargetIndex - 1
-                          : dragTargetIndex;
-                      changeRootFolderDoc((doc) => {
-                        doc.docs.splice(dragItemIndex, 1);
-                        doc.docs.splice(adjustedTargetIndex, 0, copiedItem);
-                      });
-                    }
+                  if (!docLink) {
+                    return;
                   }
+                  const parentHandle = repo.find<FolderDoc>(
+                    docLink.folderPath[docLink.folderPath.length - 1]
+                  );
+                  parentHandle.change((d) => {
+                    const doc = d.docs.find((doc) => doc.url === docLink.url);
+                    if (doc) {
+                      doc.name = name;
+                    }
+                  });
                 }}
               >
                 {Node}
