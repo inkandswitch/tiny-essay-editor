@@ -19,6 +19,7 @@ export type DocLink = {
   name: string;
   type: DocType;
   url: AutomergeUrl;
+  branchUrl?: AutomergeUrl;
 };
 
 export interface AccountDoc {

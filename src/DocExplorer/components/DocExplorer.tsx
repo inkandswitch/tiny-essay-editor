@@ -75,6 +75,14 @@ export const DocExplorer: React.FC = () => {
   );
 
   const selectedDocName = selectedDocLink?.name;
+  const selectedBranch = useMemo<SelectedBranch>(() => {
+    if (!selectedDocLink) {
+      return;
+    }
+    return selectedDocLink?.branchUrl
+      ? { type: "branch", url: selectedDocLink.branchUrl }
+      : { type: "main" };
+  }, [selectedDocLink?.branchUrl]);
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocType = selectedDocLink?.type;
 
@@ -103,7 +111,7 @@ export const DocExplorer: React.FC = () => {
         return;
       }
 
-      const newDocLink = {
+      const newDocLink: DocLink = {
         type: type,
         name: "Untitled document",
         url: newDocHandle.url,
@@ -225,7 +233,12 @@ export const DocExplorer: React.FC = () => {
               selectedDocLink={selectedDocLink}
               selectDocLink={setSelectedDocLink}
               deleteFromAccountDocList={deleteFromRootFolder}
-              setSelectedBranch={() => {} /*TODO: selectBranch*/}
+              setSelectedBranch={(branch) => {
+                setSelectedDocLink({
+                  ...selectedDocLink,
+                  branchUrl: branch.type === "branch" ? branch.url : undefined,
+                });
+              }}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
@@ -247,13 +260,19 @@ export const DocExplorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && (
+              {selectedDocUrl && selectedDoc && selectedBranch && (
                 <PatchworkDocEditor
                   docType={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
-                  selectedBranch={{ type: "main" } /*TODO: selectedBranch*/}
-                  setSelectedBranch={() => {} /*TODO: selectBranch */}
+                  selectedBranch={selectedBranch}
+                  setSelectedBranch={(branch) => {
+                    setSelectedDocLink({
+                      ...selectedDocLink,
+                      branchUrl:
+                        branch.type === "branch" ? branch.url : undefined,
+                    });
+                  }}
                 />
               )}
             </div>
@@ -278,6 +297,7 @@ const parseUrl = (url: URL): DocLink | null => {
 
   const { docId, name } = match.groups;
   const docType = url.searchParams.get("docType");
+  const branchUrl = url.searchParams.get("branchUrl");
   const docUrl = `automerge:${docId}` as AutomergeUrl;
 
   if (!isValidAutomergeUrl(docUrl)) {
@@ -302,6 +322,7 @@ const parseUrl = (url: URL): DocLink | null => {
     url: docUrl,
     type: docType,
     name,
+    branchUrl: branchUrl as AutomergeUrl,
   };
 };
 
@@ -319,7 +340,9 @@ const parseLegacyUrl = (url: URL): DocLink => {
   }
 
   // Now on to the main logic where we look for a url and type both.
-  const { docUrl, docType } = queryString.parse(url.pathname.slice(1));
+  const { docUrl, docType, branchUrl } = queryString.parse(
+    url.pathname.slice(1)
+  );
 
   if (typeof docUrl !== "string" || typeof docType !== "string") {
     return null;
@@ -346,6 +369,7 @@ const parseLegacyUrl = (url: URL): DocLink => {
     url: docUrl,
     name: "",
     type: docType,
+    branchUrl: branchUrl as AutomergeUrl,
   };
 };
 
@@ -362,14 +386,6 @@ const useSelectedDocLink = ({
   const currentUrl = useCurrentUrl();
 
   const setSelectedDocLink = (docLink: DocLink) => {
-    if (
-      selectedDocLink &&
-      selectedDocLink.url === docLink.url &&
-      selectedDocLink.type == docLink.type
-    ) {
-      return;
-    }
-
     location.hash = docLinkToUrl(docLink);
   };
 
@@ -380,16 +396,17 @@ const useSelectedDocLink = ({
       return;
     }
 
-    const { type, url } = urlParams;
+    const { type, url, branchUrl } = urlParams;
 
     return {
       type,
       url,
+      branchUrl,
       name:
         rootFolderDoc.docs.find((docLink) => docLink.url === url)?.name ??
         "Unknown document",
     };
-  }, [urlParams?.type, urlParams?.url, rootFolderDoc]);
+  }, [urlParams?.type, urlParams?.url, urlParams?.branchUrl, rootFolderDoc]);
 
   // We redirect old urls to the new format
   useEffect(() => {
@@ -438,7 +455,13 @@ const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
-  return `${name}${documentId}?docType=${docLink.type}`;
+  let url = `${name}${documentId}?docType=${docLink.type}`;
+
+  if (docLink.branchUrl) {
+    url += `&branchUrl=${docLink.branchUrl}`;
+  }
+
+  return url;
 };
 export type SelectedBranch =
   | { type: "main" }
