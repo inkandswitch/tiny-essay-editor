@@ -105,7 +105,7 @@ export const Topbar: React.FC<TopbarProps> = ({
     ]);
   }, [selectedDocUrl, selectedDoc]);
 
-  const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot");
+  const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot") ?? [];
 
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
