@@ -241,20 +241,6 @@ export const DocExplorer: React.FC = () => {
                   setSelectedBranch={() => {} /*selectBranch*/}
                 />
               )}
-              {selectedDocUrl && selectedDoc && ToolComponent && (
-                <ToolComponent
-                  docUrl={selectedDocUrl}
-                  selectedDocLink={selectedDocLink}
-                  key={selectedDocUrl}
-                  selectDocLink={selectDocLink}
-                />
-              )}
-
-              {!ToolComponent && (
-                <div className="flex items-center justify-center h-full bg-gray-100 text-gray-500 text-sm cursor-default">
-                  No editor available for this datatype
-                </div>
-              )}
             </div>
           </div>
         </div>
