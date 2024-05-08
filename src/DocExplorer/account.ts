@@ -20,6 +20,8 @@ export type DocLink = {
   type: DocType;
   url: AutomergeUrl;
 };
+import { FolderDoc } from "../folders/datatype";
+import { useFolderDocWithChildren } from "../folders/useFolderDocWithChildren";
 
 export interface AccountDoc {
   contactUrl: AutomergeUrl;
@@ -37,10 +39,6 @@ export interface RegisteredContactDoc {
 }
 
 export type ContactDoc = AnonymousContactDoc | RegisteredContactDoc;
-
-export type FolderDoc = {
-  docs: DocLink[];
-};
 
 interface AccountEvents {
   change: () => void;
@@ -263,16 +261,19 @@ export function useCurrentAccountDoc(): [
   return [accountDoc, changeAccountDoc];
 }
 
-export function useCurrentRootFolderDoc(): [
-  FolderDoc,
-  (changeFn: ChangeFn<FolderDoc>) => void
-] {
+export function useRootFolderDocWithChildren() {
   const [accountDoc] = useCurrentAccountDoc();
-  const [rootFolderDoc, changeRootFolderDoc] = useDocument<FolderDoc>(
-    accountDoc?.rootFolderUrl
-  );
 
-  return [rootFolderDoc, changeRootFolderDoc];
+  // debugging aid: put root folder handle on window
+  const repo = useRepo();
+  useEffect(() => {
+    if (accountDoc) {
+      // @ts-ignore
+      window.rootFolderHandle = repo.find<FolderDoc>(accountDoc.rootFolderUrl);
+    }
+  }, [repo, accountDoc]);
+
+  return useFolderDocWithChildren(accountDoc?.rootFolderUrl);
 }
 
 export function useSelf(): ContactDoc {

@@ -12,12 +12,20 @@ import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
 import { pick } from "lodash";
+import { Repo } from "@automerge/automerge-repo";
+import { AssetsDoc } from "./assets";
 
-export const init = (doc: any) => {
+export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
 
   initPatchworkMetadata(doc);
+  const handle = repo.create<AssetsDoc>();
+  handle.change((doc) => {
+    doc.files = {};
+  });
+
+  doc.assetsDocUrl = handle.url;
 };
 
 // When a copy of the document has been made,

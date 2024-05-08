@@ -2,17 +2,19 @@ import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { dropCursor, EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
+import { searchKeymap } from "@codemirror/search";
 import { completionKeymap } from "@codemirror/autocomplete";
 import {
   defaultKeymap,
   history,
   historyKeymap,
   indentWithTab,
+  standardKeymap,
 } from "@codemirror/commands";
 import {
   codeFolding,
@@ -23,7 +25,6 @@ import {
   syntaxHighlighting,
 } from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
-import { searchKeymap } from "@codemirror/search";
 import { SelectionRange } from "@codemirror/state";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import {
@@ -43,7 +44,6 @@ import {
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "../schema";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 
 import {
   DebugHighlight,
@@ -53,6 +53,11 @@ import {
 } from "../codemirrorPlugins/DebugHighlight";
 import { AnnotationPosition, AnnotationWithUIState } from "@/patchwork/schema";
 import { getCursorSafely } from "@/patchwork/utils";
+import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
+import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AssetsDoc } from "../assets";
+import { dropCursor } from "../codemirrorPlugins/dropCursor";
 
 export type TextSelection = {
   from: number;
@@ -94,6 +99,7 @@ export function MarkdownEditor({
   foldRanges,
   setEditorContainerElement,
 }: EditorProps) {
+  const repo = useRepo();
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
@@ -142,6 +148,54 @@ export function MarkdownEditor({
         history(),
 
         dropCursor(),
+        dragAndDropFilesPlugin({
+          createFileReference: async (file) => {
+            const doc = handle.docSync();
+            let assetsHandle: DocHandle<AssetsDoc>;
+
+            if (!doc.assetsDocUrl) {
+              // add assets doc to old documents
+              assetsHandle = repo.create<AssetsDoc>();
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files = {};
+              });
+              handle.change((doc) => {
+                doc.assetsDocUrl = assetsHandle.url;
+              });
+            } else {
+              assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
+            }
+
+            await assetsHandle.whenReady();
+            const assetsDoc = assetsHandle.docSync();
+
+            if (!isSupportedImageFile(file)) {
+              alert(
+                "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
+              );
+              return;
+            }
+
+            const fileAlreadyExists = assetsDoc.files[file.name];
+            if (fileAlreadyExists) {
+              alert(
+                `a file with the name "${file.name}" already exists in the document`
+              );
+              return;
+            }
+
+            loadFile(file).then((contents) => {
+              assetsHandle.change((assetsDoc) => {
+                assetsDoc.files[file.name] = {
+                  contentType: file.type,
+                  contents,
+                };
+              });
+            });
+
+            return `![](./assets/${file.name})`;
+          },
+        }),
         indentOnInput(),
         keymap.of([
           {
@@ -179,7 +233,7 @@ export function MarkdownEditor({
         annotationsField,
         annotationDecorations,
         previewFiguresPlugin,
-        previewImagesPlugin,
+        previewImagesPlugin(handle, repo),
         highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
@@ -350,4 +404,34 @@ const useScrollAnnotationsIntoView = (
 
     editorRoot.current;
   }, [annotationsToScrollIntoView, editorRoot]);
+};
+
+const loadFile = (file: File): Promise<Uint8Array> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      // The file's text will be printed here
+      const arrayBuffer = e.target.result as ArrayBuffer;
+
+      // Convert the arrayBuffer to a Uint8Array
+      resolve(new Uint8Array(arrayBuffer));
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const isSupportedImageFile = (file: File) => {
+  switch (file.type) {
+    case "image/png":
+    case "image/jpeg":
+    case "image/gif":
+    case "image/webp":
+    case "image/bmp":
+    case "image/tiff":
+      return true;
+
+    default:
+      return false;
+  }
 };

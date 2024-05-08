@@ -2,6 +2,7 @@ import {
   AutomergeUrl,
   DocHandle,
   isValidAutomergeUrl,
+  Doc,
 } from "@automerge/automerge-repo";
 import React, { useCallback } from "react";
 import {
@@ -21,10 +22,10 @@ import {
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { SyncIndicatorWrapper } from "./SyncIndicator";
+import { SyncIndicator } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
-import { DocLink, useCurrentRootFolderDoc } from "../account";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 
 import {
   DropdownMenu,
@@ -36,42 +37,46 @@ import {
 
 import { getHeads, save } from "@automerge/automerge";
 import { SelectedBranch } from "./DocExplorer";
-
-import { docTypes } from "../doctypes";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
+import { DocType, docTypes } from "../doctypes";
 import { runBot } from "@/bots/essayEditorBot";
 import { Button } from "@/components/ui/button";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { datatypes } from "@/datatypes";
+import { useRootFolderDocWithChildren } from "../account";
+
 type TopbarProps = {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
-  selectedDocUrl: AutomergeUrl | null;
-  selectDoc: (docUrl: AutomergeUrl | null) => void;
-  deleteFromAccountDocList: (docUrl: AutomergeUrl) => void;
-  setSelectedBranch: (branch: SelectedBranch) => void;
+  selectedDocLink: DocLinkWithFolderPath | undefined;
+  selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
+  selectedDoc: Doc<HasPatchworkMetadata<unknown, unknown>> | undefined;
+  selectedDocHandle:
+    | DocHandle<HasPatchworkMetadata<unknown, unknown>>
+    | undefined;
+  addNewDocument: (doc: { type: DocType }) => void;
+  removeDocLink: (link: DocLinkWithFolderPath) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
   showSidebar,
   setShowSidebar,
-  selectedDocUrl,
-  selectDoc,
-  deleteFromAccountDocList,
-  setSelectedBranch,
+  selectDocLink,
+  selectedDocLink,
+  selectedDoc,
+  selectedDocHandle,
+  removeDocLink,
 }) => {
   const repo = useRepo();
-  const [rootFolderDoc, changeRootFolderDoc] = useCurrentRootFolderDoc();
-  const selectedDocLink = rootFolderDoc?.docs.find(
-    (doc) => doc.url === selectedDocUrl
-  );
+  const { flatDocLinks } = useRootFolderDocWithChildren();
+  const selectedDocUrl = selectedDocLink?.url;
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
-  const selectedDocHandle =
-    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+
+  const selectedDatatypeMetadata = datatypes[selectedDocType];
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-  const [selectedDoc] = useDocument(selectedDocUrl);
 
   const exportAsMarkdown = useCallback(() => {
     if (selectedDocType !== "essay") {
@@ -100,7 +105,7 @@ export const Topbar: React.FC<TopbarProps> = ({
     ]);
   }, [selectedDocUrl, selectedDoc]);
 
-  const botDocLinks = rootFolderDoc?.docs.filter((doc) => doc.type === "bot");
+  const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot");
 
   return (
     <div className="h-10 bg-gray-100 flex items-center flex-shrink-0 border-b border-gray-300">
@@ -113,11 +118,14 @@ export const Topbar: React.FC<TopbarProps> = ({
         </div>
       )}
       <div className="ml-3 text-sm text-gray-700 font-bold">
+        {selectedDatatypeMetadata && (
+          <selectedDatatypeMetadata.icon className="inline mr-1" size={14} />
+        )}
         {selectedDocName}
       </div>
       <div className="ml-1 mt-[-2px]">
         {isValidAutomergeUrl(selectedDocUrl) && (
-          <SyncIndicatorWrapper docUrl={selectedDocUrl} />
+          <SyncIndicator docUrl={selectedDocUrl} />
         )}
       </div>
 
@@ -161,12 +169,13 @@ export const Topbar: React.FC<TopbarProps> = ({
                               {botDocLink.name} ran successfully.
                             </div>
                             <Button
-                              onClick={() =>
-                                setSelectedBranch({
+                              onClick={() => {
+                                // todo: add branch to doclink
+                                /* setSelectedBranch({
                                   type: "branch",
                                   url: result,
-                                })
-                              }
+                                })*/
+                              }}
                               className="px-4 h-6"
                             >
                               View branch
@@ -183,7 +192,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     size={14}
                     className="inline-block ml-2 cursor-pointer"
                     onClick={(e) => {
-                      selectDoc(botDocLink.url);
+                      selectDocLink({ ...botDocLink, type: "essay" });
                       e.stopPropagation();
                     }}
                   />
@@ -236,14 +245,25 @@ export const Topbar: React.FC<TopbarProps> = ({
                   type: selectedDocLink.type,
                 };
 
-                const index = rootFolderDoc.docs.findIndex(
-                  (doc) => doc.url === selectedDocUrl
+                const folderHandle = repo.find<FolderDoc>(
+                  selectedDocLink.folderPath[
+                    selectedDocLink.folderPath.length - 1
+                  ]
                 );
-                changeRootFolderDoc((doc) =>
+                await folderHandle.whenReady();
+
+                const index = folderHandle
+                  .docSync()
+                  .docs.findIndex((doc) => doc.url === selectedDocUrl);
+                folderHandle.change((doc) =>
                   doc.docs.splice(index + 1, 0, newDocLink)
                 );
 
-                selectDoc(newDocLink.url);
+                // TODO: we used to have a setTimeout here, see if we need to bring it back.
+                selectDocLink({
+                  ...newDocLink,
+                  folderPath: selectedDocLink.folderPath,
+                });
               }}
             >
               <GitForkIcon
@@ -262,9 +282,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               Download Automerge file
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => deleteFromAccountDocList(selectedDocUrl)}
-            >
+            <DropdownMenuItem onClick={() => removeDocLink(selectedDocLink)}>
               <Trash2Icon
                 className="inline-block text-gray-500 mr-2"
                 size={14}

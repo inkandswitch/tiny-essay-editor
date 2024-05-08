@@ -30,6 +30,7 @@ if (isValidAutomergeUrl(rootDocUrl)) {
   handle.change(init);
 }
 
+// eslint-disable-next-line
 const docUrl = (document.location.hash = handle.url);
 
 // @ts-expect-error - adding property to window
