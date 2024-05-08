@@ -110,7 +110,7 @@ ${JSON.stringify(functionsSpec)}
           //   from + edit.after.length
           // );
         },
-        { metadata: { author: botDoc.contactUrl } }
+        { message: JSON.stringify({ author: botDoc.contactUrl }) }
       );
     }
 

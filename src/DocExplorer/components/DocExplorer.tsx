@@ -11,8 +11,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DocType, docTypes } from "../doctypes";
-import { DatatypeId, datatypes } from "../../datatypes";
+import { DataType, DocType, docTypes } from "../doctypes";
 
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -46,8 +45,10 @@ export const DocExplorer: React.FC = () => {
   });
 
   const selectedDocUrl = selectedDocLink?.url;
-  const selectedDocHandle = useHandle(selectedDocUrl);
-  const [selectedDoc] = useDocument(selectedDocUrl);
+  const selectedDocHandle =
+    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+  const [selectedDoc] =
+    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
@@ -59,8 +60,8 @@ export const DocExplorer: React.FC = () => {
   const ToolComponent = activeTool?.component;
 
   const addNewDocument = useCallback(
-    ({ type }: { type: DatatypeId }) => {
-      if (!datatypes[type]) {
+    ({ type }: { type: DocType }) => {
+      if (!docTypes[type]) {
         throw new Error(`Unsupported document type: ${type}`);
       }
 

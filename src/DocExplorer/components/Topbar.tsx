@@ -43,7 +43,6 @@ import { DocType, docTypes } from "../doctypes";
 import { runBot } from "@/bots/essayEditorBot";
 import { Button } from "@/components/ui/button";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
-import { datatypes } from "@/datatypes";
 import { useRootFolderDocWithChildren } from "../account";
 
 type TopbarProps = {
@@ -74,7 +73,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
 
-  const selectedDatatypeMetadata = datatypes[selectedDocType];
+  const selectedDatatypeMetadata = docTypes[selectedDocType];
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
 

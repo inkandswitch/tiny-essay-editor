@@ -58,19 +58,20 @@ export function useFolderDocWithChildren(
     ): FolderDocWithChildren => {
       return {
         ...folder,
-        docs: folder.docs.map((link) => {
-          if (loadedDocs[link.url]) {
-            return {
-              ...link,
-              folderContents: materializeLinks(
-                loadedDocs[link.url],
-                loadedDocs
-              ),
-            };
-          } else {
-            return link;
-          }
-        }),
+        docs:
+          folder.docs?.map((link) => {
+            if (loadedDocs[link.url]) {
+              return {
+                ...link,
+                folderContents: materializeLinks(
+                  loadedDocs[link.url],
+                  loadedDocs
+                ),
+              };
+            } else {
+              return link;
+            }
+          }) ?? [],
       };
     },
     []

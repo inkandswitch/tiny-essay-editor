@@ -23,6 +23,8 @@ import { DataGrid } from "@/datagrid/components/DataGrid";
 import { KanbanBoard } from "@/kanban/components/Kanban";
 import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
 import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
+import { FolderDatatype } from "@/folders/datatype";
+import { FolderViewer } from "@/folders/components/FolderViewer";
 import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
 
 export type CoreDataType<D> = {
@@ -31,6 +33,7 @@ export type CoreDataType<D> = {
   icon: any;
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
+  setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
 };
@@ -124,6 +127,7 @@ export const docTypes: Record<
   datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
+  folder: FolderDatatype,
 } as const;
 
 export type DocType = keyof typeof docTypes;

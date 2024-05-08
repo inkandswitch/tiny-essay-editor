@@ -3,12 +3,12 @@
 // It will become more structured in future work on schemas / datatypes.
 
 import { FolderIcon } from "lucide-react";
-import { DatatypeId } from "@/datatypes";
+import { DocType } from "@/DocExplorer/doctypes";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export type DocLink = {
   name: string;
-  type: DatatypeId;
+  type: DocType;
   url: AutomergeUrl;
 };
 

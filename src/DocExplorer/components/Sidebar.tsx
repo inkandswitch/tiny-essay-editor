@@ -5,14 +5,13 @@ import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
 
-import { DocType, docTypes } from "../doctypes";
 import {
   DocLink,
   DocLinkWithFolderPath,
   FolderDoc,
   FolderDocWithChildren,
 } from "@/folders/datatype";
-import { DatatypeId, datatypes } from "../../datatypes";
+import { DocType, docTypes } from "../doctypes";
 
 import {
   Popover,
@@ -28,7 +27,7 @@ import { capitalize } from "lodash";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const Icon = datatypes[node.data.type]?.icon ?? FileQuestionIcon;
+  const Icon = docTypes[node.data.type]?.icon ?? FileQuestionIcon;
 
   return (
     <div
@@ -49,7 +48,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       />
       {!node.isEditing && (
         <span>
-          {datatypes[node.data.type]
+          {docTypes[node.data.type]
             ? node.data.name
             : `Unknown type: ${node.data.type}`}
         </span>
@@ -85,7 +84,7 @@ type SidebarProps = {
   selectedDocLink: DocLinkWithFolderPath | null;
   selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
   hideSidebar: () => void;
-  addNewDocument: (doc: { type: DatatypeId }) => void;
+  addNewDocument: (doc: { type: DocType }) => void;
 };
 
 const prepareDataForTree = (
@@ -213,7 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(datatypes).map(([id, docType]) => (
+        {Object.entries(docTypes).map(([id, docType]) => (
           <div key={docType.id}>
             {" "}
             <div
@@ -308,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const docLink = flatDocLinks.find(
                     (doc) => doc.url === node.data.url
                   );
-                  const datatype = datatypes[docLink.type];
+                  const datatype = docTypes[docLink.type];
 
                   if (!datatype.setTitle) {
                     alert(

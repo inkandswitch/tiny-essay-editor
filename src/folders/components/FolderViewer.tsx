@@ -3,7 +3,7 @@ import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 import { DocLinkWithFolderPath, FolderDoc } from "../datatype";
 import { TOOLS } from "@/DocExplorer/tools";
-import { datatypes } from "@/datatypes";
+import { docTypes } from "@/DocExplorer/doctypes";
 
 export const FolderViewer = ({
   docUrl,
@@ -28,7 +28,7 @@ export const FolderViewer = ({
       <div className="flex flex-col gap-10 px-4 h-full overflow-y-auto pb-24">
         {folder.docs.map((docLink) => {
           const Tool = TOOLS[docLink.type]?.[0].component;
-          const Icon = datatypes[docLink.type].icon;
+          const Icon = docTypes[docLink.type].icon;
 
           return (
             <div>

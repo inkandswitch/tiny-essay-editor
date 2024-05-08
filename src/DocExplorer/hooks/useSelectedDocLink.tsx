@@ -11,11 +11,11 @@ import {
   DocLinkWithFolderPath,
   FolderDoc,
 } from "../../folders/datatype";
-import { DatatypeId, datatypes } from "../../datatypes";
 import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
 import { isEqual } from "lodash";
+import { DocType, docTypes } from "../doctypes";
 
 const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
@@ -24,13 +24,13 @@ const docLinkToUrl = (docLink: DocLink): string => {
   return `${name}${documentId}?docType=${docLink.type}`;
 };
 
-const isDocType = (x: string): x is DatatypeId =>
-  Object.keys(datatypes).includes(x as DatatypeId);
+const isDocType = (x: string): x is DocType =>
+  Object.keys(docTypes).includes(x as DocType);
 
-// Parse older URL formats and map them into our newer format
+// Parse older URL formats and map them into our newer formatu
 const parseLegacyUrl = (
   url: URL
-): { url: AutomergeUrl; type: DatatypeId } | null => {
+): { url: AutomergeUrl; type: DocType } | null => {
   // First handle very old URLs that only had an Automerge URL:
   // domain.com/automerge:12345
   const possibleAutomergeUrl = url.pathname.slice(1);

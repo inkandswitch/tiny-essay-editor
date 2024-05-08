@@ -30,10 +30,7 @@ import {
   Patch,
 } from "@automerge/automerge/next";
 import { diffWithProvenance } from "./utils";
-import {
-  ChangeMetadata,
-  DocHandle,
-} from "@automerge/automerge-repo/dist/DocHandle";
+import { DocHandle } from "@automerge/automerge-repo/dist/DocHandle";
 import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
 import { getChangesFromMergedBranch } from "./branches";
 import { isEqual, sortBy } from "lodash";
@@ -66,9 +63,7 @@ export type ChangeGroup<T> = {
 
 export type GenericChangeGroup = ChangeGroup<unknown>;
 
-export interface DecodedChangeWithMetadata extends DecodedChange {
-  metadata: ChangeMetadata;
-}
+export interface DecodedChangeWithMetadata extends DecodedChange {}
 
 /** A marker of a moment in the doc history associated w/ some heads */
 export type HeadsMarker<T> = {

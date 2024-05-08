@@ -1,4 +1,4 @@
-import { datatypes } from "@/datatypes";
+import { docTypes } from "../doctypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -35,7 +35,7 @@ export const useSyncDocTitles = ({
 
     const currentSelectedDocTitle = {
       url: selectedDocLink.url,
-      fromDoc: datatypes[selectedDocLink.type].getTitle(selectedDoc),
+      fromDoc: docTypes[selectedDocLink.type].getTitle(selectedDoc),
       fromLink: selectedDocLink.name,
     };
 
@@ -58,13 +58,13 @@ export const useSyncDocTitles = ({
     if (linkChanged) {
       if (
         selectedDocLink.name !== currentSelectedDocTitle.fromDoc &&
-        datatypes[selectedDocLink.type].setTitle
+        docTypes[selectedDocLink.type].setTitle
       ) {
         if (!selectedDocHandle.isReady) {
           return;
         }
         selectedDocHandle.change((doc) => {
-          datatypes[selectedDocLink.type].setTitle(
+          docTypes[selectedDocLink.type].setTitle(
             doc,
             currentSelectedDocTitle.fromLink
           );
