@@ -87,7 +87,7 @@ export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>
 
 export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   const typedDoc = doc as MarkdownDoc;
-  return !!typedDoc.content && !!typedDoc.commentThreads;
+  return typeof typedDoc.content === "string";
 };
 
 const promptForAIChangeGroupSummary = ({

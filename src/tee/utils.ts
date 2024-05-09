@@ -2,11 +2,7 @@ import { next as A } from "@automerge/automerge";
 import { EditorView } from "@codemirror/view";
 import { ReactElement, useCallback, useEffect, useRef, useState } from "react";
 import ReactDOMServer from "react-dom/server";
-import {
-  MarkdownDoc,
-  TextAnnotationForUI,
-  TextAnnotationWithPosition,
-} from "./schema";
+import { MarkdownDoc } from "./schema";
 // import { getDiffBaseOfDoc } from "@/chronicle/components/EditGroups";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
@@ -62,181 +58,11 @@ export function getRelativeTimeString(
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
 }
 
-// a very rough approximation; needs to be better but being perfect seems hard...
-const estimatedHeightOfAnnotation = (annotation: TextAnnotationForUI) => {
-  // Patches and drafts are always pretty short in their collapsed form
-  if (annotation.type === "patch") {
-    if (
-      annotation.patch.action === "splice" &&
-      annotation.patch.value.length > 20
-    ) {
-      return 70;
-    } else {
-      return 40;
-    }
-  }
-
-  // This is rough! Redo with more accurate math...
-  if (annotation.type === "draft" && !annotation.active) {
-    let height = 40;
-    if (
-      annotation.editRangesWithComments[0].editRange.to -
-        annotation.editRangesWithComments[0].editRange.from >
-      20
-    ) {
-      height = height + 40;
-    }
-    if (annotation.comments.length > 0) {
-      height = height + 64 + 20;
-    }
-    if (annotation.comments.length > 1) {
-      height = height + 20;
-    }
-    return height;
-  }
-
-  const commentHeights =
-    "comments" in annotation
-      ? annotation.comments.map(
-          (comment) => 64 + Math.floor(comment.content.length / 60) * 20
-        )
-      : [];
-  const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
-
-  if (annotation.type === "draft") {
-    const patchesHeight = annotation.editRangesWithComments
-      .map((range) => range.patches.length)
-      .reduce((a, b) => a + b * 40, 0);
-
-    return patchesHeight + commentsHeight + 20;
-  } else if (annotation.type === "thread") {
-    const PADDING = 32;
-    const BUTTONS = 40;
-    return PADDING + BUTTONS + commentsHeight + 20;
-  }
-};
-
-function doesPatchOverlapWith(patch: A.Patch, from: number, to: number) {
-  if (patch.action === "splice") {
-    const patchFrom = patch.path[1] as number;
-    const patchTo = (patch.path[1] as number) + patch.value.length;
-    return patchFrom < to && patchTo > from;
-  } else if (patch.action === "del") {
-    const deleteAt = patch.path[1] as number;
-    // @paul: I'm not sure if this is correct or if this needs to be fixed somwhere else,
-    // but with the old logic deletes where included twice when grouping things
-    // old: return from <= deleteAt && to >= deleteAt;
-    return from === deleteAt && to === deleteAt + 1;
-  } else {
-    return false;
-  }
-}
-
 export interface ReviewStateFilter {
   self: AutomergeUrl;
   showReviewedBySelf: boolean;
   showReviewedByOthers: boolean;
 }
-
-// Given a list of comment threads, find a vertical position for each comment.
-// We roughly try to put the comments vertically near the text they are commenting on.
-// But we also avoid overlapping comments by bumping them up or down if they overlap.
-// The currently active comment gets priority for being nearby its text;
-// other comments bump up or down from that point.
-export const getVisibleTheadsWithPos = ({
-  threads,
-  doc,
-  view,
-  selectedAnnotationIds,
-}: {
-  threads: TextAnnotationForUI[];
-  doc: MarkdownDoc;
-  view: EditorView;
-  selectedAnnotationIds: string[];
-}): TextAnnotationWithPosition[] => {
-  // Arbitrarily use the first active thread as the "active" thread
-  // for the purposes of positioning.
-  const activeThreadId = selectedAnnotationIds[0];
-
-  // As an initial draft, put each thread right next to its comment
-  const threadsWithPositions = threads.flatMap((thread) => {
-    const topOfEditor = view?.scrollDOM.getBoundingClientRect()?.top ?? 0;
-    const viewportCoordsOfThread = view?.coordsAtPos(
-      Math.min(thread.from, doc.content.length - 1)
-    )?.top;
-    if (viewportCoordsOfThread === undefined) {
-      return [];
-    }
-
-    const TOP_MARGIN = 40;
-    const yCoord = -1 * topOfEditor + viewportCoordsOfThread + TOP_MARGIN - 16;
-
-    return [
-      {
-        ...thread,
-        yCoord,
-      },
-    ];
-  });
-
-  // Sort the draft by vertical position in the doc
-  threadsWithPositions.sort((a, b) => a.from - b.from);
-
-  // Now it's possible that we have comments which are overlapping one another.
-  // Make a best effort to mostly avoid overlaps.
-
-  // Pick the first active thread we find
-  let activeIndex = threadsWithPositions.findIndex(
-    (thread) => thread.id === activeThreadId
-  );
-  if (activeIndex === -1) activeIndex = 0;
-
-  // Iterate upwards
-  for (let i = activeIndex - 1; i >= 0; i--) {
-    if (
-      threadsWithPositions[i].yCoord +
-        estimatedHeightOfAnnotation(threadsWithPositions[i]) >
-      threadsWithPositions[i + 1].yCoord
-    ) {
-      threadsWithPositions[i].yCoord =
-        threadsWithPositions[i + 1].yCoord -
-        estimatedHeightOfAnnotation(threadsWithPositions[i]);
-    }
-  }
-
-  // Iterate downwards
-  for (let i = activeIndex + 1; i < threadsWithPositions.length; i++) {
-    if (
-      threadsWithPositions[i].yCoord <
-      threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfAnnotation(threadsWithPositions[i - 1])
-    ) {
-      threadsWithPositions[i].yCoord =
-        threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
-    }
-  }
-
-  for (let i = 1; i < threadsWithPositions.length; i++) {
-    if (
-      threadsWithPositions[i].yCoord <
-      threadsWithPositions[i - 1].yCoord +
-        estimatedHeightOfAnnotation(threadsWithPositions[i - 1])
-    ) {
-      if (threadsWithPositions[i].id === activeThreadId) {
-        threadsWithPositions[i - 1].yCoord =
-          threadsWithPositions[i].yCoord -
-          estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
-      } else {
-        threadsWithPositions[i].yCoord =
-          threadsWithPositions[i - 1].yCoord +
-          estimatedHeightOfAnnotation(threadsWithPositions[i - 1]);
-      }
-    }
-  }
-
-  return threadsWithPositions;
-};
 
 export const useScrollPosition = (container: HTMLElement | null) => {
   const [scrollPosition, setScrollPosition] = useState(0);

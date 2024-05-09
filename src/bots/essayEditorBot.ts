@@ -1,11 +1,10 @@
-import { DEFAULT_MODEL, openaiClient } from "@/llm";
-import { MarkdownDoc, ThreadAnnotation, Comment } from "@/tee/schema";
-import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
-import { EssayEditingBotDoc } from "./datatype";
-import { getCursor, splice } from "@automerge/automerge/next";
-import { uuid } from "@automerge/automerge";
-import { createBranch } from "@/patchwork/branches";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
+import { DEFAULT_MODEL, openaiClient } from "@/llm";
+import { createBranch } from "@/patchwork/branches";
+import { MarkdownDoc } from "@/tee/schema";
+import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
+import { splice } from "@automerge/automerge/next";
+import { EssayEditingBotDoc } from "./datatype";
 
 const functionsSpec = [
   {

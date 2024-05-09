@@ -40,7 +40,6 @@ import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfConten
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import {
   MarkdownDoc,
-  DiscussionAnotationForUI,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "../schema";
@@ -73,7 +72,6 @@ export type EditorProps = {
   path: A.Prop[];
   setView: (view: EditorView) => void;
   setSelectedAnchors: (anchors: MarkdownDocAnchor[]) => void;
-  discussionAnnotations?: DiscussionAnotationForUI[];
   readOnly?: boolean;
   docHeads?: A.Heads;
   annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
