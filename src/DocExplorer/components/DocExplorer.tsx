@@ -29,7 +29,7 @@ import { TOOLS } from "../tools";
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
-  const [accountDoc, changeAccountDoc] = useCurrentAccountDoc();
+  const [accountDoc] = useCurrentAccountDoc();
 
   const rootFolderData = useRootFolderDocWithChildren();
   const { doc: rootFolderDoc, rootFolderUrl } = rootFolderData;
@@ -100,8 +100,6 @@ export const DocExplorer: React.FC = () => {
     },
     [repo, selectedDocLink, selectDocLink]
   );
-
-  // todo: reconcile this
 
   useSyncDocTitle({
     selectedDocLink,

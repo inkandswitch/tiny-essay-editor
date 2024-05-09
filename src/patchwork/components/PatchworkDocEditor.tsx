@@ -1,11 +1,7 @@
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import {
-  DocEditorProps,
-  DocType,
-  editorsForDocType,
-} from "@/DocExplorer/doctypes";
+import { DocEditorProps, DocType } from "@/DocExplorer/doctypes";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -77,6 +73,7 @@ import {
 } from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
+import { TOOLS } from "@/DocExplorer/tools";
 
 interface MakeBranchOptions {
   name?: string;
@@ -653,7 +650,7 @@ const DocEditor = <T, V>({
   setHoveredAnchor,
 }: DocEditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = editorsForDocType[docType][0];
+  const Component = TOOLS[docType][0].component;
 
   return (
     <Component

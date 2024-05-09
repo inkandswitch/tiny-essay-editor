@@ -130,24 +130,6 @@ export const docTypes: Record<
 
 export type DocType = keyof typeof docTypes;
 
-// Store a list of tools that can be used with each doc type.
-// This is a crude stand-in for a more flexible system based on matching
-// data schemas with editor capabilities.
-// It's important to store this mapping outside of the datatypes themselves;
-// there might be tools a datatype doesn't know about which can edit the datatype.
-// (A simple example is a raw JSON editor.)
-export const editorsForDocType: Record<
-  string,
-  Array<React.FC<DocEditorProps<any, any>>>
-> = {
-  essay: [TinyEssayEditor],
-  bot: [BotEditor],
-  tldraw: [TLDraw],
-  datagrid: [DataGrid],
-  kanban: [KanbanBoard],
-  folder: [FolderViewer],
-};
-
 export const annotationViewersForDocType: Record<
   string,
   Array<
