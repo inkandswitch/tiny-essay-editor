@@ -25,57 +25,57 @@
     "@codemirror/view" "^6.21.3"
     codemirror "^6.0.1"
 
-"@automerge/automerge-repo-network-broadcastchannel@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-broadcastchannel/-/automerge-repo-network-broadcastchannel-1.1.11.tgz#7d71d882ed811bbf1dc70031c6d3a18340794ca8"
-  integrity sha512-ISDXh9uCA/YME/4IcEGuSXWcrK4tZLRKQnLqxthsymvGhIiwYJ8+wzhQ+slSm0+k1OL0PCr+FL/jsxozwrPmjA==
+"@automerge/automerge-repo-network-broadcastchannel@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-broadcastchannel/-/automerge-repo-network-broadcastchannel-1.1.12.tgz#be458e57fa289c43dbd526f32d006edf13a992e3"
+  integrity sha512-XEyNWa43ixZtMOTUMAzeB0KY31EseLG3/AEJMnFQGIVwDyb95ihtuBSPWfdjshSZd46dJmCPxzNa4Niev80Siw==
   dependencies:
-    "@automerge/automerge-repo" "1.1.11"
+    "@automerge/automerge-repo" "1.1.12"
 
-"@automerge/automerge-repo-network-messagechannel@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-messagechannel/-/automerge-repo-network-messagechannel-1.1.11.tgz#52c75d1ae37231d9a6c0c45f6ca05002f0ea5bcc"
-  integrity sha512-0/jfB5CcLb20Kd0nmlE6vPtS5wwfrKPCuSnwHETaf6jWtUEuslASFDpCJ8LnwoSOrL3JXPwF3wt/Sks0ovQHIQ==
+"@automerge/automerge-repo-network-messagechannel@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-messagechannel/-/automerge-repo-network-messagechannel-1.1.12.tgz#f6ae0c881298212a39259a87e4c5aeb44fb70c88"
+  integrity sha512-dJzUpKjAJ11EBQyYOMYKyystXxBLwxuNvVNKEBsh77yl9cZvUNJn1hqtGJj/Ffh9ytM8MKgciH6f5SZHNL/2wg==
   dependencies:
-    "@automerge/automerge-repo" "1.1.11"
+    "@automerge/automerge-repo" "1.1.12"
     debug "^4.3.4"
     eventemitter3 "^5.0.1"
 
-"@automerge/automerge-repo-network-websocket@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-websocket/-/automerge-repo-network-websocket-1.1.11.tgz#8aecb0fc6ee774ae277392fcd5b047e143d8cd88"
-  integrity sha512-1r5XB+ozLl3aoX/l1A0OJvzVFZwhZYMZL2dCsJJ+2W3KaYKhWC6fu3gOiHLqhjXam1dBHWEtPcxAfdb1gvC9zw==
+"@automerge/automerge-repo-network-websocket@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-network-websocket/-/automerge-repo-network-websocket-1.1.12.tgz#0949c020127e3fd15ab6604e278a2e55ca5aa1d2"
+  integrity sha512-+jRyPkLaNPm9MGnZ6xwGmBwS8Sye6hBhVcrs/1v6Kues06Lecyv8XZvfLkxqOCWSO8aHV6sGhiAj57tDsXXCiw==
   dependencies:
-    "@automerge/automerge-repo" "1.1.11"
+    "@automerge/automerge-repo" "1.1.12"
     cbor-x "^1.3.0"
     debug "^4.3.4"
     eventemitter3 "^5.0.1"
     isomorphic-ws "^5.0.0"
     ws "^8.7.0"
 
-"@automerge/automerge-repo-react-hooks@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-react-hooks/-/automerge-repo-react-hooks-1.1.11.tgz#ff92ff6ac21df08e94bd67dcd3b63e84b7723c3e"
-  integrity sha512-CgpRHDGGzWcr4eHyNsy8p4qKeLUo4wi310pdz9tFq8qpIGsI2slnTo97YKrrD4zjO2h5NQ0bmIDD9uTnfpBVpw==
+"@automerge/automerge-repo-react-hooks@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-react-hooks/-/automerge-repo-react-hooks-1.1.12.tgz#eb28d1549f83704378bc966446c2d5738bab7911"
+  integrity sha512-mhyvcBUH+5BCY3ZN0v442yDCmgvGn1X94bsKE5PykECvucWw1gAGPBJkzf1MefiKsepvhMLYI+woAIU3ZmOjIg==
   dependencies:
     "@automerge/automerge" "^2.1.13"
-    "@automerge/automerge-repo" "1.1.11"
+    "@automerge/automerge-repo" "1.1.12"
     eventemitter3 "^5.0.1"
     react "^18.2.0"
     react-dom "^18.2.0"
     react-usestateref "^1.0.8"
 
-"@automerge/automerge-repo-storage-indexeddb@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-storage-indexeddb/-/automerge-repo-storage-indexeddb-1.1.11.tgz#ef3f0c4c8ffe52137ca72c3083f87b262b483de4"
-  integrity sha512-/msa6QCPiuQPx9skYYG2BQJFgQAwmequk5VRyc7U9NT8GlQdN3C0DmfjX6y4X66A09cx20vs3js9ZnyJadHZ5g==
+"@automerge/automerge-repo-storage-indexeddb@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo-storage-indexeddb/-/automerge-repo-storage-indexeddb-1.1.12.tgz#0cbe62c07f023724bd31c867aa996482255ef899"
+  integrity sha512-kXnLg0PSNWUAyknW7LvZTt2wXIhufuQHpbCWJCOSS6AaIabRxfhzT31hwYLihA2J1A3fRe3vLbUAQ/C9vGoOfg==
   dependencies:
-    "@automerge/automerge-repo" "1.1.11"
+    "@automerge/automerge-repo" "1.1.12"
 
-"@automerge/automerge-repo@1.1.11", "@automerge/automerge-repo@^1.1.11":
-  version "1.1.11"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo/-/automerge-repo-1.1.11.tgz#97d6f0af0ce5bbf8eda544a96ae19e0dc1ca6780"
-  integrity sha512-Rqs/XNJhpxqvVvIhw7NQATL0BOg0rZ9UVqDBM2Poa/IbocN8ZWj0mFqk8w8YifbSAYRcR4wHL2UCJukYLPTA7w==
+"@automerge/automerge-repo@1.1.12", "@automerge/automerge-repo@^1.1.12":
+  version "1.1.12"
+  resolved "https://registry.yarnpkg.com/@automerge/automerge-repo/-/automerge-repo-1.1.12.tgz#ee3f49fd6487007e36e4779d9c237b56914f4f5f"
+  integrity sha512-rhUcA24xN2+vt4dYt1BQdfaO4f8jC+suVZeqUjUlHKN2PTHe0aqJfy/WtwnRgp1d1VJulSMpusOYX0FMUqRcJw==
   dependencies:
     "@automerge/automerge" "^2.1.13"
     bs58check "^3.0.1"
