@@ -46,6 +46,9 @@ export const useDocumentWithLinks = <TRawDoc, TDocWithLinksMaterialized>({
     () => docContentsMapWithUrlsAsKeys[rootUrl],
     [docContentsMapWithUrlsAsKeys, rootUrl]
   );
+
+  console.log("root doc", rootDoc);
+
   const docWithChildren = useMemo(
     () =>
       rootDoc

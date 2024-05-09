@@ -56,6 +56,10 @@ export function useFolderDocWithChildren(
       folder: FolderDoc,
       loadedDocs: Record<AutomergeUrl, FolderDoc>
     ): FolderDocWithChildren => {
+      if (!folder.docs) {
+        console.error(folder);
+        throw new Error(`Expected folder doc to have .docs`);
+      }
       return {
         ...folder,
         docs: folder.docs.map((link) => {
