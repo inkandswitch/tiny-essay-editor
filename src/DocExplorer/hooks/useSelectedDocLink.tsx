@@ -21,16 +21,20 @@ const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
   const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
 
-  return `${name}${documentId}?docType=${docLink.type}`;
+  let url = `${name}${documentId}?docType=${docLink.type}`;
+
+  if (docLink.branchUrl) {
+    url += `&branchUrl=${docLink.branchUrl}`;
+  }
+
+  return url;
 };
 
 const isDocType = (x: string): x is DatatypeId =>
   Object.keys(datatypes).includes(x as DatatypeId);
 
 // Parse older URL formats and map them into our newer formatu
-const parseLegacyUrl = (
-  url: URL
-): { url: AutomergeUrl; type: DatatypeId } | null => {
+const parseLegacyUrl = (url: URL): Omit<DocLink, "name"> | null => {
   // First handle very old URLs that only had an Automerge URL:
   // domain.com/automerge:12345
   const possibleAutomergeUrl = url.pathname.slice(1);
@@ -42,8 +46,10 @@ const parseLegacyUrl = (
   }
 
   // Now on to the main logic where we look for URLs of the form:
-  // domain.com/#?docUrl=automerge:12345&docType=essay
-  const { docUrl, docType } = queryString.parse(url.pathname.slice(1));
+  // domain.com/#?docUrl=automerge:12345&docType=essay&branchUrl
+  const { docUrl, docType, branchUrl } = queryString.parse(
+    url.pathname.slice(1)
+  );
 
   if (typeof docUrl !== "string" || typeof docType !== "string") {
     return null;
@@ -59,9 +65,15 @@ const parseLegacyUrl = (
     return null;
   }
 
+  if (typeof branchUrl === "string" && !isValidAutomergeUrl(branchUrl)) {
+    alert(`Invalid branch in URL: ${branchUrl}`);
+    return null;
+  }
+
   return {
     url: docUrl,
     type: docType,
+    branchUrl: branchUrl as AutomergeUrl,
   };
 };
 
@@ -73,30 +85,29 @@ const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
   }
 
   const { docId } = match.groups;
-  const docType = url.searchParams.get("docType");
-  const docUrl = stringifyAutomergeUrl(docId as DocumentId);
 
+  const docUrl = stringifyAutomergeUrl(docId as DocumentId);
   if (!isValidAutomergeUrl(docUrl)) {
     alert(`Invalid doc id in URL: ${docUrl}`);
     return null;
   }
 
+  const docType = url.searchParams.get("docType");
   if (!isDocType(docType)) {
     alert(`Invalid doc type in URL: ${docType}`);
     return null;
   }
 
-  // hack: allow to easily switch to patchwork by adding "&patchwork=1" to the url
-  // todo: remove once patchwork is migrated to new url schema
-  if (url.searchParams.get("patchwork")) {
-    window.location.assign(
-      `https://patchwork.tee.inkandswitch.com/#docType=${docType}&docUrl=${docUrl}`
-    );
+  const branchUrl = url.searchParams.get("branchUrl");
+  if (branchUrl && !isValidAutomergeUrl(branchUrl)) {
+    alert(`Invalid branch in URL: ${branchUrl}`);
+    return null;
   }
 
   return {
     url: docUrl,
     type: docType,
+    branchUrl: branchUrl as AutomergeUrl,
   };
 };
 
@@ -141,7 +152,7 @@ export const useSelectedDocLink = ({
       return undefined;
     }
 
-    return folderDocWithMetadata?.flatDocLinks?.find((doc) => {
+    const link = folderDocWithMetadata?.flatDocLinks?.find((doc) => {
       const urlMatches = doc.url === urlParams?.url;
       const folderPathMatches =
         // If we don't have a selected folder path, then just take the first link we find
@@ -152,6 +163,10 @@ export const useSelectedDocLink = ({
         );
       return urlMatches && folderPathMatches;
     });
+
+    return link && urlParams.branchUrl
+      ? { ...link, branchUrl: urlParams.branchUrl }
+      : link;
   }, [
     urlParams,
     folderDocWithMetadata?.flatDocLinks,
@@ -201,10 +216,11 @@ export const useSelectedDocLink = ({
       if (!legacyUrlParams) {
         return;
       }
-      const { url, type } = legacyUrlParams;
+      const { url, type, branchUrl } = legacyUrlParams;
 
       if (url) {
-        window.location.hash = docLinkToUrl({ url, type, name: "" });
+        setSelectedDocLinkDangerouslyBypassingURL(undefined);
+        window.location.hash = docLinkToUrl({ url, type, name: "", branchUrl });
       }
     }
   }, [currentUrl, urlParams]);

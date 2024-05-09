@@ -11,6 +11,7 @@ export type DocLink = {
   name: string;
   type: DatatypeId;
   url: AutomergeUrl;
+  branchUrl?: AutomergeUrl;
 };
 
 export type DocLinkWithFolderPath = DocLink & {

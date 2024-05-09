@@ -288,7 +288,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 selection={treeSelection}
                 idAccessor={idAccessor}
                 onSelect={(selections) => {
-                  if (!selections || selections.length === 0) {
+                  if (
+                    !selections ||
+                    selections.length === 0 ||
+                    // ignore on select if the selection hasn't changed
+                    // this can happens when the tree component is being initialized
+                    selections[0].id === treeSelection
+                  ) {
                     return false;
                   }
                   const newlySelectedDocLink = selections[0].data;

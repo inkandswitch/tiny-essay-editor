@@ -48,13 +48,14 @@ export const DocExplorer: React.FC = () => {
     useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
-  const selectedDocType = selectedDocLink?.type;
-
-  const activeTool = useMemo(() => {
-    return selectedDocType ? TOOLS[selectedDocType]?.[0] : null;
-  }, [selectedDocType]);
-
-  const ToolComponent = activeTool?.component;
+  const selectedDocBranchUrl = selectedDocLink?.branchUrl;
+  const selectedBranch = useMemo<SelectedBranch>(
+    () =>
+      selectedDocBranchUrl
+        ? { type: "branch", url: selectedDocBranchUrl }
+        : { type: "main" },
+    [selectedDocBranchUrl]
+  );
 
   const addNewDocument = useCallback(
     ({ type }: { type: DatatypeId }) => {
@@ -234,8 +235,14 @@ export const DocExplorer: React.FC = () => {
                   docType={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
-                  selectedBranch={{ type: "main" } /* todo: selectedBranch*/}
-                  setSelectedBranch={() => {} /*selectBranch*/}
+                  selectedBranch={selectedBranch}
+                  setSelectedBranch={(branch) => {
+                    selectDocLink({
+                      ...selectedDocLink,
+                      branchUrl:
+                        branch.type === "branch" ? branch.url : undefined,
+                    });
+                  }}
                 />
               )}
             </div>
