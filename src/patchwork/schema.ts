@@ -1,8 +1,7 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import { PatchWithAttr } from "@automerge/automerge-wasm";
-import { TextPatch } from "./utils";
-import * as A from "@automerge/automerge/next";
 import { EditRange } from "@/tee/schema";
+import { AutomergeUrl } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
+import { TextPatch } from "./utils";
 
 export type Branch = {
   name: string;
@@ -56,7 +55,7 @@ export type Diffable = {
 // where they came from
 
 export type DiffWithProvenance = {
-  patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[]; // just pile on more things, it could be anyone of these three ...
+  patches: (A.Patch | TextPatch)[];
   fromHeads: A.Heads;
   toHeads: A.Heads;
 };

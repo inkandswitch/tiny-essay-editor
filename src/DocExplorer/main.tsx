@@ -1,19 +1,19 @@
 import * as A from "@automerge/automerge";
 //@ts-ignore
-import * as AW from "@automerge/automerge-wasm";
 import {
-  Repo,
   AutomergeUrl,
   DocHandle,
   PeerId,
+  Repo,
 } from "@automerge/automerge-repo";
 import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-messagechannel";
+import * as AW from "@automerge/automerge-wasm";
 
+import { next as Automerge } from "@automerge/automerge";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
-import { next as Automerge, diffWithAttribution } from "@automerge/automerge";
 
-import "./index.css";
 import { getAccount } from "./account.js";
+import "./index.css";
 import { mount } from "./mount.js";
 
 const serviceWorker = await setupServiceWorker();
@@ -53,6 +53,9 @@ async function setupServiceWorker(): Promise<ServiceWorker> {
 }
 
 async function setupRepo() {
+  // in our vendored version we export a promise that resolves once the wasm is loaded
+  // this property is missing in the type declaration
+  // @ts-expect-error
   await AW.promise;
   A.use(AW);
 

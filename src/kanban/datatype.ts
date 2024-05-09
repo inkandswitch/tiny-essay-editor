@@ -1,13 +1,12 @@
 import { DataType } from "@/DocExplorer/doctypes";
-import { uuid } from "@automerge/automerge";
-import { next as A } from "@automerge/automerge";
-import { KanbanSquare } from "lucide-react";
+import { ChangeGroup } from "@/patchwork/groupChanges";
 import {
   Annotation,
   HasPatchworkMetadata,
   initPatchworkMetadata,
 } from "@/patchwork/schema";
-import { ChangeGroup } from "@/patchwork/groupChanges";
+import { next as A } from "@automerge/automerge";
+import { KanbanSquare } from "lucide-react";
 
 export type Lane = {
   id: string;

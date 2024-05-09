@@ -1,9 +1,9 @@
-import { Sheet } from "lucide-react";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { next as A } from "@automerge/automerge";
 import { DataType } from "@/DocExplorer/doctypes";
-import { pick } from "lodash";
+import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
+import { next as A } from "@automerge/automerge";
+import { pick } from "lodash";
+import { Sheet } from "lucide-react";
 
 export type DataGridDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table
@@ -56,6 +56,8 @@ export const includeChangeInHistory = (doc: DataGridDoc) => {
   const commentsObjID = A.getObjectId(doc, "commentThreads");
 
   return (decodedChange: DecodedChangeWithMetadata) => {
+    // todo
+    // @ts-ignore
     return decodedChange.ops.some(
       (op) =>
         op.obj === dataObjId ||

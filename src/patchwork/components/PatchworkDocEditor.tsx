@@ -1,19 +1,45 @@
-import { DocType, editorsForDocType } from "@/DocExplorer/doctypes";
+import { useCurrentAccount } from "@/DocExplorer/account";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import {
-  DiffWithProvenance,
-  HasPatchworkMetadata,
-  AnnotationWithUIState,
-} from "../schema";
+  DocEditorProps,
+  DocType,
+  editorsForDocType,
+} from "@/DocExplorer/doctypes";
+import { getRelativeTimeString } from "@/DocExplorer/utils";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isLLMActive } from "@/llm";
+import { isMarkdownDoc } from "@/tee/datatype";
+import { MarkdownDocAnchor } from "@/tee/schema";
+import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { truncate } from "lodash";
 import * as A from "@automerge/automerge/next";
+import { isEqual, truncate } from "lodash";
 import {
   ChevronsRight,
   CrownIcon,
@@ -30,48 +56,27 @@ import {
   SplitIcon,
   Trash2Icon,
 } from "lucide-react";
-import { diffWithProvenance, useActorIdToAuthorMap } from "../utils";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectGroup,
-  SelectLabel,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { getRelativeTimeString } from "@/DocExplorer/utils";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { combinePatches } from "../utils";
-import { TimelineSidebar } from "./TimelineSidebar";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useAnnotations } from "../annotations";
 import {
   createBranch,
   deleteBranch,
   mergeBranch,
   suggestBranchName,
 } from "../branches";
-import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { toast } from "sonner";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AnnotationWithUIState,
+  DiffWithProvenance,
+  HasPatchworkMetadata,
+} from "../schema";
+import {
+  combinePatches,
+  diffWithProvenance,
+  useActorIdToAuthorMap,
+} from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
-import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
-import { isMarkdownDoc } from "@/tee/datatype";
-import { MarkdownDocAnchor } from "@/tee/schema";
-import { isEqual } from "lodash";
-import { isLLMActive } from "@/llm";
-import { useAnnotations } from "../annotations";
+import { TimelineSidebar } from "./TimelineSidebar";
 
 interface MakeBranchOptions {
   name?: string;
@@ -654,7 +659,6 @@ const DocEditor = <T, V>({
     <Component
       docUrl={docUrl}
       docHeads={docHeads}
-      docType={docType}
       annotations={
         annotations as AnnotationWithUIState<MarkdownDocAnchor, string>[]
       }

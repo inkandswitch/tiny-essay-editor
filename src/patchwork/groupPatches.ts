@@ -1,7 +1,6 @@
 import { MarkdownDoc } from "@/tee/schema";
 import { Patch } from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
-import { PatchWithAttr } from "@automerge/automerge-wasm";
 
 type PatchGroup = {
   groupStartIndex: number;
@@ -73,16 +72,6 @@ const getSizeOfPatch = (patch: Patch | TextPatch): number => {
     default:
       throw new Error("unsupported patch type");
   }
-};
-
-export const getAttrOfPatch = <T>(
-  patch: Patch | PatchWithAttr<T> | TextPatch
-): T | undefined => {
-  if (patch.action === "replace") {
-    return getAttrOfPatch(patch.raw.splice); // todo: this is not correct delete and insert could be from different authors
-  }
-
-  return "attr" in patch ? patch.attr : undefined;
 };
 
 export const groupPatchesByLine = groupPatchesByDelimiter("\n");

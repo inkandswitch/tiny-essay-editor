@@ -1,8 +1,7 @@
-import * as A from "@automerge/automerge/next";
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import { PatchWithAttr } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
-import { TextPatch } from "@/patchwork/utils";
 import { Discussion, HasPatchworkMetadata } from "@/patchwork/schema";
+import { TextPatch } from "@/patchwork/utils";
+import { AutomergeUrl } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
 import { HasAssets } from "./assets";
 
 export type Comment = {
@@ -47,7 +46,7 @@ export type ThreadAnnotation = {
 
 export type PatchAnnotation = {
   type: "patch";
-  patch: A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch;
+  patch: A.Patch | TextPatch;
   id: string;
   fromHeads: A.Heads;
   toHeads: A.Heads;
@@ -84,7 +83,7 @@ export type PersistedDraft = {
 export type DraftAnnotation = Omit<PersistedDraft, "editRangesWithComments"> & {
   editRangesWithComments: Array<{
     editRange: ResolvedEditRange;
-    patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[];
+    patches: (A.Patch | TextPatch)[];
     comments: Comment[];
   }>;
 };

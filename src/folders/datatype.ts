@@ -2,9 +2,10 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
-import { FolderIcon } from "lucide-react";
-import { DocType } from "@/DocExplorer/doctypes";
+import { DataType, DocType } from "@/DocExplorer/doctypes";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
+import { FolderIcon } from "lucide-react";
 
 export type DocLink = {
   name: string;
@@ -22,7 +23,7 @@ export type DocLinkWithFolderPath = DocLink & {
 export type FolderDoc = {
   title: string;
   docs: DocLink[];
-};
+} & HasPatchworkMetadata<never, never>;
 
 // A type representing a folder where the contents are either links to regular docs,
 // or links to folders, in which case we have access to the contents of the folder
@@ -52,7 +53,7 @@ export const setTitle = (doc: FolderDoc, title: string) => {
   doc.title = title;
 };
 
-export const FolderDatatype = {
+export const FolderDatatype: DataType<FolderDoc, never, never> = {
   id: "folder",
   name: "Folder",
   icon: FolderIcon,

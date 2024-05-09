@@ -9,6 +9,19 @@
 // - getAllChanges returns different orders on different devices;
 //   we should define a total order for changes across all devices.
 
+import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
+import { DocHandle } from "@automerge/automerge-repo/dist/DocHandle";
+import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import {
+  ActorId,
+  DecodedChange,
+  Doc,
+  Patch,
+  getHeads,
+  view,
+} from "@automerge/automerge/next";
+import { isEqual, sortBy } from "lodash";
+import { getChangesFromMergedBranch } from "./branches";
 import {
   Branch,
   Branchable,
@@ -18,23 +31,7 @@ import {
   Tag,
   Taggable,
 } from "./schema";
-import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
-import {
-  Doc,
-  decodeChange,
-  ActorId,
-  DecodedChange,
-  getAllChanges,
-  view,
-  getHeads,
-  Patch,
-} from "@automerge/automerge/next";
-import { diffWithProvenance } from "./utils";
-import { DocHandle } from "@automerge/automerge-repo/dist/DocHandle";
-import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
-import { getChangesFromMergedBranch } from "./branches";
-import { isEqual, sortBy } from "lodash";
-import { TextPatch } from "./utils";
+import { TextPatch, diffWithProvenance } from "./utils";
 
 /** Change group attributes that could work for any document */
 export type ChangeGroup<T> = {
@@ -63,7 +60,9 @@ export type ChangeGroup<T> = {
 
 export type GenericChangeGroup = ChangeGroup<unknown>;
 
-export interface DecodedChangeWithMetadata extends DecodedChange {}
+export interface DecodedChangeWithMetadata extends DecodedChange {
+  metadata: Record<string, any>;
+}
 
 /** A marker of a moment in the doc history associated w/ some heads */
 export type HeadsMarker<T> = {

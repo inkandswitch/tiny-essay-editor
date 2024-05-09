@@ -2,18 +2,21 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
-import { next as A } from "@automerge/automerge";
-import { Text } from "lucide-react";
-import { MarkdownDocAnchor, MarkdownDoc } from "./schema";
-import { Doc, splice } from "@automerge/automerge/next";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { DataType } from "@/DocExplorer/doctypes";
-import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
+import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
-import { getCursorSafely } from "@/patchwork/utils";
-import { pick } from "lodash";
+import {
+  TextPatch,
+  getCursorPositionSafely,
+  getCursorSafely,
+} from "@/patchwork/utils";
+import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
+import { Doc, splice } from "@automerge/automerge/next";
+import { pick } from "lodash";
+import { Text } from "lucide-react";
 import { AssetsDoc } from "./assets";
+import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
 export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
@@ -158,7 +161,8 @@ export const patchesToAnnotations = (
         ) {
           annotations.push({
             type: "changed",
-            before: nextPatch.removed,
+            // todo: add this back once we have deleted values on patches again
+            before: "", //nextPatch.removed,
             after: patch.value,
             anchor: {
               fromCursor: fromCursor,
@@ -191,7 +195,8 @@ export const patchesToAnnotations = (
 
         annotations.push({
           type: "deleted",
-          deleted: patch.removed,
+          // todo: add this back once we have deleted values on patches again
+          deleted: "", //patch.removed,
           anchor: {
             fromCursor: fromCursor,
             toCursor: toCursor,

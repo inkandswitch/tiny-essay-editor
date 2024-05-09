@@ -15,7 +15,8 @@
     "jsx": "react-jsx",
 
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@automerge/automerge-wasm" : ["./src/vendor/automerge-wasm/index.d.ts"]
     },
 
     /* Linting */

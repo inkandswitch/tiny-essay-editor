@@ -1,32 +1,29 @@
-import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import { Button } from "@/components/ui/button";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useCurrentAccount,
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DataType, DocType, docTypes } from "../doctypes";
+import { DocType, docTypes } from "../doctypes";
 
+import { Toaster } from "@/components/ui/sonner";
+import { LoadingScreen } from "./LoadingScreen";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import { LoadingScreen } from "./LoadingScreen";
-import { Toaster } from "@/components/ui/sonner";
 
-import queryString from "query-string";
-import { setUrlHashForDoc } from "../utils";
 import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
-import { useStaticCallback } from "@/tee/utils";
 
+import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
-import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { TOOLS } from "../tools";
 
 export const DocExplorer: React.FC = () => {

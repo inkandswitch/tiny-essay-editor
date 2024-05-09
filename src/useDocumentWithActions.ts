@@ -26,7 +26,12 @@ export const useDocumentWithActions = <D>(
           (doc: D) => {
             value(doc, args);
           },
-          { metadata: { action: key, actionArgs: JSON.stringify(args) } }
+          {
+            message: JSON.stringify({
+              action: key,
+              actionArgs: JSON.stringify(args),
+            }),
+          }
         );
       };
     }

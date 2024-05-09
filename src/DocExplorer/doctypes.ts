@@ -1,31 +1,29 @@
-import { next as A, Doc } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { TLDrawDatatype } from "@/tldraw/datatype";
-import { DataGridDatatype } from "@/datagrid/datatype";
-import { EssayDatatype } from "@/tee/datatype";
+import { BotEditor } from "@/bots/BotEditor";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
-import { Repo } from "@automerge/automerge-repo";
+import { DataGrid } from "@/datagrid/components/DataGrid";
+import { DataGridDatatype } from "@/datagrid/datatype";
+import { FolderViewer } from "@/folders/components/FolderViewer";
+import { FolderDatatype } from "@/folders/datatype";
+import { KanbanBoard } from "@/kanban/components/Kanban";
+import { KanbanBoardDatatype } from "@/kanban/datatype";
 import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
 import {
+  Annotation,
   AnnotationWithUIState,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { Annotation } from "@/patchwork/schema";
-import { KanbanBoardDatatype } from "@/kanban/datatype";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { BotEditor } from "@/bots/BotEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
-import { DataGrid } from "@/datagrid/components/DataGrid";
-import { KanbanBoard } from "@/kanban/components/Kanban";
-import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
-import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
-import { FolderDatatype } from "@/folders/datatype";
-import { FolderViewer } from "@/folders/components/FolderViewer";
 import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
+import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
+import { EssayDatatype } from "@/tee/datatype";
+import { TLDraw } from "@/tldraw/components/TLDraw";
+import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
+import { TLDrawDatatype } from "@/tldraw/datatype";
+import { next as A, Doc } from "@automerge/automerge";
+import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 
 export type CoreDataType<D> = {
   id: string;
@@ -140,7 +138,7 @@ export type DocType = keyof typeof docTypes;
 // (A simple example is a raw JSON editor.)
 export const editorsForDocType: Record<
   string,
-  Array<React.FC<DocEditorPropsWithDocType<any, any>>>
+  Array<React.FC<DocEditorProps<any, any>>>
 > = {
   essay: [TinyEssayEditor],
   bot: [BotEditor],

@@ -11,17 +11,14 @@ import {
   ResolvedMarkdownDocAnchor,
 } from "../schema";
 
-import { PatchWithAttr } from "@automerge/automerge-wasm";
 import { EditorView } from "@codemirror/view";
-import { ReviewStateFilter } from "../utils";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { DocEditorProps } from "@/DocExplorer/doctypes";
 import { AnnotationWithUIState } from "@/patchwork/schema";
-import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
-import { Patch, view } from "@automerge/automerge/next";
+import { getCursorPositionSafely } from "@/patchwork/utils";
 import { isEqual, uniq } from "lodash";
 import "../../tee/index.css";
 
@@ -113,17 +110,4 @@ export const TinyEssayEditor = (
       </div>
     </div>
   );
-};
-
-const getPatchLength = (
-  patch: Patch | PatchWithAttr<AutomergeUrl> | TextPatch
-) => {
-  switch (patch.action) {
-    case "del":
-      return patch.length;
-    case "splice":
-      return patch.value.length;
-    case "replace":
-      return patch.raw.splice.value.length;
-  }
 };

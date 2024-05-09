@@ -1,18 +1,18 @@
-import * as A from "@automerge/automerge/next";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import * as A from "@automerge/automerge/next";
+import React from "react";
 
-import { FolderDoc } from "../datatype";
-import { TOOLS } from "@/DocExplorer/tools";
 import {
   DocEditorProps,
   docTypes,
   editorsForDocType,
 } from "@/DocExplorer/doctypes";
+import { FolderDoc } from "../datatype";
 
-export const FolderViewer = ({
+export const FolderViewer: React.FC<DocEditorProps<never, never>> = ({
   docUrl,
   docHeads,
-}: DocEditorProps<never, string> & { readonly?: boolean }) => {
+}: DocEditorProps<never, never>) => {
   const [folder] = useDocument<FolderDoc>(docUrl); // used to trigger re-rendering when the doc loads
 
   const folderAtHeads = docHeads ? A.view(folder, docHeads) : folder;
@@ -24,10 +24,10 @@ export const FolderViewer = ({
   return (
     <div className="p-2 h-full overflow-hidden">
       <div className="text-gray-500 text-sm mb-4 pb-2 border-b border-gray-300">
-        {folder.docs.length} documents
+        {folderAtHeads.docs.length} documents
       </div>
       <div className="flex flex-col gap-10 px-4 h-full overflow-y-auto pb-24">
-        {folder.docs.map((docLink) => {
+        {folderAtHeads.docs.map((docLink) => {
           const Tool = editorsForDocType[docLink.type]?.[0];
           const Icon = docTypes[docLink.type].icon;
 
