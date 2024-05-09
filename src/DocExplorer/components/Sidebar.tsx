@@ -24,6 +24,7 @@ import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
 import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
 import { capitalize } from "lodash";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
@@ -304,6 +305,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 // }}
                 onMove={onMove}
                 onRename={({ node, name }) => {
+                  console.log("rename", name);
+
                   const docLink = flatDocLinks.find(
                     (doc) => doc.url === node.data.url
                   );
@@ -324,12 +327,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const parentHandle = repo.find<FolderDoc>(
                     docLink.folderPath[docLink.folderPath.length - 1]
                   );
+
+                  // rename doc link
                   parentHandle.change((d) => {
                     const doc = d.docs.find((doc) => doc.url === docLink.url);
                     if (doc) {
                       doc.name = name;
                     }
                   });
+
+                  // rename doc title
+                  const docHandle = repo.find<
+                    HasPatchworkMetadata<unknown, unknown>
+                  >(docLink.url);
+                  docHandle.change((doc) => {
+                    datatype.setTitle(doc, name);
+                  });
+
+                  selectDocLink({ ...selectedDocLink, name });
                 }}
               >
                 {Node}

@@ -29,7 +29,7 @@ export const markCopy = (doc: any) => {
   doc.title = "Copy of " + doc.title;
 };
 
-const getTitle = (doc: any) => {
+const getTitle = async (doc: any) => {
   return doc.title || "Mystery Data Grid";
 };
 

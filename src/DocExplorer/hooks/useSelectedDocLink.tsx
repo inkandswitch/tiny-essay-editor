@@ -180,15 +180,15 @@ export const useSelectedDocLink = ({
     }
     if (
       !folderDocWithMetadata.flatDocLinks.find(
-        (doc) => doc.url === urlParams?.url
+        (doc) => doc.url === urlParams.url
       )
     ) {
       repo.find<FolderDoc>(folderDocWithMetadata.rootFolderUrl).change((doc) =>
         doc.docs.unshift({
-          type: urlParams?.type,
+          type: urlParams.type,
           // The name will be synced in here once the doc loads
           name: "Loading...",
-          url: urlParams?.url,
+          url: urlParams.url,
         })
       );
     }

@@ -44,7 +44,7 @@ export const markCopy = (doc: FolderDoc) => {
   doc.title = `Copy of ${doc.title}`;
 };
 
-export const getTitle = (doc: any) => {
+export const getTitle = async (doc: any) => {
   return doc.title;
 };
 

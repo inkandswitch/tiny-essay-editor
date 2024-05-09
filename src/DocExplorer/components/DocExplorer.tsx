@@ -25,7 +25,7 @@ import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { useStaticCallback } from "@/tee/utils";
 
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
-import { useSyncDocTitles } from "../hooks/useSyncDocTitles";
+import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { TOOLS } from "../tools";
 
@@ -105,14 +105,13 @@ export const DocExplorer: React.FC = () => {
   );
 
   // todo: reconcile this
-  /*
-  useSyncDocTitles({
+
+  useSyncDocTitle({
     selectedDocLink,
-    selectedDocHandle,
     selectedDoc,
     selectDocLink,
     repo,
-  }); */
+  });
 
   // update tab title to be the selected doc
   useEffect(() => {

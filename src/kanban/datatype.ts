@@ -38,7 +38,7 @@ export const markCopy = () => {
   console.error("todo");
 };
 
-const getTitle = (doc: any) => {
+const getTitle = async (doc: any) => {
   return doc.title;
 };
 
