@@ -19,9 +19,16 @@ import { DatatypeId, datatypes } from "../datatypes";
 
 const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
-  const name = `${docLink.name.trim().replace(/\s/g, "-").toLowerCase()}-`;
+  let urlSafeName = `${docLink.name
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .toLowerCase()}`.slice(0, 100);
 
-  let url = `${name}${documentId}?docType=${docLink.type}`;
+  if (!urlSafeName.endsWith("-")) {
+    urlSafeName += "-";
+  }
+
+  let url = `${urlSafeName}${documentId}?docType=${docLink.type}`;
 
   if (docLink.branchUrl) {
     url += `&branchUrl=${docLink.branchUrl}`;
