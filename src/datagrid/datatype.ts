@@ -25,11 +25,15 @@ export type DataGridDocAnchor = {
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
 // (this mechanism needs to be thought out more...)
-export const markCopy = (doc: any) => {
+export const markCopy = (doc: DataGridDoc) => {
   doc.title = "Copy of " + doc.title;
 };
 
-const getTitle = async (doc: any) => {
+const setTitle = async (doc: DataGridDoc, title: string) => {
+  doc.title = title;
+};
+
+const getTitle = async (doc: DataGridDoc) => {
   return doc.title || "Mystery Data Grid";
 };
 
@@ -143,6 +147,7 @@ export const DataGridDatatype: DataType<
   icon: Sheet,
   init,
   getTitle,
+  setTitle,
   markCopy, // TODO: this shouldn't be here
 
   includeChangeInHistory,

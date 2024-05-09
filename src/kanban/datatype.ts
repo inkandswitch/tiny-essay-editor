@@ -38,8 +38,12 @@ export const markCopy = () => {
   console.error("todo");
 };
 
-const getTitle = async (doc: any) => {
+const getTitle = async (doc: KanbanBoardDoc) => {
   return doc.title;
+};
+
+const setTitle = async (doc: KanbanBoardDoc, title: string) => {
+  doc.title = title;
 };
 
 export const init = (doc: any) => {
@@ -244,6 +248,7 @@ export const KanbanBoardDatatype: DataType<
   icon: KanbanSquare,
   init,
   getTitle,
+  setTitle,
   markCopy,
   fallbackSummaryForChangeGroup,
   actions,
