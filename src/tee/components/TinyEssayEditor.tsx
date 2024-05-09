@@ -32,7 +32,7 @@ export const TinyEssayEditor = (
     docUrl,
     docHeads,
     annotations = [],
-    setSelectedAnchors,
+    setSelectedAnchors = () => {},
     actorIdToAuthor,
   } = props;
 

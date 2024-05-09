@@ -21,11 +21,11 @@ interface TLDrawProps extends DocEditorProps<TLDrawDocAnchor, TLShape> {
 export const TLDraw = ({
   docUrl,
   docHeads,
-  annotations,
+  annotations = [],
   camera,
   onChangeCamera,
-  setSelectedAnchors,
-  setHoveredAnchor,
+  setSelectedAnchors = () => {},
+  setHoveredAnchor = () => {},
 }: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);

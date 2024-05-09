@@ -24,11 +24,11 @@ export const TOOLS = {
       component: TLDraw,
     },
   ],
-  folder: [
+  /*  folder: [
     {
       id: "folder",
       name: "Folder",
       component: FolderViewer,
     },
-  ],
+  ], */
 };

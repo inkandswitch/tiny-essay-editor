@@ -104,13 +104,15 @@ export const DocExplorer: React.FC = () => {
     [repo, selectedDocLink, selectDocLink]
   );
 
+  // todo: reconcile this
+  /*
   useSyncDocTitles({
     selectedDocLink,
     selectedDocHandle,
     selectedDoc,
     selectDocLink,
     repo,
-  });
+  }); */
 
   // update tab title to be the selected doc
   useEffect(() => {

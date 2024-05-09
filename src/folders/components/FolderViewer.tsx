@@ -1,20 +1,21 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
-import { DocLinkWithFolderPath, FolderDoc } from "../datatype";
+import { FolderDoc } from "../datatype";
 import { TOOLS } from "@/DocExplorer/tools";
-import { docTypes } from "@/DocExplorer/doctypes";
+import {
+  DocEditorProps,
+  docTypes,
+  editorsForDocType,
+} from "@/DocExplorer/doctypes";
 
 export const FolderViewer = ({
   docUrl,
-  selectedDocLink,
-  selectDocLink,
-}: {
-  docUrl: AutomergeUrl;
-  selectedDocLink: DocLinkWithFolderPath;
-  selectDocLink: (docLink: DocLinkWithFolderPath) => void;
-}) => {
+  docHeads,
+}: DocEditorProps<never, string> & { readonly?: boolean }) => {
   const [folder] = useDocument<FolderDoc>(docUrl); // used to trigger re-rendering when the doc loads
+
+  const folderAtHeads = docHeads ? A.view(folder, docHeads) : folder;
 
   if (!folder) {
     return null;
@@ -27,7 +28,7 @@ export const FolderViewer = ({
       </div>
       <div className="flex flex-col gap-10 px-4 h-full overflow-y-auto pb-24">
         {folder.docs.map((docLink) => {
-          const Tool = TOOLS[docLink.type]?.[0].component;
+          const Tool = editorsForDocType[docLink.type]?.[0];
           const Icon = docTypes[docLink.type].icon;
 
           return (
@@ -40,12 +41,12 @@ export const FolderViewer = ({
                 <div>{docLink.name}</div>
                 <div
                   className="text-sm text-gray-500 underline align-bottom cursor-pointer"
-                  onClick={() =>
-                    selectDocLink({
-                      ...docLink,
-                      folderPath: [...selectedDocLink.folderPath, docUrl],
-                    })
-                  }
+                  onClick={() => {
+                    /* selectDocLink({
+                        ...docLink,
+                        folderPath: [...selectedDocLink.folderPath, docUrl],
+                      }) */
+                  }}
                 >
                   Open
                 </div>

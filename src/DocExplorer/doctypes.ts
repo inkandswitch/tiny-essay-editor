@@ -127,7 +127,7 @@ export const docTypes: Record<
   datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
-  folder: FolderDatatype,
+  folder: FolderDatatype, // todo: fix type
 } as const;
 
 export type DocType = keyof typeof docTypes;
@@ -147,6 +147,7 @@ export const editorsForDocType: Record<
   tldraw: [TLDraw],
   datagrid: [DataGrid],
   kanban: [KanbanBoard],
+  folder: [FolderViewer],
 };
 
 export const annotationViewersForDocType: Record<

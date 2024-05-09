@@ -1,3 +1,4 @@
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { docTypes } from "../doctypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
@@ -16,7 +17,7 @@ export const useSyncDocTitles = ({
   selectedDocHandle,
   selectDocLink,
 }: {
-  selectedDoc: Doc<unknown>;
+  selectedDoc: Doc<HasPatchworkMetadata<unknown, unknown>>;
   selectedDocLink: DocLinkWithFolderPath;
   repo: Repo;
   selectedDocHandle: DocHandle<unknown>;
@@ -35,7 +36,7 @@ export const useSyncDocTitles = ({
 
     const currentSelectedDocTitle = {
       url: selectedDocLink.url,
-      fromDoc: docTypes[selectedDocLink.type].getTitle(selectedDoc),
+      fromDoc: docTypes[selectedDocLink.type].getTitle(selectedDoc, repo),
       fromLink: selectedDocLink.name,
     };
 
@@ -92,7 +93,7 @@ export const useSyncDocTitles = ({
           existingDocLink &&
           existingDocLink.name !== currentSelectedDocTitle.fromDoc
         ) {
-          existingDocLink.name = currentSelectedDocTitle.fromDoc;
+          existingDocLink.name = "foobar"; //currentSelectedDocTitle.fromDoc;
 
           // Re-select the doc link in order to propagate the new title to the URL bar
           selectDocLink({
