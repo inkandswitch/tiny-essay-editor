@@ -1,5 +1,5 @@
 import { next as A } from "@automerge/automerge";
-import { DataType } from "@/DocExplorer/doctypes";
+import { DataType } from "@/DocExplorer/datatypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
 import { TLDrawDoc, TLDrawDocAnchor } from "./schema";

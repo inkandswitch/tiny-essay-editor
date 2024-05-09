@@ -9,7 +9,7 @@ import { useMemo } from "react";
 
 import * as A from "@automerge/automerge/next";
 import { registerRenderer, textRenderer } from "handsontable/renderers";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { DocEditorProps } from "@/DocExplorer/datatypes";
 
 // register Handsontable's modules
 registerAllModules();

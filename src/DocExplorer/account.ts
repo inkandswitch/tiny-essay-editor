@@ -13,11 +13,11 @@ import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
 import { useForceUpdate } from "@/lib/utils";
 
-import { DocType } from "./doctypes";
+import { DatatypeId } from "./datatypes";
 
 export type DocLink = {
   name: string;
-  type: DocType;
+  type: DatatypeId;
   url: AutomergeUrl;
 };
 import { FolderDoc } from "../folders/datatype";

@@ -11,7 +11,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/folders/datatype";
-import { DocType, docTypes } from "../doctypes";
+import { DatatypeId, datatypes } from "../datatypes";
 
 import {
   Popover,
@@ -28,7 +28,7 @@ import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const Icon = docTypes[node.data.type]?.icon ?? FileQuestionIcon;
+  const Icon = datatypes[node.data.type]?.icon ?? FileQuestionIcon;
 
   return (
     <div
@@ -49,7 +49,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       />
       {!node.isEditing && (
         <span>
-          {docTypes[node.data.type]
+          {datatypes[node.data.type]
             ? node.data.name
             : `Unknown type: ${node.data.type}`}
         </span>
@@ -85,7 +85,7 @@ type SidebarProps = {
   selectedDocLink: DocLinkWithFolderPath | null;
   selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
   hideSidebar: () => void;
-  addNewDocument: (doc: { type: DocType }) => void;
+  addNewDocument: (doc: { type: DatatypeId }) => void;
 };
 
 const prepareDataForTree = (
@@ -213,12 +213,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(docTypes).map(([id, docType]) => (
+        {Object.entries(datatypes).map(([id, docType]) => (
           <div key={docType.id}>
             {" "}
             <div
               className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-              onClick={() => addNewDocument({ type: id as DocType })}
+              onClick={() => addNewDocument({ type: id as DatatypeId })}
             >
               <docType.icon
                 size={14}
@@ -310,7 +310,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const docLink = flatDocLinks.find(
                     (doc) => doc.url === node.data.url
                   );
-                  const datatype = docTypes[docLink.type];
+                  const datatype = datatypes[docLink.type];
 
                   if (!datatype.setTitle) {
                     alert(

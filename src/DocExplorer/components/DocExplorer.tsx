@@ -11,7 +11,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DocType, docTypes } from "../doctypes";
+import { DatatypeId, datatypes } from "../datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -57,14 +57,14 @@ export const DocExplorer: React.FC = () => {
   const ToolComponent = activeTool?.component;
 
   const addNewDocument = useCallback(
-    ({ type }: { type: DocType }) => {
-      if (!docTypes[type]) {
+    ({ type }: { type: DatatypeId }) => {
+      if (!datatypes[type]) {
         throw new Error(`Unsupported document type: ${type}`);
       }
 
       const newDocHandle =
         repo.create<HasPatchworkMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => docTypes[type].init(doc, repo));
+      newDocHandle.change((doc) => datatypes[type].init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];

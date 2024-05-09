@@ -1,7 +1,7 @@
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
-import { DocEditorProps, DocType } from "@/DocExplorer/doctypes";
+import { DocEditorProps, DatatypeId } from "@/DocExplorer/datatypes";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -85,7 +85,7 @@ type SidebarMode = "comments" | "timeline";
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const PatchworkDocEditor: React.FC<{
   docUrl: AutomergeUrl;
-  docType: DocType;
+  docType: DatatypeId;
   selectedBranch: SelectedBranch;
   setSelectedBranch: (branch: SelectedBranch) => void;
 }> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
@@ -636,7 +636,7 @@ export const PatchworkDocEditor: React.FC<{
 };
 
 export interface DocEditorPropsWithDocType<T, V> extends DocEditorProps<T, V> {
-  docType: DocType;
+  docType: DatatypeId;
 }
 
 /* Wrapper component that dispatches to the tool for the doc type */

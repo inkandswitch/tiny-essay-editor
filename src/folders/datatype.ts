@@ -2,14 +2,14 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
-import { DataType, DocType } from "@/DocExplorer/doctypes";
+import { DataType, DatatypeId } from "@/DocExplorer/datatypes";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { FolderIcon } from "lucide-react";
 
 export type DocLink = {
   name: string;
-  type: DocType;
+  type: DatatypeId;
   url: AutomergeUrl;
 };
 

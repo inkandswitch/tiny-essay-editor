@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import * as A from "@automerge/automerge/next";
 import { isEqual, sortBy, min } from "lodash";
 import { useStaticCallback } from "@/tee/utils";
-import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import { DatatypeId, datatypes } from "@/DocExplorer/datatypes";
 import {
   Annotation,
   HighlightAnnotation,
@@ -38,7 +38,7 @@ export function useAnnotations({
   isCommentInputFocused,
 }: {
   doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
-  docType: DocType;
+  docType: DatatypeId;
   diff?: DiffWithProvenance;
   isCommentInputFocused: boolean;
 }): {
@@ -109,8 +109,8 @@ export function useAnnotations({
       return { annotations: [], annotationGroups: [] };
     }
 
-    const patchesToAnnotations = docTypes[docType].patchesToAnnotations;
-    const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
+    const patchesToAnnotations = datatypes[docType].patchesToAnnotations;
+    const valueOfAnchor = datatypes[docType].valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
     const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
@@ -206,7 +206,7 @@ export function useAnnotations({
       highlightAnnotations.push(...selectionAnnotations);
     }
 
-    const sortAnchorsBy = docTypes[docType].sortAnchorsBy;
+    const sortAnchorsBy = datatypes[docType].sortAnchorsBy;
 
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
@@ -377,17 +377,17 @@ export function useAnnotations({
 }
 
 export const doAnchorsOverlap = (
-  type: DocType,
+  type: DatatypeId,
   a: unknown,
   b: unknown,
   doc: HasPatchworkMetadata<unknown, unknown>
 ) => {
-  const comperator = docTypes[type].doAnchorsOverlap;
+  const comperator = datatypes[type].doAnchorsOverlap;
   return comperator ? comperator(doc, a, b) : isEqual(a, b);
 };
 
 export const areAnchorSelectionsEqual = (
-  type: DocType,
+  type: DatatypeId,
   a: unknown[],
   b: unknown[],
   doc: HasPatchworkMetadata<unknown, unknown>
@@ -414,7 +414,7 @@ export function getAnnotationGroupId<T, V>(
 }
 
 export function doesAnnotationGroupContainAnchors<T, V>(
-  docType: DocType,
+  docType: DatatypeId,
   group: AnnotationGroup<T, V>,
   anchors: T[],
   doc: HasPatchworkMetadata<T, V>
@@ -427,11 +427,11 @@ export function doesAnnotationGroupContainAnchors<T, V>(
 }
 
 export function groupAnnotations<T, V>(
-  docType: DocType,
+  docType: DatatypeId,
   annotations: Annotation<T, V>[]
 ): Annotation<T, V>[][] {
   const grouper =
-    docTypes[docType].groupAnnotations ??
+    datatypes[docType].groupAnnotations ??
     ((annotations: Annotation<T, V>[]) =>
       annotations.map((annotation) => [annotation]));
 

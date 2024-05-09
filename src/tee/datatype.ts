@@ -2,7 +2,7 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
-import { DataType } from "@/DocExplorer/doctypes";
+import { DataType } from "@/DocExplorer/datatypes";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
 import {

@@ -1,4 +1,4 @@
-import { DataType } from "@/DocExplorer/doctypes";
+import { DataType } from "@/DocExplorer/datatypes";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
 import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";

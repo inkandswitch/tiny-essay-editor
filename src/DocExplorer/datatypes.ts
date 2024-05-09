@@ -1,10 +1,6 @@
-import { BotEditor } from "@/bots/BotEditor";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
-import { DataGrid } from "@/datagrid/components/DataGrid";
 import { DataGridDatatype } from "@/datagrid/datatype";
-import { FolderViewer } from "@/folders/components/FolderViewer";
 import { FolderDatatype } from "@/folders/datatype";
-import { KanbanBoard } from "@/kanban/components/Kanban";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
 import {
   ChangeGroup,
@@ -17,9 +13,7 @@ import {
 } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
 import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
 import { EssayDatatype } from "@/tee/datatype";
-import { TLDraw } from "@/tldraw/components/TLDraw";
 import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
 import { TLDrawDatatype } from "@/tldraw/datatype";
 import { next as A, Doc } from "@automerge/automerge";
@@ -116,7 +110,7 @@ export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
 // to the corresponding typescript type. This will be more natural once we have a
 // schema system for generating typescript types.
 
-export const docTypes: Record<
+export const datatypes: Record<
   string,
   DataType<HasPatchworkMetadata<unknown, unknown>, unknown, unknown>
 > = {
@@ -128,7 +122,7 @@ export const docTypes: Record<
   folder: FolderDatatype, // todo: fix type
 } as const;
 
-export type DocType = keyof typeof docTypes;
+export type DatatypeId = keyof typeof datatypes;
 
 export const annotationViewersForDocType: Record<
   string,

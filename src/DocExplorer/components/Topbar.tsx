@@ -39,7 +39,7 @@ import { getHeads, save } from "@automerge/automerge";
 import { SelectedBranch } from "./DocExplorer";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
-import { DocType, docTypes } from "../doctypes";
+import { DatatypeId, datatypes } from "../datatypes";
 import { runBot } from "@/bots/essayEditorBot";
 import { Button } from "@/components/ui/button";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
@@ -54,7 +54,7 @@ type TopbarProps = {
   selectedDocHandle:
     | DocHandle<HasPatchworkMetadata<unknown, unknown>>
     | undefined;
-  addNewDocument: (doc: { type: DocType }) => void;
+  addNewDocument: (doc: { type: DatatypeId }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
 };
 
@@ -73,7 +73,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
 
-  const selectedDatatypeMetadata = docTypes[selectedDocType];
+  const selectedDatatypeMetadata = datatypes[selectedDocType];
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
 
@@ -228,7 +228,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     selectedDocHandle
                   );
                 newHandle.change((doc: any) => {
-                  docTypes[selectedDocType].markCopy(doc);
+                  datatypes[selectedDocType].markCopy(doc);
                   doc.branchMetadata.source = {
                     url: selectedDocUrl,
                     branchHeads: getHeads(selectedDocHandle.docSync()),
@@ -237,7 +237,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: await docTypes[selectedDocType].getTitle(
+                  name: await datatypes[selectedDocType].getTitle(
                     newHandle.docSync(),
                     repo
                   ),

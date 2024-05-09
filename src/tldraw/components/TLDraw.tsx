@@ -3,7 +3,7 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { useMemo, useState } from "react";
 
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { DocEditorProps } from "@/DocExplorer/datatypes";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
 import { AnnotationWithUIState } from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";

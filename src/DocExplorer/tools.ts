@@ -5,7 +5,7 @@ import { FolderViewer } from "@/folders/components/FolderViewer";
 import { DataGrid } from "@/datagrid/components/DataGrid";
 import { BotEditor } from "@/bots/BotEditor";
 import { KanbanBoard } from "@/kanban/components/Kanban";
-import { DocEditorProps } from "./doctypes";
+import { DocEditorProps } from "./datatypes";
 
 export type Tool = {
   id: string;

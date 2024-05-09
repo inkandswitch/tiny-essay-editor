@@ -1,4 +1,4 @@
-import { DataType } from "@/DocExplorer/doctypes";
+import { DataType } from "@/DocExplorer/datatypes";
 import { ChangeGroup } from "@/patchwork/groupChanges";
 import {
   Annotation,

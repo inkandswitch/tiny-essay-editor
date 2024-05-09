@@ -8,7 +8,7 @@ import { KanbanBoardDatatype } from "../datatype";
 import Board from "react-trello";
 import { useMemo } from "react";
 import { useDocumentWithActions } from "@/useDocumentWithActions";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { DocEditorProps } from "@/DocExplorer/datatypes";
 
 export const KanbanBoard = ({
   docUrl,
