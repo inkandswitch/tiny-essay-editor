@@ -1,6 +1,6 @@
 import { EssayEditingBotDatatype } from "@/bots/datatype";
 import { DataGridDatatype } from "@/datagrid/datatype";
-import { FolderDatatype } from "@/folders/datatype";
+import { DocLink, FolderDatatype } from "@/folders/datatype";
 import { KanbanBoardDatatype } from "@/kanban/datatype";
 import {
   ChangeGroup,

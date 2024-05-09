@@ -36,17 +36,19 @@ export const FolderViewer: React.FC<DocEditorProps<never, never>> = ({
               >
                 <Icon size={16} />
                 <div>{docLink.name}</div>
-                <div
-                  className="text-sm text-gray-500 underline align-bottom cursor-pointer"
-                  onClick={() => {
-                    /* selectDocLink({
+                {false && (
+                  <button
+                    className="text-sm text-gray-500 underline align-bottom cursor-pointer"
+                    onClick={() => {
+                      /*selectDocLink({
                         ...docLink,
-                        folderPath: [...selectedDocLink.folderPath, docUrl],
-                      }) */
-                  }}
-                >
-                  Open
-                </div>
+                        folderPath: [, docUrl],
+                      });*/
+                    }}
+                  >
+                    Open
+                  </button>
+                )}
               </div>
               <div className="h-72 border border-gray-300">
                 {!Tool && <div>No editor available</div>}
