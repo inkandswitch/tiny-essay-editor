@@ -7,11 +7,6 @@
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
-    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
-    "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
-    "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
-    "export:static": "node -e \"require('fs').cpSync('public', 'tsc', { recursive: true });\"",
-    "export:packagejson": "node -e \"require('fs').cpSync('package.json', 'tsc/package.json');\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest"

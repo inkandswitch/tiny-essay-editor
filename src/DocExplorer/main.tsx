@@ -1,4 +1,6 @@
 import * as A from "@automerge/automerge";
+import React from "react";
+import ReactDom from "react-dom/client";
 //@ts-ignore
 import {
   AutomergeUrl,
@@ -14,7 +16,8 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 
 import { getAccount } from "./account.js";
 import "./index.css";
-import { mount } from "./mount.js";
+import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { DocExplorer } from "./components/DocExplorer.js";
 
 const serviceWorker = await setupServiceWorker();
 
@@ -153,8 +156,10 @@ window.Automerge = Automerge;
 // @ts-expect-error - adding property to window
 window.repo = repo;
 
-// Unlike other uses of mount, here we don't pass any doc URL.
-// That's because DocExplorer internally expects to manage the URL hash itself.
-// todo: with the new url format mount doesn't work anymore in trail runner, because we take over the url
+const Root = () => (
+  <RepoContext.Provider value={repo}>
+    <DocExplorer />
+  </RepoContext.Provider>
+);
 
-mount(document.getElementById("root"), {});
+ReactDom.createRoot(document.getElementById("root")).render(<Root />);
