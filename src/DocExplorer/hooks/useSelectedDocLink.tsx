@@ -17,17 +17,32 @@ import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
 import { isEqual } from "lodash";
 import { DatatypeId, datatypes } from "../datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
-  let url = getUrlSafeName(docLink.name);
 
+  let url = "";
+
+  // add name (optional)
+  if (docLink.name) {
+    url += getUrlSafeName(docLink.name);
+  }
+
+  // add branch name (optional)
   if (docLink.branchName && docLink.branchUrl) {
     url += `-(${getUrlSafeName(docLink.branchName)})`;
   }
 
-  url += `--${documentId}?docType=${docLink.type}`;
+  // if name part is not empty add separator
+  if (url !== "") {
+    url += "--";
+  }
 
+  // add id & doctype
+  url += `${documentId}?docType=${docLink.type}`;
+
+  // add branchUrl (optional)
   if (docLink.branchUrl) {
     url += `&branchUrl=${docLink.branchUrl}`;
   }
@@ -38,7 +53,7 @@ const docLinkToUrl = (docLink: DocLink): string => {
 // Turn names into a readable url safe string
 // - replaces any sequence of alpha numeric characters with a single "-"
 // - limits length to 100 characters
-function getUrlSafeName(value: string) {
+const getUrlSafeName = (value: string) => {
   let urlSafeName = value
     .trim()
     .replace(/[^a-zA-Z0-9]+/g, "-")
@@ -54,7 +69,7 @@ function getUrlSafeName(value: string) {
   }
 
   return urlSafeName;
-}
+};
 
 const isDocType = (x: string): x is DatatypeId =>
   Object.keys(datatypes).includes(x as DatatypeId);
@@ -105,14 +120,16 @@ const parseLegacyUrl = (
   };
 };
 
-const parseUrl = (url: URL): Omit<DocLink, "name" | "branchName"> | null => {
-  const match = url.pathname.match(/^\/(.*()?--)?(?<docId>\w+)$/);
+const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
+  const match = url.pathname.match(
+    /^\/([a-z-A-Z0-9\-]+(\((?<branchName>[a-zA-Z0-9\-]+)\))?--)?(?<docId>\w+)$/
+  );
 
   if (!match) {
     return;
   }
 
-  const { docId } = match.groups;
+  const { docId, branchName } = match.groups;
 
   const docUrl = stringifyAutomergeUrl(docId as DocumentId);
   if (!isValidAutomergeUrl(docUrl)) {
@@ -136,6 +153,7 @@ const parseUrl = (url: URL): Omit<DocLink, "name" | "branchName"> | null => {
     url: docUrl,
     type: docType,
     branchUrl: branchUrl as AutomergeUrl,
+    branchName,
   };
 };
 
@@ -168,6 +186,23 @@ export const useSelectedDocLink = ({
   const currentUrl = useCurrentUrl();
   const urlParams = useMemo(() => parseUrl(currentUrl), [currentUrl]);
 
+  const [doc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
+    urlParams?.url
+  );
+
+  // lookup the branch name
+  const branchUrl = urlParams?.branchUrl;
+  const branchMetadata = doc?.branchMetadata;
+  const branchName = useMemo(() => {
+    if (!branchMetadata || !branchUrl) {
+      return;
+    }
+
+    const branch = doc.branchMetadata.branches.find((b) => b.url === branchUrl);
+
+    return branch?.name;
+  }, [branchMetadata, branchUrl]);
+
   // NOTE: this should not be externally exposed, it's just a way to store
   // the folder path to the selection outside the URL.
   const [
@@ -193,10 +228,15 @@ export const useSelectedDocLink = ({
     });
 
     return link && urlParams.branchUrl
-      ? { ...link, branchUrl: urlParams.branchUrl }
+      ? {
+          ...link,
+          branchUrl: urlParams.branchUrl,
+          branchName,
+        }
       : link;
   }, [
     urlParams,
+    branchName,
     folderDocWithMetadata?.flatDocLinks,
     selectedDocLinkDangerouslyBypassingURL,
   ]);
@@ -252,6 +292,29 @@ export const useSelectedDocLink = ({
       }
     }
   }, [currentUrl, urlParams]);
+
+  // sync the branch name with the url
+  useEffect(() => {
+    if (!urlParams) {
+      return;
+    }
+
+    if (branchName) {
+      const urlSafeName = getUrlSafeName(branchName);
+
+      if (urlParams.branchName !== urlSafeName) {
+        window.location.hash = docLinkToUrl({ ...selectedDocLink, branchName });
+      }
+      return;
+    }
+
+    if (!urlParams.branchUrl && branchName) {
+      window.location.hash = docLinkToUrl({
+        ...selectedDocLink,
+        branchName: null,
+      });
+    }
+  }, [branchName, urlParams?.branchName]);
 
   return {
     selectedDocLink,
