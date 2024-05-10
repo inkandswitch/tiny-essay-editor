@@ -1,29 +1,23 @@
-import { next as A, Doc } from "@automerge/automerge";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { TLDrawDatatype } from "@/tldraw/datatype";
-import { DataGridDatatype } from "@/datagrid/datatype";
-import { EssayDatatype } from "@/tee/datatype";
 import { EssayEditingBotDatatype } from "@/bots/datatype";
-import { Repo } from "@automerge/automerge-repo";
+import { DataGridDatatype } from "@/datagrid/datatype";
+import { DocLink, FolderDatatype } from "@/folders/datatype";
+import { KanbanBoardDatatype } from "@/kanban/datatype";
 import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/patchwork/groupChanges";
 import {
+  Annotation,
   AnnotationWithUIState,
   HasPatchworkMetadata,
 } from "@/patchwork/schema";
 import { TextPatch } from "@/patchwork/utils";
-import { Annotation } from "@/patchwork/schema";
-import { KanbanBoardDatatype } from "@/kanban/datatype";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { BotEditor } from "@/bots/BotEditor";
-import { TLDraw } from "@/tldraw/components/TLDraw";
-import { DataGrid } from "@/datagrid/components/DataGrid";
-import { KanbanBoard } from "@/kanban/components/Kanban";
-import { DocEditorPropsWithDocType } from "@/patchwork/components/PatchworkDocEditor";
-import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
 import { EssayAnnotations } from "@/tee/components/EssayAnnotations";
+import { EssayDatatype } from "@/tee/datatype";
+import { TLDrawAnnotations } from "@/tldraw/components/TLDrawAnnotations";
+import { TLDrawDatatype } from "@/tldraw/datatype";
+import { next as A, Doc } from "@automerge/automerge";
+import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 
 export type CoreDataType<D> = {
   id: string;
@@ -31,6 +25,7 @@ export type CoreDataType<D> = {
   icon: any;
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
+  setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
 };
@@ -115,7 +110,7 @@ export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
 // to the corresponding typescript type. This will be more natural once we have a
 // schema system for generating typescript types.
 
-export const docTypes: Record<
+export const datatypes: Record<
   string,
   DataType<HasPatchworkMetadata<unknown, unknown>, unknown, unknown>
 > = {
@@ -124,26 +119,10 @@ export const docTypes: Record<
   datagrid: DataGridDatatype,
   bot: EssayEditingBotDatatype,
   kanban: KanbanBoardDatatype,
+  folder: FolderDatatype, // todo: fix type
 } as const;
 
-export type DocType = keyof typeof docTypes;
-
-// Store a list of tools that can be used with each doc type.
-// This is a crude stand-in for a more flexible system based on matching
-// data schemas with editor capabilities.
-// It's important to store this mapping outside of the datatypes themselves;
-// there might be tools a datatype doesn't know about which can edit the datatype.
-// (A simple example is a raw JSON editor.)
-export const editorsForDocType: Record<
-  string,
-  Array<React.FC<DocEditorPropsWithDocType<any, any>>>
-> = {
-  essay: [TinyEssayEditor],
-  bot: [BotEditor],
-  tldraw: [TLDraw],
-  datagrid: [DataGrid],
-  kanban: [KanbanBoard],
-};
+export type DatatypeId = keyof typeof datatypes;
 
 export const annotationViewersForDocType: Record<
   string,

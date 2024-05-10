@@ -4,7 +4,7 @@ import { EssayDatatype } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Bot } from "lucide-react";
-import { type DataType } from "@/DocExplorer/doctypes";
+import { type DataType } from "@/DocExplorer/datatypes";
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 

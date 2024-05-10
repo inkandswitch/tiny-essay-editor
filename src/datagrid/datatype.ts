@@ -1,9 +1,9 @@
-import { Sheet } from "lucide-react";
+import { DataType } from "@/DocExplorer/datatypes";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { next as A } from "@automerge/automerge";
-import { DataType } from "@/DocExplorer/doctypes";
-import { pick } from "lodash";
 import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
+import { next as A } from "@automerge/automerge";
+import { pick } from "lodash";
+import { Sheet } from "lucide-react";
 
 export type DataGridDoc = HasPatchworkMetadata<never, never> & {
   title: string; // The title of the table
@@ -25,11 +25,15 @@ export type DataGridDocAnchor = {
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
 // (this mechanism needs to be thought out more...)
-export const markCopy = (doc: any) => {
+export const markCopy = (doc: DataGridDoc) => {
   doc.title = "Copy of " + doc.title;
 };
 
-const getTitle = (doc: any) => {
+const setTitle = async (doc: DataGridDoc, title: string) => {
+  doc.title = title;
+};
+
+const getTitle = async (doc: DataGridDoc) => {
   return doc.title || "Mystery Data Grid";
 };
 
@@ -52,6 +56,8 @@ export const includeChangeInHistory = (doc: DataGridDoc) => {
   const commentsObjID = A.getObjectId(doc, "commentThreads");
 
   return (decodedChange: DecodedChangeWithMetadata) => {
+    // todo
+    // @ts-ignore
     return decodedChange.ops.some(
       (op) =>
         op.obj === dataObjId ||
@@ -143,6 +149,7 @@ export const DataGridDatatype: DataType<
   icon: Sheet,
   init,
   getTitle,
+  setTitle,
   markCopy, // TODO: this shouldn't be here
 
   includeChangeInHistory,

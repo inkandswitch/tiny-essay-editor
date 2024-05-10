@@ -2,22 +2,33 @@
 // MarkdownDoc datatype.
 // It will become more structured in future work on schemas / datatypes.
 
-import { next as A } from "@automerge/automerge";
-import { Text } from "lucide-react";
-import { MarkdownDocAnchor, MarkdownDoc } from "./schema";
-import { Doc, splice } from "@automerge/automerge/next";
+import { DataType } from "@/DocExplorer/datatypes";
 import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { DataType } from "@/DocExplorer/doctypes";
-import { TextPatch, getCursorPositionSafely } from "@/patchwork/utils";
 import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
-import { getCursorSafely } from "@/patchwork/utils";
+import {
+  TextPatch,
+  getCursorPositionSafely,
+  getCursorSafely,
+} from "@/patchwork/utils";
+import { next as A } from "@automerge/automerge";
+import { Repo } from "@automerge/automerge-repo";
+import { Doc, splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
+import { Text } from "lucide-react";
+import { AssetsDoc } from "./assets";
+import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
-export const init = (doc: any) => {
+export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
 
   initPatchworkMetadata(doc);
+  const handle = repo.create<AssetsDoc>();
+  handle.change((doc) => {
+    doc.files = {};
+  });
+
+  doc.assetsDocUrl = handle.url;
 };
 
 // When a copy of the document has been made,
@@ -76,7 +87,7 @@ export const includePatchInChangeGroup = (patch: A.Patch | TextPatch) =>
 
 export const isMarkdownDoc = (doc: Doc<unknown>): doc is MarkdownDoc => {
   const typedDoc = doc as MarkdownDoc;
-  return !!typedDoc.content && !!typedDoc.commentThreads;
+  return typeof typedDoc.content === "string";
 };
 
 const promptForAIChangeGroupSummary = ({
@@ -124,6 +135,17 @@ export const patchesToAnnotations = (
 
   const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
 
+  // We keep track of the offset between doc and docBefore.
+  //
+  // - everytime we encounter an insert we add the length of the inserted string
+  // - everytime we encounter a delete we subtract the number of deleted characters
+  //
+  // We can then translate positions in the new doc to positions in the old doc by subtracting the offset
+  //
+  // Note: we can't use cursors for this position translation because the cursor functions
+  // always operate on the most recent version of a document even if you pass in a document at some heads
+  let offset = 0;
+
   for (let i = 0; i < filteredPatches.length; i++) {
     const patch = filteredPatches[i];
 
@@ -148,15 +170,23 @@ export const patchesToAnnotations = (
           nextPatch.action === "del" &&
           nextPatch.path[1] === patchEnd
         ) {
+          const before = docBefore.content.slice(
+            patchStart - offset,
+            patchStart - offset + nextPatch.length
+          );
+
           annotations.push({
             type: "changed",
-            before: nextPatch.removed,
+            before,
             after: patch.value,
             anchor: {
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
           });
+
+          offset += patch.value.length - nextPatch.length;
+
           i += 1;
         } else {
           annotations.push({
@@ -167,6 +197,8 @@ export const patchesToAnnotations = (
               toCursor: toCursor,
             },
           });
+
+          offset += patch.value.length;
         }
         break;
       }
@@ -176,6 +208,13 @@ export const patchesToAnnotations = (
         const fromCursor = getCursorSafely(doc, ["content"], patchStart);
         const toCursor = getCursorSafely(doc, ["content"], patchEnd);
 
+        const deleted = docBefore.content.slice(
+          patchStart - offset,
+          patchStart - offset + patch.length
+        );
+
+        offset -= patch.length;
+
         if (!fromCursor || !toCursor) {
           console.warn("Failed to get cursor for patch", patch);
           break;
@@ -183,7 +222,7 @@ export const patchesToAnnotations = (
 
         annotations.push({
           type: "deleted",
-          deleted: patch.removed,
+          deleted,
           anchor: {
             fromCursor: fromCursor,
             toCursor: toCursor,

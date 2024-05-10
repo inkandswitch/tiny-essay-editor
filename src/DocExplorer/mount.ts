@@ -8,16 +8,4 @@ export function mount(node, params) {
   if (!params.docUrl && params.documentUrl) {
     params.docUrl = params.documentUrl;
   }
-
-  ReactDom.createRoot(node).render(
-    // We get the Automerge Repo from the global window;
-    // this is set by either our standalone entrypoint or trailrunner
-    React.createElement(
-      RepoContext.Provider,
-      // eslint-disable-next-line no-undef
-      // @ts-expect-error - repo is on window
-      { value: repo },
-      React.createElement(DocExplorer, Object.assign({}, params))
-    )
-  );
 }

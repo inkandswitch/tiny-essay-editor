@@ -1,15 +1,10 @@
-import React from "react";
-import { DiffWithProvenance, HasPatchworkMetadata } from "./schema";
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import * as A from "@automerge/automerge/next";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useForceUpdate } from "@/lib/utils";
+import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { sortBy } from "lodash";
 import * as wasm from "@automerge/automerge-wasm";
-import { AnnotationGroup, Annotation } from "./schema";
-import { isEqual } from "lodash";
-import { DocType, docTypes } from "@/DocExplorer/doctypes";
+import * as A from "@automerge/automerge/next";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { DiffWithProvenance } from "./schema";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {
@@ -32,9 +27,12 @@ export const diffWithProvenance = (
   toHeads: A.Heads,
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>
 ): DiffWithProvenance => {
-  const patches = actorIdToAuthor
+  // todo: add back once we have diffs with attribution again
+  /* const patches = actorIdToAuthor
     ? A.diffWithAttribution(doc, fromHeads, toHeads, actorIdToAuthor)
-    : A.diff(doc, fromHeads, toHeads);
+    : A.diff(doc, fromHeads, toHeads); */
+
+  const patches = A.diff(doc, fromHeads, toHeads);
 
   return {
     fromHeads,
@@ -135,6 +133,12 @@ export type TextPatch =
 export const combinePatches = (
   patches: (A.Patch | TextPatch)[]
 ): TextPatch[] => {
+  return patches as TextPatch[];
+
+  // TODO: combining redundant patches requires the deleted value on the patches
+  // we can add this back once we have this api again
+
+  /*
   let combinedPatches: TextPatch[] = [];
 
   // 1. combine redundant pathces
@@ -158,6 +162,7 @@ export const combinePatches = (
       currentPatch.path[1] ===
         (nextPatch.path[1] as number) - currentPatch.value.length
     ) {
+      // todo: add back once we have patches with deleted values again
       const deleted = nextPatch.removed;
       const inserted = currentPatch.value;
 
@@ -275,6 +280,7 @@ export const combinePatches = (
   }
 
   return patchesWithReplaces;
+  */
 };
 
 // only creates overlap if the strings overlap on full words

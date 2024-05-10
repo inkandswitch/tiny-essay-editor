@@ -1,5 +1,5 @@
 import { next as A } from "@automerge/automerge";
-import { DataType } from "@/DocExplorer/doctypes";
+import { DataType } from "@/DocExplorer/datatypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
 import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
@@ -16,8 +16,12 @@ export const markCopy = (doc: TLDrawDoc) => {
   doc.store["page:page"].name = "Copy of " + doc.store["page:page"].name;
 };
 
-const getTitle = (doc: TLDrawDoc) => {
+export const getTitle = async (doc: TLDrawDoc) => {
   return doc.store["page:page"].name || "Drawing";
+};
+
+export const setTitle = (doc: any, title: string) => {
+  doc.store["page:page"].name = title;
 };
 
 export const init = (doc: TLDrawDoc) => {
@@ -292,6 +296,7 @@ export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   icon: PenLine,
   init,
   getTitle,
+  setTitle,
   markCopy,
   includePatchInChangeGroup,
   includeChangeInHistory,

@@ -3,7 +3,7 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { useMemo, useState } from "react";
 
 import { useCurrentAccount } from "@/DocExplorer/account";
-import { DocEditorProps } from "@/DocExplorer/doctypes";
+import { DocEditorProps } from "@/DocExplorer/datatypes";
 import { SideBySideProps } from "@/patchwork/components/PatchworkDocEditor";
 import { AnnotationWithUIState } from "@/patchwork/schema";
 import { next as A } from "@automerge/automerge";
@@ -21,11 +21,11 @@ interface TLDrawProps extends DocEditorProps<TLDrawDocAnchor, TLShape> {
 export const TLDraw = ({
   docUrl,
   docHeads,
-  annotations,
+  annotations = [],
   camera,
   onChangeCamera,
-  setSelectedAnchors,
-  setHoveredAnchor,
+  setSelectedAnchors = () => {},
+  setHoveredAnchor = () => {},
 }: TLDrawProps) => {
   useDocument<TLDrawDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<TLDrawDoc>(docUrl);

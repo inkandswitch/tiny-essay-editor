@@ -7,27 +7,19 @@
   "scripts": {
     "dev": "vite --force --port 5173",
     "build": "tsc && vite build",
-    "export": "yarn run export:tsc && yarn run export:tailwind && yarn run export:static && yarn run export:packagejson && trailhead push --dir ./tsc",
-    "export:tsc": "tsc -p ./tsconfig.trailrunner.json && tsc-alias -p ./tsconfig.trailrunner.json",
-    "export:tailwind": "tailwindcss -i ./src/index.css -o ./tsc/index.css",
-    "export:static": "node -e \"require('fs').cpSync('public', 'tsc', { recursive: true });\"",
-    "export:packagejson": "node -e \"require('fs').cpSync('package.json', 'tsc/package.json');\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest",
-    "vendor:init": "./scripts/init-repos.sh",
-    "vendor:build-automerge-repo": "./scripts/build-automerge-repo.sh",
-    "vendor:build-automerge": "./scripts/build-automerge.sh"
+    "test": "vitest"
   },
   "dependencies": {
-    "@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
+    "@automerge/automerge": "^2.2.2",
     "@automerge/automerge-codemirror": "^0.0.11",
-    "@automerge/automerge-repo": "file:./vendor/tarballs/automerge-repo.tgz",
-    "@automerge/automerge-repo-network-broadcastchannel": "file:./vendor/tarballs/automerge-repo-network-broadcastchannel.tgz",
-    "@automerge/automerge-repo-network-websocket": "file:./vendor/tarballs/automerge-repo-network-websocket.tgz",
-    "@automerge/automerge-repo-react-hooks": "file:./vendor/tarballs/automerge-repo-react-hooks.tgz",
-    "@automerge/automerge-repo-storage-indexeddb": "file:./vendor/tarballs/automerge-repo-storage-indexeddb.tgz",
-    "@automerge/automerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
+    "@automerge/automerge-repo": "^1.1.12",
+    "@automerge/automerge-repo-network-messagechannel": "^1.1.12",
+    "@automerge/automerge-repo-network-broadcastchannel": "^1.1.12",
+    "@automerge/automerge-repo-network-websocket": "^1.1.12",
+    "@automerge/automerge-repo-react-hooks": "^1.1.12",
+    "@automerge/automerge-repo-storage-indexeddb": "^1.1.12",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -52,7 +44,7 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "@tldraw/tldraw": "2.0.0-alpha.17",
     "@uiw/react-codemirror": "^4.21.24",
-    "@xstate/react": "^3.2.2",
+    "@xstate/react": "^4.1.1",
     "automerge-tldraw": "0.1.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
@@ -79,10 +71,11 @@
     "tailwindcss-animate": "^1.0.7",
     "use-resize-observer": "^9.1.0",
     "uuid": "^9.0.1",
-    "xstate": "^4.38.3"
+    "xstate": "^5.9.1"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
+    "@testing-library/react": "^15.0.2",
     "@types/lodash": "^4.14.199",
     "@types/node": "^20.8.2",
     "@types/react": "^18.2.15",
@@ -106,12 +99,6 @@
     "vitest": "^0.34.6"
   },
   "resolutions": {
-    "**/@automerge/automerge-wasm": "file:./vendor/tarballs/automerge-wasm.tgz",
-    "**/@automerge/automerge": "file:./vendor/tarballs/automerge.tgz",
-    "**/@automerge/automerge-repo": "file:./vendor/tarballs/automerge-repo.tgz",
-    "**/@automerge/automerge-repo-network-broadcastchannel": "file:./vendor/tarballs/automerge-repo-network-broadcastchannel.tgz",
-    "**/@automerge/automerge-repo-network-websocket": "file:./vendor/tarballs/automerge-repo-network-websocket.tgz",
-    "**/@automerge/automerge-repo-react-hooks": "file:./vendor/tarballs/automerge-repo-react-hooks.tgz",
-    "**/@automerge/automerge-repo-storage-indexeddb": "file:./vendor/tarballs/automerge-repo-storage-indexeddb.tgz"
+    "@automerge/automerge-wasm": "file:./src/vendor/automerge-wasm"
   }
 }

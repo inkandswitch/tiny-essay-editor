@@ -1,8 +1,6 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { PatchWithAttr } from "@automerge/automerge-wasm";
-import { TextPatch } from "./utils";
 import * as A from "@automerge/automerge/next";
-import { EditRange } from "@/tee/schema";
+import { TextPatch } from "./utils";
 
 export type Branch = {
   name: string;
@@ -52,26 +50,14 @@ export type Taggable = {
 export type Diffable = {
   diffBase: A.Heads;
 };
+
 // A data structure that lets us pass around diffs while remembering
 // where they came from
-
 export type DiffWithProvenance = {
-  patches: (A.Patch | PatchWithAttr<AutomergeUrl> | TextPatch)[]; // just pile on more things, it could be anyone of these three ...
+  patches: (A.Patch | TextPatch)[];
   fromHeads: A.Heads;
   toHeads: A.Heads;
 };
-export type SpatialBranch = {
-  from: A.Cursor;
-  to: A.Cursor;
-  docUrl: AutomergeUrl;
-};
-
-export interface EditRangeTarget {
-  type: "editRange";
-  value: EditRange;
-}
-
-export type DiscussionTarget = EditRangeTarget; // | ... future other options from other doctypes
 
 export type DiscussionComment = {
   id: string;

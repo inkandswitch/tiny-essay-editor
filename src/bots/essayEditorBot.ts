@@ -1,11 +1,10 @@
-import { DEFAULT_MODEL, openaiClient } from "@/llm";
-import { MarkdownDoc, ThreadAnnotation, Comment } from "@/tee/schema";
-import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
-import { EssayEditingBotDoc } from "./datatype";
-import { getCursor, splice } from "@automerge/automerge/next";
-import { uuid } from "@automerge/automerge";
-import { createBranch } from "@/patchwork/branches";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
+import { DEFAULT_MODEL, openaiClient } from "@/llm";
+import { createBranch } from "@/patchwork/branches";
+import { MarkdownDoc } from "@/tee/schema";
+import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
+import { splice } from "@automerge/automerge/next";
+import { EssayEditingBotDoc } from "./datatype";
 
 const functionsSpec = [
   {
@@ -87,12 +86,14 @@ ${JSON.stringify(functionsSpec)}
   try {
     const parsed: any = JSON.parse(output.function_call.arguments);
 
-    const branchHandle = createBranch({
+    const branch = createBranch({
       name: `Edits by ${contactDoc.name}`,
       createdBy: botDoc.contactUrl,
       repo,
       handle: targetDocHandle,
     });
+
+    const branchHandle = repo.find<MarkdownDoc>(branch.url);
 
     for (const edit of parsed.edits) {
       branchHandle.change(
@@ -110,7 +111,7 @@ ${JSON.stringify(functionsSpec)}
           //   from + edit.after.length
           // );
         },
-        { metadata: { author: botDoc.contactUrl } }
+        { message: JSON.stringify({ author: botDoc.contactUrl }) }
       );
     }
 

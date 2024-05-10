@@ -1,12 +1,10 @@
-import { useState } from "react";
-import { EssayEditingBotDoc } from "./datatype";
-import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import { AutomergeUrl } from "@automerge/automerge-repo";
-import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
-import { Bot } from "lucide-react";
 import { RegisteredContactDoc } from "@/DocExplorer/account";
-import { MarkdownDoc, MarkdownDocAnchor } from "@/tee/schema";
-import { setUrlHashForDoc } from "@/DocExplorer/utils";
+import { TinyEssayEditor } from "@/tee/components/TinyEssayEditor";
+import { MarkdownDoc } from "@/tee/schema";
+import { AutomergeUrl } from "@automerge/automerge-repo";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import { Bot } from "lucide-react";
+import { EssayEditingBotDoc } from "./datatype";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const [doc, changeDoc] = useDocument<EssayEditingBotDoc>(docUrl);
@@ -47,9 +45,10 @@ export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
           <div className="text-gray-600 uppercase font-mono mr-4">Prompt</div>
           <a
             className="cursor-pointer"
-            onClick={() =>
-              setUrlHashForDoc({ docUrl: doc.promptUrl, docType: "essay" })
-            }
+            onClick={() => {
+              // todo
+              // setUrlHashForDoc({ docUrl: doc.promptUrl, docType: "essay" })
+            }}
           >
             Open as doc
           </a>

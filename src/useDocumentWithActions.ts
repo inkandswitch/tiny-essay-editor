@@ -1,7 +1,7 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { useMemo } from "react";
-import { DataType } from "./DocExplorer/doctypes";
+import { DataType } from "./DocExplorer/datatypes";
 
 /** Returns a doc with helper actions from a datatype definition.
  *
@@ -26,7 +26,12 @@ export const useDocumentWithActions = <D>(
           (doc: D) => {
             value(doc, args);
           },
-          { metadata: { action: key, actionArgs: JSON.stringify(args) } }
+          {
+            message: JSON.stringify({
+              action: key,
+              actionArgs: JSON.stringify(args),
+            }),
+          }
         );
       };
     }

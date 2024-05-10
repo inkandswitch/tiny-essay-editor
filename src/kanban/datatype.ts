@@ -1,13 +1,12 @@
-import { DataType } from "@/DocExplorer/doctypes";
-import { uuid } from "@automerge/automerge";
-import { next as A } from "@automerge/automerge";
-import { KanbanSquare } from "lucide-react";
+import { DataType } from "@/DocExplorer/datatypes";
+import { ChangeGroup } from "@/patchwork/groupChanges";
 import {
   Annotation,
   HasPatchworkMetadata,
   initPatchworkMetadata,
 } from "@/patchwork/schema";
-import { ChangeGroup } from "@/patchwork/groupChanges";
+import { next as A } from "@automerge/automerge";
+import { KanbanSquare } from "lucide-react";
 
 export type Lane = {
   id: string;
@@ -38,8 +37,12 @@ export const markCopy = () => {
   console.error("todo");
 };
 
-const getTitle = (doc: any) => {
+const getTitle = async (doc: KanbanBoardDoc) => {
   return doc.title;
+};
+
+const setTitle = async (doc: KanbanBoardDoc, title: string) => {
+  doc.title = title;
 };
 
 export const init = (doc: any) => {
@@ -244,6 +247,7 @@ export const KanbanBoardDatatype: DataType<
   icon: KanbanSquare,
   init,
   getTitle,
+  setTitle,
   markCopy,
   fallbackSummaryForChangeGroup,
   actions,

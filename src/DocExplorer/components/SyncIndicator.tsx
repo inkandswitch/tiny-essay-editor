@@ -10,18 +10,20 @@ import { AutomergeUrl, DocHandle, StorageId } from "@automerge/automerge-repo";
 import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { useMachine } from "@xstate/react";
 import { WifiIcon, WifiOffIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createMachine, raise } from "xstate";
+import { useEffect, useRef, useState } from "react";
+import { createMachine, raise, stateIn } from "xstate";
 
-export const SyncIndicatorWrapper = ({ docUrl }: { docUrl: AutomergeUrl }) => {
+export const SyncIndicator = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const handle = useHandle(docUrl);
   if (!handle) {
     return null;
   }
-  return <SyncIndicator handle={handle} />;
+  return <SyncIndicatorInner key={handle.url} handle={handle} />;
 };
 
-export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
+// NOTE: this sync indicator component does *not* support changing the handle between renders.
+// If you want to change the handle, you should re-mount the component.
+const SyncIndicatorInner = ({ handle }: { handle: DocHandle<unknown> }) => {
   const {
     lastSyncUpdate,
     isInternetConnected,
@@ -33,6 +35,21 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   } = useSyncIndicatorState(handle);
 
   const isSynced = syncState === SyncState.InSync;
+
+  const prevHandle = useRef(undefined);
+
+  useEffect(() => {
+    if (prevHandle.current && prevHandle.current.url !== handle.url) {
+      console.warn(
+        "Warning: do not change the handle between renders of SyncIndicator",
+        {
+          previous: prevHandle.current.url,
+          current: handle.url,
+        }
+      );
+    }
+    prevHandle.current = handle;
+  }, [handle]);
 
   const headsView = (
     <div className="mt-2 pt-2 border-t border-gray-300">
@@ -188,9 +205,8 @@ export const SyncIndicator = ({ handle }: { handle: DocHandle<unknown> }) => {
   }
 };
 
-const SYNC_SERVER_STORAGE_ID =
-  import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
-  ("3760df37-a4c6-4f66-9ecd-732039a9385d" as StorageId);
+const SYNC_SERVER_STORAGE_ID = (import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
+  "3760df37-a4c6-4f66-9ecd-732039a9385d") as StorageId;
 
 enum SyncState {
   InSync,
@@ -211,30 +227,32 @@ interface SyncIndicatorState {
 function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
   const repo = useRepo();
   const [lastSyncUpdate, setLastSyncUpdate] = useState<number | undefined>(); // todo: should load that from persisted sync state
-  const [syncServerHeads, setSyncServerHeads] = useState<A.Heads>();
-  const [ownHeads, setOwnHeads] = useState<A.Heads>();
+  const [syncServerHeads, setSyncServerHeads] = useState<A.Heads | undefined>();
+  const [ownHeads, setOwnHeads] = useState<A.Heads | undefined>();
 
   useEffect(() => {
     repo.subscribeToRemotes([SYNC_SERVER_STORAGE_ID]);
   }, [repo]);
 
-  const [machine, send] = useMachine(() => {
-    return getSyncIndicatorMachine({
+  const [machineConfig] = useState(() =>
+    getSyncIndicatorMachine({
       connectionInitTimeout: 2000,
       maxSyncMessageDelay: 1000,
       isInternetConnected: navigator.onLine,
       isSyncServerConnected: true,
-    });
-  });
+    })
+  );
+
+  const [machine, send] = useMachine(machineConfig);
 
   // online / offline listener
   useEffect(() => {
     const onOnline = () => {
-      send("INTERNET_CONNECTED");
+      send({ type: "INTERNET_CONNECTED" });
     };
 
     const onOffline = () => {
-      send("INTERNET_DISCONNECTED");
+      send({ type: "INTERNET_DISCONNECTED" });
     };
 
     window.addEventListener("online", onOnline);
@@ -269,7 +287,7 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
 
     const onRemoteHeads = ({ storageId, heads }) => {
       if (storageId === SYNC_SERVER_STORAGE_ID) {
-        send("RECEIVED_SYNC_MESSAGE");
+        send({ type: "RECEIVED_SYNC_MESSAGE" });
         setSyncServerHeads(heads);
         setLastSyncUpdate(Date.now());
       }
@@ -290,9 +308,9 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
     }
 
     if (arraysAreEqual(ownHeads, syncServerHeads)) {
-      send("IS_IN_SYNC");
+      send({ type: "IS_IN_SYNC" });
     } else {
-      send("IS_OUT_OF_SYNC");
+      send({ type: "IS_OUT_OF_SYNC" });
     }
   }, [ownHeads, syncServerHeads]);
 
@@ -340,7 +358,6 @@ export function getSyncIndicatorMachine({
 }: SyncIndicatorMachineConfig) {
   return createMachine(
     {
-      predictableActionArguments: true,
       id: "syncIndicator",
       type: "parallel",
       states: {
@@ -384,7 +401,7 @@ export function getSyncIndicatorMachine({
                 // every time we re-enter the out of sync state the timeout gets reset
                 [maxSyncMessageDelay]: {
                   target: ".error",
-                  in: "internet.connected",
+                  guard: stateIn("internet.connected"),
                 },
               },
               on: {

@@ -21,10 +21,10 @@ import { Check } from "lucide-react";
 import { uuid } from "@automerge/automerge";
 import { Annotation, AnnotationGroupWithState } from "@/patchwork/schema";
 import {
-  DocType,
+  DatatypeId,
   annotationViewersForDocType,
-  docTypes,
-} from "@/DocExplorer/doctypes";
+  datatypes,
+} from "@/DocExplorer/datatypes";
 import { MessageCircleIcon } from "lucide-react";
 import { getAnnotationGroupId } from "../annotations";
 import { DocHandle } from "@automerge/automerge-repo";
@@ -70,7 +70,7 @@ export const ReviewSidebar = React.memo(
     const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
       useMemo(() => {
         if (!doc) return [];
-        const valueOfAnchor = docTypes[docType].valueOfAnchor ?? (() => null);
+        const valueOfAnchor = datatypes[docType].valueOfAnchor ?? (() => null);
         return selectedAnchors.map((anchor) => ({
           type: "highlighted",
           anchor: [anchor] as unknown as T, // todo: investigate if this typecast is wrong
@@ -556,7 +556,7 @@ const AnnotationsView = <T, V>({
   handle,
 }: {
   annotations: Annotation<T, V>[];
-  docType: DocType;
+  docType: DatatypeId;
   doc: T;
   handle: DocHandle<T>;
 }) => {
