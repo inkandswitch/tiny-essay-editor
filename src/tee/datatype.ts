@@ -135,6 +135,17 @@ export const patchesToAnnotations = (
 
   const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
 
+  // We keep track of the offset between doc and docBefore.
+  //
+  // - everytime we encounter an insert we add the length of the inserted string
+  // - everytime we encounter a delete we subtract the number of deleted characters
+  //
+  // We can then translate positions in the new doc to positions in the old doc by subtracting the offset
+  //
+  // Note: we can't use cursors for this position translation because the cursor functions
+  // always operate on the most recent version of a document even if you pass in a document at some heads
+  let offset = 0;
+
   for (let i = 0; i < filteredPatches.length; i++) {
     const patch = filteredPatches[i];
 
@@ -159,16 +170,23 @@ export const patchesToAnnotations = (
           nextPatch.action === "del" &&
           nextPatch.path[1] === patchEnd
         ) {
+          const before = docBefore.content.slice(
+            patchStart - offset,
+            patchStart - offset + nextPatch.length
+          );
+
           annotations.push({
             type: "changed",
-            // todo: add this back once we have deleted values on patches again
-            before: "", //nextPatch.removed,
+            before,
             after: patch.value,
             anchor: {
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
           });
+
+          offset += patch.value.length - nextPatch.length;
+
           i += 1;
         } else {
           annotations.push({
@@ -179,6 +197,8 @@ export const patchesToAnnotations = (
               toCursor: toCursor,
             },
           });
+
+          offset += patch.value.length;
         }
         break;
       }
@@ -188,6 +208,13 @@ export const patchesToAnnotations = (
         const fromCursor = getCursorSafely(doc, ["content"], patchStart);
         const toCursor = getCursorSafely(doc, ["content"], patchEnd);
 
+        const deleted = docBefore.content.slice(
+          patchStart - offset,
+          patchStart - offset + patch.length
+        );
+
+        offset -= patch.length;
+
         if (!fromCursor || !toCursor) {
           console.warn("Failed to get cursor for patch", patch);
           break;
@@ -195,8 +222,7 @@ export const patchesToAnnotations = (
 
         annotations.push({
           type: "deleted",
-          // todo: add this back once we have deleted values on patches again
-          deleted: "", //patch.removed,
+          deleted,
           anchor: {
             fromCursor: fromCursor,
             toCursor: toCursor,

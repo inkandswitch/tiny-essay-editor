@@ -29,11 +29,8 @@ export const FolderViewer: React.FC<DocEditorProps<never, never>> = ({
           const Icon = datatypes[docLink.type].icon;
 
           return (
-            <div>
-              <div
-                className="flex gap-2 items-center font-medium mb-1"
-                key={docLink.url}
-              >
+            <div key={docLink.url}>
+              <div className="flex gap-2 items-center font-medium mb-1">
                 <Icon size={16} />
                 <div>{docLink.name}</div>
                 {false && (
