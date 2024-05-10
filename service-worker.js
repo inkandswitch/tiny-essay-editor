@@ -146,8 +146,9 @@ self.addEventListener("fetch", async (event) => {
         });
       })()
     );
-  } else if (
-    // enable caching only in production
+  }
+  // disable caching for now
+  /* else if (  
     import.meta.env.PROD &&
     event.request.method === "GET" &&
     url.origin === self.location.origin
@@ -170,5 +171,5 @@ self.addEventListener("fetch", async (event) => {
         return response;
       })()
     );
-  }
+  } */
 });
