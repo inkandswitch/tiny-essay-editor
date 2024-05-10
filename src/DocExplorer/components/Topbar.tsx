@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { SelectedBranch } from "./DocExplorer";
 import { asMarkdownFile } from "@/tee/datatype";
 import { MarkdownDoc } from "@/tee/schema";
 import { DatatypeId, datatypes } from "../datatypes";

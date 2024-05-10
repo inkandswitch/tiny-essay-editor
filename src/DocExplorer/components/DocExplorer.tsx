@@ -24,7 +24,6 @@ import { Branch, HasPatchworkMetadata } from "@/patchwork/schema";
 import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
-import { TOOLS } from "../tools";
 
 export const DocExplorer: React.FC = () => {
   const repo = useRepo();

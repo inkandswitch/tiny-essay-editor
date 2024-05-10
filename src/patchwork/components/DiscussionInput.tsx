@@ -177,7 +177,7 @@ export const DiscussionInput = function <
           mergedBy: account?.contactHandle?.url,
         });
         setCommentBoxContent("");
-        setSelectedBranch({ type: "main" });
+        setSelectedBranch(null);
         toast.success("Branch merged to main");
         break;
       }
@@ -198,7 +198,7 @@ export const DiscussionInput = function <
       "milestone",
       "Mark a milestone at the current point"
     ),
-    selectedBranch.type === "branch"
+    selectedBranch
       ? createSlashCommandCompletion("merge", "Merge this branch")
       : undefined,
   ]

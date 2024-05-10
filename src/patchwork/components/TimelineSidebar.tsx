@@ -37,7 +37,6 @@ import { useSlots } from "@/patchwork/utils";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
-import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -113,8 +112,8 @@ export type ChangelogSelection =
 export const TimelineSidebar: React.FC<{
   docType: DatatypeId;
   docUrl: AutomergeUrl;
-  selectedBranch: SelectedBranch;
-  setSelectedBranch: (branch: SelectedBranch) => void;
+  selectedBranch: Branch;
+  setSelectedBranch: (branch: Branch) => void;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
 }> = ({
@@ -173,7 +172,7 @@ export const TimelineSidebar: React.FC<{
   }
 
   // Within a branch, don't show new branches created after this branch started
-  if (selectedBranch.type === "branch") {
+  if (selectedBranch) {
     const originIndex = visibleItems.findIndex(
       (item) => item.type === "originOfThisBranch"
     );
@@ -212,13 +211,6 @@ export const TimelineSidebar: React.FC<{
 
   if (!doc) return null;
 
-  const selectedBranchLink =
-    selectedBranch.type === "branch"
-      ? mainDoc?.branchMetadata.branches.find(
-          (b) => b.url === selectedBranch.url
-        )
-      : undefined;
-
   // @ts-expect-error window global
   window.populateChangeSummaries = () =>
     populateChangeGroupSummaries({
@@ -236,9 +228,9 @@ export const TimelineSidebar: React.FC<{
         <div className="flex items-center">
           <div
             className="cursor-pointer text-gray-500 font-semibold underline w-12 flex-shrink-0"
-            onClick={() => setSelectedBranch({ type: "main" })}
+            onClick={() => setSelectedBranch(null)}
           >
-            {selectedBranch.type === "branch" && (
+            {selectedBranch && (
               <>
                 <ChevronLeftIcon size={12} className="inline" />
                 Main
@@ -247,16 +239,16 @@ export const TimelineSidebar: React.FC<{
           </div>
           <div className="flex-grow flex justify-center items-center px-2 py-1 text-sm">
             <div className="font-medium text-gray-800">
-              {selectedBranch.type === "main" && (
+              {!selectedBranch && (
                 <div className="flex items-center gap-2">
                   <CrownIcon className="inline" size={12} />
                   Main
                 </div>
               )}
-              {selectedBranch.type === "branch" && (
+              {selectedBranch && (
                 <div className="flex items-center gap-2">
                   <GitBranchIcon className="inline" size={12} />
-                  {selectedBranchLink?.name}
+                  {selectedBranch.name}
                 </div>
               )}
             </div>
@@ -414,12 +406,7 @@ export const TimelineSidebar: React.FC<{
                             {(item.type === "otherBranchMergedIntoThisDoc" ||
                               item.type === "branchCreatedFromThisDoc") && (
                               <DropdownMenuItem
-                                onClick={() =>
-                                  setSelectedBranch({
-                                    type: "branch",
-                                    url: item.branch.url,
-                                  })
-                                }
+                                onClick={() => setSelectedBranch(item.branch)}
                               >
                                 Go to branch
                               </DropdownMenuItem>
@@ -740,8 +727,8 @@ const BranchCreatedItem = ({
 }: {
   branch: Branch;
   selected: boolean;
-  selectedBranch: SelectedBranch;
-  setSelectedBranch: (branch: SelectedBranch) => void;
+  selectedBranch: Branch;
+  setSelectedBranch: (branch: Branch) => void;
 }) => {
   return (
     <ItemView selected={selected} color="neutral">
