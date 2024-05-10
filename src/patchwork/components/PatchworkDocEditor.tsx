@@ -1,6 +1,5 @@
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { DocEditorProps, DatatypeId } from "@/DocExplorer/datatypes";
 import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { Button } from "@/components/ui/button";
@@ -63,6 +62,7 @@ import {
 } from "../branches";
 import {
   AnnotationWithUIState,
+  Branch,
   DiffWithProvenance,
   HasPatchworkMetadata,
 } from "../schema";
@@ -86,8 +86,8 @@ type SidebarMode = "comments" | "timeline";
 export const PatchworkDocEditor: React.FC<{
   docUrl: AutomergeUrl;
   docType: DatatypeId;
-  selectedBranch: SelectedBranch;
-  setSelectedBranch: (branch: SelectedBranch) => void;
+  selectedBranch: Branch;
+  setSelectedBranch: (branch: Branch) => void;
 }> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
   const repo = useRepo();
   const [doc, changeDoc] =
@@ -105,13 +105,12 @@ export const PatchworkDocEditor: React.FC<{
     useState<boolean>(false);
   // Reset compare view settings every time you switch branches
   useEffect(() => {
-    if (selectedBranch.type === "main") {
+    if (!selectedBranch) {
       setCompareWithMainFlag(false);
       setShowChangesFlag(false);
-    }
-    if (selectedBranch.type === "branch") {
-      setShowChangesFlag(true);
+    } else {
       setCompareWithMainFlag(false);
+      setShowChangesFlag(true);
     }
   }, [JSON.stringify(selectedBranch)]);
 
@@ -155,8 +154,7 @@ export const PatchworkDocEditor: React.FC<{
   const actorIdToAuthor = useActorIdToAuthorMap(mainDocUrl);
 
   const showDiff =
-    (showChangesFlag && selectedBranch.type === "branch") ||
-    isHoveringYankToBranchOption;
+    (showChangesFlag && selectedBranch) || isHoveringYankToBranchOption;
 
   // init branch metadata when the doc loads if it doesn't have it already
   useEffect(() => {
@@ -173,14 +171,14 @@ export const PatchworkDocEditor: React.FC<{
 
   const handleCreateBranch = useCallback(
     ({ name, heads }: MakeBranchOptions = {}) => {
-      const branchHandle = createBranch({
+      const branch = createBranch({
         repo,
         handle,
         name,
         heads,
         createdBy: account?.contactHandle?.url,
       });
-      setSelectedBranch({ type: "branch", url: branchHandle.url });
+      setSelectedBranch(branch);
       toast("Created a new branch");
       return branchHandle;
     },
@@ -215,7 +213,7 @@ export const PatchworkDocEditor: React.FC<{
 
   const handleDeleteBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
-      setSelectedBranch({ type: "main" });
+      setSelectedBranch(null);
       deleteBranch({ docHandle: handle, branchUrl });
       toast("Deleted branch");
     },
@@ -233,7 +231,7 @@ export const PatchworkDocEditor: React.FC<{
         branchHandle,
         mergedBy: account?.contactHandle?.url,
       });
-      setSelectedBranch({ type: "main" });
+      setSelectedBranch(null);
       toast.success("Branch merged to main");
     },
     [repo, mainDocUrl, account?.contactHandle?.url, setSelectedBranch]
@@ -269,12 +267,12 @@ export const PatchworkDocEditor: React.FC<{
     [mainDocUrl, repo]
   );
 
-  const selectedBranchUrl =
-    selectedBranch.type === "branch" ? selectedBranch.url : undefined;
-  const [branchDoc, changeBranchDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
-  const branchHandle =
-    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedBranchUrl);
+  const [branchDoc, changeBranchDoc] = useDocument<
+    HasPatchworkMetadata<unknown, unknown>
+  >(selectedBranch?.url);
+  const branchHandle = useHandle<HasPatchworkMetadata<unknown, unknown>>(
+    selectedBranch?.url
+  );
 
   const branchDiff = useMemo(() => {
     if (branchDoc) {
@@ -290,9 +288,9 @@ export const PatchworkDocEditor: React.FC<{
     diffFromHistorySidebar ??
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
 
-  const activeDoc = selectedBranchUrl ? branchDoc : doc;
-  const activeChangeDoc = selectedBranchUrl ? changeBranchDoc : changeDoc;
-  const activeHandle = selectedBranchUrl ? branchHandle : handle;
+  const activeDoc = selectedBranch ? branchDoc : doc;
+  const activeChangeDoc = selectedBranch ? changeBranchDoc : changeDoc;
+  const activeHandle = selectedBranch ? branchHandle : handle;
 
   const {
     annotations,
@@ -325,10 +323,6 @@ export const PatchworkDocEditor: React.FC<{
 
   const branches = doc.branchMetadata.branches ?? [];
 
-  const selectedBranchLink =
-    selectedBranch.type === "branch" &&
-    branches.find((b) => selectedBranch.url === b.url);
-
   const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
   return (
@@ -337,46 +331,47 @@ export const PatchworkDocEditor: React.FC<{
         {/* Branch picker topbar */}
         <div className="bg-gray-100 pl-4 pt-3 pb-3 flex gap-2 items-center border-b border-gray-200">
           <Select
-            value={JSON.stringify(selectedBranch)}
+            value={selectedBranch?.url ?? "main"}
             onValueChange={(value) => {
               if (value === "__newDraft") {
                 handleCreateBranch();
               } else if (value === "__moveChangesToBranch") {
                 moveCurrentChangesToBranch();
               } else {
-                const selection = JSON.parse(value as string) as SelectedBranch;
-                setSelectedBranch(selection);
-                if (selection.type === "branch") {
-                  const newBranchName = doc.branchMetadata.branches.find(
-                    (b) => b.url === selection.url
-                  )?.name;
-                  toast(`Switched to branch: ${newBranchName}`);
-                } else if (selection.type === "main") {
+                const selectedBranchUrl = value as AutomergeUrl;
+                const branch = doc.branchMetadata.branches.find(
+                  (b) => b.url === selectedBranchUrl
+                );
+
+                setSelectedBranch(branch);
+
+                if (branch) {
+                  toast(`Switched to branch: ${branch.name}`);
+                } else {
                   toast("Switched to Main");
                 }
               }
             }}
           >
             <SelectTrigger className="h-8 text-sm w-[18rem] font-medium">
-              <SelectValue placeholder="Select Draft">
-                {selectedBranch.type === "main" && (
+              <SelectValue>
+                {selectedBranch ? (
+                  <div className="flex items-center gap-2">
+                    <GitBranchIcon className="inline" size={12} />
+                    {truncate(selectedBranch.name, { length: 30 })}
+                  </div>
+                ) : (
                   <div className="flex items-center gap-2">
                     <CrownIcon className="inline" size={12} />
                     Main
                   </div>
-                )}
-                {selectedBranch.type === "branch" && (
-                  <div className="flex items-center gap-2">
-                    <GitBranchIcon className="inline" size={12} />
-                    {truncate(selectedBranchLink?.name, { length: 30 })}
-                  </div>
-                )}
+                )}{" "}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="w-72">
               <SelectItem
-                value={JSON.stringify({ type: "main" })}
-                className={selectedBranch.type === "main" ? "font-medium" : ""}
+                value={null}
+                className={!selectedBranch ? "font-medium" : ""}
               >
                 <CrownIcon className="inline mr-1" size={12} />
                 Main
@@ -394,14 +389,9 @@ export const PatchworkDocEditor: React.FC<{
                     <SelectItem
                       key={branch.url}
                       className={`${
-                        selectedBranchLink?.url === branch.url
-                          ? "font-medium"
-                          : ""
+                        selectedBranch?.url === branch.url ? "font-medium" : ""
                       }`}
-                      value={JSON.stringify({
-                        type: "branch",
-                        url: branch.url,
-                      })}
+                      value={branch.url}
                     >
                       <div>{branch.name}</div>
                       <div className="ml-auto text-xs text-gray-600 flex gap-1">
@@ -428,7 +418,7 @@ export const PatchworkDocEditor: React.FC<{
                   <PlusIcon className="inline mr-1" size={12} />
                   Create new branch
                 </SelectItem>
-                {selectedBranch.type === "main" && isMarkdownDoc(doc) && (
+                {!selectedBranch && isMarkdownDoc(doc) && (
                   <SelectItem
                     value={"__moveChangesToBranch"}
                     key={"__moveChangesToBranch"}
@@ -444,11 +434,11 @@ export const PatchworkDocEditor: React.FC<{
             </SelectContent>
           </Select>
 
-          {selectedBranch.type === "branch" && selectedBranchLink?.url && (
+          {selectedBranch && (
             <BranchActions
               doc={doc}
               branchDoc={branchDoc}
-              branchUrl={selectedBranchLink.url}
+              branchUrl={selectedBranch.url}
               handleDeleteBranch={handleDeleteBranch}
               handleRenameBranch={renameBranch}
               handleRebaseBranch={rebaseBranch}
@@ -457,11 +447,11 @@ export const PatchworkDocEditor: React.FC<{
           )}
 
           <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
-            {selectedBranch.type === "branch" && (
+            {selectedBranch && (
               <div className="mr-2">
                 <Button
                   onClick={(e) => {
-                    handleMergeBranch(selectedBranchLink.url);
+                    handleMergeBranch(selectedBranch.url);
                     e.stopPropagation();
                   }}
                   variant="outline"
@@ -472,7 +462,7 @@ export const PatchworkDocEditor: React.FC<{
                 </Button>
               </div>
             )}
-            {selectedBranch.type === "branch" && (
+            {selectedBranch && (
               <div className="flex items-center mr-1">
                 <Checkbox
                   id="diff-overlay-checkbox"
@@ -485,7 +475,7 @@ export const PatchworkDocEditor: React.FC<{
               </div>
             )}
 
-            {selectedBranch.type === "branch" && (
+            {selectedBranch && (
               <div className="flex items-center">
                 <Checkbox
                   id="side-by-side"
@@ -524,7 +514,7 @@ export const PatchworkDocEditor: React.FC<{
 
         {/* Main doc editor pane */}
         <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
-          {compareWithMainFlag && selectedBranchLink?.name && (
+          {compareWithMainFlag && selectedBranch && (
             <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
               <div className="flex-1 pl-4">
                 <div className="inline-flex items-center gap-1">
@@ -534,17 +524,17 @@ export const PatchworkDocEditor: React.FC<{
               <div className="flex-1 pl-4">
                 {" "}
                 <GitBranchIcon className="inline mr-1" size={12} />
-                {selectedBranchLink.name}
+                {selectedBranch.name}
               </div>
             </div>
           )}
           <div className="flex-1 min-h-0 relative">
-            {selectedBranch.type === "branch" && compareWithMainFlag ? (
+            {selectedBranch && compareWithMainFlag ? (
               <SideBySide
                 key={mainDocUrl}
                 mainDocUrl={mainDocUrl}
                 docType={docType}
-                docUrl={selectedBranchLink?.url}
+                docUrl={selectedBranch.url}
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
@@ -553,9 +543,9 @@ export const PatchworkDocEditor: React.FC<{
               />
             ) : (
               <DocEditor
-                key={selectedBranchLink?.url ?? mainDocUrl}
+                key={selectedBranch?.url ?? mainDocUrl}
                 docType={docType}
-                docUrl={selectedBranchLink?.url ?? mainDocUrl}
+                docUrl={selectedBranch?.url ?? mainDocUrl}
                 docHeads={docHeads}
                 annotations={annotations}
                 actorIdToAuthor={actorIdToAuthor}
@@ -598,9 +588,9 @@ export const PatchworkDocEditor: React.FC<{
             {sidebarMode === "timeline" && (
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
-                key={selectedBranchLink?.url ?? mainDocUrl}
+                key={selectedBranch?.url ?? mainDocUrl}
                 docType={docType}
-                docUrl={selectedBranchLink?.url ?? mainDocUrl}
+                docUrl={selectedBranch?.url ?? mainDocUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
                 selectedBranch={selectedBranch}

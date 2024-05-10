@@ -3,7 +3,7 @@
 // It will become more structured in future work on schemas / datatypes.
 
 import { DataType, DatatypeId } from "@/DocExplorer/datatypes";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { Branch, HasPatchworkMetadata } from "@/patchwork/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { FolderIcon } from "lucide-react";
 
@@ -12,6 +12,7 @@ export type DocLink = {
   type: DatatypeId;
   url: AutomergeUrl;
   branchUrl?: AutomergeUrl;
+  branchName?: string;
 };
 
 export type DocLinkWithFolderPath = DocLink & {

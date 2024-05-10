@@ -14,7 +14,12 @@ import {
   slashCommands,
 } from "./slashCommands";
 import { EditorView } from "@codemirror/view";
-import { Branchable, DiscussionComment, Taggable } from "@/patchwork/schema";
+import {
+  Branch,
+  Branchable,
+  DiscussionComment,
+  Taggable,
+} from "@/patchwork/schema";
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +32,6 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { uuid } from "@automerge/automerge";
 import { createBranch, mergeBranch } from "@/patchwork/branches";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { SelectedBranch } from "@/DocExplorer/components/DocExplorer";
 import { ChangelogSelection } from "./TimelineSidebar";
 import { TimelineItems } from "@/patchwork/groupChanges";
 import { toast } from "sonner";
@@ -57,8 +61,8 @@ type DiscussionInputProps<T> = {
   doc: T;
   changeDoc: (fn: (doc: T) => void) => void;
   handle: DocHandle<T>;
-  selectedBranch: SelectedBranch;
-  setSelectedBranch: (branch: SelectedBranch) => void;
+  selectedBranch: Branch;
+  setSelectedBranch: (branch: Branch) => void;
   changelogItems: TimelineItems<T>[];
   changelogSelection: ChangelogSelection;
 };
@@ -152,7 +156,7 @@ export const DiscussionInput = function <
           heads: currentlyActiveHeads,
           createdBy: account?.contactHandle?.url,
         });
-        setSelectedBranch({ type: "branch", url: newBranch.url });
+        setSelectedBranch(newBranch);
         setCommentBoxContent("");
         break;
       }

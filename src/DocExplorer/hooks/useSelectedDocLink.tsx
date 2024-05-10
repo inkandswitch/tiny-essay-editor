@@ -16,19 +16,17 @@ import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
 import { isEqual } from "lodash";
 import { DatatypeId, datatypes } from "../datatypes";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
-  let urlSafeName = `${docLink.name
-    .trim()
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .toLowerCase()}`.slice(0, 100);
+  let url = getUrlSafeName(docLink.name);
 
-  if (!urlSafeName.endsWith("-")) {
-    urlSafeName += "-";
+  if (docLink.branchName && docLink.branchUrl) {
+    url += `-(${getUrlSafeName(docLink.branchName)})`;
   }
 
-  let url = `${urlSafeName}-${documentId}?docType=${docLink.type}`;
+  url += `--${documentId}?docType=${docLink.type}`;
 
   if (docLink.branchUrl) {
     url += `&branchUrl=${docLink.branchUrl}`;
@@ -37,11 +35,34 @@ const docLinkToUrl = (docLink: DocLink): string => {
   return url;
 };
 
+// Turn names into a readable url safe string
+// - replaces any sequence of alpha numeric characters with a single "-"
+// - limits length to 100 characters
+function getUrlSafeName(value: string) {
+  let urlSafeName = value
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .toLowerCase()
+    .slice(0, 100);
+
+  if (urlSafeName.endsWith("-")) {
+    urlSafeName = urlSafeName.slice(0, -1);
+  }
+
+  if (urlSafeName.startsWith("-")) {
+    urlSafeName = urlSafeName.slice(1);
+  }
+
+  return urlSafeName;
+}
+
 const isDocType = (x: string): x is DatatypeId =>
   Object.keys(datatypes).includes(x as DatatypeId);
 
 // Parse older URL formats and map them into our newer formatu
-const parseLegacyUrl = (url: URL): Omit<DocLink, "name"> | null => {
+const parseLegacyUrl = (
+  url: URL
+): Omit<DocLink, "name" | "branchName"> | null => {
   // First handle very old URLs that only had an Automerge URL:
   // domain.com/automerge:12345
   const possibleAutomergeUrl = url.pathname.slice(1);
@@ -84,8 +105,8 @@ const parseLegacyUrl = (url: URL): Omit<DocLink, "name"> | null => {
   };
 };
 
-const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
-  const match = url.pathname.match(/^\/(?<name>.*-)?(?<docId>\w+)$/);
+const parseUrl = (url: URL): Omit<DocLink, "name" | "branchName"> | null => {
+  const match = url.pathname.match(/^\/(.*()?--)?(?<docId>\w+)$/);
 
   if (!match) {
     return;

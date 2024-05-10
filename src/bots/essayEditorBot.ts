@@ -86,12 +86,14 @@ ${JSON.stringify(functionsSpec)}
   try {
     const parsed: any = JSON.parse(output.function_call.arguments);
 
-    const branchHandle = createBranch({
+    const branch = createBranch({
       name: `Edits by ${contactDoc.name}`,
       createdBy: botDoc.contactUrl,
       repo,
       handle: targetDocHandle,
     });
+
+    const branchHandle = repo.find<MarkdownDoc>(branch.url);
 
     for (const edit of parsed.edits) {
       branchHandle.change(

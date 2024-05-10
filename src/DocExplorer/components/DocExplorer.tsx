@@ -19,7 +19,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { Branch, HasPatchworkMetadata } from "@/patchwork/schema";
 
 import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
@@ -48,14 +48,17 @@ export const DocExplorer: React.FC = () => {
     useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
-  const selectedDocBranchUrl = selectedDocLink?.branchUrl;
-  const selectedBranch = useMemo<SelectedBranch>(
-    () =>
-      selectedDocBranchUrl
-        ? { type: "branch", url: selectedDocBranchUrl }
-        : { type: "main" },
-    [selectedDocBranchUrl]
-  );
+  const selectedBranchUrl = selectedDocLink?.branchUrl;
+
+  const selectedBranch = useMemo<Branch>(() => {
+    if (!selectedBranchUrl || !selectedDoc) {
+      return;
+    }
+
+    return selectedDoc.branchMetadata.branches.find(
+      (b) => b.url === selectedBranchUrl
+    );
+  }, [selectedBranchUrl, selectedDoc]);
 
   const addNewDocument = useCallback(
     ({ type }: { type: DatatypeId }) => {
@@ -239,8 +242,8 @@ export const DocExplorer: React.FC = () => {
                   setSelectedBranch={(branch) => {
                     selectDocLink({
                       ...selectedDocLink,
-                      branchUrl:
-                        branch.type === "branch" ? branch.url : undefined,
+                      branchUrl: branch?.url,
+                      branchName: branch?.name,
                     });
                   }}
                 />
@@ -254,10 +257,3 @@ export const DocExplorer: React.FC = () => {
     </div>
   );
 };
-
-export type SelectedBranch =
-  | { type: "main" }
-  | {
-      type: "branch";
-      url: AutomergeUrl;
-    };
