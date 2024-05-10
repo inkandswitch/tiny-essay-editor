@@ -180,7 +180,7 @@ export const PatchworkDocEditor: React.FC<{
       });
       setSelectedBranch(branch);
       toast("Created a new branch");
-      return branchHandle;
+      return repo.find(branch.url);
     },
     [repo, handle, account?.contactHandle?.url, setSelectedBranch]
   );
@@ -333,7 +333,7 @@ export const PatchworkDocEditor: React.FC<{
           <Select
             value={selectedBranch?.url ?? "main"}
             onValueChange={(value) => {
-              if (value === "__newDraft") {
+              if (value === "__newBranch") {
                 handleCreateBranch();
               } else if (value === "__moveChangesToBranch") {
                 moveCurrentChangesToBranch();
@@ -411,8 +411,8 @@ export const PatchworkDocEditor: React.FC<{
                     </SelectItem>
                   ))}
                 <SelectItem
-                  value={"__newDraft"}
-                  key={"__newDraft"}
+                  value={"__newBranch"}
+                  key={"__newBranch"}
                   className="font-regular"
                 >
                   <PlusIcon className="inline mr-1" size={12} />
