@@ -28,7 +28,7 @@ const docLinkToUrl = (docLink: DocLink): string => {
     urlSafeName += "-";
   }
 
-  let url = `${urlSafeName}${documentId}?docType=${docLink.type}`;
+  let url = `${urlSafeName}-${documentId}?docType=${docLink.type}`;
 
   if (docLink.branchUrl) {
     url += `&branchUrl=${docLink.branchUrl}`;
