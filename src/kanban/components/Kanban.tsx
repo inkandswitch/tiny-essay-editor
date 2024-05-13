@@ -15,7 +15,7 @@ export const KanbanBoard = ({
   docUrl,
   docHeads,
   readOnly,
-  annotations,
+  annotations = [],
 }: DocEditorProps<KanbanBoardDocAnchor, string> & { readOnly?: boolean }) => {
   const [latestDoc, _changeDoc, actions] =
     useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads
