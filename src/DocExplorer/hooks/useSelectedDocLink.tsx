@@ -321,3 +321,7 @@ export const useSelectedDocLink = ({
     selectDocLink,
   };
 };
+
+export const selectDocLink = (docLink: DocLink) => {
+  location.hash = docLinkToUrl(docLink);
+};
