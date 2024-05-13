@@ -236,14 +236,9 @@ export const useSelectedDocLink = ({
     for (let i = previousFolderPath.length; i >= 0; i--) {
       let comparisonPath = previousFolderPath.slice(0, i);
 
-      linkInPath = matches.find((match) => {
-        console.log(
-          match,
-          comparisonPath,
-          isEqual(match.folderPath, comparisonPath)
-        );
-        return isEqual(match.folderPath, comparisonPath);
-      });
+      linkInPath = matches.find((match) =>
+        isEqual(match.folderPath, comparisonPath)
+      );
 
       if (linkInPath) {
         break;
