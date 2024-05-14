@@ -56,12 +56,7 @@ export const useDocumentWithLinks = <TRawDoc, TDocWithLinksMaterialized>({
 
   const urlsToLoadForCurrentDocWithChildren = useMemo(
     () =>
-      docWithChildren
-        ? Array.from(
-            // ensure there are no duplicate urls in the list
-            new Set([rootUrl, ...findLinks(docWithChildren)]).values()
-          )
-        : undefined,
+      docWithChildren ? [rootUrl, ...findLinks(docWithChildren)] : undefined,
     [docWithChildren, findLinks, rootUrl]
   );
 

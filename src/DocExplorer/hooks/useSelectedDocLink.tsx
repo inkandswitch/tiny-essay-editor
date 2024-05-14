@@ -343,7 +343,7 @@ export const useSelectedDocLink = ({
 };
 
 // In most cases this function should be used to link to documents instead of using useSelectedDocLink()
-// With this function you don't have to specify the folderPath instead ambiguity will be resolved implicitly
+// With this function you don't have to specify the folderPath, instead ambiguity will be resolved implicitly.
 //
 // If the same document is linked multiple times in the folder hierarchy this function will open
 // the document that's closest to the currently opened document
