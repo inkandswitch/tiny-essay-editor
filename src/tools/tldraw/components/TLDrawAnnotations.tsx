@@ -6,13 +6,18 @@ import { useAutomergeStore } from "../vendor/automerge-tldraw";
 import { useDiffStyling } from "./hooks";
 import { Annotation } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
+import { DocHandle } from "@automerge/automerge-repo";
 
 export const TLDrawAnnotations = ({
   handle,
   doc,
   annotations,
 }: AnnotationsViewProps<TLDrawDoc, TLShapeId, TLShape>) => {
-  const store = useAutomergeStore({ handle, doc, userId: "test-user" });
+  const store = useAutomergeStore({
+    handle,
+    doc,
+    userId: "test-user",
+  });
   const [editor, setEditor] = useState<Editor>();
 
   const annotationsWithState = useMemo<

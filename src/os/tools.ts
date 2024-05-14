@@ -14,7 +14,7 @@ import {
 } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { DatatypeId } from "./datatypes";
-import { DocHandle } from "@automerge/automerge-repo/src";
+import { DocHandle } from "@automerge/automerge-repo";
 
 export type Tool = {
   id: DatatypeId;

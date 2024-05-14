@@ -234,7 +234,7 @@ export const ReviewSidebar = React.memo(
           >
             <AnnotationsView
               doc={doc}
-              handle={handle as any} // todo: fix
+              handle={handle}
               datatypeId={datatypeId}
               annotations={pendingAnnotationsForComment}
             />
@@ -434,7 +434,7 @@ const AnnotationGroupView = forwardRef<
           >
             <AnnotationsView
               doc={doc}
-              handle={handle as any} // todo: fix
+              handle={handle}
               datatypeId={datatypeId}
               annotations={annotationGroup.annotations}
             />
@@ -547,7 +547,11 @@ const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
   );
 };
 
-type AnnotationViewPropsWithDatatypeId<T, V> = AnnotationsViewProps<T, V> & {
+type AnnotationViewPropsWithDatatypeId<
+  D extends HasVersionControlMetadata<T, V>,
+  T,
+  V
+> = AnnotationsViewProps<D, T, V> & {
   datatypeId: DatatypeId;
 };
 
@@ -556,7 +560,11 @@ const AnnotationsView = ({
   datatypeId,
   doc,
   handle,
-}: AnnotationViewPropsWithDatatypeId<unknown, unknown>) => {
+}: AnnotationViewPropsWithDatatypeId<
+  HasVersionControlMetadata<unknown, unknown>,
+  unknown,
+  unknown
+>) => {
   // For now, we just use the first annotation viewer available for this doc type.
   // In the future, we might want to:
   // - use an annotations view that's similar to the viewer being used for the main doc
