@@ -27,6 +27,17 @@ async function initializeRepo() {
 
 const repo = initializeRepo();
 
+function sendMessageToClients(message) {
+  clients.matchAll().then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage(message);
+    });
+  });
+}
+
+// When the service worker restarts, tell all clients to re-establish the message channel
+sendMessageToClients({ type: "SERVICE_WORKER_RESTARTED" });
+
 // put it on the global context for interactive use
 repo.then((r) => {
   self.repo = r;
@@ -148,7 +159,7 @@ self.addEventListener("fetch", async (event) => {
     );
   }
   // disable caching for now
-  /* else if (  
+  /* else if (
     import.meta.env.PROD &&
     event.request.method === "GET" &&
     url.origin === self.location.origin
