@@ -1,20 +1,21 @@
-import { AutomergeUrl } from "@automerge/automerge-repo";
-
 import * as A from "@automerge/automerge/next";
 
-import { KanbanBoardDoc, KanbanBoardDocAnchor } from "../datatype";
-import { KanbanBoardDatatype } from "../datatype";
+import {
+  KanbanBoardDatatype,
+  KanbanBoardDoc,
+  KanbanBoardDocAnchor,
+} from "../datatype";
 
-import Board from "react-trello";
-import { useMemo } from "react";
-import { useDocumentWithActions } from "@/useDocumentWithActions";
 import { DocEditorProps } from "@/DocExplorer/datatypes";
+import { useDocumentWithActions } from "@/useDocumentWithActions";
+import { useMemo } from "react";
+import Board from "react-trello";
 
 export const KanbanBoard = ({
   docUrl,
   docHeads,
   readOnly,
-  annotations,
+  annotations = [],
 }: DocEditorProps<KanbanBoardDocAnchor, string> & { readOnly?: boolean }) => {
   const [latestDoc, _changeDoc, actions] =
     useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads

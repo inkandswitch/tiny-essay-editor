@@ -311,8 +311,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 // }}
                 onMove={onMove}
                 onRename={({ node, name }) => {
-                  console.log("rename", name);
-
                   const docLink = flatDocLinks.find(
                     (doc) => doc.url === node.data.url
                   );

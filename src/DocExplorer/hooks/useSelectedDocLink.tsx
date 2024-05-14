@@ -210,22 +210,42 @@ export const useSelectedDocLink = ({
     setSelectedDocLinkDangerouslyBypassingURL,
   ] = useState<DocLinkWithFolderPath | undefined>();
 
-  const selectedDocLink = useMemo(() => {
+  let selectedDocLink: DocLinkWithFolderPath;
+  selectedDocLink = useMemo(() => {
     if (!urlParams || !urlParams.url) {
       return undefined;
     }
 
-    const link = folderDocWithMetadata?.flatDocLinks?.find((doc) => {
-      const urlMatches = doc.url === urlParams?.url;
-      const folderPathMatches =
-        // If we don't have a selected folder path, then just take the first link we find
-        !selectedDocLinkDangerouslyBypassingURL ||
-        isEqual(
-          doc.folderPath,
-          selectedDocLinkDangerouslyBypassingURL?.folderPath
-        );
-      return urlMatches && folderPathMatches;
-    });
+    const previousDocLink = selectedDocLinkDangerouslyBypassingURL;
+    const previousFolderPath: AutomergeUrl[] = previousDocLink
+      ? previousDocLink.type == "folder"
+        ? previousDocLink.folderPath.concat(previousDocLink.url)
+        : previousDocLink.folderPath
+      : [];
+
+    const matches = folderDocWithMetadata?.flatDocLinks?.filter(
+      (doc) => doc.url === urlParams?.url
+    );
+
+    if (!matches) {
+      return;
+    }
+
+    let linkInPath: DocLinkWithFolderPath;
+
+    for (let i = previousFolderPath.length; i >= 0; i--) {
+      let comparisonPath = previousFolderPath.slice(0, i);
+
+      linkInPath = matches.find((match) =>
+        isEqual(match.folderPath, comparisonPath)
+      );
+
+      if (linkInPath) {
+        break;
+      }
+    }
+
+    const link = linkInPath ?? matches[0];
 
     return link && urlParams.branchUrl
       ? {
@@ -320,4 +340,27 @@ export const useSelectedDocLink = ({
     selectedDocLink,
     selectDocLink,
   };
+};
+
+// In most cases this function should be used to link to documents instead of using useSelectedDocLink()
+// With this function you don't have to specify the folderPath, instead ambiguity will be resolved implicitly.
+//
+// If the same document is linked multiple times in the folder hierarchy this function will open
+// the document that's closest to the currently opened document
+//
+// Example:
+
+// we call selectDocLink on Document 2
+//
+// Root Folder
+// |--- Folder A
+// |    |--- Document 1 <-- currently active
+// |    |--- Document 2 <-- this document will be opened
+// |
+// |--- Folder B
+// |    |--- Document 3
+// |    |--- Document 2
+//
+export const selectDocLink = (docLink: DocLink) => {
+  location.hash = docLinkToUrl(docLink);
 };

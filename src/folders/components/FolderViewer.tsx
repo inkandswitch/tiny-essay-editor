@@ -5,6 +5,7 @@ import React from "react";
 import { DocEditorProps, datatypes } from "@/DocExplorer/datatypes";
 import { FolderDoc } from "../datatype";
 import { TOOLS } from "@/DocExplorer/tools";
+import { selectDocLink } from "@/DocExplorer/hooks/useSelectedDocLink";
 
 export const FolderViewer: React.FC<DocEditorProps<never, never>> = ({
   docUrl,
@@ -33,19 +34,14 @@ export const FolderViewer: React.FC<DocEditorProps<never, never>> = ({
               <div className="flex gap-2 items-center font-medium mb-1">
                 <Icon size={16} />
                 <div>{docLink.name}</div>
-                {false && (
-                  <button
-                    className="text-sm text-gray-500 underline align-bottom cursor-pointer"
-                    onClick={() => {
-                      /*selectDocLink({
-                        ...docLink,
-                        folderPath: [, docUrl],
-                      });*/
-                    }}
-                  >
-                    Open
-                  </button>
-                )}
+                <button
+                  className="text-sm text-gray-500 underline align-bottom cursor-pointer"
+                  onClick={() => {
+                    selectDocLink(docLink);
+                  }}
+                >
+                  Open
+                </button>
               </div>
               <div className="h-72 border border-gray-300">
                 {!Tool && <div>No editor available</div>}
