@@ -36,19 +36,18 @@ yarn
 yarn dev
 ```
 
-### Dual deployment
-
-This app is designed for normal webapp deployment as well as experimental deployment to an internal I&S platform. The code is almost entirely shared but there are two entry points:
-
-- `src/main.tsx` is the normal app entry point
-- `src/index.ts` is an experimental entry point which just exports some functions to a host environment
-
 ### Adding a new datatype
 
-This app is actually a general framework for editing automerge docs in viewers, which currently has specific support for markdown documents and tldraw whiteboards.
+This app is actually a general framework for editing automerge documents with tools
 
 Basic instructions to add a new datatype:
 
-- copy an existing `src/{datatype}` directory as a template. `tee` is a reasonable example
-- Fill in `src/<your_datatype>/datatype.ts` with a TS type, an init function, and other functions
-- Add your new datatype to the `datatypes` map in `src/datatypes.ts`
+- You can copy an existing datatype as a template. `markdown` is a reasonable example
+- Create a new datatype
+  - Create a new folder in `src/datatypes/` for your datatype
+  - Fill in `src/datatypes/<your_datatype>/datatype.ts` with a TS type, an init function, and other functions
+  - Add your new datatype to the `DATA_TYPES` map in `src/os/datatypes.ts`
+- Create a tool that can view / edit your new data type
+  - Create a new folder in `src/tools/`
+  - Add your new tool to the `TOOLS` list in `src/os/tools.ts`
+    p
