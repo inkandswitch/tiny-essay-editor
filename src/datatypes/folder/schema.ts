@@ -1,5 +1,5 @@
 import { DatatypeId } from "@/os/datatypes";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
 export type DocLink = {
@@ -20,7 +20,7 @@ export type DocLinkWithFolderPath = DocLink & {
 export type FolderDoc = {
   title: string;
   docs: DocLink[];
-} & HasPatchworkMetadata<never, never>;
+} & HasVersionControlMetadata<never, never>;
 
 // A type representing a folder where the contents are either links to regular docs,
 // or links to folders, in which case we have access to the contents of the folder

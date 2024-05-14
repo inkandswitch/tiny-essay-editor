@@ -5,7 +5,7 @@ import React from "react";
 import { EditorProps } from "@/os/tools";
 import { FolderDoc } from "@/datatypes/folder";
 import { TOOLS } from "@/os/tools";
-import { selectDocLink } from "@/DocExplorer/hooks/useSelectedDocLink";
+import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
 import { DATA_TYPES } from "@/os/datatypes";
 
 export const FolderViewer: React.FC<EditorProps<never, never>> = ({

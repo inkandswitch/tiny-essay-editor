@@ -1,5 +1,5 @@
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { useCurrentAccount } from "@/os/explorer/account";
+import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -60,7 +60,11 @@ import {
   mergeBranch,
   suggestBranchName,
 } from "../branches";
-import { Branch, DiffWithProvenance, HasPatchworkMetadata } from "../schema";
+import {
+  Branch,
+  DiffWithProvenance,
+  HasVersionControlMetadata,
+} from "../schema";
 import {
   combinePatches,
   diffWithProvenance,
@@ -77,7 +81,7 @@ interface MakeBranchOptions {
 type SidebarMode = "comments" | "timeline";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
-export const PatchworkDocEditor: React.FC<{
+export const VersionControlEditor: React.FC<{
   docUrl: AutomergeUrl;
   datatypeId: DatatypeId;
   selectedBranch: Branch;
@@ -90,8 +94,9 @@ export const PatchworkDocEditor: React.FC<{
 }) => {
   const repo = useRepo();
   const [doc, changeDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
-  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+    useDocument<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
+  const handle =
+    useHandle<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
 
@@ -222,9 +227,9 @@ export const PatchworkDocEditor: React.FC<{
   const handleMergeBranch = useCallback(
     (branchUrl: AutomergeUrl) => {
       const branchHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(branchUrl);
+        repo.find<HasVersionControlMetadata<unknown, unknown>>(branchUrl);
       const docHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+        repo.find<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
       mergeBranch({
         docHandle,
         branchHandle,
@@ -238,9 +243,9 @@ export const PatchworkDocEditor: React.FC<{
 
   const rebaseBranch = (draftUrl: AutomergeUrl) => {
     const draftHandle =
-      repo.find<HasPatchworkMetadata<unknown, unknown>>(draftUrl);
+      repo.find<HasVersionControlMetadata<unknown, unknown>>(draftUrl);
     const docHandle =
-      repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+      repo.find<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
     draftHandle.merge(docHandle);
     draftHandle.change((doc) => {
       doc.branchMetadata.source.branchHeads = A.getHeads(docHandle.docSync());
@@ -252,7 +257,7 @@ export const PatchworkDocEditor: React.FC<{
   const renameBranch = useCallback(
     (draftUrl: AutomergeUrl, newName: string) => {
       const docHandle =
-        repo.find<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
+        repo.find<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
       docHandle.change((doc) => {
         const copy = doc.branchMetadata.branches.find(
           (copy) => copy.url === draftUrl
@@ -267,9 +272,9 @@ export const PatchworkDocEditor: React.FC<{
   );
 
   const [branchDoc, changeBranchDoc] = useDocument<
-    HasPatchworkMetadata<unknown, unknown>
+    HasVersionControlMetadata<unknown, unknown>
   >(selectedBranch?.url);
-  const branchHandle = useHandle<HasPatchworkMetadata<unknown, unknown>>(
+  const branchHandle = useHandle<HasVersionControlMetadata<unknown, unknown>>(
     selectedBranch?.url
   );
 
@@ -688,8 +693,8 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
 };
 
 const BranchActions: React.FC<{
-  doc: HasPatchworkMetadata<unknown, unknown>;
-  branchDoc: HasPatchworkMetadata<unknown, unknown>;
+  doc: HasVersionControlMetadata<unknown, unknown>;
+  branchDoc: HasVersionControlMetadata<unknown, unknown>;
   branchUrl: AutomergeUrl;
   handleDeleteBranch: (branchUrl: AutomergeUrl) => void;
   handleRenameBranch: (branchUrl: AutomergeUrl, newName: string) => void;

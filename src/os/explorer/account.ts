@@ -14,7 +14,7 @@ import { ChangeFn } from "@automerge/automerge/next";
 import { useForceUpdate } from "@/components/utils";
 
 import { FolderDoc } from "@/datatypes/folder";
-import { useFolderDocWithChildren } from "../datatypes/folder/hooks/useFolderDocWithChildren";
+import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";
 
 export interface AccountDoc {
   contactUrl: AutomergeUrl;

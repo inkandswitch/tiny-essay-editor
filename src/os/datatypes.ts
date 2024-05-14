@@ -1,9 +1,12 @@
 import {
   ChangeGroup,
   DecodedChangeWithMetadata,
-} from "@/patchwork/groupChanges";
-import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
-import { TextPatch } from "@/patchwork/utils";
+} from "@/os/versionControl/groupChanges";
+import {
+  Annotation,
+  HasVersionControlMetadata,
+} from "@/os/versionControl/schema";
+import { TextPatch } from "@/os/versionControl/utils";
 import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 
@@ -27,7 +30,7 @@ export type CoreDataType<D> = {
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
 };
 
-export type PatchworkDataType<D, T, V> = {
+export type VersionedDataType<D, T, V> = {
   // TODO (GL 3/12/24): we'd like to unify these two filter methods
   // and possibly combine them with grouping logic soon.
 
@@ -101,7 +104,7 @@ export type PatchworkDataType<D, T, V> = {
   sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
 
-export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
+export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
 // TODO: we can narrow the types below by constructing a mapping from docType IDs
 // to the corresponding typescript type. This will be more natural once we have a
@@ -109,7 +112,7 @@ export type DataType<D, T, V> = CoreDataType<D> & PatchworkDataType<D, T, V>;
 
 export const DATA_TYPES: Record<
   string,
-  DataType<HasPatchworkMetadata<unknown, unknown>, unknown, unknown>
+  DataType<HasVersionControlMetadata<unknown, unknown>, unknown, unknown>
 > = {
   essay: markdown, // todo: migrate, we can't just rename it
   tldraw,

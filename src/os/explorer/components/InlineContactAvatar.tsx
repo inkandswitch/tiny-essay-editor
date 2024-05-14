@@ -8,7 +8,7 @@ import {
   AvatarImage,
   avatarVariants,
 } from "@/components/ui/avatar";
-import { useBlobUrl } from "@/DocExplorer/utils";
+import { useBlobUrl } from "@/os/explorer/utils";
 import { User as UserIcon } from "lucide-react";
 
 interface ContactAvatarProps extends VariantProps<typeof avatarVariants> {

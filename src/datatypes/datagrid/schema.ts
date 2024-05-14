@@ -1,6 +1,6 @@
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
-export type DataGridDoc = HasPatchworkMetadata<never, never> & {
+export type DataGridDoc = HasVersionControlMetadata<never, never> & {
   title: string; // The title of the table
 
   // NOTE: modeling the data this way does not result in reasonable merges.

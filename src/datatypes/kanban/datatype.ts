@@ -1,10 +1,10 @@
 import { DataType } from "@/os/datatypes";
-import { ChangeGroup } from "@/patchwork/groupChanges";
+import { ChangeGroup } from "@/os/versionControl/groupChanges";
 import {
   Annotation,
-  HasPatchworkMetadata,
-  initPatchworkMetadata,
-} from "@/patchwork/schema";
+  HasVersionControlMetadata,
+  initVersionControlMetadata,
+} from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { KanbanSquare } from "lucide-react";
 
@@ -29,7 +29,7 @@ export type KanbanBoardDoc = {
   title: string;
   lanes: Lane[];
   cards: Card[];
-} & HasPatchworkMetadata<never, never>;
+} & HasVersionControlMetadata<never, never>;
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -50,7 +50,7 @@ export const init = (doc: any) => {
   doc.lanes = [];
   doc.cards = [];
 
-  initPatchworkMetadata(doc);
+  initVersionControlMetadata(doc);
 };
 
 const patchesToAnnotations = (

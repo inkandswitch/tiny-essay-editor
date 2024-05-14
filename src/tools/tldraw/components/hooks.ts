@@ -1,6 +1,6 @@
 import { isEqual } from "lodash";
 import { useEffect, useRef, useState } from "react";
-import { AnnotationWithUIState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import {
   Editor,
   TLCamera,

@@ -8,7 +8,7 @@ import {
   getTimelineItems,
   getMarkersForDoc,
 } from "./groupChanges";
-import { HasPatchworkMetadata } from "./schema";
+import { HasVersionControlMetadata } from "./schema";
 import { next as A } from "@automerge/automerge";
 import { debounce, isEqual } from "lodash";
 
@@ -21,7 +21,7 @@ const GROUPER_DEBOUNCE_MS = 1000;
  * by maintaining a cache of decoded changes and by debouncing updates.
  */
 export class ChangeGrouper<
-  D extends HasPatchworkMetadata<unknown, unknown>
+  D extends HasVersionControlMetadata<unknown, unknown>
 > extends EventEmitter {
   private handle: DocHandle<D>;
   private repo: Repo;

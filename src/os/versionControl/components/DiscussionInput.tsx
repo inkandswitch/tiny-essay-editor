@@ -1,39 +1,38 @@
-import { useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
 import * as A from "@automerge/automerge/next";
+import CodeMirror from "@uiw/react-codemirror";
+import { useState } from "react";
 
+import { Completion } from "@codemirror/autocomplete";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { Completion } from "@codemirror/autocomplete";
 
-import {
-  createMentionCompletion,
-  createSlashCommandCompletion,
-  slashCommands,
-} from "./slashCommands";
-import { EditorView } from "@codemirror/view";
+import { Button } from "@/components/ui/button";
+import { useCurrentAccount } from "@/os/explorer/account";
+import { createBranch, mergeBranch } from "@/os/versionControl/branches";
+import { TimelineItems } from "@/os/versionControl/groupChanges";
 import {
   Branch,
   Branchable,
   DiscussionComment,
-  Taggable,
-} from "@/patchwork/schema";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { Button } from "@/components/ui/button";
+  HasVersionControlMetadata,
+} from "@/os/versionControl/schema";
+import { uuid } from "@automerge/automerge";
+import { DocHandle } from "@automerge/automerge-repo";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { EditorView } from "@codemirror/view";
 import {
   GitBranchIcon,
   MergeIcon,
   MilestoneIcon,
   SendHorizontalIcon,
 } from "lucide-react";
-import { DocHandle } from "@automerge/automerge-repo";
-import { uuid } from "@automerge/automerge";
-import { createBranch, mergeBranch } from "@/patchwork/branches";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { ChangelogSelection } from "./TimelineSidebar";
-import { TimelineItems } from "@/patchwork/groupChanges";
 import { toast } from "sonner";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { ChangelogSelection } from "./TimelineSidebar";
+import {
+  createMentionCompletion,
+  createSlashCommandCompletion,
+  slashCommands,
+} from "./slashCommands";
 
 type CommentBoxAction =
   | { type: "comment"; value: string }
@@ -65,7 +64,7 @@ type DiscussionInputProps<T> = {
   changelogSelection: ChangelogSelection;
 };
 export const DiscussionInput = function <
-  T extends HasPatchworkMetadata<unknown, unknown>
+  T extends HasVersionControlMetadata<unknown, unknown>
 >({
   doc,
   changeDoc,

@@ -8,8 +8,11 @@ import bot from "@/tools/bot";
 import kanban from "@/tools/kanban";
 
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { Annotation, HasPatchworkMetadata } from "@/patchwork/schema";
-import { AnnotationWithUIState } from "@/patchwork/schema";
+import {
+  Annotation,
+  HasVersionControlMetadata,
+} from "@/os/versionControl/schema";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { DatatypeId } from "./datatypes";
 import { DocHandle } from "@automerge/automerge-repo/src";
 
@@ -32,8 +35,8 @@ export type EditorProps<T, V> = {
 };
 
 export type AnnotationsViewProps<T, V> = {
-  doc: HasPatchworkMetadata<T, V>;
-  handle: DocHandle<HasPatchworkMetadata<T, V>>;
+  doc: HasVersionControlMetadata<T, V>;
+  handle: DocHandle<HasVersionControlMetadata<T, V>>;
   annotations: Annotation<T, V>[];
 };
 

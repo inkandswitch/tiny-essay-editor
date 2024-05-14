@@ -3,10 +3,13 @@ import { DataType } from "@/os/datatypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
 import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
+import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import { pick } from "lodash";
 import { TLShape, TLShapeId, createTLStore } from "@tldraw/tldraw";
-import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
+import {
+  Annotation,
+  initVersionControlMetadata,
+} from "@/os/versionControl/schema";
 import { defaultShapeUtils, Editor } from "@tldraw/tldraw";
 
 // When a copy of the document has been made,
@@ -28,7 +31,7 @@ export const init = (doc: TLDrawDoc) => {
   tldrawinit(doc);
   doc.store["page:page"].name = "Drawing";
 
-  initPatchworkMetadata(doc);
+  initVersionControlMetadata(doc);
 };
 
 export const includePatchInChangeGroup = (patch: A.Patch) => {

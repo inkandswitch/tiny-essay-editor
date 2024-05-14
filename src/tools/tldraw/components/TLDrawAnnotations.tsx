@@ -1,4 +1,4 @@
-import { AnnotationWithUIState } from "@/patchwork/schema";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { TLDrawDoc } from "../../../datatypes/tldraw/schema";

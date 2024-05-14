@@ -1,4 +1,4 @@
-import { ContactDoc, RegisteredContactDoc } from "@/DocExplorer/account";
+import { ContactDoc, RegisteredContactDoc } from "@/os/explorer/account";
 import { MarkdownDatatype } from "@/datatypes/markdown/datatype";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { type DataType } from "@/os/datatypes";

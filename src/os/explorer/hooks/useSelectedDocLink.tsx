@@ -11,9 +11,9 @@ import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
-import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
+import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
 const docLinkToUrl = (docLink: DocLink): string => {
   const documentId = docLink.url.split(":")[1];
@@ -182,7 +182,7 @@ export const useSelectedDocLink = ({
   const currentUrl = useCurrentUrl();
   const urlParams = useMemo(() => parseUrl(currentUrl), [currentUrl]);
 
-  const [doc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
+  const [doc] = useDocument<HasVersionControlMetadata<unknown, unknown>>(
     urlParams?.url
   );
 

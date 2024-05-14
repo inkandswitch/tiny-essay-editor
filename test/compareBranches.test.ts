@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "vitest";
-import { getChangesFromMergedBranch } from "../src/patchwork/branches";
+import { getChangesFromMergedBranch } from "../src/os/versionControl/branches";
 import * as A from "@automerge/automerge/next";
 
 describe("compareBranches", () => {

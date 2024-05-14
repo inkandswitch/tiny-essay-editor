@@ -1,4 +1,4 @@
-import { RegisteredContactDoc } from "@/DocExplorer/account";
+import { RegisteredContactDoc } from "@/os/explorer/account";
 import { TinyEssayEditor } from "@/tools/essay/components/MarkdownEditor";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";

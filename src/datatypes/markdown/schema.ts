@@ -1,11 +1,11 @@
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import * as A from "@automerge/automerge/next";
 import { HasAssets } from "../../tools/essay/assets";
 
 // todo: split content of document and metadata
 // currently branches copy also global metadata
 // unclear if comments should be part of the doc or the content
-export type MarkdownDoc = HasPatchworkMetadata<MarkdownDocAnchor, string> &
+export type MarkdownDoc = HasVersionControlMetadata<MarkdownDocAnchor, string> &
   HasAssets & {
     content: string;
   };

@@ -1,5 +1,4 @@
 import * as A from "@automerge/automerge";
-import React from "react";
 import ReactDom from "react-dom/client";
 //@ts-ignore
 import {
@@ -14,10 +13,10 @@ import * as AW from "@automerge/automerge-wasm";
 import { next as Automerge } from "@automerge/automerge";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 
-import { getAccount } from "./account.js";
-import "./index.css";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
-import { DocExplorer } from "./components/DocExplorer.js";
+import { getAccount } from "./explorer/account.js";
+import { Explorer } from "./explorer/components/Explorer.js";
+import "./index.css";
 
 const serviceWorker = await setupServiceWorker();
 
@@ -158,7 +157,7 @@ window.repo = repo;
 
 const Root = () => (
   <RepoContext.Provider value={repo}>
-    <DocExplorer />
+    <Explorer />
   </RepoContext.Provider>
 );
 

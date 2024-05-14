@@ -11,7 +11,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/datatypes/folder";
-import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
+import { DatatypeId, DATA_TYPES } from "../../datatypes";
 
 import {
   Popover,
@@ -24,7 +24,7 @@ import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { capitalize } from "lodash";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
@@ -342,7 +342,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   // rename doc title
                   const docHandle = repo.find<
-                    HasPatchworkMetadata<unknown, unknown>
+                    HasVersionControlMetadata<unknown, unknown>
                   >(docLink.url);
                   docHandle.change((doc) => {
                     datatype.setTitle(doc, name);

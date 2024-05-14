@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDom from "react-dom/client";
-import { DocExplorer } from "./components/DocExplorer.js";
+import { Explorer } from "./components/Explorer.js";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 
 export function mount(node, params) {

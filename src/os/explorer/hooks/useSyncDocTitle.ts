@@ -1,5 +1,5 @@
-import { HasPatchworkMetadata } from "@/patchwork/schema";
-import { DATA_TYPES } from "../../os/datatypes";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
+import { DATA_TYPES } from "../../datatypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -17,7 +17,7 @@ export const useSyncDocTitle = ({
   repo,
   selectDocLink,
 }: {
-  selectedDoc: Doc<HasPatchworkMetadata<unknown, unknown>>;
+  selectedDoc: Doc<HasVersionControlMetadata<unknown, unknown>>;
   selectedDocLink: DocLinkWithFolderPath;
   repo: Repo;
   selectDocLink: (docLink: DocLinkWithFolderPath) => void;

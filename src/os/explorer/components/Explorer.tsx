@@ -18,14 +18,14 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
-import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
-import { Branch, HasPatchworkMetadata } from "@/patchwork/schema";
+import { VersionControlEditor } from "@/os/versionControl/components/VersionControlEditor";
+import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 
 import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 
-export const DocExplorer: React.FC = () => {
+export const Explorer: React.FC = () => {
   const repo = useRepo();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
@@ -42,9 +42,9 @@ export const DocExplorer: React.FC = () => {
 
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocHandle =
-    useHandle<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+    useHandle<HasVersionControlMetadata<unknown, unknown>>(selectedDocUrl);
   const [selectedDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(selectedDocUrl);
+    useDocument<HasVersionControlMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
   const selectedBranchUrl = selectedDocLink?.branchUrl;
@@ -66,7 +66,7 @@ export const DocExplorer: React.FC = () => {
       }
 
       const newDocHandle =
-        repo.create<HasPatchworkMetadata<unknown, unknown>>();
+        repo.create<HasVersionControlMetadata<unknown, unknown>>();
       newDocHandle.change((doc) => DATA_TYPES[type].init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
@@ -233,7 +233,7 @@ export const DocExplorer: React.FC = () => {
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && (
-                <PatchworkDocEditor
+                <VersionControlEditor
                   datatypeId={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}

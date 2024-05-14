@@ -1,7 +1,7 @@
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 
-export type EssayEditingBotDoc = HasPatchworkMetadata<never, never> & {
+export type EssayEditingBotDoc = HasVersionControlMetadata<never, never> & {
   contactUrl: AutomergeUrl;
   promptUrl: AutomergeUrl;
 };

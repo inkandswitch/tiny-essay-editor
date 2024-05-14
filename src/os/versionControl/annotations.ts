@@ -11,7 +11,7 @@ import {
   AnnotationWithUIState,
   DiffWithProvenance,
 } from "./schema";
-import { HasPatchworkMetadata } from "./schema";
+import { HasVersionControlMetadata } from "./schema";
 
 type HoverAnchorState<T> = {
   type: "anchor";
@@ -37,7 +37,7 @@ export function useAnnotations({
   diff,
   isCommentInputFocused,
 }: {
-  doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
+  doc: A.Doc<HasVersionControlMetadata<unknown, unknown>>;
   datatypeId: DatatypeId;
   diff?: DiffWithProvenance;
   isCommentInputFocused: boolean;
@@ -380,7 +380,7 @@ export const doAnchorsOverlap = (
   type: DatatypeId,
   a: unknown,
   b: unknown,
-  doc: HasPatchworkMetadata<unknown, unknown>
+  doc: HasVersionControlMetadata<unknown, unknown>
 ) => {
   const comperator = DATA_TYPES[type].doAnchorsOverlap;
   return comperator ? comperator(doc, a, b) : isEqual(a, b);
@@ -390,7 +390,7 @@ export const areAnchorSelectionsEqual = (
   type: DatatypeId,
   a: unknown[],
   b: unknown[],
-  doc: HasPatchworkMetadata<unknown, unknown>
+  doc: HasVersionControlMetadata<unknown, unknown>
 ) => {
   if (a.length !== b.length) {
     return false;
@@ -417,7 +417,7 @@ export function doesAnnotationGroupContainAnchors<T, V>(
   docType: DatatypeId,
   group: AnnotationGroup<T, V>,
   anchors: T[],
-  doc: HasPatchworkMetadata<T, V>
+  doc: HasVersionControlMetadata<T, V>
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>

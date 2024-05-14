@@ -50,8 +50,11 @@ import {
   debugHighlightsField,
   debugHighlightsDecorations,
 } from "../codemirrorPlugins/DebugHighlight";
-import { AnnotationPosition, AnnotationWithUIState } from "@/patchwork/schema";
-import { getCursorSafely } from "@/patchwork/utils";
+import {
+  AnnotationPosition,
+  AnnotationWithUIState,
+} from "@/os/versionControl/schema";
+import { getCursorSafely } from "@/os/versionControl/utils";
 import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";

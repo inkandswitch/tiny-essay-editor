@@ -14,10 +14,10 @@ import { EditorView } from "@codemirror/view";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
-import { useCurrentAccount } from "@/DocExplorer/account";
+import { useCurrentAccount } from "@/os/explorer/account";
 import { EditorProps } from "@/os/tools";
-import { AnnotationWithUIState } from "@/patchwork/schema";
-import { getCursorPositionSafely } from "@/patchwork/utils";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
+import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
 

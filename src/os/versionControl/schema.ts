@@ -99,7 +99,7 @@ export type HasChangeGroupSummaries = {
   };
 };
 
-export type HasPatchworkMetadata<T, V> = HasChangeGroupSummaries &
+export type HasVersionControlMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
@@ -155,7 +155,7 @@ export interface AnnotationPosition<T, V> {
   annotation: Annotation<T, V>;
 }
 
-export const initPatchworkMetadata = (doc: any) => {
+export const initVersionControlMetadata = (doc: any) => {
   doc.branchMetadata = {
     source: null,
     branches: [],

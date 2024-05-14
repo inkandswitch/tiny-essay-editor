@@ -38,10 +38,10 @@ import {
 import { getHeads, save } from "@automerge/automerge";
 import { asMarkdownFile } from "@/datatypes/markdown/datatype";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
-import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
+import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useRootFolderDocWithChildren } from "../account";
 
 type TopbarProps = {
@@ -49,9 +49,9 @@ type TopbarProps = {
   setShowSidebar: (showSidebar: boolean) => void;
   selectedDocLink: DocLinkWithFolderPath | undefined;
   selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
-  selectedDoc: Doc<HasPatchworkMetadata<unknown, unknown>> | undefined;
+  selectedDoc: Doc<HasVersionControlMetadata<unknown, unknown>> | undefined;
   selectedDocHandle:
-    | DocHandle<HasPatchworkMetadata<unknown, unknown>>
+    | DocHandle<HasVersionControlMetadata<unknown, unknown>>
     | undefined;
   addNewDocument: (doc: { type: DatatypeId }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
@@ -223,7 +223,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             <DropdownMenuItem
               onClick={async () => {
                 const newHandle =
-                  repo.clone<HasPatchworkMetadata<unknown, unknown>>(
+                  repo.clone<HasVersionControlMetadata<unknown, unknown>>(
                     selectedDocHandle
                   );
                 newHandle.change((doc: any) => {

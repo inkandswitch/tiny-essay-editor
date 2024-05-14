@@ -23,16 +23,16 @@ import {
   MoreVerticalIcon,
 } from "lucide-react";
 import { Heads } from "@automerge/automerge/next";
-import { InlineContactAvatar } from "@/DocExplorer/components/InlineContactAvatar";
+import { InlineContactAvatar } from "@/os/explorer/components/InlineContactAvatar";
 import {
   Branch,
   DiffWithProvenance,
   Discussion,
   HasChangeGroupSummaries,
-  HasPatchworkMetadata,
+  HasVersionControlMetadata,
   Tag,
 } from "../schema";
-import { useSlots } from "@/patchwork/utils";
+import { useSlots } from "@/os/versionControl/utils";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -47,7 +47,7 @@ import { DiscussionInput } from "./DiscussionInput";
 import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
-} from "@/patchwork/changeGroupSummaries";
+} from "@/os/versionControl/changeGroupSummaries";
 
 import { DatatypeId } from "@/os/datatypes";
 import { ChangeGroupingOptions } from "../groupChanges";
@@ -78,13 +78,13 @@ type ChangelogSelectionAnchor = {
 const useTimelineItems = (
   handle,
   options: Omit<
-    ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
+    ChangeGroupingOptions<HasVersionControlMetadata<unknown, unknown>>,
     "markers"
   >
 ) => {
   const repo = useRepo();
   const [items, setItems] = useState<
-    TimelineItems<HasPatchworkMetadata<unknown, unknown>>[]
+    TimelineItems<HasVersionControlMetadata<unknown, unknown>>[]
   >([]);
   useEffect(() => {
     const grouper = new ChangeGrouper(handle, repo, options);
@@ -125,11 +125,11 @@ export const TimelineSidebar: React.FC<{
   setDiff,
 }) => {
   const [doc, changeDoc] =
-    useDocument<HasPatchworkMetadata<unknown, unknown>>(docUrl);
-  const [mainDoc] = useDocument<HasPatchworkMetadata<unknown, unknown>>(
+    useDocument<HasVersionControlMetadata<unknown, unknown>>(docUrl);
+  const [mainDoc] = useDocument<HasVersionControlMetadata<unknown, unknown>>(
     doc?.branchMetadata?.source?.url
   );
-  const handle = useHandle<HasPatchworkMetadata<unknown, unknown>>(docUrl);
+  const handle = useHandle<HasVersionControlMetadata<unknown, unknown>>(docUrl);
   const scrollerRef = useScrollToBottom(doc);
   const [showHiddenItems, setShowHiddenItems] = useState(false);
 
@@ -143,7 +143,7 @@ export const TimelineSidebar: React.FC<{
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
     Omit<
-      ChangeGroupingOptions<HasPatchworkMetadata<unknown, unknown>>,
+      ChangeGroupingOptions<HasVersionControlMetadata<unknown, unknown>>,
       "markers"
     >
   >(() => {
@@ -606,7 +606,7 @@ const useChangelogSelection = function <T>({
 
 const ChangeGroupItem: React.FC<{
   group: GenericChangeGroup;
-  doc: HasPatchworkMetadata<unknown, unknown>;
+  doc: HasVersionControlMetadata<unknown, unknown>;
   selected: boolean;
 }> = ({ group, doc }) => {
   return (

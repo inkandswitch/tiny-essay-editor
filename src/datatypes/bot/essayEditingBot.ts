@@ -1,6 +1,6 @@
-import { RegisteredContactDoc } from "@/DocExplorer/account";
+import { RegisteredContactDoc } from "@/os/explorer/account";
 import { DEFAULT_MODEL, openaiClient } from "@/os/lib/llm";
-import { createBranch } from "@/patchwork/branches";
+import { createBranch } from "@/os/versionControl/branches";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { splice } from "@automerge/automerge/next";

@@ -1,6 +1,6 @@
 import { DataType } from "@/os/datatypes";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { Annotation } from "@/patchwork/schema";
+import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
+import { Annotation } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { pick } from "lodash";
 import { Sheet } from "lucide-react";

@@ -1,5 +1,3 @@
-import { useCurrentAccount } from "@/DocExplorer/account";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,15 +7,17 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
+import { useCurrentAccount } from "@/os/explorer/account";
+import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { AnnotationsViewProps, TOOLS } from "@/os/tools";
 import {
   AnnotationGroup,
   AnnotationGroupWithState,
   DiscussionComment,
-  HasPatchworkMetadata,
+  HasVersionControlMetadata,
   HighlightAnnotation,
-} from "@/patchwork/schema";
+} from "@/os/versionControl/schema";
 import { next as A, uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageCircleIcon } from "lucide-react";
@@ -25,13 +25,13 @@ import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 
 type ReviewSidebarProps = {
-  doc: HasPatchworkMetadata<unknown, unknown>;
-  handle: DocHandle<HasPatchworkMetadata<unknown, unknown>>;
+  doc: HasVersionControlMetadata<unknown, unknown>;
+  handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
   datatypeId: DatatypeId;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
   changeDoc: (
-    changeFn: (doc: HasPatchworkMetadata<unknown, unknown>) => void
+    changeFn: (doc: HasVersionControlMetadata<unknown, unknown>) => void
   ) => void;
   onChangeCommentPositionMap: (map: PositionMap) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
@@ -270,8 +270,8 @@ export const ReviewSidebar = React.memo(
 );
 
 export interface AnnotationGroupViewProps {
-  doc: HasPatchworkMetadata<unknown, unknown>;
-  handle: DocHandle<HasPatchworkMetadata<unknown, unknown>>;
+  doc: HasVersionControlMetadata<unknown, unknown>;
+  handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
   datatypeId: DatatypeId;
   annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;

@@ -1,11 +1,14 @@
 import { DataType } from "@/os/datatypes";
-import { DecodedChangeWithMetadata } from "@/patchwork/groupChanges";
-import { Annotation, initPatchworkMetadata } from "@/patchwork/schema";
+import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
+import {
+  Annotation,
+  initVersionControlMetadata,
+} from "@/os/versionControl/schema";
 import {
   TextPatch,
   getCursorPositionSafely,
   getCursorSafely,
-} from "@/patchwork/utils";
+} from "@/os/versionControl/utils";
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 import { Doc, splice } from "@automerge/automerge/next";
@@ -18,7 +21,7 @@ export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
   doc.commentThreads = {};
 
-  initPatchworkMetadata(doc);
+  initVersionControlMetadata(doc);
   const handle = repo.create<AssetsDoc>();
   handle.change((doc) => {
     doc.files = {};

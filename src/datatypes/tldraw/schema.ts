@@ -1,4 +1,4 @@
-import { HasPatchworkMetadata } from "@/patchwork/schema";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import {
   SerializedSchema,
   SerializedStore,
@@ -6,7 +6,7 @@ import {
   TLShapeId,
 } from "@tldraw/tldraw";
 
-export type TLDrawDoc = HasPatchworkMetadata<never, never> & {
+export type TLDrawDoc = HasVersionControlMetadata<never, never> & {
   store: SerializedStore<TLRecord>;
   schema: SerializedSchema;
 };
