@@ -5,6 +5,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { Bot } from "lucide-react";
 import { EssayEditingBotDoc } from "@/datatypes/bot";
+import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
 
 export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const [doc, changeDoc] = useDocument<EssayEditingBotDoc>(docUrl);
@@ -46,8 +47,7 @@ export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
           <a
             className="cursor-pointer"
             onClick={() => {
-              // todo
-              // setUrlHashForDoc({ docUrl: doc.promptUrl, docType: "essay" })
+              selectDocLink({ url: doc.promptUrl, type: "essay", name: "" });
             }}
           >
             Open as doc

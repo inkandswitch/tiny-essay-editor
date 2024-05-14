@@ -106,7 +106,7 @@ export type VersionedDataType<D, T, V> = {
 
 export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
-// TODO: we can narrow the types below by constructing a mapping from docType IDs
+// TODO: we can narrow the types below by constructing a mapping from datatype IDs
 // to the corresponding typescript type. This will be more natural once we have a
 // schema system for generating typescript types.
 

@@ -36,7 +36,7 @@ const docLinkToUrl = (docLink: DocLink): string => {
   }
 
   // add id & doctype
-  url += `${documentId}?docType=${docLink.type}`;
+  url += `${documentId}?type=${docLink.type}`;
 
   // add branchUrl (optional)
   if (docLink.branchUrl) {
@@ -67,7 +67,7 @@ const getUrlSafeName = (value: string) => {
   return urlSafeName;
 };
 
-const isDocType = (x: string): x is DatatypeId =>
+const isDatatypeId = (x: string): x is DatatypeId =>
   Object.keys(DATA_TYPES).includes(x as DatatypeId);
 
 // Parse older URL formats and map them into our newer formatu
@@ -99,7 +99,7 @@ const parseLegacyUrl = (
     return null;
   }
 
-  if (typeof docType === "string" && !isDocType(docType)) {
+  if (typeof docType === "string" && !isDatatypeId(docType)) {
     alert(`Invalid doc type in URL: ${docType}`);
     return null;
   }
@@ -133,9 +133,10 @@ const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
     return null;
   }
 
-  const docType = url.searchParams.get("docType");
-  if (!isDocType(docType)) {
-    alert(`Invalid doc type in URL: ${docType}`);
+  const datatypeId =
+    url.searchParams.get("type") ?? url.searchParams.get("docType"); // use legacy docType as a fallback
+  if (!isDatatypeId(datatypeId)) {
+    alert(`Invalid data type in URL: ${datatypeId}`);
     return null;
   }
 
@@ -147,7 +148,7 @@ const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
 
   return {
     url: docUrl,
-    type: docType,
+    type: datatypeId,
     branchUrl: branchUrl as AutomergeUrl,
     branchName,
   };

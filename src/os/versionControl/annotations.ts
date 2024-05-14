@@ -414,24 +414,24 @@ export function getAnnotationGroupId<T, V>(
 }
 
 export function doesAnnotationGroupContainAnchors<T, V>(
-  docType: DatatypeId,
+  datatypeId: DatatypeId,
   group: AnnotationGroup<T, V>,
   anchors: T[],
   doc: HasVersionControlMetadata<T, V>
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>
-      doAnchorsOverlap(docType, annotation.anchor, anchor, doc)
+      doAnchorsOverlap(datatypeId, annotation.anchor, anchor, doc)
     )
   );
 }
 
 export function groupAnnotations<T, V>(
-  docType: DatatypeId,
+  datatypeId: DatatypeId,
   annotations: Annotation<T, V>[]
 ): Annotation<T, V>[][] {
   const grouper =
-    DATA_TYPES[docType].groupAnnotations ??
+    DATA_TYPES[datatypeId].groupAnnotations ??
     ((annotations: Annotation<T, V>[]) =>
       annotations.map((annotation) => [annotation]));
 

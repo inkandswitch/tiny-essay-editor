@@ -537,7 +537,7 @@ export const VersionControlEditor: React.FC<{
               <SideBySide
                 key={mainDocUrl}
                 mainDocUrl={mainDocUrl}
-                docType={datatypeId}
+                datatypeId={datatypeId}
                 docUrl={selectedBranch.url}
                 docHeads={docHeads}
                 annotations={annotations}
@@ -548,7 +548,7 @@ export const VersionControlEditor: React.FC<{
             ) : (
               <DocEditor
                 key={selectedBranch?.url ?? mainDocUrl}
-                docType={datatypeId}
+                datatypeId={datatypeId}
                 docUrl={selectedBranch?.url ?? mainDocUrl}
                 docHeads={docHeads}
                 annotations={annotations}
@@ -629,22 +629,22 @@ export const VersionControlEditor: React.FC<{
   );
 };
 
-export interface EditorPropsWithDocType<T, V> extends EditorProps<T, V> {
-  docType: DatatypeId;
+export interface EditorPropsWithDatatype<T, V> extends EditorProps<T, V> {
+  datatypeId: DatatypeId;
 }
 
 /* Wrapper component that dispatches to the tool for the doc type */
 const DocEditor = <T, V>({
-  docType,
+  datatypeId,
   docUrl,
   docHeads,
   annotations,
   actorIdToAuthor,
   setSelectedAnchors,
   setHoveredAnchor,
-}: EditorPropsWithDocType<T, V>) => {
+}: EditorPropsWithDatatype<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = TOOLS[docType][0].editorComponent;
+  const Component = TOOLS[datatypeId][0].editorComponent;
 
   return (
     <Component
@@ -658,12 +658,12 @@ const DocEditor = <T, V>({
   );
 };
 
-export interface SideBySideProps<T, V> extends EditorPropsWithDocType<T, V> {
+export interface SideBySideProps<T, V> extends EditorPropsWithDatatype<T, V> {
   mainDocUrl: AutomergeUrl;
 }
 
 export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
-  switch (props.docType) {
+  switch (props.datatypeId) {
     case "tldraw": {
       return <TLDrawSideBySide {...props} />;
     }

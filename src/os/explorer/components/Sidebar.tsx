@@ -213,18 +213,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(DATA_TYPES).map(([id, docType]) => (
-          <div key={docType.id}>
+        {Object.entries(DATA_TYPES).map(([id, datatype]) => (
+          <div key={datatype.id}>
             {" "}
             <div
               className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
               onClick={() => addNewDocument({ type: id as DatatypeId })}
             >
-              <docType.icon
+              <datatype.icon
                 size={14}
                 className="inline-block font-bold mr-2 align-top mt-[2px]"
               />
-              New {docType.name}
+              New {datatype.name}
             </div>
           </div>
         ))}
