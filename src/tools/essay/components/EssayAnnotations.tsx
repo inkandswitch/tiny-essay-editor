@@ -1,10 +1,13 @@
-import { MarkdownDocAnchor } from "../../../datatypes/markdown/schema";
+import {
+  MarkdownDoc,
+  MarkdownDocAnchor,
+} from "../../../datatypes/markdown/schema";
 import { truncate } from "lodash";
 import { AnnotationsViewProps } from "@/os/tools";
 
-export const MarkdownAnnotations = ({
+export const EssayAnnotations = ({
   annotations,
-}: AnnotationsViewProps<MarkdownDocAnchor, string>) => {
+}: AnnotationsViewProps<MarkdownDoc, MarkdownDocAnchor, string>) => {
   return (
     <div className="px-2 bg-white rounded-sm">
       {annotations.map((annotation) => {

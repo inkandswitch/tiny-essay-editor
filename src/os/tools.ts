@@ -20,7 +20,13 @@ export type Tool = {
   id: DatatypeId;
   name: string;
   editorComponent: React.FC<EditorProps<unknown, unknown>>;
-  annotationViewComponent?: React.FC<AnnotationsViewProps<unknown, unknown>>;
+  annotationViewComponent?: React.FC<
+    AnnotationsViewProps<
+      HasVersionControlMetadata<unknown, unknown>,
+      unknown,
+      unknown
+    >
+  >;
 };
 
 export type EditorProps<T, V> = {
@@ -34,9 +40,13 @@ export type EditorProps<T, V> = {
   setHoveredAnchor?: (anchors: T) => void;
 };
 
-export type AnnotationsViewProps<T, V> = {
-  doc: HasVersionControlMetadata<T, V>;
-  handle: DocHandle<HasVersionControlMetadata<T, V>>;
+export type AnnotationsViewProps<
+  D extends HasVersionControlMetadata<T, V>,
+  T,
+  V
+> = {
+  doc: D;
+  handle: DocHandle<D>;
   annotations: Annotation<T, V>[];
 };
 

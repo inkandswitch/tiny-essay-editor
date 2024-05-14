@@ -1,28 +1,28 @@
-import { AnnotationWithUIState } from "@/os/versionControl/schema";
+import { AnnotationsViewProps } from "@/os/tools";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { TLDrawDoc } from "../../../datatypes/tldraw/schema";
 import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import { DocHandle } from "@automerge/automerge-repo";
 import { useDiffStyling } from "./hooks";
+import { Annotation } from "@/os/versionControl/schema";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
 
 export const TLDrawAnnotations = ({
   handle,
   doc,
   annotations,
-}: {
-  doc: TLDrawDoc;
-  handle: DocHandle<TLDrawDoc>;
-  annotations: AnnotationWithUIState<TLShapeId, TLShape>[];
-}) => {
+}: AnnotationsViewProps<TLDrawDoc, TLShapeId, TLShape>) => {
   const store = useAutomergeStore({ handle, doc, userId: "test-user" });
   const [editor, setEditor] = useState<Editor>();
 
-  const annotationsWithState = useMemo(
+  const annotationsWithState = useMemo<
+    AnnotationWithUIState<TLShapeId, TLShape>[]
+  >(
     () =>
-      annotations.map((a) => ({
+      annotations.map((a: Annotation<TLShapeId, TLShape>) => ({
         ...a,
         isEmphasized: false,
+        shouldBeVisibleInViewport: false,
       })),
     [annotations]
   );

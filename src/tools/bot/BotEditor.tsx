@@ -1,5 +1,5 @@
 import { RegisteredContactDoc } from "@/os/explorer/account";
-import { TinyEssayEditor } from "@/tools/essay/components/MarkdownEditor";
+import { EssayEditor } from "@/tools/essay/components/EssayEditor";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
@@ -54,7 +54,7 @@ export const BotEditor = ({ docUrl }: { docUrl: AutomergeUrl }) => {
           </a>
         </div>
         <div className="max-h-96 overflow-y-auto border border-gray-600">
-          <TinyEssayEditor docUrl={doc.promptUrl} />
+          <EssayEditor docUrl={doc.promptUrl} />
         </div>
       </div>
     </div>

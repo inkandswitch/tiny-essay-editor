@@ -21,9 +21,7 @@ import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
 
-export const TinyEssayEditor = (
-  props: EditorProps<MarkdownDocAnchor, string>
-) => {
+export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const {
     docUrl,
     docHeads,
