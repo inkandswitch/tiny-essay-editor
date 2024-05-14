@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import * as A from "@automerge/automerge/next";
 import { isEqual, sortBy, min } from "lodash";
-import { useStaticCallback } from "@/tee/utils";
-import { DatatypeId, datatypes } from "@/DocExplorer/datatypes";
+import { useStaticCallback } from "@/os/hooks/useStaticCallback";
+import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
 import {
   Annotation,
   HighlightAnnotation,
@@ -33,12 +33,12 @@ type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
 
 export function useAnnotations({
   doc,
-  docType,
+  datatypeId,
   diff,
   isCommentInputFocused,
 }: {
   doc: A.Doc<HasPatchworkMetadata<unknown, unknown>>;
-  docType: DatatypeId;
+  datatypeId: DatatypeId;
   diff?: DiffWithProvenance;
   isCommentInputFocused: boolean;
 }): {
@@ -109,8 +109,8 @@ export function useAnnotations({
       return { annotations: [], annotationGroups: [] };
     }
 
-    const patchesToAnnotations = datatypes[docType].patchesToAnnotations;
-    const valueOfAnchor = datatypes[docType].valueOfAnchor ?? (() => null);
+    const patchesToAnnotations = DATA_TYPES[datatypeId].patchesToAnnotations;
+    const valueOfAnchor = DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
     const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
@@ -165,7 +165,7 @@ export function useAnnotations({
       editAnnotations.forEach((editAnnotation) => {
         if (
           discussion.anchors.some((anchor) =>
-            doAnchorsOverlap(docType, editAnnotation.anchor, anchor, doc)
+            doAnchorsOverlap(datatypeId, editAnnotation.anchor, anchor, doc)
           )
         ) {
           // mark any annotation that is part of a discussion as claimed
@@ -184,7 +184,7 @@ export function useAnnotations({
 
     const computedAnnotationGroups: AnnotationGroup<unknown, unknown>[] =
       groupAnnotations(
-        docType,
+        datatypeId,
         editAnnotations.filter(
           (annotation) => !claimedAnnotations.has(annotation)
         )
@@ -206,7 +206,7 @@ export function useAnnotations({
       highlightAnnotations.push(...selectionAnnotations);
     }
 
-    const sortAnchorsBy = datatypes[docType].sortAnchorsBy;
+    const sortAnchorsBy = DATA_TYPES[datatypeId].sortAnchorsBy;
 
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
@@ -220,7 +220,7 @@ export function useAnnotations({
           )
         : combinedAnnotationGroups,
     };
-  }, [doc, diff, selectedState, isCommentInputFocused, docType]);
+  }, [doc, diff, selectedState, isCommentInputFocused, datatypeId]);
 
   const {
     selectedAnchors,
@@ -242,7 +242,7 @@ export function useAnnotations({
         // first annotationGroup that contains all selected anchors is expanded
         const annotationGroup = annotationGroups.find((group) =>
           doesAnnotationGroupContainAnchors(
-            docType,
+            datatypeId,
             group,
             selectedState.anchors,
             doc
@@ -286,7 +286,7 @@ export function useAnnotations({
         // find first discussion that contains the hovered anchor and hover all anchors that are part of that discussion as wellp
         const annotationGroup = annotationGroups.find((group) =>
           doesAnnotationGroupContainAnchors(
-            docType,
+            datatypeId,
             group,
             [hoveredState.anchor],
             doc
@@ -382,7 +382,7 @@ export const doAnchorsOverlap = (
   b: unknown,
   doc: HasPatchworkMetadata<unknown, unknown>
 ) => {
-  const comperator = datatypes[type].doAnchorsOverlap;
+  const comperator = DATA_TYPES[type].doAnchorsOverlap;
   return comperator ? comperator(doc, a, b) : isEqual(a, b);
 };
 
@@ -431,7 +431,7 @@ export function groupAnnotations<T, V>(
   annotations: Annotation<T, V>[]
 ): Annotation<T, V>[][] {
   const grouper =
-    datatypes[docType].groupAnnotations ??
+    DATA_TYPES[docType].groupAnnotations ??
     ((annotations: Annotation<T, V>[]) =>
       annotations.map((annotation) => [annotation]));
 

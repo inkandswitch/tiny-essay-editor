@@ -1,38 +1,33 @@
-import { next as A } from "@automerge/automerge";
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { useCurrentAccount } from "@/DocExplorer/account";
+import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
+import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
+import { getRelativeTimeString } from "@/os/lib/dates";
+import { AnnotationsViewProps, TOOLS } from "@/os/tools";
 import {
   AnnotationGroup,
+  AnnotationGroupWithState,
   DiscussionComment,
   HasPatchworkMetadata,
   HighlightAnnotation,
 } from "@/patchwork/schema";
-import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { getRelativeTimeString, useStaticCallback } from "@/tee/utils";
-import { useCurrentAccount } from "@/DocExplorer/account";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  PopoverClose,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Check } from "lucide-react";
-import { uuid } from "@automerge/automerge";
-import { Annotation, AnnotationGroupWithState } from "@/patchwork/schema";
-import {
-  DatatypeId,
-  annotationViewersForDocType,
-  datatypes,
-} from "@/DocExplorer/datatypes";
-import { MessageCircleIcon } from "lucide-react";
-import { getAnnotationGroupId } from "../annotations";
+import { next as A, uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
+import { Check, MessageCircleIcon } from "lucide-react";
+import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { getAnnotationGroupId } from "../annotations";
 
-type ReviewSidebarProps<T> = {
-  doc: T;
-  handle: DocHandle<T>;
-  docType: string;
+type ReviewSidebarProps = {
+  doc: HasPatchworkMetadata<unknown, unknown>;
+  handle: DocHandle<HasPatchworkMetadata<unknown, unknown>>;
+  datatypeId: DatatypeId;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
   changeDoc: (
@@ -49,10 +44,10 @@ type ReviewSidebarProps<T> = {
 export type PositionMap = Record<string, { top: number; bottom: number }>;
 
 export const ReviewSidebar = React.memo(
-  <T extends HasPatchworkMetadata<unknown, unknown>>({
+  ({
     doc,
     handle,
-    docType,
+    datatypeId,
     annotationGroups,
     selectedAnchors,
     changeDoc,
@@ -61,22 +56,25 @@ export const ReviewSidebar = React.memo(
     setHoveredAnnotationGroupId,
     isCommentInputFocused,
     setIsCommentInputFocused,
-  }: ReviewSidebarProps<T>) => {
+  }: ReviewSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
       useState<string>();
     const account = useCurrentAccount();
 
-    const pendingAnnotationsForComment: HighlightAnnotation<T, unknown>[] =
-      useMemo(() => {
-        if (!doc) return [];
-        const valueOfAnchor = datatypes[docType].valueOfAnchor ?? (() => null);
-        return selectedAnchors.map((anchor) => ({
-          type: "highlighted",
-          anchor: [anchor] as unknown as T, // todo: investigate if this typecast is wrong
-          value: valueOfAnchor(doc, anchor),
-        }));
-      }, [selectedAnchors, doc, docType]);
+    const pendingAnnotationsForComment: HighlightAnnotation<
+      unknown,
+      unknown
+    >[] = useMemo(() => {
+      if (!doc) return [];
+      const valueOfAnchor =
+        DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
+      return selectedAnchors.map((anchor) => ({
+        type: "highlighted",
+        anchor: [anchor],
+        value: valueOfAnchor(doc, anchor),
+      }));
+    }, [selectedAnchors, doc, datatypeId]);
 
     const addCommentToAnnotationGroup = (
       annotationGroup: AnnotationGroup<unknown, unknown>,
@@ -181,7 +179,7 @@ export const ReviewSidebar = React.memo(
               <AnnotationGroupView
                 doc={doc}
                 handle={handle}
-                docType={docType}
+                datatypeId={datatypeId}
                 key={id}
                 annotationGroup={annotationGroup}
                 isReplyBoxOpen={annotationGroupIdOfActiveReply === id}
@@ -236,8 +234,8 @@ export const ReviewSidebar = React.memo(
           >
             <AnnotationsView
               doc={doc}
-              handle={handle}
-              docType={docType}
+              handle={handle as any} // todo: fix
+              datatypeId={datatypeId}
               annotations={pendingAnnotationsForComment}
             />
           </div>
@@ -271,10 +269,10 @@ export const ReviewSidebar = React.memo(
   }
 );
 
-export interface AnnotationGroupViewProps<T, V> {
-  doc: T;
-  handle: DocHandle<T>;
-  docType: string;
+export interface AnnotationGroupViewProps {
+  doc: HasPatchworkMetadata<unknown, unknown>;
+  handle: DocHandle<HasPatchworkMetadata<unknown, unknown>>;
+  datatypeId: DatatypeId;
   annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
@@ -289,13 +287,13 @@ export interface AnnotationGroupViewProps<T, V> {
 
 const AnnotationGroupView = forwardRef<
   HTMLDivElement,
-  AnnotationGroupViewProps<any, any>
+  AnnotationGroupViewProps
 >(
-  <T, V>(
+  (
     {
       doc,
       handle,
-      docType,
+      datatypeId,
       annotationGroup,
       isReplyBoxOpen,
       setIsReplyBoxOpen,
@@ -306,7 +304,7 @@ const AnnotationGroupView = forwardRef<
       setIsSelected,
       onSelectNext,
       onSelectPrev,
-    }: AnnotationGroupViewProps<T, V>,
+    }: AnnotationGroupViewProps,
     ref
   ) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
@@ -436,8 +434,8 @@ const AnnotationGroupView = forwardRef<
           >
             <AnnotationsView
               doc={doc}
-              handle={handle}
-              docType={docType}
+              handle={handle as any} // todo: fix
+              datatypeId={datatypeId}
               annotations={annotationGroup.annotations}
             />
 
@@ -549,22 +547,21 @@ const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
   );
 };
 
-const AnnotationsView = <T, V>({
+type AnnotationViewPropsWithDatatypeId<T, V> = AnnotationsViewProps<T, V> & {
+  datatypeId: DatatypeId;
+};
+
+const AnnotationsView = ({
   annotations,
-  docType,
+  datatypeId,
   doc,
   handle,
-}: {
-  annotations: Annotation<T, V>[];
-  docType: DatatypeId;
-  doc: T;
-  handle: DocHandle<T>;
-}) => {
+}: AnnotationViewPropsWithDatatypeId<unknown, unknown>) => {
   // For now, we just use the first annotation viewer available for this doc type.
   // In the future, we might want to:
   // - use an annotations view that's similar to the viewer being used for the main doc
   // - allow switching between different viewers?
-  const Viewer = annotationViewersForDocType[docType]?.[0];
+  const Viewer = TOOLS[datatypeId]?.[0].annotationViewComponent;
   if (!Viewer) {
     return (
       <div className="text-gray-500 text-xs italic">

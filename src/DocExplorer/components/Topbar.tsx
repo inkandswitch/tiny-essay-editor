@@ -25,7 +25,7 @@ import {
 import { SyncIndicator } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
-import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 
 import {
   DropdownMenu,
@@ -36,10 +36,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { asMarkdownFile } from "@/tee/datatype";
-import { MarkdownDoc } from "@/tee/schema";
-import { DatatypeId, datatypes } from "../datatypes";
-import { runBot } from "@/bots/essayEditorBot";
+import { asMarkdownFile } from "@/datatypes/markdown/datatype";
+import { MarkdownDoc } from "@/datatypes/markdown/schema";
+import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
+import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 import { useRootFolderDocWithChildren } from "../account";
@@ -72,7 +72,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
 
-  const selectedDatatypeMetadata = datatypes[selectedDocType];
+  const selectedDatatypeMetadata = DATA_TYPES[selectedDocType];
 
   // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
 
@@ -227,7 +227,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     selectedDocHandle
                   );
                 newHandle.change((doc: any) => {
-                  datatypes[selectedDocType].markCopy(doc);
+                  DATA_TYPES[selectedDocType].markCopy(doc);
                   doc.branchMetadata.source = {
                     url: selectedDocUrl,
                     branchHeads: getHeads(selectedDocHandle.docSync()),
@@ -236,7 +236,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: await datatypes[selectedDocType].getTitle(
+                  name: await DATA_TYPES[selectedDocType].getTitle(
                     newHandle.docSync(),
                     repo
                   ),

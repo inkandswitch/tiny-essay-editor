@@ -1,7 +1,5 @@
 import { useCurrentAccount } from "@/DocExplorer/account";
 import { ContactAvatar } from "@/DocExplorer/components/ContactAvatar";
-import { DocEditorProps, DatatypeId } from "@/DocExplorer/datatypes";
-import { getRelativeTimeString } from "@/DocExplorer/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -23,10 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isLLMActive } from "@/llm";
-import { isMarkdownDoc } from "@/tee/datatype";
-import { MarkdownDocAnchor } from "@/tee/schema";
-import { SideBySide as TLDrawSideBySide } from "@/tldraw/components/TLDraw";
+import { isMarkdownDoc } from "@/datatypes/markdown";
+import { DatatypeId } from "@/os/datatypes";
+import { getRelativeTimeString } from "@/os/lib/dates";
+import { isLLMActive } from "@/os/lib/llm";
+import { EditorProps, TOOLS } from "@/os/tools";
+import { SideBySide as TLDrawSideBySide } from "@/tools/tldraw/components/TLDraw";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -60,12 +60,7 @@ import {
   mergeBranch,
   suggestBranchName,
 } from "../branches";
-import {
-  AnnotationWithUIState,
-  Branch,
-  DiffWithProvenance,
-  HasPatchworkMetadata,
-} from "../schema";
+import { Branch, DiffWithProvenance, HasPatchworkMetadata } from "../schema";
 import {
   combinePatches,
   diffWithProvenance,
@@ -73,7 +68,6 @@ import {
 } from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
-import { TOOLS } from "@/DocExplorer/tools";
 
 interface MakeBranchOptions {
   name?: string;
@@ -85,10 +79,15 @@ type SidebarMode = "comments" | "timeline";
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const PatchworkDocEditor: React.FC<{
   docUrl: AutomergeUrl;
-  docType: DatatypeId;
+  datatypeId: DatatypeId;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;
-}> = ({ docUrl: mainDocUrl, docType, selectedBranch, setSelectedBranch }) => {
+}> = ({
+  docUrl: mainDocUrl,
+  datatypeId,
+  selectedBranch,
+  setSelectedBranch,
+}) => {
   const repo = useRepo();
   const [doc, changeDoc] =
     useDocument<HasPatchworkMetadata<unknown, unknown>>(mainDocUrl);
@@ -303,7 +302,7 @@ export const PatchworkDocEditor: React.FC<{
     setSelectedAnnotationGroupId,
   } = useAnnotations({
     doc: activeDoc,
-    docType,
+    datatypeId,
     diff: diffForEditor,
     isCommentInputFocused,
   });
@@ -317,7 +316,7 @@ export const PatchworkDocEditor: React.FC<{
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
-  if (!doc || !docType || !doc.branchMetadata) return <div>Loading...</div>;
+  if (!doc || !datatypeId || !doc.branchMetadata) return <div>Loading...</div>;
 
   // ---- ANYTHING RELYING ON doc SHOULD GO BELOW HERE ----
 
@@ -533,7 +532,7 @@ export const PatchworkDocEditor: React.FC<{
               <SideBySide
                 key={mainDocUrl}
                 mainDocUrl={mainDocUrl}
-                docType={docType}
+                docType={datatypeId}
                 docUrl={selectedBranch.url}
                 docHeads={docHeads}
                 annotations={annotations}
@@ -544,7 +543,7 @@ export const PatchworkDocEditor: React.FC<{
             ) : (
               <DocEditor
                 key={selectedBranch?.url ?? mainDocUrl}
-                docType={docType}
+                docType={datatypeId}
                 docUrl={selectedBranch?.url ?? mainDocUrl}
                 docHeads={docHeads}
                 annotations={annotations}
@@ -589,7 +588,7 @@ export const PatchworkDocEditor: React.FC<{
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranch?.url ?? mainDocUrl}
-                docType={docType}
+                datatypeId={datatypeId}
                 docUrl={selectedBranch?.url ?? mainDocUrl}
                 setDocHeads={setDocHeadsFromHistorySidebar}
                 setDiff={setDiffFromHistorySidebar}
@@ -601,7 +600,7 @@ export const PatchworkDocEditor: React.FC<{
               <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
-                docType={docType}
+                datatypeId={datatypeId}
                 annotationGroups={annotationGroups}
                 selectedAnchors={selectedAnchors}
                 changeDoc={activeChangeDoc}
@@ -625,7 +624,7 @@ export const PatchworkDocEditor: React.FC<{
   );
 };
 
-export interface DocEditorPropsWithDocType<T, V> extends DocEditorProps<T, V> {
+export interface EditorPropsWithDocType<T, V> extends EditorProps<T, V> {
   docType: DatatypeId;
 }
 
@@ -638,17 +637,15 @@ const DocEditor = <T, V>({
   actorIdToAuthor,
   setSelectedAnchors,
   setHoveredAnchor,
-}: DocEditorPropsWithDocType<T, V>) => {
+}: EditorPropsWithDocType<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = TOOLS[docType][0].component;
+  const Component = TOOLS[docType][0].editorComponent;
 
   return (
     <Component
       docUrl={docUrl}
       docHeads={docHeads}
-      annotations={
-        annotations as AnnotationWithUIState<MarkdownDocAnchor, string>[]
-      }
+      annotations={annotations}
       actorIdToAuthor={actorIdToAuthor}
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
@@ -656,7 +653,7 @@ const DocEditor = <T, V>({
   );
 };
 
-export interface SideBySideProps<T, V> extends DocEditorPropsWithDocType<T, V> {
+export interface SideBySideProps<T, V> extends EditorPropsWithDocType<T, V> {
   mainDocUrl: AutomergeUrl;
 }
 

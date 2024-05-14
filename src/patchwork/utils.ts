@@ -1,4 +1,4 @@
-import { useForceUpdate } from "@/lib/utils";
+import { useForceUpdate } from "@/components/utils";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import * as wasm from "@automerge/automerge-wasm";

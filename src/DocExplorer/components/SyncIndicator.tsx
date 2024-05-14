@@ -4,7 +4,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 // TODO move these utils
-import { arraysAreEqual, getRelativeTimeString } from "../utils";
+import { getRelativeTimeString } from "@/os/lib/dates";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle, StorageId } from "@automerge/automerge-repo";
 import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";
@@ -307,7 +307,7 @@ function useSyncIndicatorState(handle: DocHandle<unknown>): SyncIndicatorState {
       return;
     }
 
-    if (arraysAreEqual(ownHeads, syncServerHeads)) {
+    if (A.equals(ownHeads, syncServerHeads)) {
       send({ type: "IS_IN_SYNC" });
     } else {
       send({ type: "IS_OUT_OF_SYNC" });

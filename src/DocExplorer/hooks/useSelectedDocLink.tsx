@@ -6,16 +6,12 @@ import {
   stringifyAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useEffect, useMemo, useState } from "react";
-import {
-  DocLink,
-  DocLinkWithFolderPath,
-  FolderDoc,
-} from "../../folders/datatype";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
-import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
+import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
-import { DatatypeId, datatypes } from "../datatypes";
+import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 
@@ -72,7 +68,7 @@ const getUrlSafeName = (value: string) => {
 };
 
 const isDocType = (x: string): x is DatatypeId =>
-  Object.keys(datatypes).includes(x as DatatypeId);
+  Object.keys(DATA_TYPES).includes(x as DatatypeId);
 
 // Parse older URL formats and map them into our newer formatu
 const parseLegacyUrl = (

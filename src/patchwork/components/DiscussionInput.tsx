@@ -1,7 +1,5 @@
-import { TextSelection } from "@/tee/components/MarkdownEditor";
 import { useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
-import { MarkdownDoc } from "@/tee/schema";
 import * as A from "@automerge/automerge/next";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";

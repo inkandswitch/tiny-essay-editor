@@ -10,8 +10,8 @@ import {
   DocLinkWithFolderPath,
   FolderDoc,
   FolderDocWithChildren,
-} from "@/folders/datatype";
-import { DatatypeId, datatypes } from "../datatypes";
+} from "@/datatypes/folder";
+import { DatatypeId, DATA_TYPES } from "../../os/datatypes";
 
 import {
   Popover,
@@ -22,13 +22,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
-import { FolderDocWithMetadata } from "@/folders/useFolderDocWithChildren";
+import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { capitalize } from "lodash";
 import { HasPatchworkMetadata } from "@/patchwork/schema";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const Icon = datatypes[node.data.type]?.icon ?? FileQuestionIcon;
+  const Icon = DATA_TYPES[node.data.type]?.icon ?? FileQuestionIcon;
 
   return (
     <div
@@ -49,7 +49,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       />
       {!node.isEditing && (
         <span>
-          {datatypes[node.data.type]
+          {DATA_TYPES[node.data.type]
             ? node.data.name
             : `Unknown type: ${node.data.type}`}
         </span>
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(datatypes).map(([id, docType]) => (
+        {Object.entries(DATA_TYPES).map(([id, docType]) => (
           <div key={docType.id}>
             {" "}
             <div
@@ -314,7 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const docLink = flatDocLinks.find(
                     (doc) => doc.url === node.data.url
                   );
-                  const datatype = datatypes[docLink.type];
+                  const datatype = DATA_TYPES[docLink.type];
 
                   if (!datatype.setTitle) {
                     alert(

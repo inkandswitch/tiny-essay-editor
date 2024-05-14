@@ -11,7 +11,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DatatypeId, datatypes } from "../datatypes";
+import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -21,7 +21,7 @@ import { Topbar } from "./Topbar";
 import { PatchworkDocEditor } from "@/patchwork/components/PatchworkDocEditor";
 import { Branch, HasPatchworkMetadata } from "@/patchwork/schema";
 
-import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
+import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 
@@ -61,13 +61,13 @@ export const DocExplorer: React.FC = () => {
 
   const addNewDocument = useCallback(
     ({ type }: { type: DatatypeId }) => {
-      if (!datatypes[type]) {
+      if (!DATA_TYPES[type]) {
         throw new Error(`Unsupported document type: ${type}`);
       }
 
       const newDocHandle =
         repo.create<HasPatchworkMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => datatypes[type].init(doc, repo));
+      newDocHandle.change((doc) => DATA_TYPES[type].init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];
@@ -234,7 +234,7 @@ export const DocExplorer: React.FC = () => {
                 If we want more continuity we could not do this. */}
               {selectedDocUrl && selectedDoc && (
                 <PatchworkDocEditor
-                  docType={selectedDocLink?.type}
+                  datatypeId={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
                   selectedBranch={selectedBranch}

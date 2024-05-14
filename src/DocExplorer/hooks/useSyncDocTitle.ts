@@ -1,7 +1,7 @@
 import { HasPatchworkMetadata } from "@/patchwork/schema";
-import { datatypes } from "../datatypes";
-import { DocLinkWithFolderPath, FolderDoc } from "@/folders/datatype";
-import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
+import { DATA_TYPES } from "../../os/datatypes";
+import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
 import { useRef, useEffect } from "react";
 
@@ -40,7 +40,7 @@ export const useSyncDocTitle = ({
     let counter = (counterRef.current = counterRef.current + 1);
 
     // load title
-    datatypes[selectedDocLink.type]
+    DATA_TYPES[selectedDocLink.type]
       .getTitle(selectedDoc, repo)
       .then((title) => {
         // do nothing if selectedDocLink has changed in between

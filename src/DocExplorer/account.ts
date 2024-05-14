@@ -11,10 +11,10 @@ import { EventEmitter } from "eventemitter3";
 import { useEffect, useState } from "react";
 import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
-import { useForceUpdate } from "@/lib/utils";
+import { useForceUpdate } from "@/components/utils";
 
-import { FolderDoc } from "../folders/datatype";
-import { useFolderDocWithChildren } from "../folders/useFolderDocWithChildren";
+import { FolderDoc } from "@/datatypes/folder";
+import { useFolderDocWithChildren } from "../datatypes/folder/hooks/useFolderDocWithChildren";
 
 export interface AccountDoc {
   contactUrl: AutomergeUrl;
