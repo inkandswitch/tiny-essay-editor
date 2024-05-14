@@ -1,31 +1,11 @@
-# tiny essay editor
+# Patchwork
 
-This is a simple collaborative Markdown editor built in React, with inline format preview and inline commenting.
+Patchwork is a general framework for editing automerge documents with arbitrary tools.
 
-It's built on [automerge](https://github.com/automerge/automerge) and [automerge-repo](https://github.com/automerge/automerge-repo) for CRDT-based storage and sync. It uses [Codemirror](https://codemirror.net/) for markdown editing UI, and [automerge-codemirror](https://github.com/automerge/automerge-codemirror) to connect to Codemirror.
+## Concepts
 
-<img width="1318" alt="CleanShot 2023-11-08 at 14 15 49@2x" src="https://github.com/inkandswitch/tiny-essay-editor/assets/934016/672e0642-0ecd-47f6-8595-be2629a4e265">
-
-## Usage
-
-If you visit the root domain the app will make a new doc. Or you can hit the New button.
-
-Once you have a doc, the URL will update with a doc ID. If you share that URL to another browser/device, it should sync live. Hold on to the URL if you want to come back to that doc!
-
-### Features
-
-- Edit Markdown with inline format preview
-- Write inline comments + replies
-- Live sync through Automerge
-- Stores data to local device
-- Save out .md file with a Download button
-- Typeset similarly to Ink & Switch essays
-
-### Status
-
-This app is primarily intended for internal use at Ink & Switch for editing essays, so there are some features that are specialized towards that use case. We don't plan to develop it into a general-purpose editor that anyone can use for anything. But of course, it can edit any Markdown document too. If you want to actually use this editor in earnest, you might want to fork it to build your own ideas.
-
-Hopefully the code serves as a useful sample for building apps based on automerge-repo, automerge-codemirror, and React.
+- Datatypes: schemas for automerge documents. eg: markdown, drawing
+- Tools: UIs for viewing and editing documents. eg: markdown editor, tldraw canvas, raw json editor
 
 ## Development
 
@@ -36,19 +16,40 @@ yarn
 yarn dev
 ```
 
-### Dual deployment
+### Folder structure
 
-This app is designed for normal webapp deployment as well as experimental deployment to an internal I&S platform. The code is almost entirely shared but there are two entry points:
+This repo has many independent parts which are collected in a single repo for convenience, but which we intend to separate more in the future. As such, we need to carefully observe structural boundaries.
 
-- `src/main.tsx` is the normal app entry point
-- `src/index.ts` is an experimental entry point which just exports some functions to a host environment
+Notably, datatypes and tools are separated because we want to encourage multiple tools for the same datatype, and discourage tight coupling.
+
+- os
+  - contains universal functionality for the OS layer, including OS chrome (like the Explorer sidebar) and versioning utilities
+
+- datatypes
+   - contains a folder for each datatype.
+   - A datatype should always define an `index.ts` that explicitly defines what functionality is intended to be used outside of the datatype.
+   - The `index.ts` file should export the datatype definition as a default export
+
+- tools
+  - contains a folder for each tool
+  - a tool should always define an `index.ts` file that only exports the tool definition as a default export
+  - tools shouldn't export code to be used outside of the tool folder
+      - There is a question how to handle variations like how to model
+
+- Dependencies
+  - os: doesn't depend on other files (except for pulling together the tools and datatypes). Anything can import definitions from the os folder.
+  - datatypes: depends on functionality in os. Tools can import functions from datatyes
+  - tools: depends on functionality both from os and datatyes. Avoid referencing definitions in tools from outside or other tools. If you need to share functionality try to move it up into the datatype or the os
 
 ### Adding a new datatype
 
-This app is actually a general framework for editing automerge docs in viewers, which currently has specific support for markdown documents and tldraw whiteboards.
+- You can copy an existing datatype as a template. `markdown` is a reasonable example
+- Create a new datatype
+  - Create a new folder in `src/datatypes/` for your datatype
+  - Fill in `src/datatypes/<your_datatype>/datatype.ts` with a TS type, an init function, and other functions
+  - Add your new datatype to the `DATA_TYPES` map in `src/os/datatypes.ts`
+- Create a tool that can view / edit your new data type
+  - Create a new folder in `src/tools/`
+  - Add your new tool to the `TOOLS` list in `src/os/tools.ts`
+    p
 
-Basic instructions to add a new datatype:
-
-- copy an existing `src/{datatype}` directory as a template. `tee` is a reasonable example
-- Fill in `src/<your_datatype>/datatype.ts` with a TS type, an init function, and other functions
-- Add your new datatype to the `datatypes` map in `src/datatypes.ts`
