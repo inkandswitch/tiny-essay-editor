@@ -87,6 +87,13 @@ navigator.serviceWorker.addEventListener("controllerchange", (event) => {
   }
 });
 
+// Re-establish the MessageChannel if the service worker restarts
+navigator.serviceWorker.addEventListener("message", (event) => {
+  if (event.data.type === "SERVICE_WORKER_RESTARTED") {
+    establishMessageChannel(serviceWorker);
+  }
+});
+
 // Connects the repo in the tab with the repo in the service worker through a message channel.
 // The repo in the tab takes advantage of loaded state in the SW.
 // TODO: clean up MessageChannels to old repos
