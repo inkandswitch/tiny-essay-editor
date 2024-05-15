@@ -6,6 +6,7 @@ import {
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import {
   useCurrentAccount,
   useCurrentAccountDoc,
@@ -24,6 +25,7 @@ import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
+import { ErrorFallback } from "./ErrorFallback";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
@@ -181,7 +183,7 @@ export const Explorer: React.FC = () => {
   }
 
   return (
-    <div>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-row w-screen h-screen overflow-hidden">
         <div
           className={`${
@@ -253,6 +255,6 @@ export const Explorer: React.FC = () => {
       </div>
 
       <Toaster />
-    </div>
+    </ErrorBoundary>
   );
 };

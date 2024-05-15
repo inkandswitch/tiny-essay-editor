@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ErrorBoundary } from "react-error-boundary";
+import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isMarkdownDoc } from "@/datatypes/markdown";
 import { DatatypeId } from "@/os/datatypes";
@@ -517,48 +519,50 @@ export const VersionControlEditor: React.FC<{
         </div>
 
         {/* Main doc editor pane */}
-        <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
-          {compareWithMainFlag && selectedBranch && (
-            <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
-              <div className="flex-1 pl-4">
-                <div className="inline-flex items-center gap-1">
-                  <CrownIcon className="inline mr-1" size={12} /> Main
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
+            {compareWithMainFlag && selectedBranch && (
+              <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
+                <div className="flex-1 pl-4">
+                  <div className="inline-flex items-center gap-1">
+                    <CrownIcon className="inline mr-1" size={12} /> Main
+                  </div>
+                </div>
+                <div className="flex-1 pl-4">
+                  {" "}
+                  <GitBranchIcon className="inline mr-1" size={12} />
+                  {selectedBranch.name}
                 </div>
               </div>
-              <div className="flex-1 pl-4">
-                {" "}
-                <GitBranchIcon className="inline mr-1" size={12} />
-                {selectedBranch.name}
-              </div>
-            </div>
-          )}
-          <div className="flex-1 min-h-0 relative">
-            {selectedBranch && compareWithMainFlag ? (
-              <SideBySide
-                key={mainDocUrl}
-                mainDocUrl={mainDocUrl}
-                datatypeId={datatypeId}
-                docUrl={selectedBranch.url}
-                docHeads={docHeads}
-                annotations={annotations}
-                actorIdToAuthor={actorIdToAuthor}
-                setSelectedAnchors={setSelectedAnchors}
-                setHoveredAnchor={setHoveredAnchor}
-              />
-            ) : (
-              <DocEditor
-                key={selectedBranch?.url ?? mainDocUrl}
-                datatypeId={datatypeId}
-                docUrl={selectedBranch?.url ?? mainDocUrl}
-                docHeads={docHeads}
-                annotations={annotations}
-                actorIdToAuthor={actorIdToAuthor}
-                setSelectedAnchors={setSelectedAnchors}
-                setHoveredAnchor={setHoveredAnchor}
-              />
             )}
+            <div className="flex-1 min-h-0 relative">
+              {selectedBranch && compareWithMainFlag ? (
+                <SideBySide
+                  key={mainDocUrl}
+                  mainDocUrl={mainDocUrl}
+                  datatypeId={datatypeId}
+                  docUrl={selectedBranch.url}
+                  docHeads={docHeads}
+                  annotations={annotations}
+                  actorIdToAuthor={actorIdToAuthor}
+                  setSelectedAnchors={setSelectedAnchors}
+                  setHoveredAnchor={setHoveredAnchor}
+                />
+              ) : (
+                <DocEditor
+                  key={selectedBranch?.url ?? mainDocUrl}
+                  datatypeId={datatypeId}
+                  docUrl={selectedBranch?.url ?? mainDocUrl}
+                  docHeads={docHeads}
+                  annotations={annotations}
+                  actorIdToAuthor={actorIdToAuthor}
+                  setSelectedAnchors={setSelectedAnchors}
+                  setHoveredAnchor={setHoveredAnchor}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        </ErrorBoundary>
       </div>
 
       {isSidebarOpen && (

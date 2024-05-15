@@ -1,6 +1,12 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useEffect, useRef, useState } from "react";
-import { ChevronsLeft, FileQuestionIcon, FolderInput } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsLeft,
+  FileQuestionIcon,
+  FolderInput,
+} from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { FillFlexParent } from "./FillFlexParent";
 import { AccountPicker } from "./AccountPicker";
@@ -20,39 +26,64 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
-import { capitalize } from "lodash";
+import { capitalize, uniqBy } from "lodash";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
+import { UIStateDoc, useCurrentAccountDoc } from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const Icon = DATA_TYPES[node.data.type]?.icon ?? FileQuestionIcon;
+  let Icon;
+
+  if (node.data.type === "folder") {
+    if (node.isOpen) {
+      Icon = ChevronDown;
+    } else {
+      Icon = ChevronRight;
+    }
+  } else {
+    Icon = DATA_TYPES[node.data.type]?.icon ?? FileQuestionIcon;
+  }
 
   return (
     <div
       style={style}
       ref={dragHandle}
-      className={`cursor-pointer text-sm py-1 w-full truncate ${
+      className={`flex items-center cursor-pointer text-sm py-1 w-full truncate ${
         node.isSelected
           ? " bg-gray-300 hover:bg-gray-300 text-gray-900"
           : "text-gray-600 hover:bg-gray-200"
       }`}
       onDoubleClick={() => node.edit()}
     >
-      <Icon
-        size={14}
-        className={`${
-          node.isSelected ? "text-gray-800" : "text-gray-500"
-        } inline-block align-top mt-[3px] ml-2 mx-2`}
-      />
+      <div
+        className={`${node.isSelected ? "text-gray-800" : "text-gray-500"} ${
+          node.data.type === "folder" && "hover:bg-gray-400 text-gray-800"
+        } p-1 mr-0.5 rounded-sm transition-all`}
+        onClick={() => {
+          if (node.data.type === "folder") {
+            node.toggle();
+          }
+        }}
+      >
+        <Icon size={14} />
+      </div>
+
       {!node.isEditing && (
-        <span>
-          {DATA_TYPES[node.data.type]
-            ? node.data.name
-            : `Unknown type: ${node.data.type}`}
-        </span>
+        <>
+          <div>
+            {DATA_TYPES[node.data.type]
+              ? node.data.name
+              : `Unknown type: ${node.data.type}`}
+          </div>
+          {node.data.type === "folder" && (
+            <div className="ml-2 text-gray-500 text-xs py-0.5 px-1.5 rounded-lg bg-gray-200">
+              {node.children.length}
+            </div>
+          )}
+        </>
       )}
       {node.isEditing && <Edit {...props} />}
     </div>
@@ -95,7 +126,7 @@ const prepareDataForTree = (
   if (!folderDoc) {
     return [];
   }
-  return folderDoc.docs.map((docLink) => ({
+  return uniqBy(folderDoc.docs, "url").map((docLink) => ({
     ...docLink,
     folderPath,
     children:
@@ -144,14 +175,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ? automergeUrlMatch[1]
       : null;
 
-  // Show a loading spinner until we've recursively loaded all folder contents
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-400 text-sm">Loading...</p>
-      </div>
-    );
-  }
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [accountDoc] = useCurrentAccountDoc();
+
+  const [uiStateDoc, changeUIStateDoc] = useDocument<UIStateDoc>(
+    accountDoc?.uiStateUrl
+  );
 
   const onMove = ({ parentNode, index: dragTargetIndex, dragNodes }) => {
     for (const dragNode of dragNodes) {
@@ -198,6 +228,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ]);
 
   const treeSelection = selectedDocLink ? idAccessor(selectedDocLink) : null;
+
+  const onRename = ({ node, name }) => {
+    const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
+    const datatype = DATA_TYPES[docLink.type];
+
+    if (!datatype.setTitle) {
+      alert(
+        `${capitalize(
+          datatype.name
+        )} documents can only be renamed in the main editor, not the sidebar.`
+      );
+      return;
+    }
+
+    if (!docLink) {
+      return;
+    }
+    const parentHandle = repo.find<FolderDoc>(
+      docLink.folderPath[docLink.folderPath.length - 1]
+    );
+
+    // rename doc link
+    parentHandle.change((d) => {
+      const doc = d.docs.find((doc) => doc.url === docLink.url);
+      if (doc) {
+        doc.name = name;
+      }
+    });
+
+    // rename doc title
+    const docHandle = repo.find<HasVersionControlMetadata<unknown, unknown>>(
+      docLink.url
+    );
+    docHandle.change((doc) => {
+      datatype.setTitle(doc, name);
+    });
+
+    selectDocLink({ ...selectedDocLink, name });
+  };
+
+  const onToggle = (id: string) => {
+    const link = JSON.parse(id);
+    changeUIStateDoc((uiState) => {
+      if (
+        uiState.openedFoldersInSidebar.find((folder) => folder.url === link.url)
+      ) {
+        const index = uiState.openedFoldersInSidebar.findIndex(
+          (folder) => folder.url === link.url
+        );
+        if (index !== -1) {
+          uiState.openedFoldersInSidebar.splice(index, 1);
+        }
+      } else {
+        uiState.openedFoldersInSidebar.push(link);
+      }
+    });
+  };
+
+  const initialOpenState = useMemo(
+    () =>
+      (uiStateDoc?.openedFoldersInSidebar ?? []).reduce((acc, key) => {
+        acc[
+          // This is gross: we need to make sure that JSON stringify does the keys in the right order...
+          JSON.stringify({
+            url: key.url,
+            folderPath: key.folderPath,
+          })
+        ] = true;
+        return acc;
+      }, {}),
+    [uiStateDoc]
+  );
+
+  // Show a loading spinner until we've recursively loaded all folder contents
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-400 text-sm">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -276,6 +387,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
+      <div className="mx-2 my-2 flex gap-2 items-center">
+        <Input
+          placeholder="Search my docs..."
+          className="h-6"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <div
+          className={`text-gray-400 text-xs cursor-pointer ${
+            searchQuery.length > 0 ? "" : "invisible"
+          }`}
+          onClick={() => setSearchQuery("")}
+        >
+          Clear
+        </div>
+      </div>
+
       <div className="flex-grow overflow-auto">
         <FillFlexParent>
           {({ width, height }) => {
@@ -284,6 +412,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 data={dataForTree}
                 width={width}
                 height={height}
+                openByDefault={false}
+                searchTerm={searchQuery}
                 rowHeight={28}
                 selection={treeSelection}
                 idAccessor={idAccessor}
@@ -310,46 +440,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 //   }
                 // }}
                 onMove={onMove}
-                onRename={({ node, name }) => {
-                  const docLink = flatDocLinks.find(
-                    (doc) => doc.url === node.data.url
-                  );
-                  const datatype = DATA_TYPES[docLink.type];
-
-                  if (!datatype.setTitle) {
-                    alert(
-                      `${capitalize(
-                        datatype.name
-                      )} documents can only be renamed in the main editor, not the sidebar.`
-                    );
-                    return;
-                  }
-
-                  if (!docLink) {
-                    return;
-                  }
-                  const parentHandle = repo.find<FolderDoc>(
-                    docLink.folderPath[docLink.folderPath.length - 1]
-                  );
-
-                  // rename doc link
-                  parentHandle.change((d) => {
-                    const doc = d.docs.find((doc) => doc.url === docLink.url);
-                    if (doc) {
-                      doc.name = name;
-                    }
-                  });
-
-                  // rename doc title
-                  const docHandle = repo.find<
-                    HasVersionControlMetadata<unknown, unknown>
-                  >(docLink.url);
-                  docHandle.change((doc) => {
-                    datatype.setTitle(doc, name);
-                  });
-
-                  selectDocLink({ ...selectedDocLink, name });
-                }}
+                // Notably toggle state is "uncontrolled" state that the component manages privately --
+                // after initial mount, the component stores in-memory state privately, and we also
+                // send all updates to automerge in order to rehydrate on next page load or next mount.
+                // That seems fine for this state where it's not a huge problem if the component desyncs
+                // from the automerge doc.
+                initialOpenState={initialOpenState}
+                onToggle={onToggle}
+                onRename={onRename}
               >
                 {Node}
               </Tree>
