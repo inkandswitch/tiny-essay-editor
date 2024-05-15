@@ -328,7 +328,10 @@ export const AccountPicker = ({
                 {datatypeSettingsDoc &&
                   experimentalDatatypes.map((datatype) => {
                     return (
-                      <div className="flex items-center gap-2">
+                      <div
+                        className="flex items-center gap-2"
+                        key={datatype.id}
+                      >
                         <Checkbox
                           id={`datatype-${datatype.id}`}
                           checked={
