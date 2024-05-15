@@ -19,7 +19,15 @@ import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolder
 export interface AccountDoc {
   contactUrl: AutomergeUrl;
   rootFolderUrl: AutomergeUrl;
+  uiStateUrl: AutomergeUrl;
 }
+
+export type UIStateDoc = {
+  /** Folders that are toggled open in the user's sidebar.
+   *  (If the object is here it counts as open; otherwise we default to closed)
+   */
+  openedFoldersInSidebar: { url: AutomergeUrl; folderPath: AutomergeUrl[] }[];
+};
 
 export interface AnonymousContactDoc {
   type: "anonymous";
@@ -183,6 +191,7 @@ const createAccount = (
   const accountHandle = repo.create<AccountDoc>();
   const contactHandle = repo.create<ContactDoc>();
   const rootFolderHandle = repo.create<FolderDoc>();
+  const uiStateHandle = repo.create<UIStateDoc>();
 
   contactHandle.change((contact) => {
     contact.type = "anonymous";
@@ -190,6 +199,10 @@ const createAccount = (
 
   rootFolderHandle.change((rootFolder) => {
     rootFolder.docs = [];
+  });
+
+  uiStateHandle.change((uiState) => {
+    uiState.openedFoldersInSidebar = [];
   });
 
   accountHandle.change((account) => {
@@ -225,7 +238,7 @@ export function useCurrentAccount(): Account | undefined {
     };
   }, [account]);
 
-  // Add a root folder to an old account doc that doesn't have one yet.
+  // Add new fields to an old account doc that doesn't have one yet.
   // In the future, replace this with a more principled schema migration system.
   useEffect(() => {
     const doc = account?.handle.docSync();
@@ -238,7 +251,17 @@ export function useCurrentAccount(): Account | undefined {
         account.rootFolderUrl = rootFolderHandle.url;
       });
     }
-  }, [account?.handle.docSync()]);
+
+    if (doc && doc.uiStateUrl === undefined) {
+      const uiStateHandle = repo.create<UIStateDoc>();
+      uiStateHandle.change((uiState) => {
+        uiState.openedFoldersInSidebar = [];
+      });
+      account.handle.change((account) => {
+        account.uiStateUrl = uiStateHandle.url;
+      });
+    }
+  }, [account?.handle.docSync(), repo]);
 
   return account;
 }
