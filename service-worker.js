@@ -56,6 +56,9 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("message", async (event) => {
+  if (event.data.type === "PING") {
+    return;
+  }
   console.log(`${PEER_ID}: Client messaged`, event.data);
   if (event.data && event.data.type === "INIT_PORT") {
     const clientPort = event.ports[0];

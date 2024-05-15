@@ -20,6 +20,13 @@ import "./index.css";
 
 const serviceWorker = await setupServiceWorker();
 
+// Service workers stop on their own, which breaks sync.
+// Here we ping the service worker while the tab is running
+// to keep it alive (and make it restart if it did stop.)
+setInterval(() => {
+  serviceWorker.postMessage({ type: "PING" });
+}, 5000);
+
 // This case should never happen
 // if the service worker is not defined here either the initialization failed
 // or we found a new case that we haven't considered yet
@@ -90,6 +97,7 @@ navigator.serviceWorker.addEventListener("controllerchange", (event) => {
 // Re-establish the MessageChannel if the service worker restarts
 navigator.serviceWorker.addEventListener("message", (event) => {
   if (event.data.type === "SERVICE_WORKER_RESTARTED") {
+    console.log("Service worker restarted, establishing message channel");
     establishMessageChannel(serviceWorker);
   }
 });
