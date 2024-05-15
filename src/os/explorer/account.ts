@@ -315,6 +315,15 @@ export function useSelf(): ContactDoc {
   return contactDoc;
 }
 
+export const useDatatypeSettings = (): DatatypeSettingsDoc => {
+  const [accountDoc] = useCurrentAccountDoc();
+  const [datatypeSettingsDoc] = useDocument<DatatypeSettingsDoc>(
+    accountDoc?.datatypeSettingsUrl
+  );
+
+  return datatypeSettingsDoc;
+};
+
 // Helpers to convert an automerge URL to/from an Account Token that the user can
 // paste in to login on another device.
 // The doc ID is the only part of the URL actually used by the system,
