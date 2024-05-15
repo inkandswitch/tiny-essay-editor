@@ -182,6 +182,9 @@ const actions = {
       A.updateText(doc, ["cards", cardIndex, "title"], newCard.title);
     }
     if (newCard.description && newCard.description !== card.description) {
+      if (!card.description) {
+        card.description = "";
+      }
       A.updateText(
         doc,
         ["cards", cardIndex, "description"],
