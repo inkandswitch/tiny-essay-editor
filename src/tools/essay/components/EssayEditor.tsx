@@ -55,7 +55,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
       const fromPos = getCursorPositionSafely(doc, ["content"], fromCursor);
       const toPos = getCursorPositionSafely(doc, ["content"], toCursor);
 
-      return !fromPos || !toPos
+      return fromPos === undefined || toPos === undefined
         ? []
         : [
             {
