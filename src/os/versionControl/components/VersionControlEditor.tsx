@@ -319,7 +319,17 @@ export const VersionControlEditor: React.FC<{
     isCommentInputFocused,
   });
 
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("comments");
+  const [sidebarMode, _setSidebarMode] = useState<SidebarMode>("comments");
+
+  const setSidebarMode = (sidebarMode: SidebarMode) => {
+    // reset state from history mode
+    if (sidebarMode === "comments") {
+      setDiffFromHistorySidebar(undefined);
+      setDocHeadsFromHistorySidebar(undefined);
+    }
+
+    _setSidebarMode(sidebarMode);
+  };
 
   const [
     annotationsPositionsInSidebarMap,
