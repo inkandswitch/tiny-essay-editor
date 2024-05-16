@@ -5,6 +5,7 @@ import {
   useSelf,
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
+  DatatypeSettingsDoc,
 } from "../account";
 import { ChangeEvent, useEffect, useState } from "react";
 
@@ -32,6 +33,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
+import { DATA_TYPES } from "@/os/datatypes";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // 1MB in bytes
 const MAX_AVATAR_SIZE = 1024 * 1024;
@@ -66,8 +69,13 @@ export const AccountPicker = ({
     ? accountTokenToAutomergeUrl(accountTokenToLogin)
     : undefined;
 
+  const [currentAccountDoc] = useDocument<AccountDoc>(
+    currentAccount?.handle.url
+  );
   const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
+  const [datatypeSettingsDoc, changeDatatypeSettingsDoc] =
+    useDocument<DatatypeSettingsDoc>(currentAccountDoc?.datatypeSettingsUrl);
 
   const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
     if (!accountTokenToLogin || accountTokenToLogin === "") return null;
@@ -136,6 +144,10 @@ export const AccountPicker = ({
       contactToLogin?.type === "registered");
 
   const isLoggedIn = self?.type === "registered";
+
+  const experimentalDatatypes = Object.values(DATA_TYPES).filter(
+    ({ isExperimental }) => isExperimental
+  );
 
   return (
     <Dialog>
@@ -308,6 +320,48 @@ export const AccountPicker = ({
                 private docs.
               </p>
             </form>
+
+            <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
+              <Label>Experimental data types</Label>
+
+              <div className="flex flex-col gap-2 py-2">
+                {datatypeSettingsDoc &&
+                  experimentalDatatypes.map((datatype) => {
+                    return (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`datatype-${datatype.id}`}
+                          checked={
+                            datatypeSettingsDoc.enabledDatatypeIds[datatype.id]
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          onCheckedChange={() => {
+                            changeDatatypeSettingsDoc((settings) => {
+                              settings.enabledDatatypeIds[datatype.id] =
+                                !settings.enabledDatatypeIds[datatype.id];
+                            });
+                          }}
+                        />
+                        <label
+                          htmlFor={`datatype-${datatype.id}`}
+                          className="text-sm text-gray-600 cursor-pointer "
+                        >
+                          <datatype.icon
+                            size={14}
+                            className="inline-block font-bold mr-2 align-top mt-[2px]"
+                          />
+                          {datatype.name}
+                        </label>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <p className="text-gray-500 text-justify pt-2 text-sm">
+                🧪 These are data types that are less fleshed out. Expect things
+                to break!
+              </p>
+            </div>
           </>
         )}
         <DialogFooter className="gap-1.5">

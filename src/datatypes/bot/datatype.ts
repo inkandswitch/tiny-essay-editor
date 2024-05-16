@@ -15,6 +15,7 @@ export const EssayEditingBotDatatype: DataType<
 > = {
   id: "bot",
   name: "Bot",
+  isExperimental: true,
   icon: Bot,
   init: (doc: any, repo: Repo) => {
     const contactHandle = repo.create<RegisteredContactDoc>();

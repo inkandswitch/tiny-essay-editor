@@ -130,6 +130,7 @@ export const DataGridDatatype: DataType<
 > = {
   id: "datagrid",
   name: "Spreadsheet",
+  isExperimental: true,
   icon: Sheet,
   init,
   getTitle,

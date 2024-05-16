@@ -247,6 +247,7 @@ export const KanbanBoardDatatype: DataType<
 > = {
   id: "kanban",
   name: "Kanban Board",
+  isExperimental: true,
   icon: KanbanSquare,
   init,
   getTitle,
