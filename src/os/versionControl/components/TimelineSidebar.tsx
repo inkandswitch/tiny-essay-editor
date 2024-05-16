@@ -508,7 +508,11 @@ const useChangelogSelection = function <T>({
       setDocHeads(undefined);
     }
 
-    const fromItem = items.find((item) => item.id === selection?.from);
+    const fromItemIndex = items.findIndex(
+      (item) => item.id === selection?.from
+    );
+    const previousItem = items[fromItemIndex - 1];
+    const fromItem = items[fromItemIndex];
     const toItem = items.find((item) => item.id === selection?.to);
     const fromIndex = items.findIndex((item) => item.id === selection?.from);
     const toIndex = items.findIndex((item) => item.id === selection?.to);
@@ -530,7 +534,11 @@ const useChangelogSelection = function <T>({
         }
       })
       .filter((patch) => patch !== undefined);
-    setDiff({ patches, fromHeads: fromItem.heads, toHeads: toItem.heads });
+    setDiff({
+      patches,
+      fromHeads: previousItem?.heads ?? [],
+      toHeads: toItem.heads,
+    });
   }, [selection, setDiff, setDocHeads, items]);
 
   const itemsContainerRef = useRef<HTMLDivElement>(null);

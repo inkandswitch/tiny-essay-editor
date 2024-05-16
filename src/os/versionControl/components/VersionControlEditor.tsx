@@ -124,13 +124,13 @@ export const VersionControlEditor: React.FC<{
 
   useEffect(() => {
     if (!isSidebarOpen) {
-      setDiffFromHistorySidebar(undefined);
-      setDocHeadsFromHistorySidebar(undefined);
+      setDiffFromTimelineSidebar(undefined);
+      setDocHeadsFromTimelineSidebar(undefined);
     }
   }, [isSidebarOpen]);
-  const [diffFromHistorySidebar, setDiffFromHistorySidebar] =
+  const [diffFromTimelineSidebar, setDiffFromTimelineSidebar] =
     useState<DiffWithProvenance>();
-  const [docHeadsFromHistorySidebar, setDocHeadsFromHistorySidebar] =
+  const [docHeadsFromTimelineSidebar, setDocHeadsFromTimelineSidebar] =
     useState<A.Heads>();
 
   useEffect(() => {
@@ -291,10 +291,15 @@ export const VersionControlEditor: React.FC<{
   }, [branchDoc]);
 
   const diffForEditor =
-    diffFromHistorySidebar ??
+    diffFromTimelineSidebar ??
     (showDiff ? branchDiff ?? currentEditSessionDiff : undefined);
 
-  const activeDoc = selectedBranch ? branchDoc : doc;
+  const docHeads = docHeadsFromTimelineSidebar ?? undefined;
+  const activeDoc = selectedBranch
+    ? branchDoc
+    : docHeads
+    ? A.view(doc, docHeads)
+    : doc;
   const activeChangeDoc = selectedBranch ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranch ? branchHandle : handle;
 
@@ -328,8 +333,6 @@ export const VersionControlEditor: React.FC<{
   // ---- ANYTHING RELYING ON doc SHOULD GO BELOW HERE ----
 
   const branches = doc.branchMetadata.branches ?? [];
-
-  const docHeads = docHeadsFromHistorySidebar ?? undefined;
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -599,8 +602,8 @@ export const VersionControlEditor: React.FC<{
                 key={selectedBranch?.url ?? mainDocUrl}
                 datatypeId={datatypeId}
                 docUrl={selectedBranch?.url ?? mainDocUrl}
-                setDocHeads={setDocHeadsFromHistorySidebar}
-                setDiff={setDiffFromHistorySidebar}
+                setDocHeads={setDocHeadsFromTimelineSidebar}
+                setDiff={setDiffFromTimelineSidebar}
                 selectedBranch={selectedBranch}
                 setSelectedBranch={setSelectedBranch}
               />
