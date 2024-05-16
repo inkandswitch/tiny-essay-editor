@@ -240,6 +240,12 @@ const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
   const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
 
+  // if the anchor points to an empty range return undefined
+  // so highlight comments that point to this will be filtered out
+  if (from === to) {
+    return undefined;
+  }
+
   return doc.content.slice(from, to);
 };
 
