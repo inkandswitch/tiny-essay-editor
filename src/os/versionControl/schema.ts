@@ -55,8 +55,8 @@ export type Diffable = {
 // where they came from
 export type DiffWithProvenance = {
   patches: (A.Patch | TextPatch)[];
-  fromHeads: A.Heads;
-  toHeads: A.Heads;
+  fromHeads: A.Heads; // heads of the doc before the patches
+  toHeads: A.Heads; // heads of the doc after the patches
 };
 
 export type DiscussionComment = {
