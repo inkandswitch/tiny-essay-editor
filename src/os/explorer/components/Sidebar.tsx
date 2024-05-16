@@ -32,6 +32,7 @@ import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWith
 import { capitalize, uniqBy } from "lodash";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { UIStateDoc, useCurrentAccountDoc } from "../account";
+import { useDatatypeSettings } from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
@@ -160,6 +161,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     rootFolderUrl,
     flatDocLinks,
   } = rootFolderDoc;
+
+  const datatypeSettings = useDatatypeSettings();
 
   // state related to open popover
   const [openNewDocPopoverVisible, setOpenNewDocPopoverVisible] =
@@ -324,21 +327,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(DATA_TYPES).map(([id, datatype]) => (
-          <div key={datatype.id}>
-            {" "}
-            <div
-              className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-              onClick={() => addNewDocument({ type: id as DatatypeId })}
-            >
-              <datatype.icon
-                size={14}
-                className="inline-block font-bold mr-2 align-top mt-[2px]"
-              />
-              New {datatype.name}
+        {Object.entries(DATA_TYPES).map(([id, datatype]) => {
+          if (
+            datatype.isExperimental &&
+            !datatypeSettings?.enabledDatatypeIds[id]
+          ) {
+            return;
+          }
+
+          return (
+            <div key={datatype.id}>
+              {" "}
+              <div
+                className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
+                onClick={() => addNewDocument({ type: id as DatatypeId })}
+              >
+                <datatype.icon
+                  size={14}
+                  className="inline-block font-bold mr-2 align-top mt-[2px]"
+                />
+                New {datatype.name}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div
           className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "

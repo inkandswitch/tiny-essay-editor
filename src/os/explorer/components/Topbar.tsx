@@ -42,7 +42,8 @@ import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useRootFolderDocWithChildren } from "../account";
+import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
+import botDataType from "@/datatypes/bot";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -68,6 +69,11 @@ export const Topbar: React.FC<TopbarProps> = ({
 }) => {
   const repo = useRepo();
   const { flatDocLinks } = useRootFolderDocWithChildren();
+
+  const datatypeSettings = useDatatypeSettings();
+  const isBotDatatypeEnabled =
+    datatypeSettings?.enabledDatatypeIds[botDataType.id];
+
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocName = selectedDocLink?.name;
   const selectedDocType = selectedDocLink?.type;
@@ -132,72 +138,74 @@ export const Topbar: React.FC<TopbarProps> = ({
        how do datatypes contribute things to the global topbar? */}
       {selectedDocLink?.type === "essay" && (
         <div className="ml-auto mr-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Bot
-                size={18}
-                className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="mr-4">
-              {botDocLinks.length === 0 && (
-                <div>
-                  <div className="text-gray-500 max-w-48 p-2">
-                    No bots in sidebar. <br />
-                    Click "New Bot" or get a share link from someone.
+          {isBotDatatypeEnabled && (
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Bot
+                  size={18}
+                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="mr-4">
+                {botDocLinks.length === 0 && (
+                  <div>
+                    <div className="text-gray-500 max-w-48 p-2">
+                      No bots in sidebar. <br />
+                      Click "New Bot" or get a share link from someone.
+                    </div>
                   </div>
-                </div>
-              )}
-              {botDocLinks.map((botDocLink) => (
-                <DropdownMenuItem
-                  key={botDocLink.url}
-                  onClick={async () => {
-                    const resultPromise = runBot({
-                      botDocUrl: botDocLink.url,
-                      targetDocHandle:
-                        selectedDocHandle as DocHandle<MarkdownDoc>,
-                      repo,
-                    });
-                    toast.promise(resultPromise, {
-                      loading: `Running ${botDocLink.name}...`,
-                      success: (result) => (
-                        <div className="flex gap-1">
-                          <div className="flex items-center gap-2">
-                            <div className="max-w-48">
-                              {botDocLink.name} ran successfully.
-                            </div>
-                            <Button
-                              onClick={() => {
-                                // todo: add branch to doclink
-                                /* setSelectedBranch({
+                )}
+                {botDocLinks.map((botDocLink) => (
+                  <DropdownMenuItem
+                    key={botDocLink.url}
+                    onClick={async () => {
+                      const resultPromise = runBot({
+                        botDocUrl: botDocLink.url,
+                        targetDocHandle:
+                          selectedDocHandle as DocHandle<MarkdownDoc>,
+                        repo,
+                      });
+                      toast.promise(resultPromise, {
+                        loading: `Running ${botDocLink.name}...`,
+                        success: (result) => (
+                          <div className="flex gap-1">
+                            <div className="flex items-center gap-2">
+                              <div className="max-w-48">
+                                {botDocLink.name} ran successfully.
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  // todo: add branch to doclink
+                                  /* setSelectedBranch({
                                   type: "branch",
                                   url: result,
                                 })*/
-                              }}
-                              className="px-4 h-6"
-                            >
-                              View branch
-                            </Button>
+                                }}
+                                className="px-4 h-6"
+                              >
+                                View branch
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ),
-                      error: `${botDocLink.name} failed, see console`,
-                    });
-                  }}
-                >
-                  Run {botDocLink.name}
-                  <EditIcon
-                    size={14}
-                    className="inline-block ml-2 cursor-pointer"
-                    onClick={(e) => {
-                      selectDocLink({ ...botDocLink, type: "essay" });
-                      e.stopPropagation();
+                        ),
+                        error: `${botDocLink.name} failed, see console`,
+                      });
                     }}
-                  />
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  >
+                    Run {botDocLink.name}
+                    <EditIcon
+                      size={14}
+                      className="inline-block ml-2 cursor-pointer"
+                      onClick={(e) => {
+                        selectDocLink({ ...botDocLink, type: "essay" });
+                        e.stopPropagation();
+                      }}
+                    />
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       )}
       <div className={`mr-4 ${selectedDocLink?.type !== "essay" && "ml-auto"}`}>

@@ -15,11 +15,17 @@ import { useForceUpdate } from "@/components/utils";
 
 import { FolderDoc } from "@/datatypes/folder";
 import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";
+import { DatatypeId } from "../datatypes";
+
+export type DatatypeSettingsDoc = {
+  enabledDatatypeIds: { [id: DatatypeId]: boolean };
+};
 
 export interface AccountDoc {
   contactUrl: AutomergeUrl;
   rootFolderUrl: AutomergeUrl;
   uiStateUrl: AutomergeUrl;
+  datatypeSettingsUrl: AutomergeUrl;
 }
 
 export type UIStateDoc = {
@@ -261,7 +267,17 @@ export function useCurrentAccount(): Account | undefined {
         account.uiStateUrl = uiStateHandle.url;
       });
     }
-  }, [account?.handle.docSync(), repo]);
+
+    if (doc && doc.datatypeSettingsUrl === undefined) {
+      const datatypeSettingsHandle = repo.create<DatatypeSettingsDoc>();
+      datatypeSettingsHandle.change((settings) => {
+        settings.enabledDatatypeIds = {};
+      });
+      account.handle.change((account) => {
+        account.datatypeSettingsUrl = datatypeSettingsHandle.url;
+      });
+    }
+  }, [account?.handle.docSync()]);
 
   return account;
 }
@@ -298,6 +314,15 @@ export function useSelf(): ContactDoc {
 
   return contactDoc;
 }
+
+export const useDatatypeSettings = (): DatatypeSettingsDoc => {
+  const [accountDoc] = useCurrentAccountDoc();
+  const [datatypeSettingsDoc] = useDocument<DatatypeSettingsDoc>(
+    accountDoc?.datatypeSettingsUrl
+  );
+
+  return datatypeSettingsDoc;
+};
 
 // Helpers to convert an automerge URL to/from an Account Token that the user can
 // paste in to login on another device.
