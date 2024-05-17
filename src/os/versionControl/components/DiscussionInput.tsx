@@ -134,6 +134,7 @@ export const DiscussionInput = function <
         heads: currentlyActiveHeads,
         resolved: false,
         comments: [comment],
+        anchors: [],
       };
     });
 

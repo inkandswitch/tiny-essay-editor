@@ -99,8 +99,14 @@ export function useAnnotations({
     [hoveredState]
   );
 
-  const discussions = useMemo(
-    () => (doc?.discussions ? Object.values(doc.discussions) : []),
+  const discussionsWithoutAnchors = useMemo(
+    () =>
+      doc?.discussions
+        ? Object.values(doc.discussions).filter(
+            (discussion) =>
+              !discussion.anchors || discussion.anchors.length === 0
+          )
+        : [],
     [doc]
   );
 
@@ -207,20 +213,36 @@ export function useAnnotations({
     }
 
     const sortAnchorsBy = DATA_TYPES[datatypeId].sortAnchorsBy;
+    const sortedAnnotationGroups = sortAnchorsBy
+      ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
+          min(
+            annotationGroup.annotations.map((annotation) =>
+              sortAnchorsBy(doc, annotation.anchor)
+            )
+          )
+        )
+      : combinedAnnotationGroups;
 
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
-      annotationGroups: sortAnchorsBy
-        ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
-            min(
-              annotationGroup.annotations.map((annotation) =>
-                sortAnchorsBy(doc, annotation.anchor)
-              )
-            )
-          )
-        : combinedAnnotationGroups,
+      annotationGroups: discussionsWithoutAnchors
+        .map(
+          (discussion) =>
+            ({
+              discussion,
+              annotations: [],
+            } as AnnotationGroup<unknown, unknown>)
+        )
+        .concat(sortedAnnotationGroups),
     };
-  }, [doc, diff, selectedState, isCommentInputFocused, datatypeId]);
+  }, [
+    doc,
+    diff,
+    selectedState,
+    isCommentInputFocused,
+    datatypeId,
+    discussionsWithoutAnchors,
+  ]);
 
   const {
     selectedAnchors,
