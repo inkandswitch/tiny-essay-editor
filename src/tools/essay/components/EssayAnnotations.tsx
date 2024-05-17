@@ -50,6 +50,16 @@ export const EssayAnnotations = ({
             );
 
           case "highlighted":
+            // don't show render highlight annotation if matches exactly with added annotation
+            // this is a bit hacky patchwork should handle this for us
+            if (
+              annotations.some(
+                (a) => a.type === "added" && a.added === annotation.value
+              )
+            ) {
+              return null;
+            }
+
             return (
               <div
                 className="text-md whitespace-nowrap overflow-ellipsis overflow-hidden"
