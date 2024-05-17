@@ -1,3 +1,5 @@
+// This plugin inserts a table of contents into the document based on headings.
+
 import React from "react";
 import { Range } from "@codemirror/state";
 import { ensureSyntaxTree } from "@codemirror/language";
@@ -57,14 +59,17 @@ class TableOfContentsWidget extends WidgetType {
   }
 }
 
-const END_INTRO_REGEX = /<!--endintro-->/;
+// [TOC] is a standard command for inserting a TOC into Markdown.
+// endintro is used by the I&S website hugo template.
+const TOC_COMMAND_REGEX = /<!--endintro-->|\[TOC\]/;
+
 function getTOCDecorations(view: EditorView) {
   const decorations: Range<Decoration>[] = [];
 
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.sliceDoc(from, to);
 
-    const tocMatch = text.match(END_INTRO_REGEX);
+    const tocMatch = text.match(TOC_COMMAND_REGEX);
 
     if (tocMatch) {
       const position = tocMatch.index + from;
@@ -138,7 +143,15 @@ function getTOCDecorations(view: EditorView) {
         widget: new TableOfContentsWidget(headingTree),
         side: 1,
       }).range(position + tocMatch[0].length);
+
       decorations.push(widget);
+
+      decorations.push(
+        Decoration.mark({
+          class:
+            "text-gray-500 font-mono text-left text-sm leading-snug inline-block opacity-70 mb-1",
+        }).range(position, position + tocMatch[0].length)
+      );
     }
   }
 
