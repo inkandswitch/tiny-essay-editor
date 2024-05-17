@@ -214,7 +214,7 @@ export function MarkdownEditor({
         // Now our custom stuff: Automerge collab, comment threads, etc.
         automergeSyncPlugin({
           handle,
-          path: ["content"],
+          path,
         }),
         frontmatterPlugin,
         annotationsField,
@@ -253,23 +253,35 @@ export function MarkdownEditor({
           if (transaction.newSelection && view.hasFocus) {
             const selection = view.state.selection.ranges[0];
 
-            if (selection && selection.from !== selection.to) {
-              const docLength = view.state.doc.length;
+            if (selection) {
+              if (selection.from === selection.to) {
+                const cursorPos = selection.from;
+                const selectedAnnotationAnchors = annotations.flatMap(
+                  (annotation) =>
+                    annotation.anchor.fromPos <= cursorPos &&
+                    annotation.anchor.toPos >= cursorPos
+                      ? [annotation.anchor]
+                      : []
+                );
 
-              setSelectedAnchors([
-                {
-                  fromCursor: getCursorSafely(doc, ["content"], selection.from),
-                  toCursor: getCursorSafely(
-                    doc,
-                    ["content"],
+                setSelectedAnchors(selectedAnnotationAnchors);
+              } else {
+                const docLength = view.state.doc.length;
+                setSelectedAnchors([
+                  {
+                    fromCursor: getCursorSafely(doc, path, selection.from),
+                    toCursor: getCursorSafely(
+                      doc,
+                      path,
 
-                    // we can't get a cursor to the end the document because cursors always point to characters
-                    // in the future we want to have a cursor API in Automerge that allows to point to a side of a character similar to marks
-                    // as a workaround for now we just point to the last character instead if the end of the document is selected
-                    selection.to === docLength ? docLength - 1 : selection.to
-                  ),
-                },
-              ]);
+                      // we can't get a cursor to the end the document because cursors always point to characters
+                      // in the future we want to have a cursor API in Automerge that allows to point to a side of a character similar to marks
+                      // as a workaround for now we just point to the last character instead if the end of the document is selected
+                      selection.to === docLength ? docLength - 1 : selection.to
+                    ),
+                  },
+                ]);
+              }
             } else {
               setSelectedAnchors([]);
             }
