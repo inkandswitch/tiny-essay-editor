@@ -266,7 +266,7 @@ export function MarkdownEditor({
                 const selectedAnnotationAnchors =
                   annotationsRef.current.flatMap((annotation) =>
                     annotation.anchor.fromPos <= cursorPos &&
-                    annotation.anchor.toPos >= cursorPos
+                    annotation.anchor.toPos > cursorPos
                       ? [annotation.anchor]
                       : []
                   );
