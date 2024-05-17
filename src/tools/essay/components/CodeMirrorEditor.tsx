@@ -104,6 +104,11 @@ export function MarkdownEditor({
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
 
+  const annotationsRef = useRef<
+    AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
+  >([]);
+  annotationsRef.current = annotations;
+
   const handleReady = handle.isReady();
 
   // Propagate debug highlights into codemirror
@@ -258,13 +263,13 @@ export function MarkdownEditor({
             if (selection) {
               if (selection.from === selection.to) {
                 const cursorPos = selection.from;
-                const selectedAnnotationAnchors = annotations.flatMap(
-                  (annotation) =>
+                const selectedAnnotationAnchors =
+                  annotationsRef.current.flatMap((annotation) =>
                     annotation.anchor.fromPos <= cursorPos &&
                     annotation.anchor.toPos >= cursorPos
                       ? [annotation.anchor]
                       : []
-                );
+                  );
 
                 setSelectedAnchors(selectedAnnotationAnchors);
               } else {
