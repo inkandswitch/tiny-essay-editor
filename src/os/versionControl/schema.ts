@@ -76,8 +76,9 @@ export type Discussion<T> = {
   resolved: boolean;
   comments: DiscussionComment[];
 
-  // optionally a list of doc anchors that this discussion refers to
-  anchors?: T[];
+  // a list of doc anchors that this discussion refers to
+  // an empty anchors array means, that this discussion is a general comment on the overall document
+  anchors: T[];
 };
 
 export type AnnotationGroup<T, V> = {
