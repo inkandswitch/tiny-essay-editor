@@ -18,6 +18,7 @@ import folder from "@/datatypes/folder";
 import kanban from "@/datatypes/kanban";
 import markdown from "@/datatypes/markdown";
 import tldraw from "@/datatypes/tldraw";
+import { FileExportMethod } from "./fileExports";
 
 export type CoreDataType<D> = {
   id: string;
@@ -28,6 +29,7 @@ export type CoreDataType<D> = {
   setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
+  fileExportMethods?: FileExportMethod<D>[];
 
   /* Marking a data types as experimental hides it by default
    * so the user has to enable them in their account first  */

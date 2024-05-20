@@ -1,9 +1,4 @@
-import {
-  AutomergeUrl,
-  DocHandle,
-  isValidAutomergeUrl,
-  Doc,
-} from "@automerge/automerge-repo";
+import { DocHandle, isValidAutomergeUrl, Doc } from "@automerge/automerge-repo";
 import React, { useCallback } from "react";
 import {
   Bot,
@@ -17,11 +12,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  useDocument,
-  useHandle,
-  useRepo,
-} from "@automerge/automerge-repo-react-hooks";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { SyncIndicator } from "./SyncIndicator";
 import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
@@ -36,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { asMarkdownFile } from "@/datatypes/markdown/datatype";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
@@ -44,6 +34,8 @@ import { Button } from "@/components/ui/button";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
 import botDataType from "@/datatypes/bot";
+import { getUrlSafeName } from "../hooks/useSelectedDocLink";
+import { genericExportMethods } from "@/os/fileExports";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -79,22 +71,6 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDocType = selectedDocLink?.type;
 
   const selectedDatatypeMetadata = DATA_TYPES[selectedDocType];
-
-  // GL 12/13: here we assume this is a TEE Markdown doc, but in future should be more generic.
-
-  const exportAsMarkdown = useCallback(() => {
-    if (selectedDocType !== "essay") {
-      throw new Error("Not supported");
-    }
-    const file = asMarkdownFile(selectedDoc as MarkdownDoc);
-    saveFile(file, "index.md", [
-      {
-        accept: {
-          "text/markdown": [".md"],
-        },
-      },
-    ]);
-  }, [selectedDoc, selectedDocType]);
 
   const downloadAsAutomerge = useCallback(() => {
     const file = new Blob([save(selectedDoc)], {
@@ -220,6 +196,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             <DropdownMenuItem
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
+                toast.success("Copied to clipboard");
               }}
             >
               <ShareIcon
@@ -279,14 +256,31 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={() => exportAsMarkdown()}>
-              <Download size={14} className="inline-block text-gray-500 mr-2" />{" "}
-              Export as Markdown
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => downloadAsAutomerge()}>
-              <SaveIcon size={14} className="inline-block text-gray-500 mr-2" />{" "}
-              Download Automerge file
-            </DropdownMenuItem>
+            {(selectedDatatypeMetadata?.fileExportMethods ?? [])
+              .concat(genericExportMethods)
+              .map((method) => (
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const blob = await method.export(selectedDoc, repo);
+                    const filename = `${getUrlSafeName(selectedDocLink.name)}.${
+                      method.extension
+                    }`;
+                    saveFile(blob, filename, [
+                      {
+                        accept: {
+                          [method.contentType]: [`.${method.extension}`],
+                        },
+                      },
+                    ]);
+                  }}
+                >
+                  <Download
+                    size={14}
+                    className="inline-block text-gray-500 mr-2"
+                  />{" "}
+                  Export as {method.name}
+                </DropdownMenuItem>
+              ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => removeDocLink(selectedDocLink)}>
               <Trash2Icon

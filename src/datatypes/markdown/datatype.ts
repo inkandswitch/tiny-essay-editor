@@ -1,4 +1,5 @@
 import { DataType } from "@/os/datatypes";
+import { FileExportMethod } from "@/os/fileExports";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import {
   Annotation,
@@ -16,6 +17,8 @@ import { pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
+
+import JSZip from "jszip";
 
 export const init = (doc: any, repo: Repo) => {
   doc.content = "# Untitled\n\n";
@@ -257,6 +260,35 @@ const sortAnchorsBy = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   return getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
 };
 
+const fileExportMethods: FileExportMethod<MarkdownDoc>[] = [
+  {
+    id: "markdown",
+    name: "Markdown",
+    export: (doc) => asMarkdownFile(doc),
+    contentType: "text/markdown",
+    extension: "md",
+  },
+  {
+    id: "markdown-with-assets",
+    name: "Markdown + Assets (.zip)",
+    export: async (doc, repo) => {
+      // export a zip file with the markdown file and the assets folder
+      const assetsDoc = await repo.find<AssetsDoc>(doc.assetsDocUrl).doc();
+
+      const zip = new JSZip();
+      zip.file("index.md", doc.content);
+      for (const [filename, file] of Object.entries(assetsDoc.files)) {
+        zip.file(`assets/${filename}`, file.contents);
+      }
+
+      const uintarray = await zip.generateAsync({ type: "uint8array" });
+      return new Blob([uintarray], { type: "application/zip" });
+    },
+    contentType: "application/zip",
+    extension: "zip",
+  },
+];
+
 export const MarkdownDatatype: DataType<
   MarkdownDoc,
   MarkdownDocAnchor,
@@ -275,4 +307,5 @@ export const MarkdownDatatype: DataType<
   valueOfAnchor,
   doAnchorsOverlap,
   sortAnchorsBy,
+  fileExportMethods,
 };
