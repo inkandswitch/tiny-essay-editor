@@ -99,13 +99,11 @@ export const CommentsSidebar = ({
       {annotationGroupsWithPosition.map((annotationGroup, index) => (
         <div
           key={index}
-          className={
-            "absolute transition-all" /*`bg-white hover:border-gray-400 hover:bg-gray-50 p-4 mr-2 absolute border border-gray-300 rounded-sm max-w-lg transition-all duration-100 ease-in-out ${
-            thread.id === activeThreadId
+          className={`absolute transition-all ease-in-out w-[350px] ${
+            annotationGroup.state === "expanded"
               ? "z-50 shadow-sm border-gray-500"
               : "z-0"
-          }`*/
-          }
+          }`}
           style={{
             top: annotationGroup.yCoord,
           }}
