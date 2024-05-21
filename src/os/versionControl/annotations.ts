@@ -7,7 +7,7 @@ import {
   Annotation,
   HighlightAnnotation,
   AnnotationGroup,
-  AnnotationGroupWithState,
+  AnnotationGroupWithUIState,
   AnnotationWithUIState,
   DiffWithProvenance,
 } from "./schema";
@@ -43,7 +43,7 @@ export function useAnnotations({
   isCommentInputFocused: boolean;
 }): {
   annotations: AnnotationWithUIState<unknown, unknown>[];
-  annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
+  annotationGroups: AnnotationGroupWithUIState<unknown, unknown>[];
   selectedAnchors: unknown[];
   setHoveredAnchor: (anchor: unknown) => void;
   setSelectedAnchors: (anchors: unknown[]) => void;
@@ -365,7 +365,7 @@ export function useAnnotations({
       [annotations, selectedAnchors]
     );
 
-  const annotationGroupsWithState: AnnotationGroupWithState<
+  const annotationGroupsWithState: AnnotationGroupWithUIState<
     unknown,
     unknown
   >[] = useMemo(

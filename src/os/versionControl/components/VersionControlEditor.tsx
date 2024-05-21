@@ -349,6 +349,8 @@ export const VersionControlEditor: React.FC<{
     setAnnotationsPositionsInSidebarMap,
   ] = useState<PositionMap>();
 
+  console.log("AnnotationGroups", annotationGroups);
+
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
   if (!doc || !datatypeId || !doc.branchMetadata) return <div>Loading...</div>;
@@ -581,6 +583,7 @@ export const VersionControlEditor: React.FC<{
                   docUrl={selectedBranch.url}
                   docHeads={docHeads}
                   annotations={visibleAnnotations}
+                  annotationGroups={annotationGroups}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
@@ -592,6 +595,7 @@ export const VersionControlEditor: React.FC<{
                   docUrl={selectedBranch?.url ?? mainDocUrl}
                   docHeads={docHeads}
                   annotations={visibleAnnotations}
+                  annotationGroups={annotationGroups}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
@@ -682,9 +686,11 @@ const DocEditor = <T, V>({
   docUrl,
   docHeads,
   annotations,
+  annotationGroups,
   actorIdToAuthor,
   setSelectedAnchors,
   setHoveredAnchor,
+  setSelectedAnnotationGroupId,
 }: EditorPropsWithDatatype<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = TOOLS[datatypeId][0].editorComponent;
@@ -694,9 +700,11 @@ const DocEditor = <T, V>({
       docUrl={docUrl}
       docHeads={docHeads}
       annotations={annotations}
+      annotationGroups={annotationGroups}
       actorIdToAuthor={actorIdToAuthor}
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
+      setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
     />
   );
 };

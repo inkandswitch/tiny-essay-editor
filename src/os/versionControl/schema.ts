@@ -86,7 +86,7 @@ export type AnnotationGroup<T, V> = {
   discussion?: Discussion<T>;
 };
 
-export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {
+export type AnnotationGroupWithUIState<T, V> = AnnotationGroup<T, V> & {
   state: "focused" | "expanded" | "neutral";
 };
 

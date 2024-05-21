@@ -10,6 +10,7 @@ import kanban from "@/tools/kanban";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   Annotation,
+  AnnotationGroupWithUIState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
@@ -34,10 +35,12 @@ export type EditorProps<T, V> = {
   docHeads?: A.Heads;
   activeDiscussionIds?: string[];
   annotations?: AnnotationWithUIState<T, V>[];
+  annotationGroups?: AnnotationGroupWithUIState<T, V>[];
   actorIdToAuthor?: Record<A.ActorId, AutomergeUrl>; // todo: can we replace that with memoize?
 
   setSelectedAnchors?: (anchors: T[]) => void;
   setHoveredAnchor?: (anchors: T) => void;
+  setSelectedAnnotationGroupId?: (groupId: string) => void;
 };
 
 export type AnnotationsViewProps<
