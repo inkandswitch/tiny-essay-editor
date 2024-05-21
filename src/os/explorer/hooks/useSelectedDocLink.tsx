@@ -49,7 +49,7 @@ const docLinkToUrl = (docLink: DocLink): string => {
 // Turn names into a readable url safe string
 // - replaces any sequence of alpha numeric characters with a single "-"
 // - limits length to 100 characters
-const getUrlSafeName = (value: string) => {
+export const getUrlSafeName = (value: string) => {
   let urlSafeName = value
     .trim()
     .replace(/[^a-zA-Z0-9]+/g, "-")
@@ -207,8 +207,7 @@ export const useSelectedDocLink = ({
     setSelectedDocLinkDangerouslyBypassingURL,
   ] = useState<DocLinkWithFolderPath | undefined>();
 
-  let selectedDocLink: DocLinkWithFolderPath;
-  selectedDocLink = useMemo(() => {
+  const selectedDocLink: DocLinkWithFolderPath = useMemo(() => {
     if (!urlParams || !urlParams.url) {
       return undefined;
     }
@@ -231,7 +230,7 @@ export const useSelectedDocLink = ({
     let linkInPath: DocLinkWithFolderPath;
 
     for (let i = previousFolderPath.length; i >= 0; i--) {
-      let comparisonPath = previousFolderPath.slice(0, i);
+      const comparisonPath = previousFolderPath.slice(0, i);
 
       linkInPath = matches.find((match) =>
         isEqual(match.folderPath, comparisonPath)
@@ -332,6 +331,15 @@ export const useSelectedDocLink = ({
       });
     }
   }, [branchName, urlParams?.branchName]);
+
+  useEffect(() => {
+    if (!selectedDocLink) {
+      return;
+    }
+
+    // @ts-expect-error window global
+    window.handle = repo.find(selectedDocLink.url);
+  }, [selectedDocLink]);
 
   return {
     selectedDocLink,

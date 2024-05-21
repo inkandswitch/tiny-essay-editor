@@ -55,6 +55,7 @@
     "haikunator": "^2.1.2",
     "handsontable": "^14.1.0",
     "hyperformula": "^2.6.2",
+    "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.284.0",
