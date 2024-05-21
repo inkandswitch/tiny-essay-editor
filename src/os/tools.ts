@@ -41,6 +41,7 @@ export type EditorProps<T, V> = {
   setSelectedAnchors?: (anchors: T[]) => void;
   setHoveredAnchor?: (anchors: T) => void;
   setSelectedAnnotationGroupId?: (groupId: string) => void;
+  setHoveredAnnotationGroupId?: (groupId: string) => void;
   hideInlineComments?: boolean;
 };
 

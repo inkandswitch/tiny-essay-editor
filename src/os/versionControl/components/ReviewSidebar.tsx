@@ -54,7 +54,6 @@ export const ReviewSidebar = React.memo(
     selectedAnchors,
     changeDoc,
     setSelectedAnnotationGroupId,
-    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     isCommentInputFocused,
     setIsCommentInputFocused,
@@ -204,18 +203,11 @@ export const ReviewSidebar = React.memo(
                 onAddComment={(content) => {
                   addCommentToAnnotationGroup(annotationGroup, content);
                 }}
-                isHovered={hoveredAnnotationGroupId === id}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}
                 setIsSelected={(isSelected) => {
                   setSelectedAnnotationGroupId(isSelected ? id : undefined);
-                }}
-                ref={(element) => {
-                  /*registerAnnotationElement(
-                    JSON.stringify(annotation.target),
-                    element
-                  )*/
                 }}
                 onSelectNext={() => {
                   const nextAnnotation = annotationGroups[index + 1];
@@ -299,7 +291,6 @@ export interface AnnotationGroupViewProps {
   onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
-  isHovered: boolean;
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
 }
@@ -318,7 +309,6 @@ export const AnnotationGroupView = forwardRef<
       setIsReplyBoxOpen,
       onResolveDiscussion,
       onAddComment: onReply,
-      isHovered,
       setIsHovered,
       setIsSelected,
       onSelectNext,
@@ -446,7 +436,7 @@ export const AnnotationGroupView = forwardRef<
             className={`flex flex-col gap-1 bg-white rounded-sm p-2 border-2 ${
               isFocused
                 ? "border-blue-600 shadow-lg"
-                : isHovered
+                : annotationGroup.state === "focused"
                 ? "border-blue-600 shadow-lg"
                 : "border border-gray-200 "
             }`}

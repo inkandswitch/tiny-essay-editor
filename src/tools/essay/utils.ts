@@ -21,9 +21,11 @@ export type AnnotationGroupWithPosition = AnnotationGroupWithUIState<
 const estimatedHeightOfAnnotationGroup = (
   annotationGroup: AnnotationGroup<MarkdownDocAnchor, string>
 ) => {
-  const commentHeights = annotationGroup.discussion.comments.map(
-    (comment) => 64 + Math.floor(comment.content.length / 60) * 20
-  );
+  const commentHeights = annotationGroup.discussion
+    ? annotationGroup.discussion.comments.map(
+        (comment) => 64 + Math.floor(comment.content.length / 60) * 20
+      )
+    : [];
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
   const PADDING = 32;
   const BUTTONS = 40;

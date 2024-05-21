@@ -31,6 +31,8 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     setSelectedAnchors = () => {},
     actorIdToAuthor,
     hideInlineComments,
+    setSelectedAnnotationGroupId,
+    setHoveredAnnotationGroupId,
   } = props;
 
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -116,7 +118,8 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               handle={handle}
               selection={null}
               annotationGroupsWithPosition={annotationGroupsWithPosition}
-              setSelectedAnnotationGroupId={() => {}}
+              setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+              setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
             />
           </div>
         )}
