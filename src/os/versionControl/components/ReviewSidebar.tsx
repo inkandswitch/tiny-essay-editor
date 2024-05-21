@@ -13,7 +13,7 @@ import { getRelativeTimeString } from "@/os/lib/dates";
 import { AnnotationsViewProps, TOOLS } from "@/os/tools";
 import {
   AnnotationGroup,
-  AnnotationGroupWithState,
+  AnnotationGroupWithUIState,
   DiscussionComment,
   HasVersionControlMetadata,
   HighlightAnnotation,
@@ -30,7 +30,7 @@ type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
-  annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
+  annotationGroups: AnnotationGroupWithUIState<unknown, unknown>[];
   selectedAnchors: unknown[];
   changeDoc: (
     changeFn: (doc: HasVersionControlMetadata<unknown, unknown>) => void
@@ -292,7 +292,7 @@ export interface AnnotationGroupViewProps {
   doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
-  annotationGroup: AnnotationGroupWithState<unknown, unknown>;
+  annotationGroup: AnnotationGroupWithUIState<unknown, unknown>;
   isReplyBoxOpen: boolean;
   setIsReplyBoxOpen: (isOpen: boolean) => void;
   onResolveDiscussion: () => void;
@@ -304,7 +304,7 @@ export interface AnnotationGroupViewProps {
   setIsSelected: (isSelected: boolean) => void;
 }
 
-const AnnotationGroupView = forwardRef<
+export const AnnotationGroupView = forwardRef<
   HTMLDivElement,
   AnnotationGroupViewProps
 >(

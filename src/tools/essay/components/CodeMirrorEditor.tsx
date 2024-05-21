@@ -36,6 +36,7 @@ import {
 import {
   annotationDecorations,
   annotationsField,
+  setAnnotationsEffect,
 } from "../codemirrorPlugins/annotationDecorations";
 import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
@@ -192,6 +193,14 @@ export function MarkdownDocEditor({
   const handleReady = handle.isReady();
 
   useScrollAnnotationsIntoView(annotations, editorRoot);
+
+  // Propagate annotations into codemirror
+  useEffect(() => {
+    editorRoot.current?.dispatch({
+      // split up replaces
+      effects: setAnnotationsEffect.of(annotations),
+    });
+  }, [annotations, editorRoot.current]);
 
   // This big useEffect sets up the editor view
   useEffect(() => {

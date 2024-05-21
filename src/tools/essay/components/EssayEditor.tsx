@@ -16,21 +16,26 @@ import { EditorView } from "@codemirror/view";
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
 import { useCurrentAccount } from "@/os/explorer/account";
 import { EditorProps } from "@/os/tools";
-import { AnnotationWithUIState } from "@/os/versionControl/schema";
+import {
+  AnnotationGroupWithUIState,
+  AnnotationWithUIState,
+} from "@/os/versionControl/schema";
 import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
+import { CommentsSidebar } from "./CommentsSidebar";
+import { useAnnotationGroupsWithPosition } from "../utils";
 
 export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const {
     docUrl,
     docHeads,
     annotations = [],
+    annotationGroups = [],
     setSelectedAnchors = () => {},
     actorIdToAuthor,
   } = props;
 
-  const account = useCurrentAccount();
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [editorView, setEditorView] = useState<EditorView>();
@@ -64,6 +69,13 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
           ];
     });
   }, [doc, annotations]);
+
+  const annotationGroupsWithPosition = useAnnotationGroupsWithPosition({
+    doc,
+    editorView,
+    editorContainer,
+    annotationGroups,
+  });
 
   if (!doc) {
     return null;
@@ -99,6 +111,15 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               docHeads={docHeads}
             />
           </div>
+        </div>
+        <div>
+          <CommentsSidebar
+            doc={doc}
+            handle={handle}
+            selection={null}
+            annotationGroupsWithPosition={annotationGroupsWithPosition}
+            setSelectedAnnotationGroupId={() => {}}
+          />
         </div>
       </div>
     </div>
