@@ -598,7 +598,9 @@ export const VersionControlEditor: React.FC<{
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
-                  hideInlineComments={sidebarMode !== null}
+                  setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                  setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+                  hideInlineComments={!!sidebarMode}
                 />
               )}
             </div>
@@ -692,6 +694,7 @@ const DocEditor = <T, V>({
   setSelectedAnchors,
   setHoveredAnchor,
   setSelectedAnnotationGroupId,
+  setHoveredAnnotationGroupId,
 }: EditorPropsWithDatatype<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = TOOLS[datatypeId][0].editorComponent;
@@ -707,6 +710,7 @@ const DocEditor = <T, V>({
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
       setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+      setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
     />
   );
 };
