@@ -254,6 +254,7 @@ export const ReviewSidebar = React.memo(
           </div>
 
           <div
+            className="rounded bg-white shadow"
             onKeyDownCapture={(event) => {
               if (event.key === "Enter" && event.metaKey) {
                 createDiscussion(pendingCommentText);
@@ -265,12 +266,8 @@ export const ReviewSidebar = React.memo(
             onBlur={() => setIsCommentInputFocused(false)}
           >
             <MarkdownInput
-              ref={setCommentInputElement}
               value={pendingCommentText}
-              onChange={(text) => {
-                console.log(text);
-                setPendingCommentText(text);
-              }}
+              onChange={setPendingCommentText}
             />
           </div>
 
@@ -561,7 +558,7 @@ const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
       </div>
 
       <div className="text-sm">
-        <p>{comment.content}</p>
+        <MarkdownInput value={comment.content} />
       </div>
     </div>
   );
