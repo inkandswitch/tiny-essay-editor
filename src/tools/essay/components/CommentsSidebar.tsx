@@ -1,24 +1,22 @@
 import { Button } from "@/components/ui/button";
 
-import { Check, MessageSquarePlus, Reply } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { next as A, ChangeFn, uuid } from "@automerge/automerge";
+import { Check, MessageSquarePlus, Reply } from "lucide-react";
 
 import { AnnotationGroupWithPosition } from "../utils";
 
 import {
   Popover,
+  PopoverClose,
   PopoverContent,
   PopoverTrigger,
-  PopoverClose,
 } from "@/components/ui/popover";
-import { useEffect, useState } from "react";
-import { cmRangeToAMRange } from "../utils";
 import { MarkdownDoc } from "@/datatypes/markdown";
-import { SelectionRange } from "@codemirror/state";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
 import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSidebar";
+import { SelectionRange } from "@codemirror/state";
+import { useEffect, useState } from "react";
 
 export const CommentsSidebar = ({
   doc,
@@ -95,8 +93,6 @@ export const CommentsSidebar = ({
 
     setPendingCommentText("");
   };*/
-
-  console.log(annotationGroupsWithPosition);
 
   return (
     <div>

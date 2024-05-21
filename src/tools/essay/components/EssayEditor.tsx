@@ -3,28 +3,24 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { MarkdownDocEditor } from "./CodeMirrorEditor";
 
-import { useEffect, useMemo, useState } from "react";
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "@/datatypes/markdown";
+import { useEffect, useMemo, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
-import { useCurrentAccount } from "@/os/explorer/account";
 import { EditorProps } from "@/os/tools";
-import {
-  AnnotationGroupWithUIState,
-  AnnotationWithUIState,
-} from "@/os/versionControl/schema";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
-import { CommentsSidebar } from "./CommentsSidebar";
 import { useAnnotationGroupsWithPosition } from "../utils";
+import { CommentsSidebar } from "./CommentsSidebar";
 
 export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const {
@@ -34,9 +30,10 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     annotationGroups = [],
     setSelectedAnchors = () => {},
     actorIdToAuthor,
+    hideInlineComments,
   } = props;
 
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [editorView, setEditorView] = useState<EditorView>();
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
@@ -112,15 +109,17 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
             />
           </div>
         </div>
-        <div>
-          <CommentsSidebar
-            doc={doc}
-            handle={handle}
-            selection={null}
-            annotationGroupsWithPosition={annotationGroupsWithPosition}
-            setSelectedAnnotationGroupId={() => {}}
-          />
-        </div>
+        {!hideInlineComments && (
+          <div>
+            <CommentsSidebar
+              doc={doc}
+              handle={handle}
+              selection={null}
+              annotationGroupsWithPosition={annotationGroupsWithPosition}
+              setSelectedAnnotationGroupId={() => {}}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
