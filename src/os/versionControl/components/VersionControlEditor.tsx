@@ -349,8 +349,6 @@ export const VersionControlEditor: React.FC<{
     setAnnotationsPositionsInSidebarMap,
   ] = useState<PositionMap>();
 
-  console.log("AnnotationGroups", annotationGroups);
-
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
   if (!doc || !datatypeId || !doc.branchMetadata) return <div>Loading...</div>;
@@ -587,6 +585,7 @@ export const VersionControlEditor: React.FC<{
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
+                  hideInlineComments={true}
                 />
               ) : (
                 <DocEditor
@@ -599,6 +598,7 @@ export const VersionControlEditor: React.FC<{
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
+                  hideInlineComments={sidebarMode !== null}
                 />
               )}
             </div>
@@ -688,6 +688,7 @@ const DocEditor = <T, V>({
   annotations,
   annotationGroups,
   actorIdToAuthor,
+  hideInlineComments,
   setSelectedAnchors,
   setHoveredAnchor,
   setSelectedAnnotationGroupId,
@@ -702,6 +703,7 @@ const DocEditor = <T, V>({
       annotations={annotations}
       annotationGroups={annotationGroups}
       actorIdToAuthor={actorIdToAuthor}
+      hideInlineComments={hideInlineComments}
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
       setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
