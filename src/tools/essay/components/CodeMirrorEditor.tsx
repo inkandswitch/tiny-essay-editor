@@ -22,7 +22,6 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import {
-  codeFolding,
   foldKeymap,
   indentOnInput,
   indentUnit,
@@ -61,21 +60,11 @@ export type TextSelection = {
   yCoord: number;
 };
 
-export type EditorProps = {
-  editorContainer: HTMLDivElement;
-  handle: DocHandle<MarkdownDoc>;
-  path: A.Prop[];
-  setView?: (view: EditorView) => void;
-  setSelectedAnchors?: (anchors: MarkdownDocAnchor[]) => void;
-  readOnly?: boolean;
-  docHeads?: A.Heads;
-  annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
-  setEditorContainerElement?: (container: HTMLDivElement) => void;
-};
-
 type MarkdownInputProps = {
   value: string;
-  onChange: (value: string) => void;
+
+  // when no onChange handler is defined the markdown input will be readonly
+  onChange?: (value: string) => void;
 
   // handle to the main doc which has an assets doc that we use
   // to store dragged in images
@@ -92,9 +81,8 @@ export const MarkdownInput = ({
   const [container, setContainer] = useState(null);
   const [remountEditor, setRemountEditor] = useState(null);
 
+  // trigger a remount when value has changed from the outside
   useEffect(() => {
-    console.log("value", value);
-
     if (editorView && editorView.state.doc.toString() !== value) {
       setRemountEditor({});
     }
@@ -105,12 +93,13 @@ export const MarkdownInput = ({
       return;
     }
 
-    let state = EditorState.create({
+    let view = new EditorView({
+      doc: value,
       extensions: [
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
         // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
         history(),
-
+        EditorView.editable.of(!!onChange),
         dropCursor(),
         indentOnInput(),
         keymap.of([
@@ -146,32 +135,15 @@ export const MarkdownInput = ({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
-        codeFolding({
-          placeholderDOM: () => {
-            // TODO use a nicer API for creating these elements?
-            const placeholder = document.createElement("div");
-            placeholder.className = "cm-foldPlaceholder";
-            placeholder.style.padding = "10px";
-            placeholder.style.marginTop = "5px";
-            placeholder.style.marginBottom = "5px";
-            placeholder.style.fontSize = "14px";
-            placeholder.style.fontFamily = "Fira Code";
-            placeholder.style.textAlign = "center";
-            placeholder.innerText = "N lines hidden";
-            return placeholder;
-          },
-        }),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            onChange(update.state.doc.toString());
-          }
-        }),
+        onChange
+          ? EditorView.updateListener.of((update) => {
+              if (update.docChanged) {
+                onChange(update.state.doc.toString());
+              }
+            })
+          : [],
       ],
-    });
 
-    let view = new EditorView({
-      doc: value,
-      state,
       parent: container,
     });
 
@@ -180,14 +152,21 @@ export const MarkdownInput = ({
     return () => {
       view.destroy();
     };
-  }, [container, remountEditor]);
+  }, [container, remountEditor, onChange]);
 
-  return (
-    <div
-      className="codemirror-editor rounded bg-white shadow"
-      ref={setContainer}
-    />
-  );
+  return <div className="codemirror-editor" ref={setContainer} />;
+};
+
+export type MarkdownDocEditorProps = {
+  editorContainer: HTMLDivElement;
+  handle: DocHandle<MarkdownDoc>;
+  path: A.Prop[];
+  setView?: (view: EditorView) => void;
+  setSelectedAnchors?: (anchors: MarkdownDocAnchor[]) => void;
+  readOnly?: boolean;
+  docHeads?: A.Heads;
+  annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
+  setEditorContainerElement?: (container: HTMLDivElement) => void;
 };
 
 export function MarkdownDocEditor({
@@ -200,7 +179,7 @@ export function MarkdownDocEditor({
   docHeads,
   annotations,
   setEditorContainerElement,
-}: EditorProps) {
+}: MarkdownDocEditorProps) {
   const repo = useRepo();
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
@@ -268,21 +247,6 @@ export function MarkdownDocEditor({
         tableOfContentsPreviewPlugin,
         codeMonospacePlugin,
         lineWrappingPlugin,
-        codeFolding({
-          placeholderDOM: () => {
-            // TODO use a nicer API for creating these elements?
-            const placeholder = document.createElement("div");
-            placeholder.className = "cm-foldPlaceholder";
-            placeholder.style.padding = "10px";
-            placeholder.style.marginTop = "5px";
-            placeholder.style.marginBottom = "5px";
-            placeholder.style.fontSize = "14px";
-            placeholder.style.fontFamily = "Fira Code";
-            placeholder.style.textAlign = "center";
-            placeholder.innerText = "N lines hidden";
-            return placeholder;
-          },
-        }),
       ],
       dispatch(transaction, view) {
         // TODO: can some of these dispatch handlers be factored out into plugins?
