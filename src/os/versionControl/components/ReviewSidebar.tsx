@@ -24,10 +24,11 @@ import { Check, MessageCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
+import { HasAssets } from "@/tools/essay/assets";
 
 type ReviewSidebarProps = {
-  doc: HasVersionControlMetadata<unknown, unknown>;
-  handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
+  doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
+  handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
@@ -268,6 +269,7 @@ export const ReviewSidebar = React.memo(
             <MarkdownInput
               value={pendingCommentText}
               onChange={setPendingCommentText}
+              docWithAssetsHandle={handle}
             />
           </div>
 
@@ -287,8 +289,8 @@ export const ReviewSidebar = React.memo(
 );
 
 export interface AnnotationGroupViewProps {
-  doc: HasVersionControlMetadata<unknown, unknown>;
-  handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
+  doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
+  handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
   annotationGroup: AnnotationGroupWithState<unknown, unknown>;
   isReplyBoxOpen: boolean;
@@ -457,7 +459,11 @@ const AnnotationGroupView = forwardRef<
             />
 
             {annotationGroup.discussion?.comments.map((comment, index) => (
-              <DiscussionCommentView comment={comment} key={comment.id} />
+              <DiscussionCommentView
+                comment={comment}
+                key={comment.id}
+                docWithAssetsHandle={handle}
+              />
             ))}
           </div>
 
@@ -544,7 +550,13 @@ const AnnotationGroupView = forwardRef<
   }
 );
 
-const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
+const DiscussionCommentView = ({
+  comment,
+  docWithAssetsHandle,
+}: {
+  comment: DiscussionComment;
+  docWithAssetsHandle: DocHandle<HasAssets>;
+}) => {
   return (
     <div className="p-1.5">
       <div className="flex items-center justify-between text-sm">
@@ -558,7 +570,10 @@ const DiscussionCommentView = ({ comment }: { comment: DiscussionComment }) => {
       </div>
 
       <div className="text-sm">
-        <MarkdownInput value={comment.content} />
+        <MarkdownInput
+          value={comment.content}
+          docWithAssetsHandle={docWithAssetsHandle}
+        />
       </div>
     </div>
   );

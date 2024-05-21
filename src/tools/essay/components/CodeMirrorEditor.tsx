@@ -52,7 +52,6 @@ import { AssetsDoc, HasAssets } from "../assets";
 import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
-import { EditorState, basicSetup } from "@uiw/react-codemirror";
 
 export type TextSelection = {
   from: number;
