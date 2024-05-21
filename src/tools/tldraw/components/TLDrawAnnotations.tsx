@@ -43,9 +43,7 @@ export const TLDrawAnnotations = ({
   }, [editor, annotations]);
 
   if (annotations.length === 0) {
-    return (
-      <div className="text-gray-500 text-xs italic">No shapes selected</div>
-    );
+    return;
   }
 
   return (

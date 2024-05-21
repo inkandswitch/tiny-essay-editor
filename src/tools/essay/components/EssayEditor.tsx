@@ -1,7 +1,7 @@
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownEditor } from "./CodeMirrorEditor";
+import { MarkdownDocEditor } from "./CodeMirrorEditor";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -34,7 +34,6 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [editorView, setEditorView] = useState<EditorView>();
-  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
 
@@ -89,17 +88,15 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
                 : "border border-gray-200 "
             }`}
           >
-            <MarkdownEditor
+            <MarkdownDocEditor
               editorContainer={editorContainer}
-              diffStyle="normal"
               handle={handle}
               path={["content"]}
-              setSelectedAnchors={setSelectedAnchors ?? (() => {})}
+              setSelectedAnchors={setSelectedAnchors}
               setView={setEditorView}
               annotations={resolvedAnnotations}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>
         </div>
