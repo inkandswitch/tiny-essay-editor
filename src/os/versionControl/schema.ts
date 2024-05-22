@@ -88,6 +88,7 @@ export type AnnotationGroup<T, V> = {
 
 export type AnnotationGroupWithUIState<T, V> = AnnotationGroup<T, V> & {
   state: "focused" | "expanded" | "neutral";
+  openCommentId: string;
 };
 
 export type Discussable<T> = {

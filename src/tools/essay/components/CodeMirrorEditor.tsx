@@ -147,6 +147,8 @@ export const MarkdownInput = ({
       parent: container,
     });
 
+    view.focus();
+
     setEditorView(view);
 
     return () => {
