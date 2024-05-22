@@ -20,7 +20,7 @@ const ESSAY_STYLES = {
     height: "100%",
     fontFamily: '"Merriweather", serif',
     padding: "10px 0",
-    margin: "0 var(--cm-padding-x)",
+    margin: "0",
     // textAlign: "justify",
     textWrap: "pretty",
     lineHeight: "1.5rem",

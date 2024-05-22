@@ -247,7 +247,7 @@ export const ReviewSidebar = React.memo(
           </div>
 
           <div
-            className="rounded bg-white shadow"
+            className="rounded bg-white shadow px-2"
             onKeyDownCapture={(event) => {
               if (event.key === "Enter" && event.metaKey) {
                 createDiscussion(pendingCommentText);
