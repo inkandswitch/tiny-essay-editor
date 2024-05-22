@@ -30,9 +30,6 @@ export type Tool = {
   >;
 };
 
-type CommentId = string;
-export type CommentSelection<T> = CommentId | Anchors<T>[];
-
 export type EditorProps<T, V> = {
   docUrl: AutomergeUrl;
   docHeads?: A.Heads;
@@ -45,7 +42,7 @@ export type EditorProps<T, V> = {
   setHoveredAnchor?: (anchors: T) => void;
   setSelectedAnnotationGroupId?: (groupId: string) => void;
   setHoveredAnnotationGroupId?: (groupId: string) => void;
-  openComment?: (commentSelection: CommentSelection<T>) => void;
+  editComment?: (commentId: string) => void;
 
   hideInlineComments?: boolean;
 };

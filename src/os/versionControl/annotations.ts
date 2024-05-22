@@ -10,6 +10,7 @@ import {
   AnnotationGroupWithUIState,
   AnnotationWithUIState,
   DiffWithProvenance,
+  CommentEditingState,
 } from "./schema";
 import { HasVersionControlMetadata } from "./schema";
 
@@ -50,7 +51,9 @@ export function useAnnotations({
   hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
+  editComment: (commentId: string) => void;
 } {
+  const [commmentIdBeingEdited, setCommentIdBeingEdited] = useState<string>();
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
 
@@ -372,6 +375,7 @@ export function useAnnotations({
     () =>
       annotationGroups.map((annotationGroup) => {
         const id = getAnnotationGroupId(annotationGroup);
+
         return {
           ...annotationGroup,
           state:
@@ -380,6 +384,13 @@ export function useAnnotations({
               : selectedAnnotationGroupIds.has(id)
               ? "focused"
               : "neutral",
+          comment:
+            commmentIdBeingEdited &&
+            annotationGroup.discussion.comments.some(
+              (comment) => comment.id === commmentIdBeingEdited
+            )
+              ? { type: "edit", commentId: commmentIdBeingEdited }
+              : undefined,
         };
       }),
     [annotationGroups, expandedAnnotationGroupId, selectedAnnotationGroupIds]
@@ -395,6 +406,7 @@ export function useAnnotations({
     hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
+    editComment: setCommentIdBeingEdited,
   };
 }
 

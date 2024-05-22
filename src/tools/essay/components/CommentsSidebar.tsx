@@ -13,6 +13,7 @@ export const CommentsSidebar = ({
   annotationGroupsWithPosition,
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
+  editComment,
 }: {
   doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
@@ -20,6 +21,7 @@ export const CommentsSidebar = ({
   annotationGroupsWithPosition: AnnotationGroupWithPosition[];
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
+  editComment: (commentId: string) => void;
 }) => {
   return (
     <div>
@@ -67,6 +69,7 @@ export const CommentsSidebar = ({
               }}
               hasNext={index < annotationGroupsWithPosition.length - 1}
               hasPrev={index > 0}
+              editComment={editComment}
             />
           </div>
         );
