@@ -43,6 +43,7 @@ export type EditorProps<T, V> = {
   setSelectedAnnotationGroupId?: (groupId: string) => void;
   setHoveredAnnotationGroupId?: (groupId: string) => void;
   editComment?: (commentId: string) => void;
+  createComment?: (groupIdOrAnchors: string | T[]) => void;
 
   hideInlineComments?: boolean;
 };

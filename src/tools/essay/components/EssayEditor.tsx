@@ -34,6 +34,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
     editComment,
+    createComment,
   } = props;
 
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -122,6 +123,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
               editComment={editComment}
+              createComment={createComment}
             />
           </div>
         )}

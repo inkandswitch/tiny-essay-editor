@@ -1,6 +1,6 @@
 import { AnnotationGroupWithPosition } from "../utils";
 
-import { MarkdownDoc } from "@/datatypes/markdown";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
 import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSidebar";
 import { DocHandle } from "@automerge/automerge-repo";
@@ -14,6 +14,7 @@ export const CommentsSidebar = ({
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
   editComment,
+  createComment,
 }: {
   doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
@@ -22,6 +23,7 @@ export const CommentsSidebar = ({
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
   editComment: (commentId: string) => void;
+  createComment: (target: string | MarkdownDocAnchor[]) => void;
 }) => {
   return (
     <div>
@@ -70,6 +72,7 @@ export const CommentsSidebar = ({
               hasNext={index < annotationGroupsWithPosition.length - 1}
               hasPrev={index > 0}
               editComment={editComment}
+              createComment={createComment}
             />
           </div>
         );

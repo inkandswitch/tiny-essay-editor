@@ -19,8 +19,8 @@ import {
   HighlightAnnotation,
 } from "@/os/versionControl/schema";
 import { next as A, uuid } from "@automerge/automerge";
-import { DocHandle } from "@automerge/automerge-repo";
-import { Check, PencilIcon, XIcon } from "lucide-react";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { Check, PencilIcon, XIcon, MessageSquare } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
@@ -42,6 +42,7 @@ type ReviewSidebarProps = {
   isCommentInputFocused: boolean;
   setIsCommentInputFocused: (isFocused: boolean) => void;
   editComment: (commentId: string) => void;
+  createComment: (target: string | unknown[]) => void;
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
@@ -59,6 +60,7 @@ export const ReviewSidebar = React.memo(
     isCommentInputFocused,
     setIsCommentInputFocused,
     editComment,
+    createComment,
   }: ReviewSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
@@ -90,45 +92,6 @@ export const ReviewSidebar = React.memo(
         value: valueOfAnchor(doc, anchor),
       }));
     }, [selectedAnchors, doc, datatypeId]);
-
-    const addCommentToAnnotationGroup = (
-      annotationGroup: AnnotationGroup<unknown, unknown>,
-      content: string
-    ) => {
-      setAnnotationGroupIdOfActiveReply(undefined);
-
-      changeDoc((doc) => {
-        let discussions = doc.discussions;
-
-        // convert docs without discussions
-        if (!discussions) {
-          doc.discussions = {};
-          discussions = doc.discussions;
-        }
-
-        let discussionId = annotationGroup?.discussion?.id;
-
-        if (!discussionId) {
-          discussionId = uuid();
-          discussions[discussionId] = {
-            id: discussionId,
-            heads: A.getHeads(doc),
-            comments: [],
-            resolved: false,
-            anchors: annotationGroup.annotations.map(
-              (annotation) => annotation.anchor
-            ),
-          };
-        }
-
-        discussions[discussionId].comments.push({
-          id: uuid(),
-          content,
-          contactUrl: account.contactHandle.url,
-          timestamp: Date.now(),
-        });
-      });
-    };
 
     const createDiscussion = (content: string) => {
       setPendingCommentText("");
@@ -198,6 +161,7 @@ export const ReviewSidebar = React.memo(
                   }
                 }}
                 editComment={editComment}
+                createComment={createComment}
                 hasNext={index < annotationGroups.length - 1}
                 hasPrev={index > 0}
               />
@@ -267,6 +231,7 @@ export interface AnnotationGroupViewProps {
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
   editComment: (commentId: string) => void;
+  createComment: (target: string | unknown[]) => void;
 }
 
 export const AnnotationGroupView = forwardRef<
@@ -286,6 +251,7 @@ export const AnnotationGroupView = forwardRef<
       onSelectNext,
       onSelectPrev,
       editComment,
+      createComment,
     }: AnnotationGroupViewProps,
     ref
   ) => {
@@ -294,6 +260,7 @@ export const AnnotationGroupView = forwardRef<
     const localRef = useRef(null); // Use useRef to create a local ref
     const isExpanded = annotationGroup.state === "expanded";
     const isFocused = annotationGroup.state !== "neutral";
+    const account = useCurrentAccount();
 
     const setRef = (element: HTMLDivElement) => {
       localRef.current = element; // Assign the element to the local ref
@@ -325,6 +292,10 @@ export const AnnotationGroupView = forwardRef<
       });
     };
 
+    const onReply = () => {
+      createComment(getAnnotationGroupId(annotationGroup));
+    };
+
     const onUpdateCommentContentWithId = (id: string, content: string) => {
       handle.change((doc) => {
         const index = doc.discussions[
@@ -342,6 +313,40 @@ export const AnnotationGroupView = forwardRef<
           ],
           content
         );
+      });
+    };
+
+    const addCommentToAnnotationGroup = (content: string) => {
+      handle.change((doc) => {
+        let discussions = doc.discussions;
+
+        // convert docs without discussions
+        if (!discussions) {
+          doc.discussions = {};
+          discussions = doc.discussions;
+        }
+
+        let discussionId = annotationGroup.discussion?.id;
+
+        if (!discussionId) {
+          discussionId = uuid();
+          discussions[discussionId] = {
+            id: discussionId,
+            heads: A.getHeads(doc),
+            comments: [],
+            resolved: false,
+            anchors: annotationGroup.annotations.map(
+              (annotation) => annotation.anchor
+            ),
+          };
+        }
+
+        discussions[discussionId].comments.push({
+          id: uuid(),
+          content,
+          contactUrl: account.contactHandle.url,
+          timestamp: Date.now(),
+        });
       });
     };
 
@@ -451,10 +456,12 @@ export const AnnotationGroupView = forwardRef<
 
             {annotationGroup.discussion?.comments.map((comment, index) => (
               <DiscussionCommentView
-                comment={comment}
+                contactUrl={comment.contactUrl}
+                timestamp={comment.timestamp}
+                content={comment.content}
                 key={comment.id}
                 docWithAssetsHandle={handle}
-                onChange={(content) =>
+                onChangeContent={(content) =>
                   onUpdateCommentContentWithId(comment.id, content)
                 }
                 isBeingEdited={
@@ -466,13 +473,43 @@ export const AnnotationGroupView = forwardRef<
                 }
               />
             ))}
+
+            {annotationGroup.comment?.type === "create" && (
+              <DiscussionCommentView
+                contactUrl={account?.contactHandle.url}
+                docWithAssetsHandle={handle}
+                onChangeContent={(content) => {
+                  addCommentToAnnotationGroup(content);
+                  createComment(undefined);
+                }}
+                isBeingEdited={true}
+                setIsBeingEdited={() => {
+                  createComment(undefined);
+                }}
+              />
+            )}
           </div>
 
           <div
             className={`overflow-hidden transition-all flex items-center gap-2 ${
-              isExpanded ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
+              isExpanded && !annotationGroup.comment
+                ? "h-[43px] opacity-100 mt-2"
+                : "h-[0px] opacity-0"
             }`}
           >
+            <Button
+              variant="ghost"
+              className="select-none px-2 flex flex-col w-fi"
+              onClick={onReply}
+            >
+              <div className="flex text-gray-600 gap-2">
+                <MessageSquare size={16} /> Reply
+              </div>
+              <span className="text-gray-400 text-xs w-full text-center">
+                (⌘ + ⏎)
+              </span>
+            </Button>
+
             {annotationGroup.discussion && (
               <Button
                 variant="ghost"
@@ -495,22 +532,26 @@ export const AnnotationGroupView = forwardRef<
 );
 
 const DiscussionCommentView = ({
-  comment,
+  contactUrl,
+  timestamp,
+  content = "",
   docWithAssetsHandle,
+  onChangeContent,
   isBeingEdited,
-  onChange,
   setIsBeingEdited,
 }: {
-  comment: DiscussionComment;
+  contactUrl: AutomergeUrl;
+  timestamp?: number;
+  content?: string;
+  onChangeContent: (value: string) => void;
   docWithAssetsHandle: DocHandle<HasAssets>;
   isBeingEdited: boolean;
-  onChange: (value: string) => void;
   setIsBeingEdited: (isBeingEdited: boolean) => void;
 }) => {
   const [isBeingHovered, setIsBeingHovered] = useState(false);
   const [updatedText, setUpdatedContent] = useState<string>();
   const account = useCurrentAccount();
-  const isOwnComment = account?.contactHandle.url === comment.contactUrl;
+  const isOwnComment = account?.contactHandle.url === contactUrl;
 
   return (
     <div
@@ -520,11 +561,13 @@ const DiscussionCommentView = ({
     >
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
-          <ContactAvatar url={comment.contactUrl} showName={true} size="sm" />
+          <ContactAvatar url={contactUrl} showName={true} size="sm" />
 
-          <div className="text-xs text-gray-400">
-            {getRelativeTimeString(comment.timestamp)}
-          </div>
+          {timestamp !== undefined && (
+            <div className="text-xs text-gray-400">
+              {getRelativeTimeString(timestamp)}
+            </div>
+          )}
         </div>
 
         {isOwnComment && (
@@ -534,7 +577,7 @@ const DiscussionCommentView = ({
             className={!isBeingHovered || isBeingEdited ? "invisible" : ""}
             onClick={() => {
               setIsBeingEdited(true);
-              setUpdatedContent(comment.content);
+              setUpdatedContent(content);
             }}
           >
             <PencilIcon size={14} />
@@ -551,7 +594,7 @@ const DiscussionCommentView = ({
           }`}
         >
           <MarkdownInput
-            value={comment.content}
+            value={content}
             onChange={isBeingEdited ? setUpdatedContent : undefined}
             docWithAssetsHandle={docWithAssetsHandle}
           />
@@ -563,7 +606,7 @@ const DiscussionCommentView = ({
               variant="ghost"
               className="py-0 px-2"
               onClick={() => {
-                onChange(updatedText);
+                onChangeContent(updatedText);
                 setIsBeingEdited(false);
                 setUpdatedContent(undefined);
               }}

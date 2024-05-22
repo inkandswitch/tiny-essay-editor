@@ -338,6 +338,7 @@ export const VersionControlEditor: React.FC<{
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
     editComment,
+    createComment,
   } = useAnnotations({
     doc: activeDoc,
     datatypeId,
@@ -586,8 +587,9 @@ export const VersionControlEditor: React.FC<{
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
-                  hideInlineComments={true}
+                  hideInlineComments={!!sidebarMode}
                   editComment={editComment}
+                  createComment={createComment}
                 />
               ) : (
                 <DocEditor
@@ -604,6 +606,7 @@ export const VersionControlEditor: React.FC<{
                   setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
                   hideInlineComments={!!sidebarMode}
                   editComment={editComment}
+                  createComment={createComment}
                 />
               )}
             </div>
@@ -673,6 +676,7 @@ export const VersionControlEditor: React.FC<{
                 isCommentInputFocused={isCommentInputFocused}
                 setIsCommentInputFocused={setIsCommentInputFocused}
                 editComment={editComment}
+                createComment={createComment}
               />
             )}
           </div>
@@ -700,6 +704,7 @@ const DocEditor = <T, V>({
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
   editComment,
+  createComment,
 }: EditorPropsWithDatatype<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = TOOLS[datatypeId][0].editorComponent;
@@ -717,6 +722,7 @@ const DocEditor = <T, V>({
       setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
       setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
       editComment={editComment}
+      createComment={createComment}
     />
   );
 };
