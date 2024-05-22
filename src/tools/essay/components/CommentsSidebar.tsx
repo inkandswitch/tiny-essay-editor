@@ -28,7 +28,7 @@ export const CommentsSidebar = ({
 
         return (
           <div
-            key={index}
+            key={id}
             className={`absolute transition-all ease-in-out w-[350px] ${
               annotationGroup.state === "expanded"
                 ? "z-50 shadow-sm border-gray-500"
@@ -36,12 +36,6 @@ export const CommentsSidebar = ({
             }`}
             style={{
               top: annotationGroup.yCoord,
-            }}
-            onClick={(e) => {
-              setSelectedAnnotationGroupId(
-                getAnnotationGroupId(annotationGroup)
-              );
-              e.stopPropagation();
             }}
           >
             <AnnotationGroupView
@@ -71,6 +65,8 @@ export const CommentsSidebar = ({
                   );
                 }
               }}
+              hasNext={index < annotationGroupsWithPosition.length - 1}
+              hasPrev={index > 0}
             />
           </div>
         );
