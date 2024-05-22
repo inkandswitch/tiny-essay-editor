@@ -20,7 +20,7 @@ import {
 } from "@/os/versionControl/schema";
 import { next as A, uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
-import { Check, MessageCircleIcon } from "lucide-react";
+import { Check, PencilIcon, XIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
@@ -284,7 +284,6 @@ export const AnnotationGroupView = forwardRef<
     }: AnnotationGroupViewProps,
     ref
   ) => {
-    const [pendingCommentText, setPendingCommentText] = useState("");
     const [height, setHeight] = useState();
     const [isBeingResolved, setIsBeingResolved] = useState(false);
     const localRef = useRef(null); // Use useRef to create a local ref
@@ -321,6 +320,15 @@ export const AnnotationGroupView = forwardRef<
       });
     };
 
+    const onUpdateCommentContentWithId = (id: string, content: string) => {
+      handle.change((doc) => {
+        const comment = doc.discussions[
+          annotationGroup.discussion.id
+        ].comments.find((comment) => comment.id === id);
+        comment.content = content;
+      });
+    };
+
     // handle keyboard shortcuts
     /*
      * k / ctrl + p / cmd + p : select previous discussion
@@ -340,9 +348,6 @@ export const AnnotationGroupView = forwardRef<
         // select previous discussion
         if (evt.key === "k" || (evt.key === "p" && isMetaOrControlPressed)) {
           onSelectPrev();
-          evt.preventDefault();
-          evt.stopPropagation();
-
           return;
         }
 
@@ -433,6 +438,9 @@ export const AnnotationGroupView = forwardRef<
                 comment={comment}
                 key={comment.id}
                 docWithAssetsHandle={handle}
+                onChange={(content) =>
+                  onUpdateCommentContentWithId(comment.id, content)
+                }
               />
             ))}
           </div>
@@ -466,27 +474,91 @@ export const AnnotationGroupView = forwardRef<
 const DiscussionCommentView = ({
   comment,
   docWithAssetsHandle,
+  onChange,
 }: {
   comment: DiscussionComment;
   docWithAssetsHandle: DocHandle<HasAssets>;
+  onChange: (value: string) => void;
+  /*  isBeingEdited: boolean;
+  setIsBeingEdited: (isBeingEdited: boolean) => void; */
 }) => {
+  const [isBeingHovered, setIsBeingHovered] = useState(false);
+  const [updatedText, setUpdatedText] = useState<string>();
+  const [isBeingEdited, setIsBeingEdited] = useState(false);
+  const account = useCurrentAccount();
+  const isOwnComment = account?.contactHandle.url === comment.contactUrl;
+
   return (
-    <div className="p-1.5">
+    <div
+      className="p-1.5"
+      onMouseEnter={() => setIsBeingHovered(true)}
+      onMouseLeave={() => setIsBeingHovered(false)}
+    >
       <div className="flex items-center justify-between text-sm">
-        <div className="">
+        <div className="flex items-center gap-2">
           <ContactAvatar url={comment.contactUrl} showName={true} size="sm" />
+
+          <div className="text-xs text-gray-400">
+            {getRelativeTimeString(comment.timestamp)}
+          </div>
         </div>
 
-        <div className="text-xs text-gray-400">
-          {getRelativeTimeString(comment.timestamp)}
-        </div>
+        {isOwnComment && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={!isBeingHovered || isBeingEdited ? "invisible" : ""}
+            onClick={() => {
+              setIsBeingEdited(true);
+            }}
+          >
+            <PencilIcon size={14} />
+          </Button>
+        )}
       </div>
 
-      <div className="text-sm">
-        <MarkdownInput
-          value={comment.content}
-          docWithAssetsHandle={docWithAssetsHandle}
-        />
+      <div className="flex flex-col gap-2">
+        <div
+          className={`text-sm ${
+            isBeingEdited
+              ? "border border-1 rounded-sm px-2 border-gray-300"
+              : "border-white"
+          }`}
+        >
+          <MarkdownInput
+            value={comment.content}
+            onChange={isBeingEdited ? setUpdatedText : undefined}
+            docWithAssetsHandle={docWithAssetsHandle}
+          />
+        </div>
+
+        {isBeingEdited && (
+          <div className="flex gap-1 justify-end">
+            <Button variant="ghost" className="py-0 px-2">
+              <Check
+                size={16}
+                onClick={() => {
+                  setIsBeingEdited(false);
+                  onChange(updatedText);
+                  setUpdatedText(undefined);
+                }}
+              />
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="py-0 px-2"
+              onClick={() => {
+                setIsBeingEdited(false);
+                setUpdatedText(undefined);
+              }}
+            >
+              <XIcon size={16} />
+            </Button>
+          </div>
+        )}
+
+        <div className="right"></div>
       </div>
     </div>
   );
