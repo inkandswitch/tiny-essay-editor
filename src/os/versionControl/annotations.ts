@@ -10,7 +10,6 @@ import {
   AnnotationGroupWithUIState,
   AnnotationWithUIState,
   DiffWithProvenance,
-  CommentEditingState,
 } from "./schema";
 import { HasVersionControlMetadata } from "./schema";
 
@@ -32,7 +31,7 @@ type ActiveGroupState = {
 type SelectionState<T> = SelectedAnchorsState<T> | ActiveGroupState;
 type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
 
-export function useAnnotations({
+export function useAnnotations<T>({
   doc,
   datatypeId,
   diff,
@@ -52,10 +51,22 @@ export function useAnnotations({
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
   editComment: (commentId: string) => void;
+  createComment: (commentId: string) => void;
 } {
-  const [commmentIdBeingEdited, setCommentIdBeingEdited] = useState<string>();
+  const [commentState, setCommentState] = useState<
+    | { type: "edit"; commentId: string }
+    | { type: "create"; target: string | T[] }
+  >();
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
+
+  const editComment = useStaticCallback((commentId: string) => {
+    setCommentState({ type: "edit", commentId });
+  });
+
+  const createComment = useStaticCallback((target: string | T[]) => {
+    setCommentState({ type: "create", target });
+  });
 
   const setHoveredAnchor = useStaticCallback((anchor: unknown) => {
     // ingore set if it doesn't change the current state
@@ -385,12 +396,18 @@ export function useAnnotations({
               ? "focused"
               : "neutral",
           comment:
-            commmentIdBeingEdited &&
+            commentState &&
+            // comment in this annotation group is being edited
+            (commentState.type === "edit" &&
             annotationGroup.discussion.comments.some(
-              (comment) => comment.id === commmentIdBeingEdited
+              (comment) => comment.id === commentState.commentId
             )
-              ? { type: "edit", commentId: commmentIdBeingEdited }
-              : undefined,
+              ? commentState
+              : // a new comment is being created on this annotation group
+              commentState.type === "create" &&
+                commentState.target === annotationGroup.discussion.id
+              ? { type: "create" }
+              : undefined),
         };
       }),
     [annotationGroups, expandedAnnotationGroupId, selectedAnnotationGroupIds]
@@ -406,7 +423,8 @@ export function useAnnotations({
     hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
-    editComment: setCommentIdBeingEdited,
+    editComment,
+    createComment,
   };
 }
 
