@@ -483,7 +483,7 @@ const DiscussionCommentView = ({
   setIsBeingEdited: (isBeingEdited: boolean) => void; */
 }) => {
   const [isBeingHovered, setIsBeingHovered] = useState(false);
-  const [updatedText, setUpdatedText] = useState<string>();
+  const [updatedText, setUpdatedContent] = useState<string>();
   const [isBeingEdited, setIsBeingEdited] = useState(false);
   const account = useCurrentAccount();
   const isOwnComment = account?.contactHandle.url === comment.contactUrl;
@@ -510,6 +510,7 @@ const DiscussionCommentView = ({
             className={!isBeingHovered || isBeingEdited ? "invisible" : ""}
             onClick={() => {
               setIsBeingEdited(true);
+              setUpdatedContent(comment.content);
             }}
           >
             <PencilIcon size={14} />
@@ -527,22 +528,23 @@ const DiscussionCommentView = ({
         >
           <MarkdownInput
             value={comment.content}
-            onChange={isBeingEdited ? setUpdatedText : undefined}
+            onChange={isBeingEdited ? setUpdatedContent : undefined}
             docWithAssetsHandle={docWithAssetsHandle}
           />
         </div>
 
         {isBeingEdited && (
           <div className="flex gap-1 justify-end">
-            <Button variant="ghost" className="py-0 px-2">
-              <Check
-                size={16}
-                onClick={() => {
-                  setIsBeingEdited(false);
-                  onChange(updatedText);
-                  setUpdatedText(undefined);
-                }}
-              />
+            <Button
+              variant="ghost"
+              className="py-0 px-2"
+              onClick={() => {
+                onChange(updatedText);
+                setIsBeingEdited(false);
+                setUpdatedContent(undefined);
+              }}
+            >
+              <Check size={16} />
             </Button>
 
             <Button
@@ -550,7 +552,7 @@ const DiscussionCommentView = ({
               className="py-0 px-2"
               onClick={() => {
                 setIsBeingEdited(false);
-                setUpdatedText(undefined);
+                setUpdatedContent(undefined);
               }}
             >
               <XIcon size={16} />
