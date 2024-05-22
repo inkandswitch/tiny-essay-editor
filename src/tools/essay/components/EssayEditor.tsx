@@ -33,6 +33,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     hideInlineComments,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
+    editComment,
   } = props;
 
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
@@ -120,6 +121,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               annotationGroupsWithPosition={annotationGroupsWithPosition}
               setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+              editComment={editComment}
             />
           </div>
         )}

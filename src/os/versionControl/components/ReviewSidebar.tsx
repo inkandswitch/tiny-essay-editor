@@ -41,6 +41,7 @@ type ReviewSidebarProps = {
   setHoveredAnnotationGroupId: (id: string) => void;
   isCommentInputFocused: boolean;
   setIsCommentInputFocused: (isFocused: boolean) => void;
+  editComment: (commentId: string) => void;
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
@@ -57,6 +58,7 @@ export const ReviewSidebar = React.memo(
     setHoveredAnnotationGroupId,
     isCommentInputFocused,
     setIsCommentInputFocused,
+    editComment,
   }: ReviewSidebarProps) => {
     const [pendingCommentText, setPendingCommentText] = useState("");
     const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
@@ -195,6 +197,7 @@ export const ReviewSidebar = React.memo(
                     );
                   }
                 }}
+                editComment={editComment}
                 hasNext={index < annotationGroups.length - 1}
                 hasPrev={index > 0}
               />
@@ -263,6 +266,7 @@ export interface AnnotationGroupViewProps {
   hasPrev: boolean;
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
+  editComment: (commentId: string) => void;
 }
 
 export const AnnotationGroupView = forwardRef<
@@ -277,10 +281,11 @@ export const AnnotationGroupView = forwardRef<
       annotationGroup,
       setIsHovered,
       setIsSelected,
-      onSelectNext,
-      onSelectPrev,
       hasNext,
       hasPrev,
+      onSelectNext,
+      onSelectPrev,
+      editComment,
     }: AnnotationGroupViewProps,
     ref
   ) => {
@@ -322,10 +327,21 @@ export const AnnotationGroupView = forwardRef<
 
     const onUpdateCommentContentWithId = (id: string, content: string) => {
       handle.change((doc) => {
-        const comment = doc.discussions[
+        const index = doc.discussions[
           annotationGroup.discussion.id
-        ].comments.find((comment) => comment.id === id);
-        comment.content = content;
+        ].comments.findIndex((comment) => comment.id === id);
+
+        A.updateText(
+          doc,
+          [
+            "discussions",
+            annotationGroup.discussion.id,
+            "comments",
+            index,
+            "content",
+          ],
+          content
+        );
       });
     };
 
@@ -441,6 +457,13 @@ export const AnnotationGroupView = forwardRef<
                 onChange={(content) =>
                   onUpdateCommentContentWithId(comment.id, content)
                 }
+                isBeingEdited={
+                  annotationGroup.comment?.type === "edit" &&
+                  annotationGroup.comment?.commentId === comment.id
+                }
+                setIsBeingEdited={(isBeingEdited) =>
+                  editComment(isBeingEdited ? comment.id : undefined)
+                }
               />
             ))}
           </div>
@@ -474,17 +497,18 @@ export const AnnotationGroupView = forwardRef<
 const DiscussionCommentView = ({
   comment,
   docWithAssetsHandle,
+  isBeingEdited,
   onChange,
+  setIsBeingEdited,
 }: {
   comment: DiscussionComment;
   docWithAssetsHandle: DocHandle<HasAssets>;
+  isBeingEdited: boolean;
   onChange: (value: string) => void;
-  /*  isBeingEdited: boolean;
-  setIsBeingEdited: (isBeingEdited: boolean) => void; */
+  setIsBeingEdited: (isBeingEdited: boolean) => void;
 }) => {
   const [isBeingHovered, setIsBeingHovered] = useState(false);
   const [updatedText, setUpdatedContent] = useState<string>();
-  const [isBeingEdited, setIsBeingEdited] = useState(false);
   const account = useCurrentAccount();
   const isOwnComment = account?.contactHandle.url === comment.contactUrl;
 
