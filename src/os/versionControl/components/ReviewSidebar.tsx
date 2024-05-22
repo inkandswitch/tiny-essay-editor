@@ -161,28 +161,6 @@ export const ReviewSidebar = React.memo(
       setSelectedAnnotationGroupId(discussionId);
     };
 
-    const resolveDiscussionAtIndex = (index: number) => {
-      const discussionGroup = annotationGroups[index];
-
-      let newSelectedAnnotationGroupId;
-
-      const nextAnnotation = annotationGroups[index + 1];
-      if (nextAnnotation) {
-        newSelectedAnnotationGroupId = getAnnotationGroupId(nextAnnotation);
-      } else {
-        const prevAnnotation = annotationGroups[index - 1];
-        if (prevAnnotation) {
-          newSelectedAnnotationGroupId = getAnnotationGroupId(prevAnnotation);
-        }
-      }
-
-      setSelectedAnnotationGroupId(newSelectedAnnotationGroupId);
-
-      changeDoc((doc) => {
-        doc.discussions[discussionGroup.discussion.id].resolved = true;
-      });
-    };
-
     return (
       <div className="h-full flex flex-col">
         <div className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible">
@@ -195,14 +173,6 @@ export const ReviewSidebar = React.memo(
                 datatypeId={datatypeId}
                 key={id}
                 annotationGroup={annotationGroup}
-                isReplyBoxOpen={annotationGroupIdOfActiveReply === id}
-                setIsReplyBoxOpen={(isOpen) => {
-                  setAnnotationGroupIdOfActiveReply(isOpen ? id : undefined);
-                }}
-                onResolveDiscussion={() => resolveDiscussionAtIndex(index)}
-                onAddComment={(content) => {
-                  addCommentToAnnotationGroup(annotationGroup, content);
-                }}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}
@@ -225,6 +195,8 @@ export const ReviewSidebar = React.memo(
                     );
                   }
                 }}
+                hasNext={index < annotationGroups.length - 1}
+                hasPrev={index > 0}
               />
             );
           })}
@@ -285,12 +257,10 @@ export interface AnnotationGroupViewProps {
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
   annotationGroup: AnnotationGroupWithUIState<unknown, unknown>;
-  isReplyBoxOpen: boolean;
-  setIsReplyBoxOpen: (isOpen: boolean) => void;
-  onResolveDiscussion: () => void;
-  onAddComment: (content: string) => void;
   onSelectNext: () => void;
   onSelectPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
 }
@@ -305,14 +275,12 @@ export const AnnotationGroupView = forwardRef<
       handle,
       datatypeId,
       annotationGroup,
-      isReplyBoxOpen,
-      setIsReplyBoxOpen,
-      onResolveDiscussion,
-      onAddComment: onReply,
       setIsHovered,
       setIsSelected,
       onSelectNext,
       onSelectPrev,
+      hasNext,
+      hasPrev,
     }: AnnotationGroupViewProps,
     ref
   ) => {
@@ -330,6 +298,18 @@ export const AnnotationGroupView = forwardRef<
         ref(element);
       } else if (ref) {
         ref.current = element;
+      }
+    };
+
+    const onResolveDiscussion = () => {
+      handle.change((doc) => {
+        doc.discussions[annotationGroup.discussion.id].resolved = true;
+      });
+
+      if (hasNext) {
+        onSelectNext();
+      } else if (hasPrev) {
+        onSelectPrev();
       }
     };
 
@@ -379,7 +359,7 @@ export const AnnotationGroupView = forwardRef<
         }
 
         if (evt.key === "Enter" && isMetaOrControlPressed) {
-          setIsReplyBoxOpen(true);
+          //setIsReplyBoxOpen(true);
           evt.preventDefault();
           evt.stopPropagation();
         }
@@ -462,63 +442,6 @@ export const AnnotationGroupView = forwardRef<
               isExpanded ? "h-[43px] opacity-100 mt-2" : "h-[0px] opacity-0"
             }`}
           >
-            <Popover
-              open={isReplyBoxOpen}
-              onOpenChange={(isOpen) => setIsReplyBoxOpen(isOpen)}
-            >
-              <PopoverTrigger>
-                <Button
-                  variant="ghost"
-                  className="select-none p-2 flex flex-col w-fit"
-                  onClick={() => setIsReplyBoxOpen(true)}
-                >
-                  <div className="flex gap-2 text-gray-600">
-                    <MessageCircleIcon size={16} />{" "}
-                    {annotationGroup.discussion &&
-                    annotationGroup.discussion.comments.length > 0
-                      ? "Reply"
-                      : "Comment"}
-                  </div>
-                  <span className="text-gray-400 text-xs w-full text-center">
-                    (⌘ + ⏎)
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <Textarea
-                  className="mb-4"
-                  value={pendingCommentText}
-                  onChange={(event) =>
-                    setPendingCommentText(event.target.value)
-                  }
-                  onKeyDown={(event) => {
-                    event.stopPropagation();
-                    if (event.key === "Enter" && event.metaKey) {
-                      onReply(pendingCommentText);
-                      setPendingCommentText("");
-                      event.preventDefault();
-                    }
-                  }}
-                />
-
-                <PopoverClose>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      onReply(pendingCommentText);
-                      setPendingCommentText("");
-                    }}
-                  >
-                    {annotationGroup.discussion &&
-                    annotationGroup.discussion.comments.length > 0
-                      ? "Reply"
-                      : "Comment"}
-                    <span className="text-gray-400 ml-2 text-xs">(⌘ + ⏎)</span>
-                  </Button>
-                </PopoverClose>
-              </PopoverContent>
-            </Popover>
-
             {annotationGroup.discussion && (
               <Button
                 variant="ghost"
