@@ -40,7 +40,6 @@ import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfConten
 import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { getCursorSafely } from "@/os/versionControl/utils";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc, HasAssets } from "../assets";
 import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
@@ -157,6 +156,7 @@ export type MarkdownDocEditorProps = {
   editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
+  setSelection?: (selection: TextSelection) => void;
   setView?: (view: EditorView) => void;
   setSelectedAnchors?: (anchors: MarkdownDocAnchor[]) => void;
   readOnly?: boolean;
@@ -169,6 +169,7 @@ export function MarkdownDocEditor({
   editorContainer,
   handle,
   path,
+  setSelection = () => {},
   setSelectedAnchors = () => {},
   setView = () => {},
   readOnly,
@@ -264,6 +265,14 @@ export function MarkdownDocEditor({
             const selection = view.state.selection.ranges[0];
 
             if (selection) {
+              setSelection({
+                from: selection.from,
+                to: selection.to,
+                yCoord:
+                  -1 * view.scrollDOM.getBoundingClientRect().top +
+                  view.coordsAtPos(selection.from).top,
+              });
+
               if (selection.from === selection.to) {
                 const cursorPos = selection.from;
                 const selectedAnnotationAnchors =
@@ -275,22 +284,6 @@ export function MarkdownDocEditor({
                   );
 
                 setSelectedAnchors(selectedAnnotationAnchors);
-              } else {
-                const docLength = view.state.doc.length;
-                setSelectedAnchors([
-                  {
-                    fromCursor: getCursorSafely(doc, path, selection.from),
-                    toCursor: getCursorSafely(
-                      doc,
-                      path,
-
-                      // we can't get a cursor to the end the document because cursors always point to characters
-                      // in the future we want to have a cursor API in Automerge that allows to point to a side of a character similar to marks
-                      // as a workaround for now we just point to the last character instead if the end of the document is selected
-                      selection.to === docLength ? docLength - 1 : selection.to
-                    ),
-                  },
-                ]);
               }
             } else {
               setSelectedAnchors([]);

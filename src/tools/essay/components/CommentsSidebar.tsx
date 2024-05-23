@@ -1,10 +1,18 @@
 import { AnnotationGroupWithPosition } from "../utils";
 
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
 import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSidebar";
 import { DocHandle } from "@automerge/automerge-repo";
-import { SelectionRange } from "@codemirror/state";
+import { MessageCircle } from "lucide-react";
+import { TextSelection } from "./CodeMirrorEditor";
 
 export const CommentsSidebar = ({
   doc,
@@ -18,7 +26,7 @@ export const CommentsSidebar = ({
 }: {
   doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
-  selection: SelectionRange;
+  selection: TextSelection;
   annotationGroupsWithPosition: AnnotationGroupWithPosition[];
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
@@ -26,7 +34,7 @@ export const CommentsSidebar = ({
   createComment: (target: string | MarkdownDocAnchor[]) => void;
 }) => {
   return (
-    <div>
+    <div className="relative">
       {annotationGroupsWithPosition.map((annotationGroup, index) => {
         const id = getAnnotationGroupId(annotationGroup);
 
@@ -77,6 +85,30 @@ export const CommentsSidebar = ({
           </div>
         );
       })}
+
+      {selection && selection.from !== selection.to && (
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger
+              onClick={() => alert("add comment")}
+              className="absolute"
+              style={{
+                top: selection.yCoord + 24,
+                left: -60,
+              }}
+              asChild
+            >
+              <Button variant="ghost" size="sm">
+                <MessageCircle size={20} className="text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="flex gap-2">
+              <span>comment</span>
+              <span className="text-gray-400 text-xs">(⌘ + shift + M)</span>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 };
