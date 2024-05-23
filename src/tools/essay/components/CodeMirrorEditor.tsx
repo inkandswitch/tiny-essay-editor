@@ -157,6 +157,7 @@ export type MarkdownDocEditorProps = {
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
   setSelection?: (selection: TextSelection) => void;
+  setHasFocus?: (hasFocus) => void;
   setView?: (view: EditorView) => void;
   setSelectedAnchors?: (anchors: MarkdownDocAnchor[]) => void;
   readOnly?: boolean;
@@ -170,6 +171,7 @@ export function MarkdownDocEditor({
   handle,
   path,
   setSelection = () => {},
+  setHasFocus = () => {},
   setSelectedAnchors = () => {},
   setView = () => {},
   readOnly,
@@ -207,6 +209,8 @@ export function MarkdownDocEditor({
     const doc = handle.docSync();
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
+
+    let previousHasFocus = false;
 
     const view = new EditorView({
       doc: source,
@@ -258,6 +262,13 @@ export function MarkdownDocEditor({
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           view.update([transaction]);
+
+          if (view.hasFocus !== previousHasFocus) {
+            // hack: delay focus update because otherwise click handlers don't work on elements
+            // that are hidden if the editor is not focused, because blur is triggered before click
+            setTimeout(() => setHasFocus(view.hasFocus), 100);
+            previousHasFocus = view.hasFocus;
+          }
 
           // only update selection if it has changed and the editor is focused
           // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar

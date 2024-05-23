@@ -18,6 +18,7 @@ export const CommentsSidebar = ({
   doc,
   handle,
   selection,
+  hasEditorFocus,
   annotationGroupsWithPosition,
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
@@ -27,6 +28,7 @@ export const CommentsSidebar = ({
   doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
   selection: TextSelection;
+  hasEditorFocus: boolean;
   annotationGroupsWithPosition: AnnotationGroupWithPosition[];
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
@@ -86,7 +88,7 @@ export const CommentsSidebar = ({
         );
       })}
 
-      {selection && selection.from !== selection.to && (
+      {selection && selection.from !== selection.to && hasEditorFocus && (
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger
