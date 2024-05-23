@@ -103,10 +103,14 @@ export const CommentsSidebar = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
+                  // todo: remove this once cursors can point to sides of characters
+                  // can't point after last character so we use the last character instead
+                  const to = Math.min(doc.content.length - 1, selection.to);
+
                   createComment([
                     {
                       fromCursor: A.getCursor(doc, ["content"], selection.from),
-                      toCursor: A.getCursor(doc, ["content"], selection.to),
+                      toCursor: A.getCursor(doc, ["content"], to),
                     },
                   ]);
                 }}
