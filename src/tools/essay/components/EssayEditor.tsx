@@ -33,8 +33,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     hideInlineComments,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
-    editComment,
-    createComment,
+    setCommentState,
   } = props;
 
   const [hasEditorFocus, setHasEditorFocus] = useState(false);
@@ -128,8 +127,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
             annotationGroupsWithPosition={annotationGroupsWithPosition}
             setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
             setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
-            editComment={editComment}
-            createComment={createComment}
+            setCommentState={setCommentState}
           />
         </div>
       </div>

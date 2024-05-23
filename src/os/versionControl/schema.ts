@@ -86,13 +86,17 @@ export type AnnotationGroup<T, V> = {
   discussion?: Discussion<T>;
 };
 
-export type CommentState =
+export type CommentState<T> =
+  | { type: "edit"; commentId: string }
+  | { type: "create"; target: string | T[] | undefined };
+
+export type AnnotationGroupCommentState =
   | { type: "create" }
   | { type: "edit"; commentId: string };
 
 export type AnnotationGroupWithUIState<T, V> = AnnotationGroup<T, V> & {
   state: "focused" | "expanded" | "neutral";
-  comment?: CommentState;
+  comment?: AnnotationGroupCommentState;
 };
 
 export type Discussable<T> = {

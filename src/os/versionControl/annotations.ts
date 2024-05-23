@@ -11,6 +11,7 @@ import {
   AnnotationWithUIState,
   DiffWithProvenance,
   Discussion,
+  CommentState,
 } from "./schema";
 import { HasVersionControlMetadata } from "./schema";
 
@@ -55,24 +56,11 @@ export function useAnnotations<T>({
   hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
-  editComment: (commentId: string) => void;
-  createComment: (commentId: string) => void;
+  setCommentState: (state: CommentState<unknown>) => void;
 } {
-  const [commentState, setCommentState] = useState<
-    | { type: "edit"; commentId: string }
-    | { type: "create"; target: string | T[] }
-  >();
+  const [commentState, setCommentState] = useState<CommentState<unknown>>();
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
-
-  const editComment = useStaticCallback((commentId: string) => {
-    setCommentState({ type: "edit", commentId });
-  });
-
-  const createComment = useStaticCallback((target: string | T[]) => {
-    setCommentState({ type: "create", target });
-    setSelectedAnnotationGroupId(undefined);
-  });
 
   const setHoveredAnchor = useStaticCallback((anchor: unknown) => {
     // ingore set if it doesn't change the current state
@@ -458,8 +446,7 @@ export function useAnnotations<T>({
     hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
-    editComment,
-    createComment,
+    setCommentState,
   };
 }
 
