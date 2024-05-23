@@ -1,5 +1,5 @@
+import * as A from "@automerge/automerge/next";
 import { AnnotationGroupWithPosition } from "../utils";
-
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -90,7 +90,6 @@ export const CommentsSidebar = ({
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger
-              onClick={() => alert("add comment")}
               className="absolute"
               style={{
                 top: selection.yCoord + 24,
@@ -98,7 +97,18 @@ export const CommentsSidebar = ({
               }}
               asChild
             >
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  createComment([
+                    {
+                      fromCursor: A.getCursor(doc, ["content"], selection.from),
+                      toCursor: A.getCursor(doc, ["content"], selection.to),
+                    },
+                  ]);
+                }}
+              >
                 <MessageCircle size={20} className="text-gray-400" />
               </Button>
             </TooltipTrigger>

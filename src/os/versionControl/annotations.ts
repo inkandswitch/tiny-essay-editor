@@ -10,6 +10,7 @@ import {
   AnnotationGroupWithUIState,
   AnnotationWithUIState,
   DiffWithProvenance,
+  Discussion,
 } from "./schema";
 import { HasVersionControlMetadata } from "./schema";
 
@@ -30,6 +31,10 @@ type ActiveGroupState = {
 
 type SelectionState<T> = SelectedAnchorsState<T> | ActiveGroupState;
 type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
+
+type PendingDiscussion<T> = {
+  anchors: T[];
+};
 
 export function useAnnotations<T>({
   doc,
@@ -131,7 +136,8 @@ export function useAnnotations<T>({
 
     const patchesToAnnotations = DATA_TYPES[datatypeId].patchesToAnnotations;
     const valueOfAnchor = DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
-    const discussions = Object.values(doc?.discussions ?? []);
+    const discussions: (PendingDiscussion<unknown> | Discussion<unknown>)[] =
+      Object.values(doc?.discussions ?? []);
 
     const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
     const highlightAnnotations: HighlightAnnotation<unknown, unknown>[] = [];
@@ -149,8 +155,15 @@ export function useAnnotations<T>({
     // these annotations are filtered out and won't be passed to the annotation grouping function
     const claimedAnnotations = new Set<Annotation<unknown, unknown>>();
 
+    // add pending discussion if a new comment is being created on an anchor selection
+    if (commentState?.type === "create" && Array.isArray(commentState.target)) {
+      discussions.push({
+        anchors: commentState.target,
+      });
+    }
+
     discussions.forEach((discussion) => {
-      if (discussion.resolved) {
+      if ("resolved" in discussion && discussion.resolved) {
         return;
       }
 
@@ -198,7 +211,7 @@ export function useAnnotations<T>({
         annotations: discussionHighlightAnnotations.concat(
           overlappingAnnotations
         ),
-        discussion,
+        discussion: "id" in discussion ? discussion : undefined,
       });
     });
 
@@ -256,6 +269,7 @@ export function useAnnotations<T>({
     isCommentInputFocused,
     datatypeId,
     discussionsWithoutAnchors,
+    commentState,
   ]);
 
   const {
@@ -405,7 +419,15 @@ export function useAnnotations<T>({
               ? commentState
               : // a new comment is being created on this annotation group
               commentState.type === "create" &&
-                commentState.target === annotationGroup.discussion.id
+                // matches target groupId ?
+                (commentState.target === annotationGroup?.discussion?.id ||
+                  // ... or target anchors ?
+                  (Array.isArray(commentState.target) &&
+                    commentState.target.length ===
+                      annotationGroup.annotations.length &&
+                    commentState.target.every((anchor, index) =>
+                      isEqual(anchor, annotationGroup.annotations[index].anchor)
+                    )))
               ? { type: "create" }
               : undefined),
         };
