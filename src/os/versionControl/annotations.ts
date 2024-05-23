@@ -145,7 +145,11 @@ export function useAnnotations<T>({
     const claimedAnnotations = new Set<Annotation<unknown, unknown>>();
 
     // add pending discussion if a new comment is being created on an anchor selection
-    if (commentState?.type === "create" && Array.isArray(commentState.target)) {
+    // or without a target selection (global comment)
+    if (
+      commentState?.type === "create" &&
+      typeof commentState.target !== "string"
+    ) {
       discussions.push({
         anchors: commentState.target,
       });
@@ -176,7 +180,7 @@ export function useAnnotations<T>({
 
       // ingore discussions without highlight annotations
       // this can happen if the values that where referenced by a discussion have since been deleted
-      if (discussionHighlightAnnotations.length === 0) {
+      if (discussion.anchors && discussionHighlightAnnotations.length === 0) {
         return;
       }
 
@@ -479,6 +483,10 @@ export function getAnnotationGroupId<T, V>(
   annotationGroup: AnnotationGroup<T, V>
 ) {
   if (annotationGroup.discussion) return annotationGroup.discussion.id;
+
+  if (annotationGroup.annotations.length === 0) {
+    return undefined;
+  }
 
   // if the annotation group has no discussion we know that it's a computed annotation group
   // which means that the annotation doesn't appear in any other annotationGroup
