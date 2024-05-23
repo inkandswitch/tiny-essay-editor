@@ -37,6 +37,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
     createComment,
   } = props;
 
+  const [hasEditorFocus, setHasEditorFocus] = useState(false);
   const [selection, setSelection] = useState<TextSelection>();
   const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
@@ -109,6 +110,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               setSelectedAnchors={setSelectedAnchors}
               setView={setEditorView}
               setSelection={setSelection}
+              setHasFocus={setHasEditorFocus}
               annotations={resolvedAnnotations}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
@@ -121,6 +123,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
               doc={doc}
               handle={handle}
               selection={selection}
+              hasEditorFocus={hasEditorFocus}
               annotationGroupsWithPosition={annotationGroupsWithPosition}
               setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
               setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}

@@ -71,6 +71,7 @@ export function useAnnotations<T>({
 
   const createComment = useStaticCallback((target: string | T[]) => {
     setCommentState({ type: "create", target });
+    setSelectedAnnotationGroupId(undefined);
   });
 
   const setHoveredAnchor = useStaticCallback((anchor: unknown) => {
@@ -401,35 +402,47 @@ export function useAnnotations<T>({
       annotationGroups.map((annotationGroup) => {
         const id = getAnnotationGroupId(annotationGroup);
 
+        let isCommentBeingCreated = false;
+        let isCommentBeingEdited = false;
+
+        if (commentState) {
+          switch (commentState.type) {
+            case "create":
+              isCommentBeingCreated =
+                // matches target groupId ?
+                commentState.target === annotationGroup?.discussion?.id ||
+                // ... or target anchors ?
+                (Array.isArray(commentState.target) &&
+                  commentState.target.length ===
+                    annotationGroup.annotations.length &&
+                  commentState.target.every((anchor, index) =>
+                    isEqual(anchor, annotationGroup.annotations[index].anchor)
+                  ));
+              break;
+            case "edit":
+              isCommentBeingEdited =
+                commentState.type === "edit" &&
+                annotationGroup.discussion.comments.some(
+                  (comment) => comment.id === commentState.commentId
+                );
+              break;
+          }
+        }
+
         return {
           ...annotationGroup,
           state:
-            expandedAnnotationGroupId === id
+            expandedAnnotationGroupId === id ||
+            (!expandedAnnotationGroupId && isCommentBeingCreated)
               ? "expanded"
               : selectedAnnotationGroupIds.has(id)
               ? "focused"
               : "neutral",
-          comment:
-            commentState &&
-            // comment in this annotation group is being edited
-            (commentState.type === "edit" &&
-            annotationGroup.discussion.comments.some(
-              (comment) => comment.id === commentState.commentId
-            )
-              ? commentState
-              : // a new comment is being created on this annotation group
-              commentState.type === "create" &&
-                // matches target groupId ?
-                (commentState.target === annotationGroup?.discussion?.id ||
-                  // ... or target anchors ?
-                  (Array.isArray(commentState.target) &&
-                    commentState.target.length ===
-                      annotationGroup.annotations.length &&
-                    commentState.target.every((anchor, index) =>
-                      isEqual(anchor, annotationGroup.annotations[index].anchor)
-                    )))
-              ? { type: "create" }
-              : undefined),
+          comment: isCommentBeingEdited
+            ? commentState
+            : isCommentBeingCreated
+            ? { type: "create" }
+            : undefined,
         };
       }),
     [annotationGroups, expandedAnnotationGroupId, selectedAnnotationGroupIds]
