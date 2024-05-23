@@ -180,7 +180,10 @@ export const AnnotationGroupView = forwardRef<
     };
 
     const onReply = () => {
-      openCommentBox(getAnnotationGroupId(annotationGroup));
+      setCommentState({
+        type: "create",
+        target: getAnnotationGroupId(annotationGroup),
+      });
     };
 
     const onUpdateCommentContentWithId = (id: string, content: string) => {
