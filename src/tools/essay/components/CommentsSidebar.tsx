@@ -19,6 +19,7 @@ export const CommentsSidebar = ({
   handle,
   selection,
   hasEditorFocus,
+  hideInlineComments,
   annotationGroupsWithPosition,
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
@@ -29,6 +30,7 @@ export const CommentsSidebar = ({
   handle: DocHandle<MarkdownDoc>;
   selection: TextSelection;
   hasEditorFocus: boolean;
+  hideInlineComments: boolean;
   annotationGroupsWithPosition: AnnotationGroupWithPosition[];
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
@@ -37,56 +39,59 @@ export const CommentsSidebar = ({
 }) => {
   return (
     <div className="relative">
-      {annotationGroupsWithPosition.map((annotationGroup, index) => {
-        const id = getAnnotationGroupId(annotationGroup);
+      {!hideInlineComments &&
+        annotationGroupsWithPosition.map((annotationGroup, index) => {
+          const id = getAnnotationGroupId(annotationGroup);
 
-        return (
-          <div
-            key={id}
-            className={`absolute transition-all ease-in-out w-[350px] ${
-              annotationGroup.state === "expanded"
-                ? "z-50 shadow-sm border-gray-500"
-                : "z-0"
-            }`}
-            style={{
-              top: annotationGroup.yCoord,
-            }}
-          >
-            <AnnotationGroupView
-              doc={doc}
-              handle={handle}
-              annotationGroup={annotationGroup}
-              datatypeId="essay"
-              setIsHovered={(isHovered) => {
-                setHoveredAnnotationGroupId(isHovered ? id : undefined);
+          return (
+            <div
+              key={id}
+              className={`absolute transition-all ease-in-out w-[350px] ${
+                annotationGroup.state === "expanded"
+                  ? "z-50 shadow-sm border-gray-500"
+                  : "z-0"
+              }`}
+              style={{
+                top: annotationGroup.yCoord,
               }}
-              setIsSelected={(isSelected) => {
-                setSelectedAnnotationGroupId(isSelected ? id : undefined);
-              }}
-              onSelectNext={() => {
-                const nextAnnotation = annotationGroupsWithPosition[index + 1];
-                if (nextAnnotation) {
-                  setSelectedAnnotationGroupId(
-                    getAnnotationGroupId(nextAnnotation)
-                  );
-                }
-              }}
-              onSelectPrev={() => {
-                const prevAnnotation = annotationGroupsWithPosition[index - 1];
-                if (prevAnnotation) {
-                  setSelectedAnnotationGroupId(
-                    getAnnotationGroupId(prevAnnotation)
-                  );
-                }
-              }}
-              hasNext={index < annotationGroupsWithPosition.length - 1}
-              hasPrev={index > 0}
-              editComment={editComment}
-              createComment={createComment}
-            />
-          </div>
-        );
-      })}
+            >
+              <AnnotationGroupView
+                doc={doc}
+                handle={handle}
+                annotationGroup={annotationGroup}
+                datatypeId="essay"
+                setIsHovered={(isHovered) => {
+                  setHoveredAnnotationGroupId(isHovered ? id : undefined);
+                }}
+                setIsSelected={(isSelected) => {
+                  setSelectedAnnotationGroupId(isSelected ? id : undefined);
+                }}
+                onSelectNext={() => {
+                  const nextAnnotation =
+                    annotationGroupsWithPosition[index + 1];
+                  if (nextAnnotation) {
+                    setSelectedAnnotationGroupId(
+                      getAnnotationGroupId(nextAnnotation)
+                    );
+                  }
+                }}
+                onSelectPrev={() => {
+                  const prevAnnotation =
+                    annotationGroupsWithPosition[index - 1];
+                  if (prevAnnotation) {
+                    setSelectedAnnotationGroupId(
+                      getAnnotationGroupId(prevAnnotation)
+                    );
+                  }
+                }}
+                hasNext={index < annotationGroupsWithPosition.length - 1}
+                hasPrev={index > 0}
+                editComment={editComment}
+                createComment={createComment}
+              />
+            </div>
+          );
+        })}
 
       {selection && selection.from !== selection.to && hasEditorFocus && (
         <TooltipProvider delayDuration={0}>

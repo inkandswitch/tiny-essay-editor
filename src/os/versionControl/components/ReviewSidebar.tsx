@@ -21,14 +21,9 @@ type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
   datatypeId: DatatypeId;
-  annotationGroups: AnnotationGroupWithUIState<unknown, unknown>[];
   selectedAnchors: unknown[];
-  changeDoc: (
-    changeFn: (doc: HasVersionControlMetadata<unknown, unknown>) => void
-  ) => void;
-  onChangeCommentPositionMap: (map: PositionMap) => void;
+  annotationGroups: AnnotationGroupWithUIState<unknown, unknown>[];
   setSelectedAnnotationGroupId: (id: string) => void;
-  hoveredAnnotationGroupId: string | undefined;
   setHoveredAnnotationGroupId: (id: string) => void;
   isCommentInputFocused: boolean;
   setIsCommentInputFocused: (isFocused: boolean) => void;
@@ -45,78 +40,11 @@ export const ReviewSidebar = React.memo(
     datatypeId,
     annotationGroups,
     selectedAnchors,
-    changeDoc,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
-    isCommentInputFocused,
-    setIsCommentInputFocused,
     editComment,
     createComment,
   }: ReviewSidebarProps) => {
-    const [pendingCommentText, setPendingCommentText] = useState("");
-    const [annotationGroupIdOfActiveReply, setAnnotationGroupIdOfActiveReply] =
-      useState<string>();
-    const account = useCurrentAccount();
-
-    const [commentInputElement, setCommentInputElement] =
-      useState<HTMLTextAreaElement>();
-
-    // sync focus state back to text area
-    useEffect(() => {
-      if (commentInputElement && isCommentInputFocused) {
-        setTimeout(() => {
-          commentInputElement.focus();
-        }, 100); // hack : add a bit of a delay otherwise focusing the element doesn't work when the sidebar hasn't been opened before
-      }
-    }, [commentInputElement, isCommentInputFocused]);
-
-    const pendingAnnotationsForComment: HighlightAnnotation<
-      unknown,
-      unknown
-    >[] = useMemo(() => {
-      if (!doc) return [];
-      const valueOfAnchor =
-        DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
-      return selectedAnchors.map((anchor) => ({
-        type: "highlighted",
-        anchor: [anchor],
-        value: valueOfAnchor(doc, anchor),
-      }));
-    }, [selectedAnchors, doc, datatypeId]);
-
-    const createDiscussion = (content: string) => {
-      setPendingCommentText("");
-
-      const discussionId = uuid();
-
-      changeDoc((doc) => {
-        let discussions = doc.discussions;
-
-        // convert docs without discussions
-        if (!discussions) {
-          doc.discussions = {};
-          discussions = doc.discussions;
-        }
-
-        discussions[discussionId] = {
-          id: discussionId,
-          heads: A.getHeads(doc),
-          comments: [
-            {
-              id: uuid(),
-              content,
-              contactUrl: account.contactHandle.url,
-              timestamp: Date.now(),
-            },
-          ],
-          resolved: false,
-          anchors: selectedAnchors,
-        };
-      });
-
-      setSelectedAnnotationGroupId(discussionId);
-    };
-
     return (
       <div className="h-full flex flex-col">
         <div className="bg-gray-50 flex-1 p-2 flex flex-col z-20 m-h-[100%] overflow-y-auto overflow-x-visible">
@@ -160,50 +88,16 @@ export const ReviewSidebar = React.memo(
             );
           })}
         </div>
-        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-3 border-t border-gray-400 ">
-          {/* We only want to show the AnnotationsView when the comment input is focused.
-              But we can't let it mount/unmount because then some viewers (eg TLDraw will steal
-              focus from the comment input. So instead we leave it in the UI tree, but hidden */}
-          <div
-            className={`${
-              isCommentInputFocused ? "opacity-100" : "h-0 overflow-hidden"
-            }`}
-          >
-            <AnnotationsView
-              doc={doc}
-              handle={handle}
-              datatypeId={datatypeId}
-              annotations={pendingAnnotationsForComment}
-            />
-          </div>
 
-          <div
-            className="rounded bg-white shadow px-2"
-            onKeyDownCapture={(event) => {
-              if (event.key === "Enter" && event.metaKey) {
-                createDiscussion(pendingCommentText);
-                event.preventDefault();
-                event.stopPropagation();
-              }
-            }}
-            onFocus={() => setIsCommentInputFocused(true)}
-            onBlur={() => setIsCommentInputFocused(false)}
-          >
-            <MarkdownInput
-              value={pendingCommentText}
-              onChange={setPendingCommentText}
-              docWithAssetsHandle={handle}
-            />
-          </div>
-
+        <div className="bg-gray-50 z-10 px-2 py-4 flex flex-col gap-3 border-b border-gray-200 ">
           <Button
             variant="outline"
             onClick={() => {
-              createDiscussion(pendingCommentText);
+              createComment(selectedAnchors);
             }}
           >
-            Comment
-            <span className="text-gray-400 ml-2 text-xs">⌘⏎</span>
+            Comment {selectedAnchors.length > 0 ? "on selection" : ""}
+            <span className="text-gray-400 ml-2 text-xs">(⌘ + shift + m)</span>
           </Button>
         </div>
       </div>

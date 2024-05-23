@@ -293,9 +293,23 @@ export function MarkdownDocEditor({
                   );
 
                 setSelectedAnchors(selectedAnnotationAnchors);
+              } else {
+                const docLength = view.state.doc.length;
+                setSelectedAnchors([
+                  {
+                    fromCursor: A.getCursor(doc, path, selection.from),
+                    toCursor: A.getCursor(
+                      doc,
+                      path,
+                      // todo: remove once cursors can point to sides of characters
+                      // we can't get a cursor to the end the document because cursors always point to characters
+                      // in the future we want to have a cursor API in Automerge that allows to point to a side of a character similar to marks
+                      // as a workaround for now we just point to the last character instead if the end of the document is selected
+                      selection.to === docLength ? docLength - 1 : selection.to
+                    ),
+                  },
+                ]);
               }
-            } else {
-              setSelectedAnchors([]);
             }
           }
         } catch (e) {

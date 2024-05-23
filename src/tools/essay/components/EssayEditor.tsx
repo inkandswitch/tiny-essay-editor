@@ -117,21 +117,21 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
             />
           </div>
         </div>
-        {!hideInlineComments && (
-          <div>
-            <CommentsSidebar
-              doc={doc}
-              handle={handle}
-              selection={selection}
-              hasEditorFocus={hasEditorFocus}
-              annotationGroupsWithPosition={annotationGroupsWithPosition}
-              setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
-              setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
-              editComment={editComment}
-              createComment={createComment}
-            />
-          </div>
-        )}
+
+        <div>
+          <CommentsSidebar
+            doc={doc}
+            hideInlineComments={hideInlineComments}
+            handle={handle}
+            selection={selection}
+            hasEditorFocus={hasEditorFocus}
+            annotationGroupsWithPosition={annotationGroupsWithPosition}
+            setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+            setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+            editComment={editComment}
+            createComment={createComment}
+          />
+        </div>
       </div>
     </div>
   );
