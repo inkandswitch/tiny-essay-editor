@@ -483,6 +483,17 @@ const DiscussionCommentView = ({
               ? "border border-1 rounded-sm px-2 border-gray-300"
               : "border-white"
           }`}
+          onKeyDown={(event) => {
+            // stop navigation key presses from bubbling up
+            if (
+              event.key === "k" ||
+              event.key === "j" ||
+              event.key === "p" ||
+              event.key === "n"
+            ) {
+              event.stopPropagation();
+            }
+          }}
         >
           <MarkdownInput
             value={content}
