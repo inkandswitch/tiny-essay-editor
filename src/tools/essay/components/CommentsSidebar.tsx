@@ -13,6 +13,7 @@ import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSideba
 import { DocHandle } from "@automerge/automerge-repo";
 import { MessageCircle } from "lucide-react";
 import { TextSelection } from "./CodeMirrorEditor";
+import { CommentState } from "@/os/versionControl/schema";
 
 export const CommentsSidebar = ({
   doc,
@@ -23,8 +24,7 @@ export const CommentsSidebar = ({
   annotationGroupsWithPosition,
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
-  editComment,
-  createComment,
+  setCommentState,
 }: {
   doc: MarkdownDoc;
   handle: DocHandle<MarkdownDoc>;
@@ -34,8 +34,7 @@ export const CommentsSidebar = ({
   annotationGroupsWithPosition: AnnotationGroupWithPosition[];
   setSelectedAnnotationGroupId: (id: string) => void;
   setHoveredAnnotationGroupId: (id: string) => void;
-  editComment: (commentId: string) => void;
-  createComment: (target: string | MarkdownDocAnchor[]) => void;
+  setCommentState: (state: CommentState<MarkdownDocAnchor>) => void;
 }) => {
   return (
     <div className="relative">
@@ -86,8 +85,7 @@ export const CommentsSidebar = ({
                 }}
                 hasNext={index < annotationGroupsWithPosition.length - 1}
                 hasPrev={index > 0}
-                editComment={editComment}
-                createComment={createComment}
+                setCommentState={setCommentState}
               />
             </div>
           );
@@ -112,12 +110,19 @@ export const CommentsSidebar = ({
                   // can't point after last character so we use the last character instead
                   const to = Math.min(doc.content.length - 1, selection.to);
 
-                  createComment([
-                    {
-                      fromCursor: A.getCursor(doc, ["content"], selection.from),
-                      toCursor: A.getCursor(doc, ["content"], to),
-                    },
-                  ]);
+                  setCommentState({
+                    type: "create",
+                    target: [
+                      {
+                        fromCursor: A.getCursor(
+                          doc,
+                          ["content"],
+                          selection.from
+                        ),
+                        toCursor: A.getCursor(doc, ["content"], to),
+                      },
+                    ],
+                  });
                 }}
               >
                 <MessageCircle size={20} className="text-gray-400" />

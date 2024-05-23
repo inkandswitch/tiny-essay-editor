@@ -11,6 +11,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   Annotation,
   AnnotationGroupWithUIState,
+  CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
@@ -42,8 +43,7 @@ export type EditorProps<T, V> = {
   setHoveredAnchor?: (anchors: T) => void;
   setSelectedAnnotationGroupId?: (groupId: string) => void;
   setHoveredAnnotationGroupId?: (groupId: string) => void;
-  editComment?: (commentId: string) => void;
-  createComment?: (groupIdOrAnchors: string | T[]) => void;
+  setCommentState?: (state: CommentState<T>) => void;
 
   hideInlineComments?: boolean;
 };

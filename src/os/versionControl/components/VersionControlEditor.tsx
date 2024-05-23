@@ -337,8 +337,7 @@ export const VersionControlEditor: React.FC<{
     hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
-    editComment,
-    createComment,
+    setCommentState,
   } = useAnnotations({
     doc: activeDoc,
     datatypeId,
@@ -588,8 +587,7 @@ export const VersionControlEditor: React.FC<{
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
                   hideInlineComments={!!sidebarMode}
-                  editComment={editComment}
-                  createComment={createComment}
+                  setCommentState={setCommentState}
                 />
               ) : (
                 <DocEditor
@@ -605,8 +603,7 @@ export const VersionControlEditor: React.FC<{
                   setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                   setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
                   hideInlineComments={!!sidebarMode}
-                  editComment={editComment}
-                  createComment={createComment}
+                  setCommentState={setCommentState}
                 />
               )}
             </div>
@@ -675,8 +672,7 @@ export const VersionControlEditor: React.FC<{
                 setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
                 isCommentInputFocused={isCommentInputFocused}
                 setIsCommentInputFocused={setIsCommentInputFocused}
-                editComment={editComment}
-                createComment={createComment}
+                setCommentState={setCommentState}
               />
             )}
           </div>
@@ -703,8 +699,7 @@ const DocEditor = <T, V>({
   setHoveredAnchor,
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
-  editComment,
-  createComment,
+  setCommentState,
 }: EditorPropsWithDatatype<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
   const Component = TOOLS[datatypeId][0].editorComponent;
@@ -721,8 +716,7 @@ const DocEditor = <T, V>({
       setHoveredAnchor={setHoveredAnchor}
       setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
       setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
-      editComment={editComment}
-      createComment={createComment}
+      setCommentState={setCommentState}
     />
   );
 };

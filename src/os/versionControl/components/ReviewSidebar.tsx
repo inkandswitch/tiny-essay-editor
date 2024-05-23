@@ -1,20 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
+import { DatatypeId } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { AnnotationsViewProps, TOOLS } from "@/os/tools";
 import {
   AnnotationGroupWithUIState,
+  CommentState,
   HasVersionControlMetadata,
-  HighlightAnnotation,
 } from "@/os/versionControl/schema";
 import { HasAssets } from "@/tools/essay/assets";
 import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
 import { next as A, uuid } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 
 type ReviewSidebarProps = {
@@ -27,8 +27,7 @@ type ReviewSidebarProps = {
   setHoveredAnnotationGroupId: (id: string) => void;
   isCommentInputFocused: boolean;
   setIsCommentInputFocused: (isFocused: boolean) => void;
-  editComment: (commentId: string) => void;
-  createComment: (target: string | unknown[]) => void;
+  setCommentState: (state: CommentState<unknown>) => void;
 };
 
 export type PositionMap = Record<string, { top: number; bottom: number }>;
@@ -42,8 +41,7 @@ export const ReviewSidebar = React.memo(
     selectedAnchors,
     setSelectedAnnotationGroupId,
     setHoveredAnnotationGroupId,
-    editComment,
-    createComment,
+    setCommentState,
   }: ReviewSidebarProps) => {
     return (
       <div className="h-full flex flex-col">
@@ -79,8 +77,7 @@ export const ReviewSidebar = React.memo(
                     );
                   }
                 }}
-                editComment={editComment}
-                createComment={createComment}
+                setCommentState={setCommentState}
                 hasNext={index < annotationGroups.length - 1}
                 hasPrev={index > 0}
                 enableScrollSync
@@ -93,7 +90,11 @@ export const ReviewSidebar = React.memo(
           <Button
             variant="outline"
             onClick={() => {
-              createComment(selectedAnchors);
+              setCommentState({
+                type: "create",
+                target:
+                  selectedAnchors.length > 0 ? selectedAnchors : undefined,
+              });
             }}
           >
             Comment {selectedAnchors.length > 0 ? "on selection" : ""}
@@ -117,8 +118,7 @@ export interface AnnotationGroupViewProps {
   enableScrollSync?: boolean; // todo: this shouldn't be a flag
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
-  editComment: (commentId: string) => void;
-  createComment: (target: string | unknown[]) => void;
+  setCommentState: (state: CommentState<unknown>) => void;
 }
 
 export const AnnotationGroupView = forwardRef<
@@ -137,8 +137,7 @@ export const AnnotationGroupView = forwardRef<
       hasPrev,
       onSelectNext,
       onSelectPrev,
-      editComment,
-      createComment,
+      setCommentState,
       enableScrollSync,
     }: AnnotationGroupViewProps,
     ref
@@ -181,7 +180,7 @@ export const AnnotationGroupView = forwardRef<
     };
 
     const onReply = () => {
-      createComment(getAnnotationGroupId(annotationGroup));
+      openCommentBox(getAnnotationGroupId(annotationGroup));
     };
 
     const onUpdateCommentContentWithId = (id: string, content: string) => {
@@ -357,7 +356,11 @@ export const AnnotationGroupView = forwardRef<
                   annotationGroup.comment?.commentId === comment.id
                 }
                 setIsBeingEdited={(isBeingEdited) =>
-                  editComment(isBeingEdited ? comment.id : undefined)
+                  setCommentState(
+                    isBeingEdited
+                      ? { type: "edit", commentId: comment.id }
+                      : undefined
+                  )
                 }
               />
             ))}
@@ -367,12 +370,12 @@ export const AnnotationGroupView = forwardRef<
                 contactUrl={account?.contactHandle.url}
                 docWithAssetsHandle={handle}
                 onChangeContent={(content) => {
+                  setCommentState(undefined);
                   addCommentToAnnotationGroup(content);
-                  createComment(undefined);
                 }}
                 isBeingEdited={true}
                 setIsBeingEdited={() => {
-                  createComment(undefined);
+                  setCommentState(undefined);
                 }}
               />
             )}
