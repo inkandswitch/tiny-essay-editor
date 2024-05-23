@@ -246,12 +246,15 @@ export function useAnnotations<T>({
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
       annotationGroups: discussionsWithoutAnchors
-        .map(
-          (discussion) =>
-            ({
-              discussion,
-              annotations: [],
-            } as AnnotationGroup<unknown, unknown>)
+        .flatMap((discussion) =>
+          discussion.resolved
+            ? []
+            : [
+                {
+                  discussion,
+                  annotations: [],
+                } as AnnotationGroup<unknown, unknown>,
+              ]
         )
         .concat(sortedAnnotationGroups),
     };
