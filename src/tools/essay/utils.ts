@@ -19,7 +19,7 @@ export type AnnotationGroupWithPosition = AnnotationGroupWithUIState<
 
 // a very rough approximation; needs to be better but being perfect seems hard
 const estimatedHeightOfAnnotationGroup = (
-  annotationGroup: AnnotationGroup<MarkdownDocAnchor, string>
+  annotationGroup: AnnotationGroupWithUIState<MarkdownDocAnchor, string>
 ) => {
   const commentHeights = annotationGroup.discussion
     ? annotationGroup.discussion.comments.map(
@@ -29,7 +29,8 @@ const estimatedHeightOfAnnotationGroup = (
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
   const PADDING = 32;
   const BUTTONS = 40;
-  return PADDING + BUTTONS + commentsHeight + 20;
+  const actionButtonsHeight = annotationGroup.state === "expanded" ? 50 : 0;
+  return PADDING + BUTTONS + commentsHeight + 20 + actionButtonsHeight;
 };
 
 // Given a list of comment threads, find a vertical position for each comment.
