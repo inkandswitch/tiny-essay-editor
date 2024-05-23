@@ -1,30 +1,21 @@
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverClose,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { AnnotationsViewProps, TOOLS } from "@/os/tools";
 import {
-  AnnotationGroup,
   AnnotationGroupWithUIState,
-  DiscussionComment,
   HasVersionControlMetadata,
   HighlightAnnotation,
 } from "@/os/versionControl/schema";
+import { HasAssets } from "@/tools/essay/assets";
+import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
 import { next as A, uuid } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { Check, PencilIcon, XIcon, MessageSquare } from "lucide-react";
+import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
-import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
-import { HasAssets } from "@/tools/essay/assets";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
@@ -164,6 +155,7 @@ export const ReviewSidebar = React.memo(
                 createComment={createComment}
                 hasNext={index < annotationGroups.length - 1}
                 hasPrev={index > 0}
+                enableScrollSync
               />
             );
           })}
@@ -228,6 +220,7 @@ export interface AnnotationGroupViewProps {
   onSelectPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
+  enableScrollSync?: boolean; // todo: this shouldn't be a flag
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
   editComment: (commentId: string) => void;
@@ -252,6 +245,7 @@ export const AnnotationGroupView = forwardRef<
       onSelectPrev,
       editComment,
       createComment,
+      enableScrollSync,
     }: AnnotationGroupViewProps,
     ref
   ) => {
@@ -407,10 +401,10 @@ export const AnnotationGroupView = forwardRef<
     //    If it's already fully visible nothing happens; but if it's only
     //    partially visible then this makes it fully visible.
     useEffect(() => {
-      if (isExpanded) {
+      if (isExpanded && enableScrollSync) {
         localRef.current?.scrollIntoView({ behavior: "smooth" });
       }
-    }, [isExpanded]);
+    }, [isExpanded, enableScrollSync]);
 
     return (
       <div
