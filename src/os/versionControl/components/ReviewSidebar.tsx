@@ -275,7 +275,10 @@ export const AnnotationGroupView = forwardRef<
         }
 
         if (evt.key === "Enter" && isMetaOrControlPressed) {
-          //setIsReplyBoxOpen(true);
+          setCommentState({
+            type: "create",
+            target: getAnnotationGroupId(annotationGroup),
+          });
           evt.preventDefault();
           evt.stopPropagation();
         }
@@ -495,6 +498,23 @@ const DiscussionCommentView = ({
               event.key === "n"
             ) {
               event.stopPropagation();
+              return;
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.stopPropagation();
+              setIsBeingEdited(false);
+              return;
+            }
+
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+              console.log("enter pressed");
+              event.preventDefault();
+              event.stopPropagation();
+              onChangeContent(updatedText);
+              setIsBeingEdited(false);
+              return;
             }
           }}
         >
