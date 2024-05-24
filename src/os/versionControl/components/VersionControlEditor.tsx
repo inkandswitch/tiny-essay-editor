@@ -380,6 +380,9 @@ export const VersionControlEditor: React.FC<{
       ? annotations.filter((annotation) => annotation.type !== "highlighted")
       : annotations;
 
+  // for now hide inline comments if side by side is enabled because there is not enought space
+  const hideInlineComments = !!sidebarMode || compareWithMainFlag;
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -571,7 +574,7 @@ export const VersionControlEditor: React.FC<{
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
             {compareWithMainFlag && selectedBranch && (
-              <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
+              <div className="w-full flex top-0 bg-gray-100 pt-4 text-sm font-medium">
                 <div className="flex-1 pl-4">
                   <div className="inline-flex items-center gap-1">
                     <CrownIcon className="inline mr-1" size={12} /> Main
@@ -597,7 +600,9 @@ export const VersionControlEditor: React.FC<{
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
-                  hideInlineComments={!!sidebarMode}
+                  setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                  setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+                  hideInlineComments={hideInlineComments}
                   setCommentState={setCommentState}
                 />
               ) : (
@@ -613,7 +618,7 @@ export const VersionControlEditor: React.FC<{
                   setHoveredAnchor={setHoveredAnchor}
                   setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                   setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
-                  hideInlineComments={!!sidebarMode}
+                  hideInlineComments={hideInlineComments}
                   setCommentState={setCommentState}
                 />
               )}
@@ -747,13 +752,14 @@ export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
 
       return (
         <div className="flex h-full w-full">
-          <div className="h-full flex-1 overflow-auto">
+          <div className="h-full flex-1 overflow-auto bg-gray-200">
             {
               <DocEditor
                 {...props}
                 docUrl={mainDocUrl}
                 docHeads={undefined}
                 annotations={[]}
+                annotationGroups={[]}
               />
             }
           </div>
