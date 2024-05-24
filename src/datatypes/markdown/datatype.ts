@@ -12,7 +12,7 @@ import {
 } from "@/os/versionControl/utils";
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-import { Doc, splice } from "@automerge/automerge/next";
+import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
@@ -314,4 +314,5 @@ export const MarkdownDatatype: DataType<
   doAnchorsOverlap,
   sortAnchorsBy,
   fileExportMethods,
+  supportsInlineComments: true, // todo: this should be part of the viewer
 };
