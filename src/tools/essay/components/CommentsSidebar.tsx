@@ -46,9 +46,7 @@ export const CommentsSidebar = ({
             <div
               key={id}
               className={`absolute transition-all ease-in-out w-[350px] ${
-                annotationGroup.state === "expanded"
-                  ? "z-50 shadow-sm border-gray-500"
-                  : "z-0"
+                annotationGroup.state === "expanded" ? "z-50" : "z-0"
               }`}
               style={{
                 top: annotationGroup.yCoord,
