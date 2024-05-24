@@ -679,14 +679,6 @@ export const VersionControlEditor: React.FC<{
                 datatypeId={datatypeId}
                 annotationGroups={annotationGroups}
                 selectedAnchors={selectedAnchors}
-                changeDoc={activeChangeDoc}
-                onChangeCommentPositionMap={(positions) => {
-                  // todo: without this condition there is an infinite loop
-                  if (!isEqual(positions, annotationsPositionsInSidebarMap)) {
-                    setAnnotationsPositionsInSidebarMap(positions);
-                  }
-                }}
-                hoveredAnnotationGroupId={hoveredAnnotationGroupId}
                 setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                 setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
                 isCommentInputFocused={isCommentInputFocused}

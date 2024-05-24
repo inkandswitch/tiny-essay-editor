@@ -1,6 +1,7 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
+import { HasAssets } from "@/tools/essay/assets";
 
 export type Branch = {
   name: string;
@@ -115,7 +116,14 @@ export type HasVersionControlMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable<T>;
+  Discussable<T> &
+  // @Paul 5/24/24
+  // todo: we should rethink how to structure core interfaces
+  // the application now assumes that all document types in the system implement HasVersionControlMetadata
+  // HasAssets is also a universal interface that can be used with any document but it's not really related to versioning
+  // We should create a base schema that's a union of all interfaces that we can assume all documents implement but
+  // split them up into logical sub interfaces like versioning, commenting, assets, etc
+  HasAssets;
 
 export type AnnotationId = string & { __annotationId: true };
 
