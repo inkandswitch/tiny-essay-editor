@@ -45,6 +45,7 @@ import { AssetsDoc, HasAssets } from "../assets";
 import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { isEqual } from "lodash";
 
 export type TextSelection = {
   from: number;
@@ -210,6 +211,7 @@ export function MarkdownDocEditor({
     const source = docAtHeads.content; // this should use path
 
     let previousHasFocus = false;
+    const _setSelectedAnchors = setSelectedAnchors;
 
     const view = new EditorView({
       doc: source,
@@ -257,6 +259,8 @@ export function MarkdownDocEditor({
         lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
+        let previousSelection = view.state.selection;
+
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           view.update([transaction]);
@@ -268,7 +272,11 @@ export function MarkdownDocEditor({
             previousHasFocus = view.hasFocus;
           }
 
-          if (transaction.newSelection) {
+          // new selection is sometimes set
+          if (
+            transaction.newSelection &&
+            !isEqual(view.state.selection, previousSelection)
+          ) {
             const selection = view.state.selection.ranges[0];
 
             if (selection) {
