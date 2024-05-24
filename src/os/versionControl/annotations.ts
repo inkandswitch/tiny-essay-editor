@@ -412,7 +412,7 @@ export function useAnnotations({
             case "edit":
               isCommentBeingEdited =
                 commentState.type === "edit" &&
-                annotationGroup.discussion.comments.some(
+                annotationGroup.discussion?.comments.some(
                   (comment) => comment.id === commentState.commentId
                 );
               break;
