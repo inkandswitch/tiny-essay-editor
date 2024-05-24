@@ -37,7 +37,7 @@ type PendingDiscussion<T> = {
   anchors: T[];
 };
 
-export function useAnnotations<T>({
+export function useAnnotations({
   doc,
   datatypeId,
   diff,
@@ -178,9 +178,13 @@ export function useAnnotations<T>({
           : [];
       });
 
-      // ingore discussions without highlight annotations
+      // filter out discussions that have anchors but none of them match a value in the current document
       // this can happen if the values that where referenced by a discussion have since been deleted
-      if (discussion.anchors && discussionHighlightAnnotations.length === 0) {
+      if (
+        discussion.anchors &&
+        discussion.anchors.length > 0 &&
+        discussionHighlightAnnotations.length === 0
+      ) {
         return;
       }
 
@@ -235,28 +239,19 @@ export function useAnnotations<T>({
     const sortAnchorsBy = DATA_TYPES[datatypeId].sortAnchorsBy;
     const sortedAnnotationGroups = sortAnchorsBy
       ? sortBy(combinedAnnotationGroups, (annotationGroup) =>
-          min(
-            annotationGroup.annotations.map((annotation) =>
-              sortAnchorsBy(doc, annotation.anchor)
-            )
-          )
+          annotationGroup.annotations.length === 0
+            ? -Infinity // annotation groups without annotations are global comments which are always shown on top
+            : min(
+                annotationGroup.annotations.map((annotation) =>
+                  sortAnchorsBy(doc, annotation.anchor)
+                )
+              )
         )
       : combinedAnnotationGroups;
 
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
-      annotationGroups: discussionsWithoutAnchors
-        .flatMap((discussion) =>
-          discussion.resolved
-            ? []
-            : [
-                {
-                  discussion,
-                  annotations: [],
-                } as AnnotationGroup<unknown, unknown>,
-              ]
-        )
-        .concat(sortedAnnotationGroups),
+      annotationGroups: sortedAnnotationGroups,
     };
   }, [
     doc,
