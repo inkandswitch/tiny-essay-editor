@@ -24,7 +24,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isMarkdownDoc } from "@/datatypes/markdown";
-import { DatatypeId } from "@/os/datatypes";
+import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { isLLMActive } from "@/os/lib/llm";
 import { EditorProps, TOOLS } from "@/os/tools";
@@ -179,27 +179,6 @@ export const VersionControlEditor: React.FC<{
     }
   }, [doc, changeDoc]);
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey &&
-        event.code === "KeyM"
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        setSidebarMode("review");
-        setIsCommentInputFocused(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress, true);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress, true);
-    };
-  }, []);
-
   const handleCreateBranch = useCallback(
     ({ name, heads }: MakeBranchOptions = {}) => {
       const branch = createBranch({
@@ -344,6 +323,38 @@ export const VersionControlEditor: React.FC<{
     diff: diffForEditor,
     isCommentInputFocused,
   });
+
+  // global comment keyboard shortcut
+  // with cmd + shift + m a new comment is created
+  const supportsInlineComments = DATA_TYPES[datatypeId].supportsInlineComments;
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.code === "KeyM"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!supportsInlineComments || selectedAnchors.length === 0) {
+          setSidebarMode("review");
+        }
+
+        setCommentState({
+          type: "create",
+          target: selectedAnchors.length > 0 ? selectedAnchors : undefined,
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress, true);
+    };
+  }, [selectedAnchors]);
 
   const [
     annotationsPositionsInSidebarMap,
