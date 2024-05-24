@@ -337,7 +337,7 @@ export const AnnotationGroupView = forwardRef<
                 ? "border-blue-600 shadow-lg"
                 : annotationGroup.state === "focused"
                 ? "border-blue-600 shadow-lg"
-                : "border border-gray-200 "
+                : ""
             }`}
           >
             <AnnotationsView

@@ -266,13 +266,11 @@ export function MarkdownDocEditor({
           if (view.hasFocus !== previousHasFocus) {
             // hack: delay focus update because otherwise click handlers don't work on elements
             // that are hidden if the editor is not focused, because blur is triggered before click
-            setTimeout(() => setHasFocus(view.hasFocus), 100);
+            setTimeout(() => setHasFocus(view.hasFocus), 200);
             previousHasFocus = view.hasFocus;
           }
 
-          // only update selection if it has changed and the editor is focused
-          // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar
-          if (transaction.newSelection && view.hasFocus) {
+          if (transaction.newSelection) {
             const selection = view.state.selection.ranges[0];
 
             if (selection) {
@@ -312,6 +310,8 @@ export function MarkdownDocEditor({
                   },
                 ]);
               }
+            } else {
+              setSelectedAnchors([]);
             }
           }
         } catch (e) {
