@@ -19,7 +19,7 @@ export const EssayAnnotations = ({
                 key={index}
               >
                 <span className="font-serif bg-green-50 border-b border-green-400">
-                  {annotation.added}
+                  {annotation.added.replace(/ /g, "\u00A0")}
                 </span>
               </div>
             );
@@ -40,11 +40,15 @@ export const EssayAnnotations = ({
             return (
               <div className="text-md" key={index}>
                 <span className="font-serif bg-red-50 border-b border-red-400">
-                  {truncate(annotation.before, { length: 45 })}
+                  {truncate(annotation.before.replace(/ /g, "\u00A0"), {
+                    length: 45,
+                  })}
                 </span>{" "}
                 →{" "}
                 <span className="font-serif bg-green-50 border-b border-green-400">
-                  {truncate(annotation.after, { length: 45 })}
+                  {truncate(annotation.after.replace(/ /g, "\u00A0"), {
+                    length: 45,
+                  })}
                 </span>
               </div>
             );
