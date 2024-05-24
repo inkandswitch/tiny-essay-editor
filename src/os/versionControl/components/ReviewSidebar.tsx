@@ -18,8 +18,8 @@ import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 
 type ReviewSidebarProps = {
-  doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
-  handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
+  doc: HasVersionControlMetadata<unknown, unknown>;
+  handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
   datatypeId: DatatypeId;
   selectedAnchors: unknown[];
   annotationGroups: AnnotationGroupWithUIState<unknown, unknown>[];
