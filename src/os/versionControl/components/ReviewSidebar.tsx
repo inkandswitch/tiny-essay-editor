@@ -346,7 +346,6 @@ export const AnnotationGroupView = forwardRef<
               datatypeId={datatypeId}
               annotations={annotationGroup.annotations}
             />
-
             {annotationGroup.discussion?.comments.map((comment, index) => (
               <DiscussionCommentView
                 contactUrl={comment.contactUrl}
@@ -509,7 +508,6 @@ const DiscussionCommentView = ({
             }
 
             if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-              console.log("enter pressed");
               event.preventDefault();
               event.stopPropagation();
               onChangeContent(updatedText);

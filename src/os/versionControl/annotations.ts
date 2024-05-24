@@ -400,13 +400,13 @@ export function useAnnotations({
             case "create":
               isCommentBeingCreated =
                 // matches target groupId ?
-                commentState.target === annotationGroup?.discussion?.id ||
+                commentState.target === getAnnotationGroupId(annotationGroup) ||
                 // ... or target anchors ?
                 (Array.isArray(commentState.target) &&
-                  commentState.target.length ===
-                    annotationGroup.annotations.length &&
                   commentState.target.every((anchor, index) =>
-                    isEqual(anchor, annotationGroup.annotations[index].anchor)
+                    annotationGroup.annotations.some((annotation) =>
+                      isEqual(annotation.anchor, anchor)
+                    )
                   ));
               break;
             case "edit":
