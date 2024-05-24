@@ -58,7 +58,9 @@ export const EssayAnnotations = ({
             // this is a bit hacky patchwork should handle this for us
             if (
               annotations.some(
-                (a) => a.type === "added" && a.added === annotation.value
+                (a) =>
+                  (a.type === "added" && a.added === annotation.value) ||
+                  (a.type === "changed" && a.after === annotation.value)
               )
             ) {
               return null;
