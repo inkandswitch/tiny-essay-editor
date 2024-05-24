@@ -383,6 +383,11 @@ export const VersionControlEditor: React.FC<{
   // for now hide inline comments if side by side is enabled because there is not enought space
   const hideInlineComments = !!sidebarMode || compareWithMainFlag;
 
+  const highlightSidebarButton =
+    !sidebarMode &&
+    annotations.some((a) => a.type === "highlighted" && a.isEmphasized) &&
+    (!DATA_TYPES[datatypeId].supportsInlineComments || hideInlineComments);
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -556,9 +561,7 @@ export const VersionControlEditor: React.FC<{
                   onClick={() => setSidebarMode("review")}
                   variant="outline"
                   className={`h-8 text-x ${
-                    annotations.filter(
-                      (a) => a.type === "highlighted" && a.isEmphasized
-                    ).length > 0
+                    highlightSidebarButton
                       ? "bg-yellow-200 hover:bg-yellow-400"
                       : ""
                   }`}
