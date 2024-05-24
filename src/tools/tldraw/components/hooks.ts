@@ -168,7 +168,7 @@ export const useDiffStyling = ({
             break;
           }
         }
-      }, 100);
+      });
 
       // delete shapes that are not part of the current diff
       store.store.remove(
@@ -185,7 +185,7 @@ export const useDiffStyling = ({
           element.style.filter = "";
         });
       highlightedElementsRef.current = activeHighlightedElements;
-    });
+    }, 100);
   }, [annotations, store, doc, camera, editor]);
 };
 export const useAnchorEventListener = ({
