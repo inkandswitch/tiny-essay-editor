@@ -81,7 +81,6 @@ export type EditorProps = {
   annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
   diffStyle: DiffStyle;
   debugHighlights?: DebugHighlight[];
-  onOpenSnippet?: (range: SelectionRange) => void;
   foldRanges?: { from: number; to: number }[];
   isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
@@ -97,7 +96,6 @@ export function MarkdownEditor({
   docHeads,
   annotations,
   debugHighlights,
-  onOpenSnippet,
   foldRanges,
   setEditorContainerElement,
 }: EditorProps) {
@@ -167,7 +165,6 @@ export function MarkdownEditor({
             } else {
               assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
             }
-
             await assetsHandle.whenReady();
             const assetsDoc = assetsHandle.docSync();
 
@@ -200,22 +197,11 @@ export function MarkdownEditor({
         }),
         indentOnInput(),
         keymap.of([
-          {
-            key: "Mod-o",
-            run: () => {
-              const selectedRange = view.state.selection.main;
-              onOpenSnippet(selectedRange);
-              return true;
-            },
-            preventDefault: true,
-            stopPropagation: true,
-          },
           ...defaultKeymap,
           ...searchKeymap,
           ...historyKeymap,
           ...foldKeymap,
           ...completionKeymap,
-          ...lintKeymap,
           indentWithTab,
         ]),
         EditorView.lineWrapping,

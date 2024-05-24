@@ -62,6 +62,18 @@ export const ReviewSidebar = React.memo(
       useState<string>();
     const account = useCurrentAccount();
 
+    const [commentInputElement, setCommentInputElement] =
+      useState<HTMLTextAreaElement>();
+
+    // sync focus state back to text area
+    useEffect(() => {
+      if (commentInputElement && isCommentInputFocused) {
+        setTimeout(() => {
+          commentInputElement.focus();
+        }, 100); // hack : add a bit of a delay otherwise focusing the element doesn't work when the sidebar hasn't been opened before
+      }
+    }, [commentInputElement, isCommentInputFocused]);
+
     const pendingAnnotationsForComment: HighlightAnnotation<
       unknown,
       unknown
@@ -241,6 +253,7 @@ export const ReviewSidebar = React.memo(
           </div>
 
           <Textarea
+            ref={setCommentInputElement}
             value={pendingCommentText}
             onChange={(event) => setPendingCommentText(event.target.value)}
             onKeyDown={(event) => {

@@ -80,7 +80,7 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
-type SidebarMode = "comments" | "timeline";
+type SidebarMode = "review" | "history";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
@@ -120,14 +120,18 @@ export const VersionControlEditor: React.FC<{
     }
   }, [JSON.stringify(selectedBranch)]);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [sidebarMode, _setSidebarMode] = useState<SidebarMode>();
 
-  useEffect(() => {
-    if (!isSidebarOpen) {
+  const setSidebarMode = (sidebarMode: SidebarMode) => {
+    // reset state from history mode
+    if (sidebarMode === "review" || !sidebarMode) {
       setDiffFromTimelineSidebar(undefined);
       setDocHeadsFromTimelineSidebar(undefined);
     }
-  }, [isSidebarOpen]);
+
+    _setSidebarMode(sidebarMode);
+  };
+
   const [diffFromTimelineSidebar, setDiffFromTimelineSidebar] =
     useState<DiffWithProvenance>();
   const [docHeadsFromTimelineSidebar, setDocHeadsFromTimelineSidebar] =
@@ -174,6 +178,27 @@ export const VersionControlEditor: React.FC<{
       );
     }
   }, [doc, changeDoc]);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.code === "KeyM"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        setSidebarMode("review");
+        setIsCommentInputFocused(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress, true);
+    };
+  }, []);
 
   const handleCreateBranch = useCallback(
     ({ name, heads }: MakeBranchOptions = {}) => {
@@ -319,18 +344,6 @@ export const VersionControlEditor: React.FC<{
     isCommentInputFocused,
   });
 
-  const [sidebarMode, _setSidebarMode] = useState<SidebarMode>("comments");
-
-  const setSidebarMode = (sidebarMode: SidebarMode) => {
-    // reset state from history mode
-    if (sidebarMode === "comments") {
-      setDiffFromHistorySidebar(undefined);
-      setDocHeadsFromHistorySidebar(undefined);
-    }
-
-    _setSidebarMode(sidebarMode);
-  };
-
   const [
     annotationsPositionsInSidebarMap,
     setAnnotationsPositionsInSidebarMap,
@@ -351,7 +364,7 @@ export const VersionControlEditor: React.FC<{
   //
   // As a short term workaround we filter out all comments if the timeline sidebar is active
   const visibleAnnotations =
-    sidebarMode === "timeline"
+    sidebarMode === "history"
       ? annotations.filter((annotation) => annotation.type !== "highlighted")
       : annotations;
 
@@ -521,11 +534,11 @@ export const VersionControlEditor: React.FC<{
             )}
           </div>
 
-          {!isSidebarOpen && (
-            <div className={` ml-auto ${isSidebarOpen ? "mr-96" : "mr-4"}`}>
+          {!sidebarMode && (
+            <div className="ml-auto mr-4">
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  onClick={() => setSidebarMode("review")}
                   variant="outline"
                   className={`h-8 text-x ${
                     annotations.filter(
@@ -589,11 +602,11 @@ export const VersionControlEditor: React.FC<{
         </ErrorBoundary>
       </div>
 
-      {isSidebarOpen && (
+      {sidebarMode && (
         <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
           <div
             className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => setSidebarMode(null)}
           >
             <ChevronsRight size={16} />
           </div>
@@ -601,14 +614,16 @@ export const VersionControlEditor: React.FC<{
           <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
             <Tabs
               value={sidebarMode}
-              onValueChange={(value) => setSidebarMode(value as SidebarMode)}
+              onValueChange={(mode) =>
+                setSidebarMode(mode as "review" | "history")
+              }
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="comments">
+                <TabsTrigger value="review">
                   <MessageSquareIcon size={16} className="mr-2" />
                   Review ({annotationGroups.length})
                 </TabsTrigger>
-                <TabsTrigger value="timeline">
+                <TabsTrigger value="history">
                   <HistoryIcon size={16} className="mr-2" />
                   History
                 </TabsTrigger>
@@ -617,7 +632,7 @@ export const VersionControlEditor: React.FC<{
           </div>
 
           <div className="min-h-0 flex-grow w-96">
-            {sidebarMode === "timeline" && (
+            {sidebarMode === "history" && (
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranch?.url ?? mainDocUrl}
@@ -629,7 +644,7 @@ export const VersionControlEditor: React.FC<{
                 setSelectedBranch={setSelectedBranch}
               />
             )}
-            {sidebarMode === "comments" && (
+            {sidebarMode === "review" && (
               <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
