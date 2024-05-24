@@ -151,11 +151,10 @@ export const Topbar: React.FC<TopbarProps> = ({
                               </div>
                               <Button
                                 onClick={() => {
-                                  // todo: add branch to doclink
-                                  /* setSelectedBranch({
-                                  type: "branch",
-                                  url: result,
-                                })*/
+                                  selectDocLink({
+                                    ...selectedDocLink,
+                                    branchUrl: result,
+                                  });
                                 }}
                                 className="px-4 h-6"
                               >
