@@ -334,6 +334,17 @@ export const VersionControlEditor: React.FC<{
 
   const branches = doc.branchMetadata.branches ?? [];
 
+  // Currently we can't filter out comments that didn't exist in a previous version of the document
+  // this leads to seemingly random places in the document being highlighted. The problem is that
+  // the cursor api doesn't provide a way to detect if the op was present it always gives the closest
+  // position to that op in the current document.
+  //
+  // As a short term workaround we filter out all comments if the timeline sidebar is active
+  const visibleAnnotations =
+    sidebarMode === "timeline"
+      ? annotations.filter((annotation) => annotation.type !== "highlighted")
+      : annotations;
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -546,7 +557,7 @@ export const VersionControlEditor: React.FC<{
                   datatypeId={datatypeId}
                   docUrl={selectedBranch.url}
                   docHeads={docHeads}
-                  annotations={annotations}
+                  annotations={visibleAnnotations}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
@@ -557,7 +568,7 @@ export const VersionControlEditor: React.FC<{
                   datatypeId={datatypeId}
                   docUrl={selectedBranch?.url ?? mainDocUrl}
                   docHeads={docHeads}
-                  annotations={annotations}
+                  annotations={visibleAnnotations}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
