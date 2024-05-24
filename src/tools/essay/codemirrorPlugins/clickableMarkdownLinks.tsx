@@ -1,13 +1,7 @@
 import { jsxToHtmlElement } from "@/datatypes/markdown/utils";
-import {
-  Decoration,
-  MatchDecorator,
-  ViewPlugin,
-  WidgetType,
-} from "@codemirror/view";
-import { RangeSet } from "@uiw/react-codemirror";
+import { syntaxTree } from "@codemirror/language";
+import { EditorView, ViewPlugin, WidgetType } from "@codemirror/view";
 import { ExternalLink } from "lucide-react";
-import linkIcon from "../assets/linkIcon.svg";
 
 class HyperLink extends WidgetType {
   constructor(readonly url: string) {
@@ -31,38 +25,82 @@ class HyperLink extends WidgetType {
   }
 }
 
-const linkDecorator = new MatchDecorator({
-  regexp: /\((?<name>[^\)]*)\)\[(?<url>[^\]]*)\]/g,
-  decorate: (add, from, to, match, view) => {
-    const url = match.groups.url;
+type Link = {
+  url: string;
+  from: number;
+  to: number;
+};
 
-    if (url == "") {
-      return;
-    }
+const URL_REGEX = /\[(?<url>[^\[]*)\]/;
 
-    const start = to,
-      end = to;
-    const linkIcon = new HyperLink(url);
-    add(
-      start,
-      end,
-      Decoration.widget({ widget: linkIcon, block: false, side: 1 })
-    );
-  },
-});
+function getLinks(view: EditorView): Link[] {
+  const links: Link[] = [];
+
+  for (let { from, to } of view.visibleRanges) {
+    syntaxTree(view.state).iterate({
+      from,
+      to,
+      enter: (node) => {
+        console.log(node.name);
+
+        if (node.name === "Link") {
+          const link = view.state.sliceDoc(node.from, node.to);
+          const url = link.match(URL_REGEX).groups.url;
+
+          links.push({
+            from: node.from,
+            to: node.to,
+            url,
+          });
+        }
+      },
+    });
+  }
+
+  return links;
+}
 
 export const clickableMarkdownLinksPlugin = ViewPlugin.fromClass(
-  class URLView {
-    decorations: RangeSet<Decoration>;
+  class {
+    links: Link[];
 
-    constructor(view) {
-      this.decorations = linkDecorator.createDeco(view);
+    constructor(view: EditorView) {
+      this.links = getLinks(view);
     }
     update(update) {
       if (update.docChanged || update.viewportChanged) {
-        this.decorations = linkDecorator.updateDeco(update, this.decorations);
+        this.links = getLinks(update.view);
       }
     }
   },
-  { decorations: (v) => v.decorations }
+  {
+    eventHandlers: {
+      pointerup(e, view) {
+        const cursorPosition = view.state.selection.main?.head;
+
+        if ((!e.ctrlKey && !e.metaKey) || cursorPosition === undefined) {
+          return;
+        }
+
+        const link = this.links.find(
+          (l) => l.from < cursorPosition && l.to >= cursorPosition
+        );
+
+        if (!link) {
+          return;
+        }
+
+        if (e.shiftKey) {
+          e.stopPropagation();
+          e.preventDefault();
+          view.dispatch({
+            selection: { anchor: cursorPosition, head: cursorPosition },
+          });
+          window.open(link.url, "_tab");
+        } else {
+          window.location.href = link.url;
+        }
+      },
+    },
+  }
 );
