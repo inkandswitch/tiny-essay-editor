@@ -1,4 +1,4 @@
-export * from "./schema";
+export * from './schema.js';
 
-import { EssayEditingBotDatatype } from "./datatype";
+import { EssayEditingBotDatatype } from './datatype.js';
 export default EssayEditingBotDatatype;

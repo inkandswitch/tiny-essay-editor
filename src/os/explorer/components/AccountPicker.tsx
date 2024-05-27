@@ -6,7 +6,7 @@ import {
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
   DatatypeSettingsDoc,
-} from "../account";
+} from '../account.js';
 import { ChangeEvent, useEffect, useState } from "react";
 
 import {
@@ -32,7 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ContactAvatar } from "./ContactAvatar";
+import { ContactAvatar } from './ContactAvatar.js';
 import { DATA_TYPES } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
 

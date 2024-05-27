@@ -11,21 +11,21 @@ import {
   useCurrentAccount,
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
-} from "../account";
+} from "../account.js";
 import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
-import { LoadingScreen } from "./LoadingScreen";
-import { Sidebar } from "./Sidebar";
-import { Topbar } from "./Topbar";
+import { LoadingScreen } from "./LoadingScreen.js";
+import { Sidebar } from "./Sidebar.js";
+import { Topbar } from "./Topbar.js";
 
 import { VersionControlEditor } from "@/os/versionControl/components/VersionControlEditor";
 import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 
-import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
-import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
-import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
-import { ErrorFallback } from "./ErrorFallback";
+import { type DocLinkWithFolderPath, type FolderDoc } from "@/datatypes/folder";
+import { useSelectedDocLink } from "../hooks/useSelectedDocLink.js";
+import { useSyncDocTitle } from "../hooks/useSyncDocTitle.js";
+import { ErrorFallback } from "./ErrorFallback.js";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();

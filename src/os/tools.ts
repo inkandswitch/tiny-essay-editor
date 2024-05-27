@@ -13,7 +13,7 @@ import {
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { DatatypeId } from "./datatypes";
+import { DatatypeId } from './datatypes.js';
 import { DocHandle } from "@automerge/automerge-repo";
 
 export type Tool = {

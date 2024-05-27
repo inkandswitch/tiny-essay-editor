@@ -22,9 +22,9 @@ import {
   useRemoteAwareness,
 } from "@automerge/automerge-repo-react-hooks";
 
-import { applyAutomergePatchesToTLStore } from "./AutomergeToTLStore";
-import { applyTLStoreChangesToAutomerge } from "./TLStoreToAutomerge";
-import { TLDrawDoc } from "../../../../datatypes/tldraw/schema";
+import { applyAutomergePatchesToTLStore } from './AutomergeToTLStore.js';
+import { applyTLStoreChangesToAutomerge } from './TLStoreToAutomerge.js';
+import { TLDrawDoc } from '../../../../datatypes/tldraw/schema.js';
 
 export function useAutomergeStore({
   handle,

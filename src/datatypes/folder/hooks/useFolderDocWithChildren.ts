@@ -4,8 +4,8 @@ import {
   DocLinkWithFolderPath,
   FolderDoc,
   FolderDocWithChildren,
-} from "../schema";
-import { useDocumentWithLinks } from "./useDocumentWithLinks";
+} from '../schema.js';
+import { useDocumentWithLinks } from './useDocumentWithLinks.js';
 
 export type FolderDocWithMetadata = {
   rootFolderUrl: AutomergeUrl;

@@ -1,9 +1,9 @@
 import { AnnotationsViewProps } from "@/os/tools";
 import { Editor, TLShape, TLShapeId, Tldraw } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
-import { TLDrawDoc } from "../../../datatypes/tldraw/schema";
-import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import { useDiffStyling } from "./hooks";
+import { TLDrawDoc } from '../../../datatypes/tldraw/schema.js';
+import { useAutomergeStore } from '../vendor/automerge-tldraw/index.js';
+import { useDiffStyling } from './hooks.js';
 import { Annotation } from "@/os/versionControl/schema";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { DocHandle } from "@automerge/automerge-repo";

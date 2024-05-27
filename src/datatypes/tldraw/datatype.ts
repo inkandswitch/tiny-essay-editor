@@ -2,7 +2,7 @@ import { next as A } from "@automerge/automerge";
 import { DataType } from "@/os/datatypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
-import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
+import { TLDrawDoc, TLDrawDocAnchor } from './schema.js';
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import { pick } from "lodash";
 import { TLShape, TLShapeId, createTLStore } from "@tldraw/tldraw";

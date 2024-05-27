@@ -7,11 +7,11 @@ import {
 } from "@automerge/automerge-repo";
 import { useEffect, useMemo, useState } from "react";
 import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
-import { useCurrentUrl } from "../navigation";
+import { useCurrentUrl } from '../navigation.js';
 import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { DatatypeId, DATA_TYPES } from '../../datatypes.js';
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 

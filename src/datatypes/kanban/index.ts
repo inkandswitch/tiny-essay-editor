@@ -1,4 +1,4 @@
-import { KanbanBoardDatatype } from "./datatype";
+import { KanbanBoardDatatype } from './datatype.js';
 export default KanbanBoardDatatype;
 
-export * from "./useDocumentWithActions";
+export * from './useDocumentWithActions.js';

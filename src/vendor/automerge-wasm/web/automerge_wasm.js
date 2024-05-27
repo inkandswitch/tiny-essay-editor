@@ -100,7 +100,7 @@ function getInt32Memory0() {
 
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
-if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); }
 
 function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
@@ -1833,7 +1833,7 @@ function __wbg_get_imports() {
         return ret;
     };
     imports.wbg.__wbg_new_16b304a2cfa7ff4a = function() {
-        const ret = new Array();
+        const ret = [];
         return addHeapObject(ret);
     };
     imports.wbg.__wbg_newnoargs_e258087cd0daa0ea = function(arg0, arg1) {

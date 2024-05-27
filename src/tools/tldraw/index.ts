@@ -1,6 +1,6 @@
 import { Tool } from "@/os/tools";
-import { TLDraw } from "./components/TLDraw";
-import { TLDrawAnnotations } from "./components/TLDrawAnnotations";
+import { TLDraw } from './components/TLDraw.js';
+import { TLDrawAnnotations } from './components/TLDrawAnnotations.js';
 
 export default {
   id: "tldraw",

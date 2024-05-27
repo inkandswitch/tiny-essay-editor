@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Completion } from "@codemirror/autocomplete";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
+// import { languages } from "@codemirror/language-data";
 
 import { Button } from "@/components/ui/button";
 import { useCurrentAccount } from "@/os/explorer/account";
@@ -27,12 +27,12 @@ import {
   SendHorizontalIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ChangelogSelection } from "./TimelineSidebar";
+import { ChangelogSelection } from './TimelineSidebar.js';
 import {
   createMentionCompletion,
   createSlashCommandCompletion,
   slashCommands,
-} from "./slashCommands";
+} from './slashCommands.js';
 
 type CommentBoxAction =
   | { type: "comment"; value: string }
@@ -214,7 +214,7 @@ export const DiscussionInput = function <
             }}
             className="p-1 min-h-12 max-h-24 overflow-y-auto"
             extensions={[
-              markdown({ base: markdownLanguage, codeLanguages: languages }),
+              markdown({ base: markdownLanguage /*codeLanguages: languages*/ }),
               slashCommands(completions),
               EditorView.lineWrapping,
             ]}

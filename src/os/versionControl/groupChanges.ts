@@ -21,7 +21,7 @@ import {
   view,
 } from "@automerge/automerge/next";
 import { isEqual, sortBy } from "lodash";
-import { getChangesFromMergedBranch } from "./branches";
+import { getChangesFromMergedBranch } from './branches.js';
 import {
   Branch,
   Branchable,
@@ -30,8 +30,8 @@ import {
   Discussion,
   Tag,
   Taggable,
-} from "./schema";
-import { TextPatch, diffWithProvenance } from "./utils";
+} from './schema.js';
+import { TextPatch, diffWithProvenance } from './utils.js';
 
 /** Change group attributes that could work for any document */
 export type ChangeGroup<T> = {

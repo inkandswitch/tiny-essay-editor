@@ -1,6 +1,6 @@
 import { DataType } from "@/os/datatypes";
 import { FolderIcon } from "lucide-react";
-import { FolderDoc } from ".";
+import { FolderDoc } from './index.js';
 
 export const init = (doc: any) => {
   doc.title = "Untitled Folder";

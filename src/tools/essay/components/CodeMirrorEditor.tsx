@@ -1,7 +1,7 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
+//import { languages } from "@codemirror/language-data";
 import { EditorView, keymap } from "@codemirror/view";
 
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
@@ -26,40 +26,40 @@ import {
 } from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
 import { SelectionRange } from "@codemirror/state";
-import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
+import { codeMonospacePlugin } from '../codemirrorPlugins/codeMonospace.js';
 import {
   annotationDecorations,
   annotationsField,
   setAnnotationsEffect,
-} from "../codemirrorPlugins/annotationDecorations";
-import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
-import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
-import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
-import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
-import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
+} from '../codemirrorPlugins/annotationDecorations.js';
+import { frontmatterPlugin } from '../codemirrorPlugins/frontmatter.js';
+import { highlightKeywordsPlugin } from '../codemirrorPlugins/highlightKeywords.js';
+import { lineWrappingPlugin } from '../codemirrorPlugins/lineWrapping.js';
+import { previewFiguresPlugin } from '../codemirrorPlugins/previewFigures.js';
+import { tableOfContentsPreviewPlugin } from '../codemirrorPlugins/tableOfContentsPreview.js';
+import { essayTheme, markdownStyles } from '../codemirrorPlugins/theme.js';
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "../../../datatypes/markdown/schema";
+} from '../../../datatypes/markdown/schema.js';
 
 import {
   DebugHighlight,
   setDebugHighlightsEffect,
   debugHighlightsField,
   debugHighlightsDecorations,
-} from "../codemirrorPlugins/DebugHighlight";
+} from '../codemirrorPlugins/DebugHighlight.js';
 import {
   AnnotationPosition,
   AnnotationWithUIState,
 } from "@/os/versionControl/schema";
 import { getCursorSafely } from "@/os/versionControl/utils";
-import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { dragAndDropFilesPlugin } from '../codemirrorPlugins/dragAndDropFiles.js';
+import { previewImagesPlugin } from '../codemirrorPlugins/previewMarkdownImages.js';
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { AssetsDoc } from "../assets";
-import { dropCursor } from "../codemirrorPlugins/dropCursor";
+import { AssetsDoc } from '../assets.js';
+import { dropCursor } from '../codemirrorPlugins/dropCursor.js';
 
 export type TextSelection = {
   from: number;
@@ -220,7 +220,7 @@ export function MarkdownEditor({
         EditorView.lineWrapping,
         essayTheme,
         markdown({
-          codeLanguages: languages,
+          /*codeLanguages: languages,*/
         }),
         indentUnit.of("    "),
         syntaxHighlighting(markdownStyles),

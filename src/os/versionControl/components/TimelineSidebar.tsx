@@ -10,7 +10,7 @@ import {
   TimelineItems,
   GenericChangeGroup,
   groupingByEditTime,
-} from "../groupChanges";
+} from '../groupChanges.js';
 import { DATA_TYPES } from "@/os/datatypes";
 
 import {
@@ -31,11 +31,11 @@ import {
   HasChangeGroupSummaries,
   HasVersionControlMetadata,
   Tag,
-} from "../schema";
+} from '../schema.js';
 import { useSlots } from "@/os/versionControl/utils";
 
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
+// import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 import {
   DropdownMenu,
@@ -43,15 +43,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DiscussionInput } from "./DiscussionInput";
+import { DiscussionInput } from './DiscussionInput.js';
 import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
 } from "@/os/versionControl/changeGroupSummaries";
 
 import { DatatypeId } from "@/os/datatypes";
-import { ChangeGroupingOptions } from "../groupChanges";
-import { ChangeGrouper } from "../ChangeGrouper";
+import { ChangeGroupingOptions } from '../groupChanges.js';
+import { ChangeGrouper } from '../ChangeGrouper.js';
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -818,7 +818,7 @@ const DiscussionThreadItem = ({
           extensions={[
             markdown({
               base: markdownLanguage,
-              codeLanguages: languages,
+              /*codeLanguages: languages,*/
             }),
             EditorView.lineWrapping,
           ]}

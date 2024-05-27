@@ -1,6 +1,6 @@
-import { FolderDatatype } from "./datatype";
+import { FolderDatatype } from './datatype.js';
 export default FolderDatatype;
 
-export * from "./schema";
-export * from "./hooks/useDocumentWithLinks";
-export * from "./hooks/useFolderDocWithChildren";
+export * from './schema.js';
+export * from './hooks/useDocumentWithLinks.js';
+export * from './hooks/useFolderDocWithChildren.js';

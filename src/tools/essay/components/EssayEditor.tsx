@@ -1,7 +1,7 @@
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownEditor } from "./CodeMirrorEditor";
+import { MarkdownEditor } from './CodeMirrorEditor.js';
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -19,7 +19,7 @@ import { EditorProps } from "@/os/tools";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
-import "../index.css";
+// import "../index.css";
 
 export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const {

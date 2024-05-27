@@ -1,6 +1,6 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { TextPatch } from "./utils";
+import { TextPatch } from './utils.js';
 
 export type Branch = {
   name: string;

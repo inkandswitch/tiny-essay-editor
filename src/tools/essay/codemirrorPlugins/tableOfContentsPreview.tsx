@@ -13,7 +13,7 @@ import {
 } from "@codemirror/view";
 import { isEqual } from "lodash";
 import { Tree } from "@lezer/common";
-import { jsxToHtmlElement } from "../../../datatypes/markdown/utils";
+import { jsxToHtmlElement } from '../../../datatypes/markdown/utils.js';
 
 type Heading = { level: number; content: string; from: number; to: number };
 

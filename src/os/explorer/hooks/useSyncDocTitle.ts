@@ -1,5 +1,5 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { DATA_TYPES } from "../../datatypes";
+import { DATA_TYPES } from '../../datatypes.js';
 import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -37,7 +37,7 @@ export const useSyncDocTitle = ({
       selectedDocTitleRef.current = { url: selectedDocLink.url };
     }
 
-    let counter = (counterRef.current = counterRef.current + 1);
+    const counter = (counterRef.current = counterRef.current + 1);
 
     // load title
     DATA_TYPES[selectedDocLink.type]

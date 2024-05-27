@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { SyncIndicator } from "./SyncIndicator";
-import { AccountPicker } from "./AccountPicker";
-import { saveFile } from "../utils";
+import { SyncIndicator } from './SyncIndicator.js';
+import { AccountPicker } from './AccountPicker.js';
+import { saveFile } from '../utils.js';
 import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 
 import {
@@ -28,13 +28,13 @@ import {
 
 import { getHeads, save } from "@automerge/automerge";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { DatatypeId, DATA_TYPES } from '../../datatypes.js';
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
+import { useDatatypeSettings, useRootFolderDocWithChildren } from '../account.js';
 import botDataType from "@/datatypes/bot";
-import { getUrlSafeName } from "../hooks/useSelectedDocLink";
+import { getUrlSafeName } from '../hooks/useSelectedDocLink.js';
 import { genericExportMethods } from "@/os/fileExports";
 
 type TopbarProps = {

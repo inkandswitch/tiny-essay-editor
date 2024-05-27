@@ -7,8 +7,8 @@ import {
   DecodedChangeWithMetadata,
   getTimelineItems,
   getMarkersForDoc,
-} from "./groupChanges";
-import { HasVersionControlMetadata } from "./schema";
+} from './groupChanges.js';
+import { HasVersionControlMetadata } from './schema.js';
 import { next as A } from "@automerge/automerge";
 import { debounce, isEqual } from "lodash";
 

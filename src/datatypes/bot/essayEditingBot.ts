@@ -4,7 +4,7 @@ import { createBranch } from "@/os/versionControl/branches";
 import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { splice } from "@automerge/automerge/next";
-import { EssayEditingBotDoc } from "./schema";
+import { EssayEditingBotDoc } from './schema.js';
 
 const functionsSpec = [
   {

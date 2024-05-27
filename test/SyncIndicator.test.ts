@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "vitest";
-import { getSyncIndicatorMachine } from "../src/os/explorer/components/SyncIndicator";
+import { getSyncIndicatorMachine } from '../src/os/explorer/components/SyncIndicator.js';
 import { createActor } from "xstate";
 
 const CONNECTION_INIT_TIMEOUT = 100;

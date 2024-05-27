@@ -9,9 +9,9 @@ import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { Editor, TLCamera, TLShape, Tldraw } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
-import { TLDrawDoc, TLDrawDocAnchor } from "../../../datatypes/tldraw/schema";
-import { useAutomergeStore } from "../vendor/automerge-tldraw";
-import { useDiffStyling, useCameraSync, useAnchorEventListener } from "./hooks";
+import { TLDrawDoc, TLDrawDocAnchor } from '../../../datatypes/tldraw/schema.js';
+import { useAutomergeStore } from '../vendor/automerge-tldraw/index.js';
+import { useDiffStyling, useCameraSync, useAnchorEventListener } from './hooks.js';
 
 interface TLDrawProps extends EditorProps<TLDrawDocAnchor, TLShape> {
   camera?: TLCamera;

@@ -8,8 +8,8 @@ import {
   FolderInput,
 } from "lucide-react";
 import { Tree, NodeRendererProps } from "react-arborist";
-import { FillFlexParent } from "./FillFlexParent";
-import { AccountPicker } from "./AccountPicker";
+import { FillFlexParent } from './FillFlexParent.js';
+import { AccountPicker } from './AccountPicker.js';
 
 import {
   DocLink,
@@ -17,7 +17,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/datatypes/folder";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { DatatypeId, DATA_TYPES } from '../../datatypes.js';
 
 import {
   Popover,
@@ -31,8 +31,8 @@ import { structuredClone } from "@tldraw/tldraw";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { capitalize, uniqBy } from "lodash";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { UIStateDoc, useCurrentAccountDoc } from "../account";
-import { useDatatypeSettings } from "../account";
+import { UIStateDoc, useCurrentAccountDoc } from '../account.js';
+import { useDatatypeSettings } from '../account.js';
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;

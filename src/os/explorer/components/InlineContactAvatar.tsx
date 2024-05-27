@@ -1,4 +1,4 @@
-import { ContactDoc, RegisteredContactDoc } from "../account";
+import { ContactDoc, RegisteredContactDoc } from '../account.js';
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { VariantProps } from "class-variance-authority";

@@ -9,13 +9,13 @@ import { useRepo, useDocument } from "@automerge/automerge-repo-react-hooks";
 import { EventEmitter } from "eventemitter3";
 
 import { useEffect, useState } from "react";
-import { uploadFile } from "./utils";
+import { uploadFile } from './utils.js';
 import { ChangeFn } from "@automerge/automerge/next";
 import { useForceUpdate } from "@/components/utils";
 
 import { FolderDoc } from "@/datatypes/folder";
-import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";
-import { DatatypeId } from "../datatypes";
+import { useFolderDocWithChildren } from '../../datatypes/folder/hooks/useFolderDocWithChildren.js';
+import { DatatypeId } from '../datatypes.js';
 
 export type DatatypeSettingsDoc = {
   enabledDatatypeIds: { [id: DatatypeId]: boolean };

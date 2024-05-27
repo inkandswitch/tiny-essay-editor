@@ -1,6 +1,6 @@
 import { Tool } from "@/os/tools";
-import { EssayEditor } from "./components/EssayEditor";
-import { EssayAnnotations } from "./components/EssayAnnotations";
+import { EssayEditor } from './components/EssayEditor.js';
+import { EssayAnnotations } from './components/EssayAnnotations.js';
 
 export default {
   id: "essay",

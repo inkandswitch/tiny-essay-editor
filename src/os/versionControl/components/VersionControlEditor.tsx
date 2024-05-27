@@ -55,25 +55,25 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useAnnotations } from "../annotations";
+import { useAnnotations } from '../annotations.js';
 import {
   createBranch,
   deleteBranch,
   mergeBranch,
   suggestBranchName,
-} from "../branches";
+} from '../branches.js';
 import {
   Branch,
   DiffWithProvenance,
   HasVersionControlMetadata,
-} from "../schema";
+} from '../schema.js';
 import {
   combinePatches,
   diffWithProvenance,
   useActorIdToAuthorMap,
-} from "../utils";
-import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
-import { TimelineSidebar } from "./TimelineSidebar";
+} from '../utils.js';
+import { PositionMap, ReviewSidebar } from './ReviewSidebar.js';
+import { TimelineSidebar } from './TimelineSidebar.js';
 
 interface MakeBranchOptions {
   name?: string;

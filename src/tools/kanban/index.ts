@@ -1,5 +1,5 @@
 import { Tool } from "@/os/tools";
-import { KanbanBoard } from "./KanbanBoard";
+import { KanbanBoard } from './KanbanBoard.js';
 
 export default {
   id: "kanban",

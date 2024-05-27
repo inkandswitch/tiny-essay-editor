@@ -1,4 +1,4 @@
-import { TLDrawDatatype } from "./datatype";
+import { TLDrawDatatype } from './datatype.js';
 export default TLDrawDatatype;
 
-export * from "./schema";
+export * from './schema.js';

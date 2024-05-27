@@ -15,8 +15,8 @@ import {
   DocumentId,
   Repo,
 } from "@automerge/automerge-repo";
-import { MarkdownDoc } from "../../../datatypes/markdown/schema";
-import { AssetsDoc } from "../assets";
+import { MarkdownDoc } from '../../../datatypes/markdown/schema.js';
+import { AssetsDoc } from '../assets.js';
 import * as A from "@automerge/automerge";
 
 class Image extends WidgetType {

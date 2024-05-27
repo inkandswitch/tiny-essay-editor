@@ -1,7 +1,7 @@
 import * as A from "@automerge/automerge/next";
 import { ReactElement, useEffect, useState } from "react";
 import ReactDOMServer from "react-dom/server";
-import { MarkdownDoc } from "./schema";
+import { MarkdownDoc } from './schema.js';
 
 export const isMarkdownDoc = (doc: A.Doc<unknown>): doc is MarkdownDoc => {
   const typedDoc = doc as MarkdownDoc;

@@ -1,6 +1,6 @@
 import { DocHandle } from "@automerge/automerge-repo";
-import { ChangeGroup } from "./groupChanges";
-import { HasChangeGroupSummaries } from "./schema";
+import { ChangeGroup } from './groupChanges.js';
+import { HasChangeGroupSummaries } from './schema.js';
 import { getStringCompletion, isLLMActive } from "@/os/lib/llm";
 import { debounce } from "lodash";
 import { useCallback, useEffect } from "react";

@@ -4,7 +4,7 @@ import { MarkdownDoc } from "@/datatypes/markdown/schema";
 import { type DataType } from "@/os/datatypes";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Bot } from "lucide-react";
-import { EssayEditingBotDoc } from "./schema";
+import { EssayEditingBotDoc } from './schema.js';
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 

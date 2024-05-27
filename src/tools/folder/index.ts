@@ -1,5 +1,5 @@
 import { Tool } from "@/os/tools";
-import { FolderViewer } from "./FolderViewer";
+import { FolderViewer } from './FolderViewer.js';
 
 export default {
   id: "folder",

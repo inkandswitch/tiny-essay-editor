@@ -1,6 +1,6 @@
 import * as A from "@automerge/automerge/next";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
-import { Branch, Branchable } from "./schema";
+import { Branch, Branchable } from './schema.js';
 import { getStringCompletion } from "@/os/lib/llm";
 import { MarkdownDoc } from "@/datatypes/markdown";
 import { Hash } from "@automerge/automerge-wasm";

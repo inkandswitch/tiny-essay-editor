@@ -4,7 +4,7 @@ import {
   KanbanBoardDatatype,
   KanbanBoardDoc,
   KanbanBoardDocAnchor,
-} from "../../datatypes/kanban/datatype";
+} from '../../datatypes/kanban/datatype.js';
 
 import { EditorProps } from "@/os/tools";
 import { useDocumentWithActions } from "@/datatypes/kanban/useDocumentWithActions";

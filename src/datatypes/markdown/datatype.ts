@@ -15,8 +15,8 @@ import { Repo } from "@automerge/automerge-repo";
 import { Doc, splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
 import { Text } from "lucide-react";
-import { AssetsDoc } from "../../tools/essay/assets";
-import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
+import { AssetsDoc } from '../../tools/essay/assets.js';
+import { MarkdownDoc, MarkdownDocAnchor } from './schema.js';
 
 import JSZip from "jszip";
 

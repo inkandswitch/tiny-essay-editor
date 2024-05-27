@@ -4,7 +4,7 @@ import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import * as wasm from "@automerge/automerge-wasm";
 import * as A from "@automerge/automerge/next";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { DiffWithProvenance } from "./schema";
+import { DiffWithProvenance } from "./schema.js";
 
 // Turns hashes (eg for changes and actors) into colors for scannability
 export const hashToColor = (hash: string) => {

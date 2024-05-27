@@ -22,7 +22,7 @@ import { next as A, uuid } from "@automerge/automerge";
 import { DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { getAnnotationGroupId } from "../annotations";
+import { getAnnotationGroupId } from '../annotations.js';
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;

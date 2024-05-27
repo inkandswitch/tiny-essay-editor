@@ -10,8 +10,8 @@ import {
   AnnotationGroupWithState,
   AnnotationWithUIState,
   DiffWithProvenance,
-} from "./schema";
-import { HasVersionControlMetadata } from "./schema";
+} from './schema.js';
+import { HasVersionControlMetadata } from './schema.js';
 
 type HoverAnchorState<T> = {
   type: "anchor";

@@ -4,7 +4,7 @@ import { Annotation } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { pick } from "lodash";
 import { Sheet } from "lucide-react";
-import { DataGridDoc, DataGridDocAnchor } from "./schema";
+import { DataGridDoc, DataGridDocAnchor } from './schema.js';
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
