@@ -305,5 +305,3 @@ export const MarkdownDatatype: DataTypeWitoutMetaData<
   sortAnchorsBy,
   fileExportMethods,
 };
-
-console.log("load markdown");

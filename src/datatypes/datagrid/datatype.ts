@@ -1,4 +1,4 @@
-import { DataType } from "@/os/datatypes";
+import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import { Annotation } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
@@ -123,15 +123,11 @@ const patchesToAnnotations = (
   });
 };
 
-export const DataGridDatatype: DataType<
+export const DataGridDatatype: DataTypeWitoutMetaData<
   DataGridDoc,
   DataGridDocAnchor,
   string
 > = {
-  id: "datagrid",
-  name: "Spreadsheet",
-  isExperimental: true,
-  icon: Sheet,
   init,
   getTitle,
   setTitle,

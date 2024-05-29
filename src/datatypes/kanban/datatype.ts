@@ -1,35 +1,12 @@
-import { DataType } from "@/os/datatypes";
+import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
 import { ChangeGroup } from "@/os/versionControl/groupChanges";
 import {
   Annotation,
-  HasVersionControlMetadata,
   initVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { KanbanSquare } from "lucide-react";
-
-export type Lane = {
-  id: string;
-  title: string;
-  cardIds: string[];
-};
-
-export type Card = {
-  id: string;
-  title: string;
-  description: string;
-  label: string;
-};
-
-export type KanbanBoardDocAnchor =
-  | { type: "card"; id: string }
-  | { type: "lane"; id: string };
-
-export type KanbanBoardDoc = {
-  title: string;
-  lanes: Lane[];
-  cards: Card[];
-} & HasVersionControlMetadata<never, never>;
+import { Card, KanbanBoardDoc, KanbanBoardDocAnchor, Lane } from "./schema";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -240,15 +217,11 @@ const actions = {
   },
 };
 
-export const KanbanBoardDatatype: DataType<
+export const KanbanBoardDatatype: DataTypeWitoutMetaData<
   KanbanBoardDoc,
   KanbanBoardDocAnchor,
   undefined
 > = {
-  id: "kanban",
-  name: "Kanban Board",
-  isExperimental: true,
-  icon: KanbanSquare,
   init,
   getTitle,
   setTitle,

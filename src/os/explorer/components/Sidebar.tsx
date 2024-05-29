@@ -336,9 +336,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="py-2  border-b border-gray-200">
         {Object.values(datatypeLoaders).map((datatypeLoader) => {
           const { id } = datatypeLoader.metadata;
+          const isEnabled = datatypeSettings?.enabledDatatypeIds[id];
           if (
-            datatypeLoader.metadata.isExperimental &&
-            !datatypeSettings?.enabledDatatypeIds[id]
+            isEnabled == false ||
+            (isEnabled !== true && datatypeLoader.metadata.isExperimental)
           ) {
             return;
           }

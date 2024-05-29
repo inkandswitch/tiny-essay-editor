@@ -324,6 +324,16 @@ export const AccountPicker = ({
               <div className="flex flex-col gap-2 py-2">
                 {datatypeSettingsDoc &&
                   Object.values(datatypes).map((datatypeLoader) => {
+                    const isEnabled =
+                      datatypeSettingsDoc.enabledDatatypeIds[
+                        datatypeLoader.metadata.id
+                      ];
+
+                    const isChecked =
+                      isEnabled ||
+                      (isEnabled === undefined &&
+                        !datatypeLoader.metadata.isExperimental);
+
                     return (
                       <div
                         className="flex items-center gap-2"
@@ -331,20 +341,13 @@ export const AccountPicker = ({
                       >
                         <Checkbox
                           id={`datatype-${datatypeLoader.metadata.id}`}
-                          checked={
-                            datatypeSettingsDoc.enabledDatatypeIds[
-                              datatypeLoader.metadata.id
-                            ]
-                          }
+                          checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
                             changeDatatypeSettingsDoc((settings) => {
                               settings.enabledDatatypeIds[
                                 datatypeLoader.metadata.id
-                              ] =
-                                !settings.enabledDatatypeIds[
-                                  datatypeLoader.metadata.id
-                                ];
+                              ] = !isChecked;
                             });
                           }}
                         />

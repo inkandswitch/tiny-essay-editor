@@ -1,14 +1,10 @@
-import {
-  DataTypeLoaderConfig,
-  DataTypeWitoutMetaData,
-  DatatypeId,
-} from "@/os/datatypes";
+import { DataTypeLoaderConfig } from "@/os/datatypes";
 import { Text } from "lucide-react";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
 export default {
   metadata: {
-    id: "essay" as DatatypeId,
+    id: "essay",
     name: "Essay",
     icon: Text,
   },

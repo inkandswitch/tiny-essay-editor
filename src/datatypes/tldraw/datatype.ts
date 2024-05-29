@@ -1,5 +1,5 @@
 import { next as A } from "@automerge/automerge";
-import { DataType } from "@/os/datatypes";
+import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
 import { init as tldrawinit } from "automerge-tldraw";
 import { PenLine } from "lucide-react";
 import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
@@ -293,10 +293,11 @@ const valueOfAnnotation = (annotation: Annotation<TLShapeId, TLShape>) => {
   }
 };
 
-export const TLDrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
-  id: "tldraw",
-  name: "Drawing",
-  icon: PenLine,
+export const TLDrawDatatype: DataTypeWitoutMetaData<
+  TLDrawDoc,
+  TLDrawDocAnchor,
+  TLShape
+> = {
   init,
   getTitle,
   setTitle,
