@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
+import { DataType, DatatypeId } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
@@ -27,7 +27,7 @@ import { getAnnotationGroupId } from "../annotations";
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
-  datatypeId: DatatypeId;
+  dataType: DataType<unknown, unknown, unknown>;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
   changeDoc: (
@@ -47,7 +47,7 @@ export const ReviewSidebar = React.memo(
   ({
     doc,
     handle,
-    datatypeId,
+    dataType,
     annotationGroups,
     selectedAnchors,
     changeDoc,
@@ -67,14 +67,13 @@ export const ReviewSidebar = React.memo(
       unknown
     >[] = useMemo(() => {
       if (!doc) return [];
-      const valueOfAnchor =
-        DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
+      const valueOfAnchor = dataType.valueOfAnchor ?? (() => null);
       return selectedAnchors.map((anchor) => ({
         type: "highlighted",
         anchor: [anchor],
         value: valueOfAnchor(doc, anchor),
       }));
-    }, [selectedAnchors, doc, datatypeId]);
+    }, [selectedAnchors, doc, dataType]);
 
     const addCommentToAnnotationGroup = (
       annotationGroup: AnnotationGroup<unknown, unknown>,
@@ -179,7 +178,7 @@ export const ReviewSidebar = React.memo(
               <AnnotationGroupView
                 doc={doc}
                 handle={handle}
-                datatypeId={datatypeId}
+                datatypeId={dataType.id}
                 key={id}
                 annotationGroup={annotationGroup}
                 isReplyBoxOpen={annotationGroupIdOfActiveReply === id}
@@ -235,7 +234,7 @@ export const ReviewSidebar = React.memo(
             <AnnotationsView
               doc={doc}
               handle={handle}
-              datatypeId={datatypeId}
+              datatypeId={dataType.id}
               annotations={pendingAnnotationsForComment}
             />
           </div>

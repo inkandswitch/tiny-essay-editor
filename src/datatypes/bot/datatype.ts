@@ -1,6 +1,6 @@
 import { ContactDoc, RegisteredContactDoc } from "@/os/explorer/account";
-import { MarkdownDatatype } from "@/datatypes/markdown/datatype";
-import { MarkdownDoc } from "@/datatypes/markdown/schema";
+import { MarkdownDatatype } from "@/datatypes/essay/datatype";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
 import { type DataType } from "@/os/datatypes";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Bot } from "lucide-react";

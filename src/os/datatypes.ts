@@ -2,38 +2,32 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/os/versionControl/groupChanges";
-import {
-  Annotation,
-  HasVersionControlMetadata,
-} from "@/os/versionControl/schema";
+import { Annotation } from "@/os/versionControl/schema";
 import { TextPatch } from "@/os/versionControl/utils";
 import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 
 // datatypes
-
-import bot from "@/datatypes/bot";
-import datagrid from "@/datatypes/datagrid";
-import folder from "@/datatypes/folder";
-import kanban from "@/datatypes/kanban";
-import markdown from "@/datatypes/markdown";
-import tldraw from "@/datatypes/tldraw";
+import { useEffect, useRef, useState } from "react";
 import { FileExportMethod } from "./fileExports";
 
-export type CoreDataType<D> = {
-  id: string;
+export type DataTypeMetadata = {
+  id: DatatypeId;
   name: string;
   icon: any;
+
+  /* Marking a data types as experimental hides it by default
+   * so the user has to enable them in their account first  */
+  isExperimental?: boolean;
+};
+
+export type CoreDataType<D> = {
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
   fileExportMethods?: FileExportMethod<D>[];
-
-  /* Marking a data types as experimental hides it by default
-   * so the user has to enable them in their account first  */
-  isExperimental?: boolean;
 };
 
 export type VersionedDataType<D, T, V> = {
@@ -110,22 +104,98 @@ export type VersionedDataType<D, T, V> = {
   sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
 
-export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
+export type DataTypeWitoutMetaData<D, T, V> = CoreDataType<D> &
+  VersionedDataType<D, T, V>;
 
-// TODO: we can narrow the types below by constructing a mapping from datatype IDs
-// to the corresponding typescript type. This will be more natural once we have a
-// schema system for generating typescript types.
+export type DataType<D, T, V> = DataTypeWitoutMetaData<D, T, V> &
+  DataTypeMetadata;
 
-export const DATA_TYPES: Record<
-  string,
-  DataType<HasVersionControlMetadata<unknown, unknown>, unknown, unknown>
-> = {
-  essay: markdown, // todo: migrate, we can't just rename it
-  tldraw,
-  datagrid,
-  bot,
-  kanban,
-  folder,
-} as const;
+export type DataTypeLoaderConfig<D, T, V> = {
+  metadata: DataTypeMetadata;
+  load: () => Promise<DataTypeWitoutMetaData<D, T, V>>;
+};
 
-export type DatatypeId = keyof typeof DATA_TYPES;
+export type DataTypeLoader<D, T, V> = {
+  metadata: DataTypeMetadata;
+  load: () => Promise<DataType<D, T, V>>;
+};
+
+export const getDatatypeLoaders = () => {
+  const dataTypeLoaders: Record<
+    DatatypeId,
+    DataTypeLoader<unknown, unknown, unknown>
+  > = {};
+  const dataTypeLoaderModules = import.meta.glob("../datatypes/*/loader.ts", {
+    eager: true,
+  }) as Record<
+    string,
+    {
+      default: DataTypeLoader<unknown, unknown, unknown>;
+    }
+  >;
+
+  for (const [path, { default: loader }] of Object.entries(
+    dataTypeLoaderModules
+  )) {
+    const datatypeId = path.split("/")[2] as DatatypeId;
+
+    if (datatypeId !== loader.metadata.id) {
+      throw new Error(
+        `${path} can't be loaded because the id is wrong: "${loader.metadata.id}" should match the folder name`
+      );
+    }
+
+    dataTypeLoaders[datatypeId] = {
+      async load() {
+        const result = {
+          ...(await loader.load()),
+          ...loader.metadata,
+        };
+
+        return result;
+      },
+      metadata: loader.metadata,
+    } as DataTypeLoader<unknown, unknown, unknown>;
+  }
+  return dataTypeLoaders;
+};
+
+const DATA_TYPE_LOADERS = getDatatypeLoaders();
+
+export const useDataTypeLoaders = () => {
+  return DATA_TYPE_LOADERS;
+};
+
+export const useDataType = <D, T, V>(
+  dataTypeId: DatatypeId
+): DataType<D, T, V> | undefined => {
+  const dataTypeLoaders = useDataTypeLoaders();
+  const [dataType, setDataType] = useState<DataType<D, T, V>>();
+  const dataTypeIdRef = useRef<string>();
+  dataTypeIdRef.current = dataTypeId;
+
+  useEffect(() => {
+    const dataTypeLoader = dataTypeLoaders[dataTypeId] as DataTypeLoader<
+      D,
+      T,
+      V
+    >;
+
+    if (!dataTypeLoader) {
+      setDataType(undefined);
+      return;
+    }
+
+    dataTypeLoader.load().then((dataType) => {
+      // ignore if dataTypeId has changed in the meantime
+      if (dataType.id !== dataTypeIdRef.current) {
+        return;
+      }
+      setDataType(dataType);
+    });
+  }, [dataTypeId, dataTypeLoaders]);
+
+  return dataType;
+};
+
+export type DatatypeId = string & { __datatypeId: true };

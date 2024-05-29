@@ -1,4 +1,4 @@
-import { DataType } from "@/os/datatypes";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { FileExportMethod } from "@/os/fileExports";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import {
@@ -12,9 +12,8 @@ import {
 } from "@/os/versionControl/utils";
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-import { Doc, splice } from "@automerge/automerge/next";
+import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
-import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
@@ -289,14 +288,11 @@ const fileExportMethods: FileExportMethod<MarkdownDoc>[] = [
   },
 ];
 
-export const MarkdownDatatype: DataType<
+export const MarkdownDatatype: DataTypeWitoutMetaData<
   MarkdownDoc,
   MarkdownDocAnchor,
   string
 > = {
-  id: "essay",
-  name: "Essay",
-  icon: Text,
   init,
   getTitle,
   markCopy,
@@ -309,3 +305,5 @@ export const MarkdownDatatype: DataType<
   sortAnchorsBy,
   fileExportMethods,
 };
+
+console.log("load markdown");

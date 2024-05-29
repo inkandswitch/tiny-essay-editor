@@ -1,5 +1,5 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { DATA_TYPES } from "../../datatypes";
+import { useDataTypeLoaders } from "../../datatypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -26,6 +26,8 @@ export const useSyncDocTitle = ({
   const counterRef = useRef(0);
   const selectedDocTitleRef = useRef<{ url: AutomergeUrl; title?: string }>();
 
+  const dataTypeLoaders = useDataTypeLoaders();
+
   useEffect(() => {
     if (!selectedDocLink || !selectedDoc) {
       selectedDocTitleRef.current = null;
@@ -40,8 +42,9 @@ export const useSyncDocTitle = ({
     let counter = (counterRef.current = counterRef.current + 1);
 
     // load title
-    DATA_TYPES[selectedDocLink.type]
-      .getTitle(selectedDoc, repo)
+    dataTypeLoaders[selectedDocLink.type]
+      .load()
+      .then((dataType) => dataType.getTitle(selectedDoc, repo))
       .then((title) => {
         // do nothing if selectedDocLink has changed in between
         // or if this promise resolved after newer update

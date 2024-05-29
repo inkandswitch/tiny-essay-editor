@@ -15,7 +15,7 @@ import {
   DocumentId,
   Repo,
 } from "@automerge/automerge-repo";
-import { MarkdownDoc } from "../../../datatypes/markdown/schema";
+import { MarkdownDoc } from "../../../datatypes/essay/schema";
 import { AssetsDoc } from "../assets";
 import * as A from "@automerge/automerge";
 

@@ -17,7 +17,11 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/datatypes/folder";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import {
+  DatatypeId,
+  getDatatypeLoaders,
+  useDataTypeLoaders,
+} from "../../datatypes";
 
 import {
   Popover,
@@ -36,6 +40,7 @@ import { useDatatypeSettings } from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
+  const datatypeLoaders = useDataTypeLoaders();
   let Icon;
 
   if (node.data.type === "folder") {
@@ -45,7 +50,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       Icon = ChevronRight;
     }
   } else {
-    Icon = DATA_TYPES[node.data.type]?.icon ?? FileQuestionIcon;
+    Icon = datatypeLoaders[node.data.type]?.metadata.icon ?? FileQuestionIcon;
   }
 
   return (
@@ -75,7 +80,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       {!node.isEditing && (
         <>
           <div>
-            {DATA_TYPES[node.data.type]
+            {datatypeLoaders[node.data.type]
               ? node.data.name
               : `Unknown type: ${node.data.type}`}
           </div>
@@ -155,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   rootFolderDoc,
 }) => {
   const repo = useRepo();
+  const datatypeLoaders = useDataTypeLoaders();
   const {
     doc: rootFolderDocWithChildren,
     status,
@@ -232,9 +238,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const treeSelection = selectedDocLink ? idAccessor(selectedDocLink) : null;
 
-  const onRename = ({ node, name }) => {
+  const onRename = async ({ node, name }) => {
     const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
-    const datatype = DATA_TYPES[docLink.type];
+    const datatypeLoader = datatypeLoaders[docLink.type];
+    const datatype = await datatypeLoader.load();
 
     if (!datatype.setTitle) {
       alert(
@@ -327,26 +334,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(DATA_TYPES).map(([id, datatype]) => {
+        {Object.values(datatypeLoaders).map((datatypeLoader) => {
+          const { id } = datatypeLoader.metadata;
           if (
-            datatype.isExperimental &&
+            datatypeLoader.metadata.isExperimental &&
             !datatypeSettings?.enabledDatatypeIds[id]
           ) {
             return;
           }
 
           return (
-            <div key={datatype.id}>
+            <div key={datatypeLoader.metadata.id}>
               {" "}
               <div
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
                 onClick={() => addNewDocument({ type: id as DatatypeId })}
               >
-                <datatype.icon
+                <datatypeLoader.metadata.icon
                   size={14}
                   className="inline-block font-bold mr-2 align-top mt-[2px]"
                 />
-                New {datatype.name}
+                New {datatypeLoader.metadata.name}
               </div>
             </div>
           );

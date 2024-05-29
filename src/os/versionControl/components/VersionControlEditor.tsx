@@ -23,8 +23,8 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isMarkdownDoc } from "@/datatypes/markdown";
-import { DatatypeId } from "@/os/datatypes";
+import { isMarkdownDoc } from "@/datatypes/essay";
+import { DatatypeId, useDataType } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { isLLMActive } from "@/os/lib/llm";
 import { EditorProps, TOOLS } from "@/os/tools";
@@ -303,6 +303,8 @@ export const VersionControlEditor: React.FC<{
   const activeChangeDoc = selectedBranch ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranch ? branchHandle : handle;
 
+  const dataType = useDataType(datatypeId);
+
   const {
     annotations,
     annotationGroups,
@@ -314,7 +316,7 @@ export const VersionControlEditor: React.FC<{
     setSelectedAnnotationGroupId,
   } = useAnnotations({
     doc: activeDoc,
-    datatypeId,
+    dataType,
     diff: diffForEditor,
     isCommentInputFocused,
   });
@@ -600,7 +602,7 @@ export const VersionControlEditor: React.FC<{
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranch?.url ?? mainDocUrl}
-                datatypeId={datatypeId}
+                dataType={dataType}
                 docUrl={selectedBranch?.url ?? mainDocUrl}
                 setDocHeads={setDocHeadsFromTimelineSidebar}
                 setDiff={setDiffFromTimelineSidebar}
@@ -612,7 +614,7 @@ export const VersionControlEditor: React.FC<{
               <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
-                datatypeId={datatypeId}
+                dataType={dataType}
                 annotationGroups={annotationGroups}
                 selectedAnchors={selectedAnchors}
                 changeDoc={activeChangeDoc}

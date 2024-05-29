@@ -1,5 +1,5 @@
 import { DocHandle, isValidAutomergeUrl, Doc } from "@automerge/automerge-repo";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bot,
   Download,
@@ -27,15 +27,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { MarkdownDoc } from "@/datatypes/markdown/schema";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
+import { DatatypeId, useDataTypeLoaders } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
 import botDataType from "@/datatypes/bot";
 import { getUrlSafeName } from "../hooks/useSelectedDocLink";
-import { genericExportMethods } from "@/os/fileExports";
+import { FileExportMethod, genericExportMethods } from "@/os/fileExports";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -68,22 +68,27 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocName = selectedDocLink?.name;
-  const selectedDocType = selectedDocLink?.type;
+  const selectedDataType = selectedDocLink?.type;
+  const selectedDataTypeRef = useRef<string>();
+  selectedDataTypeRef.current = selectedDataType;
 
-  const selectedDatatypeMetadata = DATA_TYPES[selectedDocType];
+  const dataTypeLoaders = useDataTypeLoaders();
+  const selectedDataTypeLoader = dataTypeLoaders[selectedDataType];
 
-  const downloadAsAutomerge = useCallback(() => {
-    const file = new Blob([save(selectedDoc)], {
-      type: "application/octet-stream",
-    });
-    saveFile(file, `${selectedDocUrl}.automerge`, [
-      {
-        accept: {
-          "application/octet-stream": [".automerge"],
-        },
-      },
-    ]);
-  }, [selectedDocUrl, selectedDoc]);
+  const [fileExportMethods, setFileExportMethods] = useState<
+    FileExportMethod<unknown>[]
+  >([]);
+  useEffect(() => {
+    if (!selectedDataTypeLoader) {
+      setFileExportMethods([]);
+    } else {
+      selectedDataTypeLoader.load().then((datatype) => {
+        if (datatype.id === selectedDataType) {
+          setFileExportMethods(datatype.fileExportMethods ?? []);
+        }
+      });
+    }
+  }, [selectedDataTypeLoader]);
 
   const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot") ?? [];
 
@@ -98,9 +103,11 @@ export const Topbar: React.FC<TopbarProps> = ({
         </div>
       )}
       <div className="ml-3 text-sm text-gray-700 font-bold">
-        {selectedDatatypeMetadata && (
-          <selectedDatatypeMetadata.icon className="inline mr-1" size={14} />
-        )}
+        {selectedDataTypeLoader &&
+          React.createElement(selectedDataTypeLoader.metadata.icon, {
+            className: "inline mr-1",
+            size: 14,
+          })}
         {selectedDocName}
       </div>
       <div className="ml-1 mt-[-2px]">
@@ -173,7 +180,10 @@ export const Topbar: React.FC<TopbarProps> = ({
                       size={14}
                       className="inline-block ml-2 cursor-pointer"
                       onClick={(e) => {
-                        selectDocLink({ ...botDocLink, type: "essay" });
+                        selectDocLink({
+                          ...botDocLink,
+                          type: "essay" as DatatypeId,
+                        });
                         e.stopPropagation();
                       }}
                     />
@@ -207,12 +217,14 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
+                const selectedDataType = await selectedDataTypeLoader.load();
+
                 const newHandle =
                   repo.clone<HasVersionControlMetadata<unknown, unknown>>(
                     selectedDocHandle
                   );
                 newHandle.change((doc: any) => {
-                  DATA_TYPES[selectedDocType].markCopy(doc);
+                  selectedDataType.markCopy(doc);
                   doc.branchMetadata.source = {
                     url: selectedDocUrl,
                     branchHeads: getHeads(selectedDocHandle.docSync()),
@@ -221,7 +233,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
                 const newDocLink: DocLink = {
                   url: newHandle.url,
-                  name: await DATA_TYPES[selectedDocType].getTitle(
+                  name: await selectedDataType.getTitle(
                     newHandle.docSync(),
                     repo
                   ),
@@ -256,31 +268,29 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
 
-            {(selectedDatatypeMetadata?.fileExportMethods ?? [])
-              .concat(genericExportMethods)
-              .map((method) => (
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const blob = await method.export(selectedDoc, repo);
-                    const filename = `${getUrlSafeName(selectedDocLink.name)}.${
-                      method.extension
-                    }`;
-                    saveFile(blob, filename, [
-                      {
-                        accept: {
-                          [method.contentType]: [`.${method.extension}`],
-                        },
+            {fileExportMethods.concat(genericExportMethods).map((method) => (
+              <DropdownMenuItem
+                onClick={async () => {
+                  const blob = await method.export(selectedDoc, repo);
+                  const filename = `${getUrlSafeName(selectedDocLink.name)}.${
+                    method.extension
+                  }`;
+                  saveFile(blob, filename, [
+                    {
+                      accept: {
+                        [method.contentType]: [`.${method.extension}`],
                       },
-                    ]);
-                  }}
-                >
-                  <Download
-                    size={14}
-                    className="inline-block text-gray-500 mr-2"
-                  />{" "}
-                  Export as {method.name}
-                </DropdownMenuItem>
-              ))}
+                    },
+                  ]);
+                }}
+              >
+                <Download
+                  size={14}
+                  className="inline-block text-gray-500 mr-2"
+                />{" "}
+                Export as {method.name}
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => removeDocLink(selectedDocLink)}>
               <Trash2Icon

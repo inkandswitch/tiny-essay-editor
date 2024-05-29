@@ -11,7 +11,7 @@ import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { DatatypeId } from "../../datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
@@ -67,9 +67,6 @@ export const getUrlSafeName = (value: string) => {
   return urlSafeName;
 };
 
-const isDatatypeId = (x: string): x is DatatypeId =>
-  Object.keys(DATA_TYPES).includes(x as DatatypeId);
-
 // Parse older URL formats and map them into our newer formatu
 const parseLegacyUrl = (
   url: URL
@@ -80,7 +77,7 @@ const parseLegacyUrl = (
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
       url: possibleAutomergeUrl,
-      type: "essay",
+      type: "essay" as DatatypeId,
     };
   }
 
@@ -99,11 +96,6 @@ const parseLegacyUrl = (
     return null;
   }
 
-  if (typeof docType === "string" && !isDatatypeId(docType)) {
-    alert(`Invalid doc type in URL: ${docType}`);
-    return null;
-  }
-
   if (typeof branchUrl === "string" && !isValidAutomergeUrl(branchUrl)) {
     alert(`Invalid branch in URL: ${branchUrl}`);
     return null;
@@ -111,7 +103,7 @@ const parseLegacyUrl = (
 
   return {
     url: docUrl,
-    type: docType,
+    type: docType as DatatypeId,
     branchUrl: branchUrl as AutomergeUrl,
   };
 };
@@ -133,12 +125,8 @@ const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
     return null;
   }
 
-  const datatypeId =
-    url.searchParams.get("type") ?? url.searchParams.get("docType"); // use legacy docType as a fallback
-  if (!isDatatypeId(datatypeId)) {
-    alert(`Invalid data type in URL: ${datatypeId}`);
-    return null;
-  }
+  const datatypeId = (url.searchParams.get("type") ??
+    url.searchParams.get("docType")) as DatatypeId; // use legacy docType as a fallback
 
   const branchUrl = url.searchParams.get("branchUrl");
   if (branchUrl && !isValidAutomergeUrl(branchUrl)) {

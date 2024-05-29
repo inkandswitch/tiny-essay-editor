@@ -11,7 +11,7 @@ import { EventEmitter } from "eventemitter3";
 import { useEffect, useState } from "react";
 import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
-import { useForceUpdate } from "@/components/utils";
+import { useForceUpdate } from "@/os/hooks/useForceUpdate";
 
 import { FolderDoc } from "@/datatypes/folder";
 import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";

@@ -8,7 +8,7 @@ import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "@/datatypes/markdown";
+} from "@/datatypes/essay";
 
 import { EditorView } from "@codemirror/view";
 

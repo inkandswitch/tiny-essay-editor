@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
-import { DATA_TYPES } from "@/os/datatypes";
+import { useDataTypeLoaders } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // 1MB in bytes
@@ -56,6 +56,7 @@ export const AccountPicker = ({
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
+  const datatypes = useDataTypeLoaders();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
@@ -144,10 +145,6 @@ export const AccountPicker = ({
       contactToLogin?.type === "registered");
 
   const isLoggedIn = self?.type === "registered";
-
-  const experimentalDatatypes = Object.values(DATA_TYPES).filter(
-    ({ isExperimental }) => isExperimental
-  );
 
   return (
     <Dialog>
@@ -322,38 +319,45 @@ export const AccountPicker = ({
             </form>
 
             <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
-              <Label>Experimental data types</Label>
+              <Label>Data types</Label>
 
               <div className="flex flex-col gap-2 py-2">
                 {datatypeSettingsDoc &&
-                  experimentalDatatypes.map((datatype) => {
+                  Object.values(datatypes).map((datatypeLoader) => {
                     return (
                       <div
                         className="flex items-center gap-2"
-                        key={datatype.id}
+                        key={datatypeLoader.metadata.id}
                       >
                         <Checkbox
-                          id={`datatype-${datatype.id}`}
+                          id={`datatype-${datatypeLoader.metadata.id}`}
                           checked={
-                            datatypeSettingsDoc.enabledDatatypeIds[datatype.id]
+                            datatypeSettingsDoc.enabledDatatypeIds[
+                              datatypeLoader.metadata.id
+                            ]
                           }
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
                             changeDatatypeSettingsDoc((settings) => {
-                              settings.enabledDatatypeIds[datatype.id] =
-                                !settings.enabledDatatypeIds[datatype.id];
+                              settings.enabledDatatypeIds[
+                                datatypeLoader.metadata.id
+                              ] =
+                                !settings.enabledDatatypeIds[
+                                  datatypeLoader.metadata.id
+                                ];
                             });
                           }}
                         />
                         <label
-                          htmlFor={`datatype-${datatype.id}`}
+                          htmlFor={`datatype-${datatypeLoader.metadata.id}`}
                           className="text-sm text-gray-600 cursor-pointer "
                         >
-                          <datatype.icon
+                          <datatypeLoader.metadata.icon
                             size={14}
                             className="inline-block font-bold mr-2 align-top mt-[2px]"
                           />
-                          {datatype.name}
+                          {datatypeLoader.metadata.name}
+                          {datatypeLoader.metadata.isExperimental ? " 🧪" : ""}
                         </label>
                       </div>
                     );

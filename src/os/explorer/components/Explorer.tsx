@@ -12,7 +12,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
+import { DatatypeId, useDataTypeLoaders } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -29,6 +29,7 @@ import { ErrorFallback } from "./ErrorFallback";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
+  const datatypeLoaders = useDataTypeLoaders();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
 
@@ -62,14 +63,17 @@ export const Explorer: React.FC = () => {
   }, [selectedBranchUrl, selectedDoc]);
 
   const addNewDocument = useCallback(
-    ({ type }: { type: DatatypeId }) => {
-      if (!DATA_TYPES[type]) {
+    async ({ type }: { type: DatatypeId }) => {
+      const datatypeLoader = datatypeLoaders[type];
+
+      if (!datatypeLoader) {
         throw new Error(`Unsupported document type: ${type}`);
       }
+      const datatype = await datatypeLoader.load();
 
       const newDocHandle =
         repo.create<HasVersionControlMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => DATA_TYPES[type].init(doc, repo));
+      newDocHandle.change((doc) => datatype.init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];
@@ -128,7 +132,7 @@ export const Explorer: React.FC = () => {
 
       // if there's no document selected and the user hits enter, make a new document
       if (!selectedDocUrl && event.key === "Enter") {
-        addNewDocument({ type: "essay" });
+        addNewDocument({ type: "essay" as DatatypeId });
       }
     };
 
@@ -222,7 +226,9 @@ export const Explorer: React.FC = () => {
                       No document selected
                     </p>
                     <Button
-                      onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
+                      onClick={() =>
+                        addNewDocument({ type: "essay" as DatatypeId })
+                      } // Default type for new document
                       variant="outline"
                     >
                       Create new document
