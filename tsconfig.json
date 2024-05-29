@@ -17,7 +17,7 @@
 
     "paths": {
       "@/*": ["./src/*"],
-      "@automerge/automerge-wasm" : ["./src/vendor/automerge-wasm/index.d.ts"]
+      "@automerge/automerge-wasm" : ["./src/vendor/automerge-wasm"]
     },
 
     /* Linting */

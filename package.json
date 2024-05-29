@@ -5,8 +5,8 @@
   "type": "module",
   "module": "index.js",
   "scripts": {
+    "build": "tsc && tsc-alias",
     "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\" \"http-server\")",
-    "build": "tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest"
   },

@@ -16,7 +16,7 @@ import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-index
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { getAccount } from "./explorer/account.js";
 import { Explorer } from "./explorer/components/Explorer.js";
-import "./index.css";
+// import "./index.css";
 
 const serviceWorker = await setupServiceWorker();
 

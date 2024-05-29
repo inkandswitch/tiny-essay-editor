@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Essay Editor</title>
+    <script
+      async
+      src="https://ga.jspm.io/npm:es-module-shims@1.10.0/dist/es-module-shims.js"
+      crossorigin="anonymous"
+    ></script>
+    <script type="importmap"></script>
     <link rel="shortcut icon" href="/favicon.ico?v=1" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -20,6 +26,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/os/main.tsx"></script>
+    <script type="module" src="./dist/os/main.js"></script>
   </body>
 </html>
