@@ -26,6 +26,7 @@ export const useModule = <M, D>(module: Module<M, D>): (D & M) | undefined => {
   useEffect(() => {
     if (!module) {
       setLoadedModule(undefined);
+      return;
     }
 
     module.load().then((loadedModule) => {

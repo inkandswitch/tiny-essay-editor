@@ -10,7 +10,12 @@ import { DataType, DatatypeId } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
-import { AnnotationsViewProps, TOOLS } from "@/os/tools";
+import {
+  AnnotationsViewProps,
+  Tool,
+  ToolMetaData,
+  useToolModulesForDataType,
+} from "@/os/tools";
 import {
   AnnotationGroup,
   AnnotationGroupWithState,
@@ -23,6 +28,7 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
+import { useModule } from "@/os/modules";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
@@ -564,11 +570,18 @@ const AnnotationsView = ({
   unknown,
   unknown
 >) => {
+  const tools = useToolModulesForDataType(datatypeId);
+  const tool = useModule(tools[0]);
+
+  if (!tool) {
+    return;
+  }
+
   // For now, we just use the first annotation viewer available for this doc type.
   // In the future, we might want to:
   // - use an annotations view that's similar to the viewer being used for the main doc
   // - allow switching between different viewers?
-  const Viewer = TOOLS[datatypeId]?.[0].annotationViewComponent;
+  const Viewer = tool.annotationViewComponent;
   if (!Viewer) {
     return (
       <div className="text-gray-500 text-xs italic">

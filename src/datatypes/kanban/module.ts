@@ -1,11 +1,7 @@
-import {
-  DataTypeLoaderConfig,
-  DataTypeMetadata,
-  DataTypeWitoutMetaData,
-} from "@/os/datatypes";
+import { DataTypeMetadata, DataTypeWitoutMetaData } from "@/os/datatypes";
+import { Module } from "@/os/modules";
 import { KanbanSquare } from "lucide-react";
 import { KanbanBoardDoc, KanbanBoardDocAnchor } from "./schema";
-import { Module } from "@/os/modules";
 
 export default new Module<
   DataTypeMetadata,

@@ -1,5 +1,4 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -7,9 +6,10 @@ import {
   FileQuestionIcon,
   FolderInput,
 } from "lucide-react";
-import { Tree, NodeRendererProps } from "react-arborist";
-import { FillFlexParent } from "./FillFlexParent";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { NodeRendererProps, Tree } from "react-arborist";
 import { AccountPicker } from "./AccountPicker";
+import { FillFlexParent } from "./FillFlexParent";
 
 import {
   DocLink,
@@ -17,11 +17,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/datatypes/folder";
-import {
-  DatatypeId,
-  getDatatypeLoaders,
-  useDataTypeModules,
-} from "../../datatypes";
+import { DatatypeId, useDataTypeModules } from "../../datatypes";
 
 import {
   Popover,
@@ -30,13 +26,16 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
+import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
-import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { capitalize, uniqBy } from "lodash";
-import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { UIStateDoc, useCurrentAccountDoc } from "../account";
-import { useDatatypeSettings } from "../account";
+import {
+  UIStateDoc,
+  useCurrentAccountDoc,
+  useDatatypeSettings,
+} from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;

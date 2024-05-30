@@ -1,8 +1,6 @@
 import { Tool } from "@/os/tools";
 import { BotEditor } from "./BotEditor";
 
-export default {
-  id: "bot",
-  name: "Bot",
+export const BotTool: Tool = {
   editorComponent: BotEditor,
-} as Tool;
+};

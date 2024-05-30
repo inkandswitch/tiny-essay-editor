@@ -110,16 +110,6 @@ export type DataTypeWitoutMetaData<D, T, V> = CoreDataType<D> &
 export type DataType<D, T, V> = DataTypeWitoutMetaData<D, T, V> &
   DataTypeMetadata;
 
-export type DataTypeLoaderConfig<D, T, V> = {
-  metadata: DataTypeMetadata;
-  load: () => Promise<DataTypeWitoutMetaData<D, T, V>>;
-};
-
-export type DataTypeLoader<D, T, V> = {
-  metadata: DataTypeMetadata;
-  load: () => Promise<DataType<D, T, V>>;
-};
-
 const dataTypesFolder: Record<
   string,
   { default: Module<DataTypeMetadata, DataType<unknown, unknown, unknown>> }
@@ -137,7 +127,7 @@ for (const [path, { default: module }] of Object.entries(dataTypesFolder)) {
 
   if (id !== module.metadata.id) {
     throw new Error(
-      `Can't load datatype: id "${module.metadata.id}" does not match the folder name ${id} `
+      `Can't load datatype: id "${module.metadata.id}" does not match the folder name "${id}" `
     );
   }
 

@@ -27,7 +27,12 @@ import { isMarkdownDoc } from "@/datatypes/essay";
 import { DatatypeId, useDataType } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { isLLMActive } from "@/os/lib/llm";
-import { EditorProps, TOOLS } from "@/os/tools";
+import {
+  EditorProps,
+  Tool,
+  ToolMetaData,
+  useToolModulesForDataType,
+} from "@/os/tools";
 import { SideBySide as TLDrawSideBySide } from "@/tools/tldraw/components/TLDraw";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -74,6 +79,7 @@ import {
 } from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
+import { useModule } from "@/os/modules";
 
 interface MakeBranchOptions {
   name?: string;
@@ -652,8 +658,15 @@ const DocEditor = <T, V>({
   setSelectedAnchors,
   setHoveredAnchor,
 }: EditorPropsWithDatatype<T, V>) => {
+  const toolModules = useToolModulesForDataType(datatypeId);
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = TOOLS[datatypeId][0].editorComponent;
+  const tool = useModule<ToolMetaData, Tool>(toolModules[0]);
+
+  if (!tool) {
+    return;
+  }
+
+  const Component = tool.editorComponent;
 
   return (
     <Component

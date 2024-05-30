@@ -1,5 +1,6 @@
-import { DocHandle, isValidAutomergeUrl, Doc } from "@automerge/automerge-repo";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { Doc, DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import {
   Bot,
   Download,
@@ -10,12 +11,11 @@ import {
   ShareIcon,
   Trash2Icon,
 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { SyncIndicator } from "./SyncIndicator";
-import { AccountPicker } from "./AccountPicker";
 import { saveFile } from "../utils";
-import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { AccountPicker } from "./AccountPicker";
+import { SyncIndicator } from "./SyncIndicator";
 
 import {
   DropdownMenu,
@@ -25,16 +25,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { getHeads, save } from "@automerge/automerge";
-import { MarkdownDoc } from "@/datatypes/essay/schema";
-import { DatatypeId, useDataTypeModules } from "../../datatypes";
-import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
-import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
-import botDataType from "@/datatypes/bot";
-import { getUrlSafeName } from "../hooks/useSelectedDocLink";
+import { runBot } from "@/datatypes/bot/essayEditingBot";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
 import { FileExportMethod, genericExportMethods } from "@/os/fileExports";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
+import { getHeads } from "@automerge/automerge";
+import { DatatypeId, useDataTypeModules } from "../../datatypes";
+import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
+import { getUrlSafeName } from "../hooks/useSelectedDocLink";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -62,8 +61,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const { flatDocLinks } = useRootFolderDocWithChildren();
 
   const datatypeSettings = useDatatypeSettings();
-  const isBotDatatypeEnabled =
-    datatypeSettings?.enabledDatatypeIds[botDataType.id];
+  const isBotDatatypeEnabled = datatypeSettings?.enabledDatatypeIds.bot;
 
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocName = selectedDocLink?.name;
