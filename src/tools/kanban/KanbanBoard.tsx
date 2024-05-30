@@ -1,10 +1,6 @@
 import * as A from "@automerge/automerge/next";
 
-import {
-  KanbanBoardDatatype,
-  KanbanBoardDoc,
-  KanbanBoardDocAnchor,
-} from "@/datatypes/kanban";
+import { KanbanBoardDoc, KanbanBoardDocAnchor } from "@/datatypes/kanban";
 
 import { EditorProps } from "@/os/tools";
 import { useDocumentWithActions } from "@/datatypes/kanban/useDocumentWithActions";

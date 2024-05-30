@@ -4,6 +4,8 @@ import path from "path";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import { globSync } from "glob";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   base: "./",
@@ -35,6 +37,18 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, "index.html"),
         "service-worker": path.resolve(__dirname, "service-worker.js"),
+        ...Object.fromEntries(
+          globSync(
+            path.resolve(__dirname, "src/datatypes/*/module.@(ts|js|tsx|jsx)")
+          ).map((path) => {
+            const datatypeId = path.split("/").slice(-2)[0];
+
+            return [
+              `dataType-${datatypeId}`,
+              fileURLToPath(new URL(path, import.meta.url)),
+            ];
+          })
+        ),
       },
       output: {
         // We put index.css in dist instead of dist/assets so that we can link to fonts
@@ -52,9 +66,18 @@ export default defineConfig({
           if (chunkInfo.name === "service-worker") {
             return "[name].js"; // This will place service-worker.js directly under dist
           }
+
+          if (chunkInfo.name.startsWith("dataType-")) {
+            const typeId = chunkInfo.name.split("-")[1];
+
+            return `dataTypes/${typeId}.js`;
+          }
+
           return "assets/[name]-[hash].js"; // Default behavior for other entries
         },
+        exports: "named",
       },
+      preserveEntrySignatures: "allow-extension",
     },
   },
 
