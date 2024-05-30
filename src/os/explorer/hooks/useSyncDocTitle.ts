@@ -26,7 +26,7 @@ export const useSyncDocTitle = ({
   const counterRef = useRef(0);
   const selectedDocTitleRef = useRef<{ url: AutomergeUrl; title?: string }>();
 
-  const dataTypeLoaders = useDataTypeModules();
+  const dataTypeModule = useDataTypeModules();
 
   useEffect(() => {
     if (!selectedDocLink || !selectedDoc) {
@@ -42,7 +42,7 @@ export const useSyncDocTitle = ({
     let counter = (counterRef.current = counterRef.current + 1);
 
     // load title
-    dataTypeLoaders[selectedDocLink.type]
+    dataTypeModule[selectedDocLink.type]
       .load()
       .then((dataType) => dataType.getTitle(selectedDoc, repo))
       .then((title) => {

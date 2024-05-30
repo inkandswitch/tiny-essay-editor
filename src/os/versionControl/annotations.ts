@@ -51,7 +51,6 @@ export function useAnnotations({
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
 } {
-  const datatypeLoaders = useDataTypeModules();
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
 

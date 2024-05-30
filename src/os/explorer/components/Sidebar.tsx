@@ -6,7 +6,13 @@ import {
   FileQuestionIcon,
   FolderInput,
 } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  ReactElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NodeRendererProps, Tree } from "react-arborist";
 import { AccountPicker } from "./AccountPicker";
 import { FillFlexParent } from "./FillFlexParent";
@@ -39,7 +45,7 @@ import {
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const datatypeLoaders = useDataTypeModules();
+  const datatypeModules = useDataTypeModules();
   let Icon;
 
   if (node.data.type === "folder") {
@@ -49,7 +55,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       Icon = ChevronRight;
     }
   } else {
-    Icon = datatypeLoaders[node.data.type]?.metadata.icon ?? FileQuestionIcon;
+    Icon = datatypeModules[node.data.type]?.metadata.icon ?? FileQuestionIcon;
   }
 
   return (
@@ -79,7 +85,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       {!node.isEditing && (
         <>
           <div>
-            {datatypeLoaders[node.data.type]
+            {datatypeModules[node.data.type]
               ? node.data.name
               : `Unknown type: ${node.data.type}`}
           </div>
@@ -159,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   rootFolderDoc,
 }) => {
   const repo = useRepo();
-  const datatypeLoaders = useDataTypeModules();
+  const datatypeModules = useDataTypeModules();
   const {
     doc: rootFolderDocWithChildren,
     status,
@@ -239,8 +245,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const onRename = async ({ node, name }) => {
     const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
-    const datatypeLoader = datatypeLoaders[docLink.type];
-    const datatype = await datatypeLoader.load();
+    const datatypeModule = datatypeModules[docLink.type];
+    const datatype = await datatypeModule.load();
 
     if (!datatype.setTitle) {
       alert(
@@ -333,28 +339,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.values(datatypeLoaders).map((datatypeLoader) => {
-          const { id } = datatypeLoader.metadata;
+        {Object.values(datatypeModules).map((datatypeModule) => {
+          const { id } = datatypeModule.metadata;
           const isEnabled = datatypeSettings?.enabledDatatypeIds[id];
           if (
             isEnabled == false ||
-            (isEnabled !== true && datatypeLoader.metadata.isExperimental)
+            (isEnabled !== true && datatypeModule.metadata.isExperimental)
           ) {
             return;
           }
 
           return (
-            <div key={datatypeLoader.metadata.id}>
+            <div key={datatypeModule.metadata.id}>
               {" "}
               <div
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
                 onClick={() => addNewDocument({ type: id as DatatypeId })}
               >
-                <datatypeLoader.metadata.icon
+                <datatypeModule.metadata.icon
                   size={14}
                   className="inline-block font-bold mr-2 align-top mt-[2px]"
                 />
-                New {datatypeLoader.metadata.name}
+                New {datatypeModule.metadata.name}
               </div>
             </div>
           );

@@ -56,7 +56,7 @@ export const AccountPicker = ({
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
-  const datatypes = useDataTypeModules();
+  const datatypeModules = useDataTypeModules();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
@@ -323,44 +323,44 @@ export const AccountPicker = ({
 
               <div className="flex flex-col gap-2 py-2">
                 {datatypeSettingsDoc &&
-                  Object.values(datatypes).map((datatypeLoader) => {
+                  Object.values(datatypeModules).map((datatypeModule) => {
                     const isEnabled =
                       datatypeSettingsDoc.enabledDatatypeIds[
-                        datatypeLoader.metadata.id
+                        datatypeModule.metadata.id
                       ];
 
                     const isChecked =
                       isEnabled ||
                       (isEnabled === undefined &&
-                        !datatypeLoader.metadata.isExperimental);
+                        !datatypeModule.metadata.isExperimental);
 
                     return (
                       <div
                         className="flex items-center gap-2"
-                        key={datatypeLoader.metadata.id}
+                        key={datatypeModule.metadata.id}
                       >
                         <Checkbox
-                          id={`datatype-${datatypeLoader.metadata.id}`}
+                          id={`datatype-${datatypeModule.metadata.id}`}
                           checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
                             changeDatatypeSettingsDoc((settings) => {
                               settings.enabledDatatypeIds[
-                                datatypeLoader.metadata.id
+                                datatypeModule.metadata.id
                               ] = !isChecked;
                             });
                           }}
                         />
                         <label
-                          htmlFor={`datatype-${datatypeLoader.metadata.id}`}
+                          htmlFor={`datatype-${datatypeModule.metadata.id}`}
                           className="text-sm text-gray-600 cursor-pointer "
                         >
-                          <datatypeLoader.metadata.icon
+                          <datatypeModule.metadata.icon
                             size={14}
                             className="inline-block font-bold mr-2 align-top mt-[2px]"
                           />
-                          {datatypeLoader.metadata.name}
-                          {datatypeLoader.metadata.isExperimental ? " 🧪" : ""}
+                          {datatypeModule.metadata.name}
+                          {datatypeModule.metadata.isExperimental ? " 🧪" : ""}
                         </label>
                       </div>
                     );

@@ -69,23 +69,23 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDataTypeRef = useRef<string>();
   selectedDataTypeRef.current = selectedDataType;
 
-  const dataTypeLoaders = useDataTypeModules();
-  const selectedDataTypeLoader = dataTypeLoaders[selectedDataType];
+  const dataTypeModules = useDataTypeModules();
+  const selectedDataTypeModule = dataTypeModules[selectedDataType];
 
   const [fileExportMethods, setFileExportMethods] = useState<
     FileExportMethod<unknown>[]
   >([]);
   useEffect(() => {
-    if (!selectedDataTypeLoader) {
+    if (!selectedDataTypeModule) {
       setFileExportMethods([]);
     } else {
-      selectedDataTypeLoader.load().then((datatype) => {
+      selectedDataTypeModule.load().then((datatype) => {
         if (datatype.id === selectedDataType) {
           setFileExportMethods(datatype.fileExportMethods ?? []);
         }
       });
     }
-  }, [selectedDataTypeLoader]);
+  }, [selectedDataTypeModule]);
 
   const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot") ?? [];
 
@@ -100,8 +100,8 @@ export const Topbar: React.FC<TopbarProps> = ({
         </div>
       )}
       <div className="ml-3 text-sm text-gray-700 font-bold">
-        {selectedDataTypeLoader &&
-          React.createElement(selectedDataTypeLoader.metadata.icon, {
+        {selectedDataTypeModule &&
+          React.createElement(selectedDataTypeModule.metadata.icon, {
             className: "inline mr-1",
             size: 14,
           })}
@@ -214,7 +214,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
-                const selectedDataType = await selectedDataTypeLoader.load();
+                const selectedDataType = await selectedDataTypeModule.load();
 
                 const newHandle =
                   repo.clone<HasVersionControlMetadata<unknown, unknown>>(

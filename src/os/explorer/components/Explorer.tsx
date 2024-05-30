@@ -29,7 +29,7 @@ import { ErrorFallback } from "./ErrorFallback";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
-  const datatypeLoaders = useDataTypeModules();
+  const datatypeModules = useDataTypeModules();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
 
@@ -64,12 +64,12 @@ export const Explorer: React.FC = () => {
 
   const addNewDocument = useCallback(
     async ({ type }: { type: DatatypeId }) => {
-      const datatypeLoader = datatypeLoaders[type];
+      const datatypeModule = datatypeModules[type];
 
-      if (!datatypeLoader) {
+      if (!datatypeModule) {
         throw new Error(`Unsupported document type: ${type}`);
       }
-      const datatype = await datatypeLoader.load();
+      const datatype = await datatypeModule.load();
 
       const newDocHandle =
         repo.create<HasVersionControlMetadata<unknown, unknown>>();
