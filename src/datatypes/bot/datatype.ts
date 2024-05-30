@@ -1,9 +1,8 @@
-import { ContactDoc, RegisteredContactDoc } from "@/os/explorer/account";
 import { MarkdownDatatype } from "@/datatypes/essay/datatype";
 import { MarkdownDoc } from "@/datatypes/essay/schema";
-import { DataTypeWitoutMetaData, type DataType } from "@/os/datatypes";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
+import { ContactDoc, RegisteredContactDoc } from "@/os/explorer/account";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
-import { Bot } from "lucide-react";
 import { EssayEditingBotDoc } from "./schema";
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;

@@ -1,11 +1,10 @@
-import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { ChangeGroup } from "@/os/versionControl/groupChanges";
 import {
   Annotation,
   initVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
-import { KanbanSquare } from "lucide-react";
 import { Card, KanbanBoardDoc, KanbanBoardDocAnchor, Lane } from "./schema";
 
 // When a copy of the document has been made,

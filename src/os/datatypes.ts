@@ -8,8 +8,8 @@ import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 
 // datatypes
-import { useEffect, useRef, useState } from "react";
 import { FileExportMethod } from "./fileExports";
+import { Module, useModule } from "./modules";
 
 export type DataTypeMetadata = {
   id: DatatypeId;
@@ -120,82 +120,41 @@ export type DataTypeLoader<D, T, V> = {
   load: () => Promise<DataType<D, T, V>>;
 };
 
-export const getDatatypeLoaders = () => {
-  const dataTypeLoaders: Record<
-    DatatypeId,
-    DataTypeLoader<unknown, unknown, unknown>
-  > = {};
-  const dataTypeLoaderModules = import.meta.glob("../datatypes/*/loader.ts", {
-    eager: true,
-  }) as Record<
-    string,
-    {
-      default: DataTypeLoader<unknown, unknown, unknown>;
-    }
-  >;
+const dataTypesFolder: Record<
+  string,
+  { default: Module<DataTypeMetadata, DataType<unknown, unknown, unknown>> }
+> = import.meta.glob("../datatypes/*/module.@(ts|js|tsx|jsx)", {
+  eager: true,
+});
 
-  for (const [path, { default: loader }] of Object.entries(
-    dataTypeLoaderModules
-  )) {
-    const datatypeId = path.split("/")[2] as DatatypeId;
+const DATA_TYPE_MODULES: Record<
+  string,
+  Module<DataTypeMetadata, DataType<unknown, unknown, unknown>>
+> = {};
 
-    if (datatypeId !== loader.metadata.id) {
-      throw new Error(
-        `${path} can't be loaded because the id is wrong: "${loader.metadata.id}" should match the folder name`
-      );
-    }
+for (const [path, { default: module }] of Object.entries(dataTypesFolder)) {
+  const id = path.split("/")[2];
 
-    dataTypeLoaders[datatypeId] = {
-      async load() {
-        const result = {
-          ...(await loader.load()),
-          ...loader.metadata,
-        };
-
-        return result;
-      },
-      metadata: loader.metadata,
-    } as DataTypeLoader<unknown, unknown, unknown>;
+  if (id !== module.metadata.id) {
+    throw new Error(
+      `Can't load datatype: id "${module.metadata.id}" does not match the folder name ${id} `
+    );
   }
-  return dataTypeLoaders;
-};
 
-const DATA_TYPE_LOADERS = getDatatypeLoaders();
+  DATA_TYPE_MODULES[id] = module;
+}
 
-export const useDataTypeLoaders = () => {
-  return DATA_TYPE_LOADERS;
+export const useDataTypeModules = () => {
+  return DATA_TYPE_MODULES;
 };
 
 export const useDataType = <D, T, V>(
   dataTypeId: DatatypeId
 ): DataType<D, T, V> | undefined => {
-  const dataTypeLoaders = useDataTypeLoaders();
-  const [dataType, setDataType] = useState<DataType<D, T, V>>();
-  const dataTypeIdRef = useRef<string>();
-  dataTypeIdRef.current = dataTypeId;
+  const dataTypeModules = useDataTypeModules();
+  const dataType = useModule(dataTypeModules[dataTypeId]);
 
-  useEffect(() => {
-    const dataTypeLoader = dataTypeLoaders[dataTypeId] as DataTypeLoader<
-      D,
-      T,
-      V
-    >;
-
-    if (!dataTypeLoader) {
-      setDataType(undefined);
-      return;
-    }
-
-    dataTypeLoader.load().then((dataType) => {
-      // ignore if dataTypeId has changed in the meantime
-      if (dataType.id !== dataTypeIdRef.current) {
-        return;
-      }
-      setDataType(dataType);
-    });
-  }, [dataTypeId, dataTypeLoaders]);
-
-  return dataType;
+  return dataType as DataType<D, T, V>;
 };
 
-export type DatatypeId = string & { __datatypeId: true };
+export type DatatypeId = string;

@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
-import { useDataTypeLoaders } from "@/os/datatypes";
+import { useDataTypeModules } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // 1MB in bytes
@@ -56,7 +56,7 @@ export const AccountPicker = ({
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
-  const datatypes = useDataTypeLoaders();
+  const datatypes = useDataTypeModules();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(

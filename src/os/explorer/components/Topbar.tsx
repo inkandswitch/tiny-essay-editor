@@ -7,7 +7,6 @@ import {
   GitForkIcon,
   Menu,
   MoreHorizontal,
-  SaveIcon,
   ShareIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -28,7 +27,7 @@ import {
 
 import { getHeads, save } from "@automerge/automerge";
 import { MarkdownDoc } from "@/datatypes/essay/schema";
-import { DatatypeId, useDataTypeLoaders } from "../../datatypes";
+import { DatatypeId, useDataTypeModules } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
@@ -72,7 +71,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const selectedDataTypeRef = useRef<string>();
   selectedDataTypeRef.current = selectedDataType;
 
-  const dataTypeLoaders = useDataTypeLoaders();
+  const dataTypeLoaders = useDataTypeModules();
   const selectedDataTypeLoader = dataTypeLoaders[selectedDataType];
 
   const [fileExportMethods, setFileExportMethods] = useState<

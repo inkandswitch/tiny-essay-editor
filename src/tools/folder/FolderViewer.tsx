@@ -6,13 +6,13 @@ import { EditorProps } from "@/os/tools";
 import { FolderDoc } from "@/datatypes/folder";
 import { TOOLS } from "@/os/tools";
 import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
-import { useDataTypeLoaders } from "@/os/datatypes";
+import { useDataTypeModules } from "@/os/datatypes";
 
 export const FolderViewer: React.FC<EditorProps<never, never>> = ({
   docUrl,
   docHeads,
 }: EditorProps<never, never>) => {
-  const dataTypeLoaders = useDataTypeLoaders();
+  const dataTypeLoaders = useDataTypeModules();
   const [folder] = useDocument<FolderDoc>(docUrl); // used to trigger re-rendering when the doc loads
 
   const folderAtHeads = docHeads ? A.view(folder, docHeads) : folder;

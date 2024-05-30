@@ -1,8 +1,12 @@
-import { DataTypeLoaderConfig } from "@/os/datatypes";
+import { DataTypeMetadata, DataTypeWitoutMetaData } from "@/os/datatypes";
 import { Text } from "lucide-react";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
+import { Module } from "@/os/modules";
 
-export default {
+export default new Module<
+  DataTypeMetadata,
+  DataTypeWitoutMetaData<MarkdownDoc, MarkdownDocAnchor, string>
+>({
   metadata: {
     id: "essay",
     name: "Essay",
@@ -11,4 +15,4 @@ export default {
 
   load: () =>
     import("./datatype").then(({ MarkdownDatatype }) => MarkdownDatatype),
-} as DataTypeLoaderConfig<MarkdownDoc, MarkdownDocAnchor, string>;
+});

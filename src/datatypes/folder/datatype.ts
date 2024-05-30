@@ -1,5 +1,4 @@
-import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
-import { FolderIcon } from "lucide-react";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { FolderDoc } from ".";
 
 export const init = (doc: any) => {

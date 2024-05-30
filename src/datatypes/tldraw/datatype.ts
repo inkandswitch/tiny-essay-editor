@@ -1,16 +1,20 @@
-import { next as A } from "@automerge/automerge";
-import { DataType, DataTypeWitoutMetaData } from "@/os/datatypes";
-import { init as tldrawinit } from "automerge-tldraw";
-import { PenLine } from "lucide-react";
-import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
-import { pick } from "lodash";
-import { TLShape, TLShapeId, createTLStore } from "@tldraw/tldraw";
 import {
   Annotation,
   initVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import { defaultShapeUtils, Editor } from "@tldraw/tldraw";
+import { next as A } from "@automerge/automerge";
+import {
+  Editor,
+  TLShape,
+  TLShapeId,
+  createTLStore,
+  defaultShapeUtils,
+} from "@tldraw/tldraw";
+import { init as tldrawinit } from "automerge-tldraw";
+import { pick } from "lodash";
+import { TLDrawDoc, TLDrawDocAnchor } from "./schema";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.

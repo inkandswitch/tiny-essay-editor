@@ -12,7 +12,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DatatypeId, useDataTypeLoaders } from "@/os/datatypes";
+import { DatatypeId, useDataTypeModules } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -29,7 +29,7 @@ import { ErrorFallback } from "./ErrorFallback";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
-  const datatypeLoaders = useDataTypeLoaders();
+  const datatypeLoaders = useDataTypeModules();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
 

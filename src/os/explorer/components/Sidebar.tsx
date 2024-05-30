@@ -20,7 +20,7 @@ import {
 import {
   DatatypeId,
   getDatatypeLoaders,
-  useDataTypeLoaders,
+  useDataTypeModules,
 } from "../../datatypes";
 
 import {
@@ -40,7 +40,7 @@ import { useDatatypeSettings } from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const datatypeLoaders = useDataTypeLoaders();
+  const datatypeLoaders = useDataTypeModules();
   let Icon;
 
   if (node.data.type === "folder") {
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   rootFolderDoc,
 }) => {
   const repo = useRepo();
-  const datatypeLoaders = useDataTypeLoaders();
+  const datatypeLoaders = useDataTypeModules();
   const {
     doc: rootFolderDocWithChildren,
     status,

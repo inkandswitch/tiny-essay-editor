@@ -1,8 +1,12 @@
-import { DataTypeLoaderConfig } from "@/os/datatypes";
+import { DataTypeMetadata, DataTypeWitoutMetaData } from "@/os/datatypes";
 import { Folder } from "lucide-react";
 import { FolderDoc } from "./schema";
+import { Module } from "@/os/modules";
 
-export default {
+export default new Module<
+  DataTypeMetadata,
+  DataTypeWitoutMetaData<FolderDoc, never, never>
+>({
   metadata: {
     id: "folder",
     name: "Folder",
@@ -10,4 +14,4 @@ export default {
   },
 
   load: () => import("./datatype").then(({ FolderDatatype }) => FolderDatatype),
-} as DataTypeLoaderConfig<FolderDoc, never, string>;
+});

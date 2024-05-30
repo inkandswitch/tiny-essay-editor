@@ -1,8 +1,12 @@
-import { DataTypeLoaderConfig } from "@/os/datatypes";
+import { DataTypeMetadata, DataTypeWitoutMetaData } from "@/os/datatypes";
+import { Module } from "@/os/modules";
 import { Bot } from "lucide-react";
 import { EssayEditingBotDoc } from "./schema";
 
-export default {
+export default new Module<
+  DataTypeMetadata,
+  DataTypeWitoutMetaData<EssayEditingBotDoc, never, never>
+>({
   metadata: {
     id: "bot",
     name: "Bot",
@@ -14,4 +18,4 @@ export default {
     import("./datatype").then(
       ({ EssayEditingBotDatatype }) => EssayEditingBotDatatype
     ),
-} as DataTypeLoaderConfig<EssayEditingBotDoc, never, never>;
+});

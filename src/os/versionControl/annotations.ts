@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import * as A from "@automerge/automerge/next";
 import { isEqual, sortBy, min } from "lodash";
 import { useStaticCallback } from "@/os/hooks/useStaticCallback";
-import { DataType, DatatypeId, useDataTypeLoaders } from "@/os/datatypes";
+import { DataType, DatatypeId, useDataTypeModules } from "@/os/datatypes";
 import {
   Annotation,
   HighlightAnnotation,
@@ -51,7 +51,7 @@ export function useAnnotations({
   setHoveredAnnotationGroupId: (id: string) => void;
   setSelectedAnnotationGroupId: (id: string) => void;
 } {
-  const datatypeLoaders = useDataTypeLoaders();
+  const datatypeLoaders = useDataTypeModules();
   const [hoveredState, setHoveredState] = useState<HoverState<unknown>>();
   const [selectedState, setSelectedState] = useState<SelectionState<unknown>>();
 
