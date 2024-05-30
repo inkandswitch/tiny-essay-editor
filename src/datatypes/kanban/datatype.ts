@@ -1,4 +1,4 @@
-import { DataTypeWitoutMetaData } from "@/os/datatypes";
+import { DataTypeWitoutMetaData, useDataType } from "@/os/datatypes";
 import { ChangeGroup } from "@/os/versionControl/groupChanges";
 import {
   Annotation,
@@ -9,7 +9,7 @@ import { Card, KanbanBoardDoc, KanbanBoardDocAnchor, Lane } from "./schema";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
-export const markCopy = () => {
+const markCopy = () => {
   console.error("todo");
 };
 
@@ -21,7 +21,7 @@ const setTitle = async (doc: KanbanBoardDoc, title: string) => {
   doc.title = title;
 };
 
-export const init = (doc: any) => {
+const init = (doc: any) => {
   doc.title = "Untitled Board";
   doc.lanes = [];
   doc.cards = [];

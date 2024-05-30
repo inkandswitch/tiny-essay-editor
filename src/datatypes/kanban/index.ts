@@ -1,4 +1,3 @@
-import { KanbanBoardDatatype } from "./datatype";
-export default KanbanBoardDatatype;
-
+export { KanbanBoardDatatype } from "./datatype";
+export * from "./schema";
 export * from "./useDocumentWithActions";
