@@ -49,6 +49,18 @@ export default defineConfig({
             ];
           })
         ),
+        ...Object.fromEntries(
+          globSync(
+            path.resolve(__dirname, "src/tools/*/module.@(ts|js|tsx|jsx)")
+          ).map((path) => {
+            const toolId = path.split("/").slice(-2)[0];
+
+            return [
+              `tool-${toolId}`,
+              fileURLToPath(new URL(path, import.meta.url)),
+            ];
+          })
+        ),
       },
       output: {
         // We put index.css in dist instead of dist/assets so that we can link to fonts
@@ -67,9 +79,15 @@ export default defineConfig({
             return "[name].js"; // This will place service-worker.js directly under dist
           }
 
+          // output tools under "/tools"
+          if (chunkInfo.name.startsWith("tool-")) {
+            const typeId = chunkInfo.name.split("-")[1];
+            return `tools/${typeId}.js`;
+          }
+
+          // output datatypes under "/dataTypes"
           if (chunkInfo.name.startsWith("dataType-")) {
             const typeId = chunkInfo.name.split("-")[1];
-
             return `dataTypes/${typeId}.js`;
           }
 
