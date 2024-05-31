@@ -1,13 +1,18 @@
 import * as A from "@automerge/automerge/next";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 
-import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   Annotation,
+  AnnotationWithUIState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { DocHandle } from "@automerge/automerge-repo";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import {
+  AccountDoc,
+  ModuleSettingsDoc,
+  useCurrentAccount,
+} from "./explorer/account";
 import { Module } from "./modules";
 
 export type ToolMetaData = {
@@ -69,6 +74,20 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
 
 export const useToolModules = () => {
   return TOOLS;
+
+  const account = useCurrentAccount();
+  const [accountDoc] = useDocument<AccountDoc>(account.handle.url);
+  const [moduleSettingsDoc] = useDocument<ModuleSettingsDoc>(
+    accountDoc.moduleSettingsUrl
+  );
+
+  const [dynamicallyLoadedModules, setDynamicallyLoadedModules] = useState<
+    Module<ToolMetaData, Tool>[]
+  >([]);
+
+  moduleSettingsDoc.moduleUrls;
+
+  return TOOLS.concat(dynamicallyLoadedModules);
 };
 
 export const useToolModulesForDataType = (dataTypeId: string) => {

@@ -238,7 +238,7 @@ export const Explorer: React.FC = () => {
               selectedDocHandle={selectedDocHandle}
               removeDocLink={removeDocLink}
               addNewDocument={addNewDocument}
-              toolModuleId={currentToolModule.metadata.id}
+              toolModuleId={currentToolModule?.metadata.id}
               setToolModuleId={setSelectedToolModuleId}
               toolModules={toolModules}
             />

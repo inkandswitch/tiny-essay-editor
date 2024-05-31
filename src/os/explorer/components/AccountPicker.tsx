@@ -75,7 +75,7 @@ export const AccountPicker = ({
   );
   const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
-  const [datatypeSettingsDoc, changeDatatypeSettingsDoc] =
+  const [moduleSettingsDoc, changeModuleSettingsDoc] =
     useDocument<ModuleSettingsDoc>(currentAccountDoc?.moduleSettingsUrl);
 
   const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
@@ -147,11 +147,36 @@ export const AccountPicker = ({
   const isLoggedIn = self?.type === "registered";
 
   // load custom tools
-  const [moduleUrl, setModuleUrl] = useState<string>();
+  const [moduleUrl, setModuleUrl] = useState<string>("");
 
   const onAddModuleUrl = () => {
-    console.log("add", moduleUrl);
-    setModuleUrl("");
+    // validate url
+    try {
+      new URL(moduleUrl);
+    } catch (err) {
+      alert(`Invalid url "${moduleUrl}}"`);
+      return;
+    }
+
+    import(moduleUrl)
+      .then((module) => {
+        if (
+          !module.default ||
+          !module.default.metadata ||
+          !module.default.load
+        ) {
+          alert("Invalid module");
+          return;
+        }
+
+        changeModuleSettingsDoc((doc) => {
+          doc.moduleUrls.push(moduleUrl);
+          setModuleUrl("");
+        });
+      })
+      .catch((err) => {
+        alert(`Failed to load module at "${moduleUrl}"`);
+      });
   };
 
   return (
@@ -330,10 +355,10 @@ export const AccountPicker = ({
               <Label>Data types</Label>
 
               <div className="flex flex-col gap-2 py-2">
-                {datatypeSettingsDoc &&
+                {moduleSettingsDoc &&
                   Object.values(datatypeModules).map((datatypeModule) => {
                     const isEnabled =
-                      datatypeSettingsDoc.enabledDatatypeIds[
+                      moduleSettingsDoc.enabledDatatypeIds[
                         datatypeModule.metadata.id
                       ];
 
@@ -352,7 +377,7 @@ export const AccountPicker = ({
                           checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
-                            changeDatatypeSettingsDoc((settings) => {
+                            changeModuleSettingsDoc((settings) => {
                               settings.enabledDatatypeIds[
                                 datatypeModule.metadata.id
                               ] = !isChecked;
@@ -373,22 +398,30 @@ export const AccountPicker = ({
                       </div>
                     );
                   })}
-
-                <div className="flex gap-2">
-                  <Input
-                    onChange={(evt) => setModuleUrl(evt.target.value)}
-                    value={moduleUrl}
-                  />
-                  <Button variant="outline" disabled={!moduleUrl}>
-                    <PlusIcon onClick={onAddModuleUrl} />
-                  </Button>
-                </div>
               </div>
 
               <p className="text-gray-500 text-justify pt-2 text-sm">
                 🧪 These are data types that are less fleshed out. Expect things
                 to break!
               </p>
+            </div>
+
+            <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
+              <Label>Module urls</Label>
+
+              {moduleSettingsDoc?.moduleUrls.map((url) => {
+                return <div>{url}</div>;
+              })}
+
+              <div className="flex gap-2">
+                <Input
+                  onChange={(evt) => setModuleUrl(evt.target.value)}
+                  value={moduleUrl}
+                />
+                <Button variant="outline" disabled={!moduleUrl}>
+                  <PlusIcon onClick={onAddModuleUrl} />
+                </Button>
+              </div>
             </div>
           </>
         )}

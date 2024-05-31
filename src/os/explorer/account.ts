@@ -19,7 +19,7 @@ import { DatatypeId } from "../datatypes";
 
 export type ModuleSettingsDoc = {
   enabledDatatypeIds: { [id: DatatypeId]: boolean };
-  moduleUrls: AutomergeUrl[];
+  moduleUrls: string[];
 };
 
 export interface AccountDoc {
