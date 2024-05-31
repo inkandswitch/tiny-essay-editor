@@ -1,8 +1,11 @@
 import confetti from "canvas-confetti";
 import { EditorProps } from "@/os/tools";
 import { Button } from "@/components/ui/button";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
-export const Confetti = ({}: EditorProps<never, never>) => {
+export const Confetti = ({ docUrl }: EditorProps<never, never>) => {
+  const [doc] = useDocument(docUrl);
+
   const onClick = () => {
     confetti({
       particleCount: 100,
@@ -13,7 +16,10 @@ export const Confetti = ({}: EditorProps<never, never>) => {
 
   return (
     <div className="w-full h-full overflow-hidden flex items-center justify-center">
-      <Button onClick={onClick}>Confetti</Button>
+      <div>
+        <Button onClick={onClick}>Confetti</Button>
+      </div>
+      <pre>{JSON.stringify(doc, null, 2)}</pre>
     </div>
   );
 };
