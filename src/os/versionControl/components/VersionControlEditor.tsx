@@ -79,7 +79,6 @@ import {
 } from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
-import { useModule } from "@/os/modules";
 
 interface MakeBranchOptions {
   name?: string;
@@ -92,11 +91,13 @@ type SidebarMode = "comments" | "timeline";
 export const VersionControlEditor: React.FC<{
   docUrl: AutomergeUrl;
   datatypeId: DatatypeId;
+  tool: Tool;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;
 }> = ({
   docUrl: mainDocUrl,
   datatypeId,
+  tool,
   selectedBranch,
   setSelectedBranch,
 }) => {
@@ -107,9 +108,7 @@ export const VersionControlEditor: React.FC<{
     useHandle<HasVersionControlMetadata<unknown, unknown>>(mainDocUrl);
   const account = useCurrentAccount();
   const [sessionStartHeads, setSessionStartHeads] = useState<A.Heads>();
-
   const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
-
   const [isHoveringYankToBranchOption, setIsHoveringYankToBranchOption] =
     useState(false);
   const [showChangesFlag, setShowChangesFlag] = useState<boolean>(true);
@@ -552,6 +551,7 @@ export const VersionControlEditor: React.FC<{
                   key={mainDocUrl}
                   mainDocUrl={mainDocUrl}
                   datatypeId={datatypeId}
+                  tool={tool}
                   docUrl={selectedBranch.url}
                   docHeads={docHeads}
                   annotations={annotations}
@@ -563,6 +563,7 @@ export const VersionControlEditor: React.FC<{
                 <DocEditor
                   key={selectedBranch?.url ?? mainDocUrl}
                   datatypeId={datatypeId}
+                  tool={tool}
                   docUrl={selectedBranch?.url ?? mainDocUrl}
                   docHeads={docHeads}
                   annotations={annotations}
@@ -646,11 +647,12 @@ export const VersionControlEditor: React.FC<{
 
 export interface EditorPropsWithDatatype<T, V> extends EditorProps<T, V> {
   datatypeId: DatatypeId;
+  tool: Tool;
 }
 
 /* Wrapper component that dispatches to the tool for the doc type */
 const DocEditor = <T, V>({
-  datatypeId,
+  tool,
   docUrl,
   docHeads,
   annotations,
@@ -658,10 +660,6 @@ const DocEditor = <T, V>({
   setSelectedAnchors,
   setHoveredAnchor,
 }: EditorPropsWithDatatype<T, V>) => {
-  const toolModules = useToolModulesForDataType(datatypeId);
-  // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const tool = useModule<ToolMetaData, Tool>(toolModules[0]);
-
   if (!tool) {
     return;
   }

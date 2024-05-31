@@ -3,6 +3,7 @@ import { Doc, DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import {
   Bot,
+  BotIcon,
   Download,
   EditIcon,
   GitForkIcon,
@@ -34,6 +35,9 @@ import { getHeads } from "@automerge/automerge";
 import { DatatypeId, useDataTypeModules } from "../../datatypes";
 import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
 import { getUrlSafeName } from "../hooks/useSelectedDocLink";
+import { Module, useModule } from "@/os/modules";
+import { Tool, ToolMetaData, useToolModules } from "@/os/tools";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -46,6 +50,9 @@ type TopbarProps = {
     | undefined;
   addNewDocument: (doc: { type: DatatypeId }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
+  toolModules: Module<ToolMetaData, Tool>[];
+  toolModuleId: string;
+  setToolModuleId: (id: string) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -55,9 +62,13 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocLink,
   selectedDoc,
   selectedDocHandle,
+  toolModules,
+  toolModuleId,
+  setToolModuleId,
   removeDocLink,
 }) => {
   const repo = useRepo();
+
   const { flatDocLinks } = useRootFolderDocWithChildren();
 
   const datatypeSettings = useDatatypeSettings();
@@ -113,85 +124,25 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      {/* todo: the logic for running bots and when to show the menu should
-       probably live inside the bots directory --
-       how do datatypes contribute things to the global topbar? */}
-      {selectedDocLink?.type === "essay" && (
-        <div className="ml-auto mr-4">
-          {isBotDatatypeEnabled && (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Bot
-                  size={18}
-                  className="mt-1 mr-21 text-gray-500 hover:text-gray-800"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="mr-4">
-                {botDocLinks.length === 0 && (
-                  <div>
-                    <div className="text-gray-500 max-w-48 p-2">
-                      No bots in sidebar. <br />
-                      Click "New Bot" or get a share link from someone.
-                    </div>
-                  </div>
-                )}
-                {botDocLinks.map((botDocLink) => (
-                  <DropdownMenuItem
-                    key={botDocLink.url}
-                    onClick={async () => {
-                      const resultPromise = runBot({
-                        botDocUrl: botDocLink.url,
-                        targetDocHandle:
-                          selectedDocHandle as DocHandle<MarkdownDoc>,
-                        repo,
-                      });
-                      toast.promise(resultPromise, {
-                        loading: `Running ${botDocLink.name}...`,
-                        success: (result) => (
-                          <div className="flex gap-1">
-                            <div className="flex items-center gap-2">
-                              <div className="max-w-48">
-                                {botDocLink.name} ran successfully.
-                              </div>
-                              <Button
-                                onClick={() => {
-                                  // todo: add branch to doclink
-                                  /* setSelectedBranch({
-                                  type: "branch",
-                                  url: result,
-                                })*/
-                                }}
-                                className="px-4 h-6"
-                              >
-                                View branch
-                              </Button>
-                            </div>
-                          </div>
-                        ),
-                        error: `${botDocLink.name} failed, see console`,
-                      });
-                    }}
-                  >
-                    Run {botDocLink.name}
-                    <EditIcon
-                      size={14}
-                      className="inline-block ml-2 cursor-pointer"
-                      onClick={(e) => {
-                        selectDocLink({
-                          ...botDocLink,
-                          type: "essay" as DatatypeId,
-                        });
-                        e.stopPropagation();
-                      }}
-                    />
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      )}
-      <div className={`mr-4 ${selectedDocLink?.type !== "essay" && "ml-auto"}`}>
+      <Tabs
+        value={toolModuleId}
+        className="ml-auto"
+        onValueChange={setToolModuleId}
+      >
+        <TabsList>
+          {toolModules.map((module) => (
+            <TabsTrigger
+              value={module.metadata.id}
+              className="px-2 py-1"
+              key={module.metadata.id}
+            >
+              {module.metadata.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      <div className="m-4">
         <DropdownMenu>
           <DropdownMenuTrigger>
             <MoreHorizontal
@@ -264,7 +215,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               />{" "}
               Make a copy
             </DropdownMenuItem>
-
+            <DropdownMenuSeparator />
             {fileExportMethods.concat(genericExportMethods).map((method) => (
               <DropdownMenuItem
                 onClick={async () => {
@@ -288,6 +239,75 @@ export const Topbar: React.FC<TopbarProps> = ({
                 Export as {method.name}
               </DropdownMenuItem>
             ))}
+
+            {selectedDocLink?.type === "essay" && isBotDatatypeEnabled && (
+              <>
+                {/* todo: the logic for running bots and when to show the menu should
+                probably live inside the bots directory --
+                how do datatypes contribute things to the global topbar? */}
+                <DropdownMenuSeparator />
+
+                {botDocLinks.map((botDocLink) => (
+                  <DropdownMenuItem
+                    className="flex justify-between"
+                    key={botDocLink.url}
+                    onClick={async () => {
+                      const resultPromise = runBot({
+                        botDocUrl: botDocLink.url,
+                        targetDocHandle:
+                          selectedDocHandle as DocHandle<MarkdownDoc>,
+                        repo,
+                      });
+                      toast.promise(resultPromise, {
+                        loading: `Running ${botDocLink.name}...`,
+                        success: (result) => (
+                          <div className="flex gap-1">
+                            <div className="flex items-center gap-2">
+                              <div className="max-w-48">
+                                {botDocLink.name} ran successfully.
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  // todo: add branch to doclink
+                                  /* setSelectedBranch({
+                                  type: "branch",
+                                  url: result,
+                                })*/
+                                }}
+                                className="px-4 h-6"
+                              >
+                                View branch
+                              </Button>
+                            </div>
+                          </div>
+                        ),
+                        error: `${botDocLink.name} failed, see console`,
+                      });
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <BotIcon
+                        className="inline-block text-gray-500 mr-2"
+                        size={14}
+                      />{" "}
+                      Run {botDocLink.name}
+                    </div>
+                    <EditIcon
+                      size={14}
+                      className="inline-block ml-2 cursor-pointer"
+                      onClick={(e) => {
+                        selectDocLink({
+                          ...botDocLink,
+                          type: "essay" as DatatypeId,
+                        });
+                        e.stopPropagation();
+                      }}
+                    />
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => removeDocLink(selectedDocLink)}>
               <Trash2Icon

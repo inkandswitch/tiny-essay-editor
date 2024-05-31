@@ -26,6 +26,8 @@ import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 import { ErrorFallback } from "./ErrorFallback";
+import { Module, useModule } from "@/os/modules";
+import { ToolMetaData, Tool, useToolModulesForDataType } from "@/os/tools";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
@@ -50,6 +52,7 @@ export const Explorer: React.FC = () => {
     useDocument<HasVersionControlMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
+  const selectedDataType = selectedDocLink?.type;
   const selectedBranchUrl = selectedDocLink?.branchUrl;
 
   const selectedBranch = useMemo<Branch>(() => {
@@ -61,6 +64,24 @@ export const Explorer: React.FC = () => {
       (b) => b.url === selectedBranchUrl
     );
   }, [selectedBranchUrl, selectedDoc]);
+
+  const [selectedToolModuleId, setSelectedToolModuleId] = useState<string>();
+  const toolModules = useToolModulesForDataType(selectedDataType);
+  const selectedToolModule = toolModules.find(
+    (module) => module.metadata.id === selectedToolModuleId
+  );
+
+  const currentToolModule =
+    // make sure the current tool is reset to the fallback tool
+    // if the selected datatype changes and the selected tool is not compatible
+    selectedToolModule &&
+    selectedToolModule.metadata.supportedDatatypes.some(
+      (supportedDataType) => supportedDataType === selectedDataType
+    )
+      ? selectedToolModule
+      : toolModules[0];
+
+  const currentTool = useModule(currentToolModule);
 
   const addNewDocument = useCallback(
     async ({ type }: { type: DatatypeId }) => {
@@ -217,6 +238,9 @@ export const Explorer: React.FC = () => {
               selectedDocHandle={selectedDocHandle}
               removeDocLink={removeDocLink}
               addNewDocument={addNewDocument}
+              toolModuleId={currentToolModule.metadata.id}
+              setToolModuleId={setSelectedToolModuleId}
+              toolModules={toolModules}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
@@ -245,6 +269,7 @@ export const Explorer: React.FC = () => {
                   datatypeId={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
+                  tool={currentTool}
                   selectedBranch={selectedBranch}
                   setSelectedBranch={(branch) => {
                     selectDocLink({
