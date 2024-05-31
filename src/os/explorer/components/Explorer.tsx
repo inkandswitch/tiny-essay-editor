@@ -66,6 +66,7 @@ export const Explorer: React.FC = () => {
   }, [selectedBranchUrl, selectedDoc]);
 
   const [selectedToolModuleId, setSelectedToolModuleId] = useState<string>();
+
   const toolModules = useToolModulesForDataType(selectedDataType);
   const selectedToolModule = toolModules.find(
     (module) => module.metadata.id === selectedToolModuleId
@@ -76,7 +77,8 @@ export const Explorer: React.FC = () => {
     // if the selected datatype changes and the selected tool is not compatible
     selectedToolModule &&
     selectedToolModule.metadata.supportedDatatypes.some(
-      (supportedDataType) => supportedDataType === selectedDataType
+      (supportedDataType) =>
+        supportedDataType === selectedDataType || supportedDataType === "*"
     )
       ? selectedToolModule
       : toolModules[0];
@@ -264,7 +266,7 @@ export const Explorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && (
+              {selectedDocUrl && selectedDoc && currentTool && (
                 <VersionControlEditor
                   datatypeId={selectedDocLink?.type}
                   docUrl={selectedDocUrl}

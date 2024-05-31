@@ -1,5 +1,5 @@
 import * as A from "@automerge/automerge/next";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Annotation,
@@ -73,33 +73,44 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
 }
 
 export const useToolModules = () => {
-  return TOOLS;
-
   const account = useCurrentAccount();
-  const [accountDoc] = useDocument<AccountDoc>(account.handle.url);
+  const [accountDoc] = useDocument<AccountDoc>(account?.handle.url);
   const [moduleSettingsDoc] = useDocument<ModuleSettingsDoc>(
-    accountDoc.moduleSettingsUrl
+    accountDoc?.moduleSettingsUrl
   );
 
-  const [dynamicallyLoadedModules, setDynamicallyLoadedModules] = useState<
-    Module<ToolMetaData, Tool>[]
-  >([]);
+  const [dynamicModules, setDynamicModules] = useState([]);
 
-  moduleSettingsDoc.moduleUrls;
+  const dynamicModuleUrls = moduleSettingsDoc?.moduleUrls ?? [];
+  const dynamicModuleUrlsRef = useRef<string[]>();
+  dynamicModuleUrlsRef.current = dynamicModuleUrls;
 
-  return TOOLS.concat(dynamicallyLoadedModules);
+  useEffect(() => {
+    Promise.all(
+      dynamicModuleUrls.map(async (url) => (await import(url)).default)
+    ).then((modules) => {
+      // do nothing if dynamicModuleUrls has changed in the meantime
+      if (dynamicModuleUrls !== dynamicModuleUrlsRef.current) {
+        return;
+      }
+
+      setDynamicModules(modules);
+    });
+  }, [dynamicModuleUrls]);
+
+  return TOOLS.concat(dynamicModules);
 };
 
 export const useToolModulesForDataType = (dataTypeId: string) => {
-  const tools = useToolModules();
+  const toolModules = useToolModules();
 
   return useMemo(
     () =>
-      tools.filter(
+      toolModules.filter(
         (tool) =>
           tool.metadata.supportedDatatypes.includes(dataTypeId) ||
           tool.metadata.supportedDatatypes.includes("*")
       ),
-    [tools, dataTypeId]
+    [toolModules, dataTypeId]
   );
 };
