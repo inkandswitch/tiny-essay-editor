@@ -124,7 +124,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      {toolModules.length > 1 && (
+      {toolModules.length > 1 && selectedDocLink && (
         <Tabs
           value={toolModuleId}
           className="ml-auto"
