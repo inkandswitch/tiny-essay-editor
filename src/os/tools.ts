@@ -81,6 +81,6 @@ export const useToolModulesForDataType = (dataTypeId: string) => {
           tool.metadata.supportedDatatypes.includes(dataTypeId) ||
           tool.metadata.supportedDatatypes.includes("*")
       ),
-    [tools]
+    [tools, dataTypeId]
   );
 };

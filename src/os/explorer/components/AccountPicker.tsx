@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
-import { Copy, Eye, EyeOff } from "lucide-react";
+import { Copy, Eye, EyeOff, PlusIcon } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -145,6 +145,14 @@ export const AccountPicker = ({
       contactToLogin?.type === "registered");
 
   const isLoggedIn = self?.type === "registered";
+
+  // load custom tools
+  const [moduleUrl, setModuleUrl] = useState<string>();
+
+  const onAddModuleUrl = () => {
+    console.log("add", moduleUrl);
+    setModuleUrl("");
+  };
 
   return (
     <Dialog>
@@ -365,6 +373,16 @@ export const AccountPicker = ({
                       </div>
                     );
                   })}
+
+                <div className="flex gap-2">
+                  <Input
+                    onChange={(evt) => setModuleUrl(evt.target.value)}
+                    value={moduleUrl}
+                  />
+                  <Button variant="outline" disabled={!moduleUrl}>
+                    <PlusIcon onClick={onAddModuleUrl} />
+                  </Button>
+                </div>
               </div>
 
               <p className="text-gray-500 text-justify pt-2 text-sm">
