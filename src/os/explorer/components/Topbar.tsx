@@ -124,25 +124,27 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      <Tabs
-        value={toolModuleId}
-        className="ml-auto"
-        onValueChange={setToolModuleId}
-      >
-        <TabsList>
-          {toolModules.map((module) => (
-            <TabsTrigger
-              value={module.metadata.id}
-              className="px-2 py-1"
-              key={module.metadata.id}
-            >
-              {module.metadata.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {toolModules.length > 1 && (
+        <Tabs
+          value={toolModuleId}
+          className="ml-auto"
+          onValueChange={setToolModuleId}
+        >
+          <TabsList>
+            {toolModules.map((module) => (
+              <TabsTrigger
+                value={module.metadata.id}
+                className="px-2 py-1"
+                key={module.metadata.id}
+              >
+                {module.metadata.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
 
-      <div className="m-4">
+      <div className={`mr-4 ${toolModules.length <= 1 ? "ml-auto" : "ml-4"}`}>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <MoreHorizontal
