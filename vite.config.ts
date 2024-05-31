@@ -34,6 +34,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: [
+        "@automerge/automerge",
+        "@automerge/automerge-repo-react-hooks",
+        "react",
+      ],
       input: {
         main: path.resolve(__dirname, "index.html"),
         "service-worker": path.resolve(__dirname, "service-worker.js"),
