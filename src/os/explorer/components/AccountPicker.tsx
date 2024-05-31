@@ -5,7 +5,7 @@ import {
   useSelf,
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
-  DatatypeSettingsDoc,
+  ModuleSettingsDoc,
 } from "../account";
 import { ChangeEvent, useEffect, useState } from "react";
 
@@ -76,7 +76,7 @@ export const AccountPicker = ({
   const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
   const [datatypeSettingsDoc, changeDatatypeSettingsDoc] =
-    useDocument<DatatypeSettingsDoc>(currentAccountDoc?.datatypeSettingsUrl);
+    useDocument<ModuleSettingsDoc>(currentAccountDoc?.moduleSettingsUrl);
 
   const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
     if (!accountTokenToLogin || accountTokenToLogin === "") return null;
