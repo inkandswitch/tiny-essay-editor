@@ -1,7 +1,4 @@
-import {
-  MarkdownDoc,
-  MarkdownDocAnchor,
-} from "../../../datatypes/essay/schema";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/essay";
 import { truncate } from "lodash";
 import { AnnotationsViewProps } from "@/os/tools";
 

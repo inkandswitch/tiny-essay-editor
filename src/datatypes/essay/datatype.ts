@@ -131,6 +131,8 @@ export const patchesToAnnotations = (
       (patch.action === "splice" || patch.action === "del")
   );
 
+  const inversePatches = unpatchAll(docBefore, filteredPatches).reverse();
+
   const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
 
   // We keep track of the offset between doc and docBefore.
@@ -168,24 +170,128 @@ export const patchesToAnnotations = (
           nextPatch.action === "del" &&
           nextPatch.path[1] === patchEnd
         ) {
-          const before = docBefore.content.slice(
+          const deleted = docBefore.content.slice(
             patchStart - offset,
             patchStart - offset + nextPatch.length
           );
+          const inserted = patch.value;
+          const overlapStart = getOverlapStart(inserted, deleted);
+          const overlapEnd = getOverlapEnd(inserted, deleted);
+          const inverseInsertAndDelete = [
+            inversePatches[i + 1],
+            inversePatches[i],
+          ];
 
-          annotations.push({
-            type: "changed",
-            before,
-            after: patch.value,
-            anchor: {
-              fromCursor: fromCursor,
-              toCursor: toCursor,
-            },
-            inversePatches: unpatchAll(docBefore, [patch, nextPatch]),
-          });
+          // handle overlap at the beginning
+          if (overlapStart > 0) {
+            const deleteHasEffect = inserted.length > overlapStart;
+            const insertHasEffect = deleted.length > overlapStart;
+
+            if (deleteHasEffect && !insertHasEffect) {
+              annotations.push({
+                type: "added",
+                added: inserted.slice(overlapStart),
+                anchor: {
+                  fromCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchStart + overlapStart
+                  ),
+                  toCursor,
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+
+            if (insertHasEffect && !deleteHasEffect) {
+              annotations.push({
+                type: "deleted",
+                deleted: deleted.slice(overlapStart),
+                anchor: {
+                  fromCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchStart + overlapStart
+                  ),
+                  toCursor,
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+
+            if (insertHasEffect && deleteHasEffect) {
+              annotations.push({
+                type: "changed",
+                before: deleted.slice(overlapStart),
+                after: inserted.slice(overlapStart),
+                anchor: {
+                  fromCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchStart + overlapStart
+                  ),
+                  toCursor,
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+
+            // handle overlap at the end
+          } else if (overlapEnd > 0) {
+            const deleteHasEffect = inserted.length > overlapStart;
+            const insertHasEffect = deleted.length > overlapStart;
+
+            if (deleteHasEffect && !insertHasEffect) {
+              annotations.push({
+                type: "added",
+                added: inserted.slice(0, -overlapEnd),
+                anchor: {
+                  fromCursor,
+                  toCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchEnd - overlapEnd
+                  ),
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+
+            if (insertHasEffect && !deleteHasEffect) {
+              annotations.push({
+                type: "deleted",
+                deleted: deleted.slice(0, -overlapEnd),
+                anchor: {
+                  fromCursor,
+                  toCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchEnd - overlapEnd
+                  ),
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+
+            if (insertHasEffect && deleteHasEffect) {
+              annotations.push({
+                type: "changed",
+                before: deleted.slice(0, -overlapEnd),
+                after: inserted.slice(0, -overlapEnd),
+                anchor: {
+                  fromCursor,
+                  toCursor: getCursorSafely(
+                    doc,
+                    ["content"],
+                    patchEnd - overlapEnd
+                  ),
+                },
+                inversePatches: inverseInsertAndDelete,
+              });
+            }
+          }
 
           offset += patch.value.length - nextPatch.length;
-
           i += 1;
         } else {
           annotations.push({
@@ -195,7 +301,7 @@ export const patchesToAnnotations = (
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
-            inversePatches: unpatchAll(docBefore, [patch]),
+            inversePatches: [inversePatches[i]],
           });
 
           offset += patch.value.length;
@@ -227,7 +333,7 @@ export const patchesToAnnotations = (
             fromCursor: fromCursor,
             toCursor: toCursor,
           },
-          inversePatches: unpatchAll(docBefore, [patch]),
+          inversePatches: [inversePatches[i]],
         });
         break;
       }
@@ -238,6 +344,31 @@ export const patchesToAnnotations = (
   }
 
   return annotations;
+};
+
+const getOverlapStart = (str1: string, str2: string) => {
+  let overlapLength = 0;
+  for (let i = 0; i < str1.length && i < str2.length; i++) {
+    if (str1[i] === str2[i]) {
+      overlapLength++;
+    } else {
+      break;
+    }
+  }
+  return overlapLength;
+};
+
+const getOverlapEnd = (str1: string, str2: string) => {
+  let overlapLength = 0;
+  const minLength = Math.min(str1.length, str2.length);
+  for (let i = 1; i <= minLength; i++) {
+    if (str1[str1.length - i] === str2[str2.length - i]) {
+      overlapLength++;
+    } else {
+      break;
+    }
+  }
+  return overlapLength;
 };
 
 const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {

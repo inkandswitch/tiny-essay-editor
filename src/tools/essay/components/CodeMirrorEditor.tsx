@@ -212,7 +212,6 @@ export function MarkdownDocEditor({
     const source = docAtHeads.content; // this should use path
 
     let previousHasFocus = false;
-    const _setSelectedAnchors = setSelectedAnchors;
 
     const view = new EditorView({
       doc: source,
