@@ -360,6 +360,12 @@ export const patchesToAnnotations = (
 const WORD_SEPARATOR_REGEX = /[\s.,:;?!(){}[\]<>]/;
 
 const getOverlapStart = (str1: string, str2: string) => {
+  // full match
+  if (str1 === str2) {
+    return str1.length;
+  }
+
+  // partial match
   let overlapLength = 0;
   for (let i = 0; i < str1.length && i < str2.length; i++) {
     if (str1[i] === str2[i]) {
