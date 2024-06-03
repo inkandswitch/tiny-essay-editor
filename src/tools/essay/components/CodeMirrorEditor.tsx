@@ -60,6 +60,7 @@ import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages"
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc } from "../assets";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
+import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
 
 export type TextSelection = {
   from: number;
@@ -233,6 +234,7 @@ export function MarkdownEditor({
         frontmatterPlugin,
         annotationsField,
         annotationDecorations,
+        clickableMarkdownLinksPlugin,
         previewFiguresPlugin,
         previewImagesPlugin(handle, repo),
         highlightKeywordsPlugin,
