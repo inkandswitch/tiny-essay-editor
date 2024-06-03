@@ -1,11 +1,4 @@
-import {
-  RefObject,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  forwardRef,
-} from "react";
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -49,11 +42,10 @@ import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { getCursorSafely } from "@/os/versionControl/utils";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { AssetsDoc, HasAssets } from "../assets";
+import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
 import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
 import { dropCursor } from "../codemirrorPlugins/dropCursor";
-import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
 import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
-import { EditorState } from "@uiw/react-codemirror";
 
 export type TextSelection = {
   from: number;
