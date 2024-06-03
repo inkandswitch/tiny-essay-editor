@@ -25,7 +25,7 @@ import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "../../../datatypes/markdown/schema";
+} from "../../../datatypes/essay/schema";
 import {
   annotationDecorations,
   annotationsField,

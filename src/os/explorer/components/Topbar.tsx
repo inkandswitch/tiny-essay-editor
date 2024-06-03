@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { MarkdownDoc } from "@/datatypes/markdown/schema";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
 import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";

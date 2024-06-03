@@ -1,7 +1,7 @@
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
-} from "../../../datatypes/markdown/schema";
+} from "../../../datatypes/essay/schema";
 import { truncate } from "lodash";
 import { AnnotationsViewProps } from "@/os/tools";
 

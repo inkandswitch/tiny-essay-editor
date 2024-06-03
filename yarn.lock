@@ -1148,6 +1148,13 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@onsetsoftware/automerge-patcher@^0.13.0":
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/@onsetsoftware/automerge-patcher/-/automerge-patcher-0.13.0.tgz#28447f4d15f77efa601fd8b7a1164d8a3a68e025"
+  integrity sha512-ss9CFTfu8wAlD04QzWB70RlB4cnu/Ls9m507RZ6C5GGoq4/64v1iL/4x1X2w6NYiLW7xPWDZiJuWnVC+AsDhvw==
+  dependencies:
+    is-plain-object "^5.0.0"
+
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"

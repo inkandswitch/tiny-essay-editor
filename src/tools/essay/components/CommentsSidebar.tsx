@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/essay";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
 import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSidebar";
 import { DocHandle } from "@automerge/automerge-repo";

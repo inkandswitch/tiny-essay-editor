@@ -16,7 +16,7 @@ import bot from "@/datatypes/bot";
 import datagrid from "@/datatypes/datagrid";
 import folder from "@/datatypes/folder";
 import kanban from "@/datatypes/kanban";
-import markdown from "@/datatypes/markdown";
+import markdown from "@/datatypes/essay";
 import tldraw from "@/datatypes/tldraw";
 import { FileExportMethod } from "./fileExports";
 import { HasAssets } from "@/tools/essay/assets";

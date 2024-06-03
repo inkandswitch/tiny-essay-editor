@@ -17,6 +17,7 @@ import { pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
+import { unpatchAll } from "@onsetsoftware/automerge-patcher";
 
 import JSZip from "jszip";
 
@@ -180,6 +181,7 @@ export const patchesToAnnotations = (
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
+            inversePatches: unpatchAll(docBefore, [patch, nextPatch]),
           });
 
           offset += patch.value.length - nextPatch.length;
@@ -193,6 +195,7 @@ export const patchesToAnnotations = (
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
+            inversePatches: unpatchAll(docBefore, [patch]),
           });
 
           offset += patch.value.length;
@@ -224,6 +227,7 @@ export const patchesToAnnotations = (
             fromCursor: fromCursor,
             toCursor: toCursor,
           },
+          inversePatches: unpatchAll(docBefore, [patch]),
         });
         break;
       }

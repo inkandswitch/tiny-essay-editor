@@ -11,6 +11,7 @@ import {
   initVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { defaultShapeUtils, Editor } from "@tldraw/tldraw";
+import { unpatch } from "@onsetsoftware/automerge-patcher";
 
 // When a copy of the document has been made,
 // update the title so it's more clear which one is the copy vs original.
@@ -119,6 +120,7 @@ export const patchesToAnnotations = (
             type: "deleted",
             deleted: docBefore.store[shapeId],
             anchor: shapeId,
+            inversePatches: [unpatch(docBefore, patch)],
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 
@@ -128,6 +130,7 @@ export const patchesToAnnotations = (
             type: "added",
             added: doc.store[shapeId],
             anchor: shapeId,
+            inversePatches: [unpatch(docBefore, patch)],
           } as Annotation<TLDrawDocAnchor, TLShape>,
         ];
 

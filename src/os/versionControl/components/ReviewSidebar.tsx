@@ -16,6 +16,7 @@ import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
+import { patch } from "@onsetsoftware/automerge-patcher";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
@@ -157,6 +158,18 @@ export const AnnotationGroupView = forwardRef<
       } else if (ref) {
         ref.current = element;
       }
+    };
+
+    const onRevert = () => {
+      const patches = annotationGroup.annotations.flatMap((annotation) =>
+        "inversePatches" in annotation ? annotation.inversePatches : []
+      );
+
+      handle.change((doc) => {
+        for (const p of patches) {
+          patch(doc, p);
+        }
+      });
     };
 
     const onResolveDiscussion = () => {
@@ -417,6 +430,21 @@ export const AnnotationGroupView = forwardRef<
                 </div>
                 <span className="text-gray-400 text-xs w-full text-center">
                   (⌘ + R)
+                </span>
+              </Button>
+            )}
+
+            {annotationGroup.annotations.length > 0 && (
+              <Button
+                variant="ghost"
+                className="select-none px-2 flex flex-col w-fi"
+                onClick={onRevert}
+              >
+                <div className="flex text-gray-600 gap-2">
+                  <Check size={16} /> Revert
+                </div>
+                <span className="text-gray-400 text-xs w-full text-center">
+                  (⌘ + z)
                 </span>
               </Button>
             )}

@@ -6,7 +6,7 @@ import {
   AnnotationGroup,
   AnnotationGroupWithUIState,
 } from "@/os/versionControl/schema";
-import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
+import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/essay";
 import { Annotation } from "@uiw/react-codemirror";
 import { useScrollPosition } from "@/os/hooks/useScrollPosition";
 

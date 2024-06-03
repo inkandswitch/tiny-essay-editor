@@ -7,7 +7,7 @@ import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "@/datatypes/markdown";
+} from "@/datatypes/essay";
 import { useEffect, useMemo, useState } from "react";
 
 import { EditorView } from "@codemirror/view";

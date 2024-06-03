@@ -131,12 +131,14 @@ interface AddAnnotation<A, V> {
   type: "added";
   anchor: A;
   added: V;
+  inversePatches: A.Patch[];
 }
 
 interface DeleteAnnotation<A, V> {
   type: "deleted";
   anchor: A;
   deleted: V;
+  inversePatches: A.Patch[];
 }
 
 interface ChangeAnnotation<A, V> {
@@ -144,6 +146,7 @@ interface ChangeAnnotation<A, V> {
   anchor: A;
   before: V;
   after: V;
+  inversePatches: A.Patch[];
 }
 
 export interface HighlightAnnotation<A, V> {
