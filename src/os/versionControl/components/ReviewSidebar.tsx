@@ -23,6 +23,7 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
+import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
@@ -252,20 +253,26 @@ export const ReviewSidebar = React.memo(
             />
           </div>
 
-          <Textarea
-            ref={setCommentInputElement}
-            value={pendingCommentText}
-            onChange={(event) => setPendingCommentText(event.target.value)}
-            onKeyDown={(event) => {
+          <div
+            onKeyDownCapture={(event) => {
               if (event.key === "Enter" && event.metaKey) {
                 createDiscussion(pendingCommentText);
                 event.preventDefault();
+                event.stopPropagation();
               }
-              event.stopPropagation();
             }}
             onFocus={() => setIsCommentInputFocused(true)}
             onBlur={() => setIsCommentInputFocused(false)}
-          />
+          >
+            <MarkdownInput
+              ref={setCommentInputElement}
+              value={pendingCommentText}
+              onChange={(text) => {
+                console.log(text);
+                setPendingCommentText(text);
+              }}
+            />
+          </div>
 
           <Button
             variant="outline"
