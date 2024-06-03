@@ -289,6 +289,18 @@ export const patchesToAnnotations = (
                 inversePatches: inverseInsertAndDelete,
               });
             }
+            // no overlap
+          } else {
+            annotations.push({
+              type: "changed",
+              before: deleted,
+              after: inserted,
+              anchor: {
+                fromCursor,
+                toCursor,
+              },
+              inversePatches: inverseInsertAndDelete,
+            });
           }
 
           offset += patch.value.length - nextPatch.length;
@@ -345,6 +357,8 @@ export const patchesToAnnotations = (
   return annotations;
 };
 
+const WORD_SEPARATOR_REGEX = /[\s.,:;?!(){}[\]<>]/;
+
 const getOverlapStart = (str1: string, str2: string) => {
   let overlapLength = 0;
   for (let i = 0; i < str1.length && i < str2.length; i++) {
@@ -354,6 +368,15 @@ const getOverlapStart = (str1: string, str2: string) => {
       break;
     }
   }
+
+  // reduce the overlap if this is not a full word
+  while (
+    overlapLength > 0 &&
+    !WORD_SEPARATOR_REGEX.test(str1[overlapLength - 1])
+  ) {
+    overlapLength--;
+  }
+
   return overlapLength;
 };
 
