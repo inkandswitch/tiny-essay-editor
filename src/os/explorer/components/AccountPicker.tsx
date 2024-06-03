@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
-import { Copy, Eye, EyeOff, PlusIcon } from "lucide-react";
+import { Copy, Eye, EyeOff, PlusIcon, XIcon } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -146,10 +146,13 @@ export const AccountPicker = ({
 
   const isLoggedIn = self?.type === "registered";
 
-  // load custom tools
-  const [moduleUrl, setModuleUrl] = useState<string>("");
-
   const onAddModuleUrl = () => {
+    const moduleUrl = prompt("Enter a module url");
+
+    if (!moduleUrl) {
+      return;
+    }
+
     // validate url
     try {
       new URL(moduleUrl);
@@ -171,12 +174,17 @@ export const AccountPicker = ({
 
         changeModuleSettingsDoc((doc) => {
           doc.moduleUrls.push(moduleUrl);
-          setModuleUrl("");
         });
       })
       .catch((err) => {
         alert(`Failed to load module at "${moduleUrl}"`);
       });
+  };
+
+  const onDeleteModuleUrlAtIndex = (index) => {
+    changeModuleSettingsDoc((doc) => {
+      delete doc.moduleUrls[index];
+    });
   };
 
   return (
@@ -406,19 +414,40 @@ export const AccountPicker = ({
               </p>
             </div>
 
-            <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
+            <div className="grid overflow-h items-center gap-1.5 pt-2">
               <Label>Module urls</Label>
 
-              {moduleSettingsDoc?.moduleUrls.map((url) => {
-                return <div>{url}</div>;
+              {moduleSettingsDoc?.moduleUrls.map((url, index) => {
+                const name = new URL(url).pathname.split("/").slice(-1)[0];
+
+                return (
+                  <div
+                    className="flex items-center overflow-hidden"
+                    key={index}
+                  >
+                    <Button
+                      className="flex overflow-hidden"
+                      variant="link"
+                      onClick={() => window.open(url, "_blank")}
+                    >
+                      <div className="truncate overflow-ellipsis min-w-0">
+                        {url}
+                      </div>
+                      <div>{name}</div>
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      onClick={() => onDeleteModuleUrlAtIndex(index)}
+                    >
+                      <XIcon />
+                    </Button>
+                  </div>
+                );
               })}
 
-              <div className="flex gap-2">
-                <Input
-                  onChange={(evt) => setModuleUrl(evt.target.value)}
-                  value={moduleUrl}
-                />
-                <Button variant="outline" disabled={!moduleUrl}>
+              <div className="flex justify-center items-center">
+                <Button variant="ghost" size="sm">
                   <PlusIcon onClick={onAddModuleUrl} />
                 </Button>
               </div>
