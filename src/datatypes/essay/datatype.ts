@@ -184,10 +184,10 @@ export const patchesToAnnotations = (
 
           // handle overlap at the beginning
           if (overlapStart > 0) {
-            const deleteHasEffect = inserted.length > overlapStart;
-            const insertHasEffect = deleted.length > overlapStart;
+            const insertHasEffect = inserted.length > overlapStart;
+            const deleteHasEffect = deleted.length > overlapStart;
 
-            if (deleteHasEffect && !insertHasEffect) {
+            if (insertHasEffect && !deleteHasEffect) {
               annotations.push({
                 type: "added",
                 added: inserted.slice(overlapStart),
@@ -203,7 +203,7 @@ export const patchesToAnnotations = (
               });
             }
 
-            if (insertHasEffect && !deleteHasEffect) {
+            if (!insertHasEffect && deleteHasEffect) {
               annotations.push({
                 type: "deleted",
                 deleted: deleted.slice(overlapStart),
@@ -310,18 +310,17 @@ export const patchesToAnnotations = (
       }
       case "del": {
         const patchStart = patch.path[1] as number;
-        const patchEnd = (patch.path[1] as number) + 1;
-        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+        const cursor = getCursorSafely(doc, ["content"], patchStart);
 
+        const patchLength = patch.length ?? 1; // length is undefined if only one character is deleted
         const deleted = docBefore.content.slice(
           patchStart - offset,
-          patchStart - offset + patch.length
+          patchStart - offset + patchLength
         );
 
         offset -= patch.length;
 
-        if (!fromCursor || !toCursor) {
+        if (!cursor) {
           console.warn("Failed to get cursor for patch", patch);
           break;
         }
@@ -330,8 +329,8 @@ export const patchesToAnnotations = (
           type: "deleted",
           deleted,
           anchor: {
-            fromCursor: fromCursor,
-            toCursor: toCursor,
+            fromCursor: cursor,
+            toCursor: cursor,
           },
           inversePatches: [inversePatches[i]],
         });
