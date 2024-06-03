@@ -1,29 +1,5 @@
-import { jsxToHtmlElement } from "@/datatypes/markdown/utils";
 import { syntaxTree } from "@codemirror/language";
-import { EditorView, ViewPlugin, WidgetType } from "@codemirror/view";
-import { ExternalLink } from "lucide-react";
-
-class HyperLink extends WidgetType {
-  constructor(readonly url: string) {
-    super();
-  }
-  eq(other) {
-    return false;
-  }
-  toDOM() {
-    return jsxToHtmlElement(
-      <a
-        href={this.url}
-        aria-hidden
-        target="_blank"
-        className="ml-1"
-        style={{ background: "none" }}
-      >
-        <ExternalLink className="inline mt-[-4px]" size={20} />
-      </a>
-    );
-  }
-}
+import { EditorView, ViewPlugin } from "@codemirror/view";
 
 type Link = {
   url: string;
@@ -41,8 +17,6 @@ function getLinks(view: EditorView): Link[] {
       from,
       to,
       enter: (node) => {
-        console.log(node.name);
-
         if (node.name === "Link") {
           const link = view.state.sliceDoc(node.from, node.to);
           const url = link.match(URL_REGEX).groups.url;
@@ -62,7 +36,7 @@ function getLinks(view: EditorView): Link[] {
 
 export const clickableMarkdownLinksPlugin = ViewPlugin.fromClass(
   class {
-    links: Link[];
+    links: Link[] = [];
 
     constructor(view: EditorView) {
       this.links = getLinks(view);
@@ -72,33 +46,32 @@ export const clickableMarkdownLinksPlugin = ViewPlugin.fromClass(
         this.links = getLinks(update.view);
       }
     }
+
+    getLinkAtPos(pos: number): Link | undefined {
+      return this.links.find((l) => l.from < pos && l.to >= pos);
+    }
   },
   {
     eventHandlers: {
-      pointerup(e, view) {
-        const cursorPosition = view.state.selection.main?.head;
-
-        if ((!e.ctrlKey && !e.metaKey) || cursorPosition === undefined) {
-          return;
-        }
-
-        const link = this.links.find(
-          (l) => l.from < cursorPosition && l.to >= cursorPosition
-        );
-
-        if (!link) {
-          return;
-        }
-
-        if (e.shiftKey) {
-          e.stopPropagation();
-          e.preventDefault();
-          view.dispatch({
-            selection: { anchor: cursorPosition, head: cursorPosition },
+      mousedown(event, view) {
+        if (event.metaKey || event.ctrlKey) {
+          const pos = view.posAtCoords({
+            x: event.clientX,
+            y: event.clientY,
           });
-          window.open(link.url, "_tab");
-        } else {
-          window.location.href = link.url;
+
+          const link = this.getLinkAtPos(pos);
+
+          event.stopPropagation();
+          event.preventDefault();
+
+          if (link) {
+            if (event.shiftKey) {
+              window.open(link.url, "_tab");
+            } else {
+              window.location.href = link.url;
+            }
+          }
         }
       },
     },
