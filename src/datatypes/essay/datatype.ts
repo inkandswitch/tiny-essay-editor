@@ -396,6 +396,15 @@ const getOverlapEnd = (str1: string, str2: string) => {
       break;
     }
   }
+
+  // reduce the overlap if this is not a full word
+  while (
+    overlapLength > 0 &&
+    !WORD_SEPARATOR_REGEX.test(str1[str1.length - overlapLength])
+  ) {
+    overlapLength--;
+  }
+
   return overlapLength;
 };
 
