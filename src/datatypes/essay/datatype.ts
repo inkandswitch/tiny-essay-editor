@@ -13,12 +13,12 @@ import {
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 import { splice } from "@automerge/automerge/next";
-import { pick } from "lodash";
+import { add, pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 import { unpatchAll } from "@onsetsoftware/automerge-patcher";
-import { diffWordsWithSpace } from "diff";
+import { diffWords } from "diff";
 
 import JSZip from "jszip";
 
@@ -240,70 +240,86 @@ const diffText = (
   offset: number
 ): Annotation<MarkdownDocAnchor, string>[] => {
   const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
-  const parts = diffWordsWithSpace(before, after);
+  const parts = diffWords(before, after);
 
   for (let i = 0; i < parts.length; i++) {
-    let part = parts[i];
+    let deleted = "";
+    let added = "";
 
-    if (part.removed) {
-      const nextPart = parts[i + 1];
+    for (; i < parts.length; i++) {
+      let part = parts[i];
 
-      // combine remove if it's followed by an add
-      if (nextPart && nextPart.added) {
-        const before = part.value;
-        const after = nextPart.value;
-
-        annotations.push({
-          type: "changed",
-          anchor: {
-            fromCursor: A.getCursor(doc, ["content"], offset),
-            toCursor: A.getCursor(
-              doc,
-              ["content"],
-              offset + nextPart.value.length
-            ),
-          },
-          before,
-          after,
-          inversePatches: [
-            { action: "del", path: ["content", offset], length: after.length },
-            {
-              action: "splice",
-              path: ["content", offset],
-              value: before,
-            },
-          ],
-        });
-
-        offset += nextPart.value.length;
-        // we already have reconciled the next part, so skip it
-        i += 1;
+      if (part.added) {
+        added += part.value;
+        offset += part.value.length;
+      } else if (part.removed) {
+        deleted += part.value;
       } else {
-        annotations.push({
-          type: "deleted",
-          anchor: {
-            fromCursor: A.getCursor(doc, ["content"], offset),
-            toCursor: A.getCursor(doc, ["content"], offset + part.value.length),
-          },
-          deleted: part.value,
-          inversePatches: [],
-        });
+        if (part.value.trim() === "") {
+          added += part.value;
+          deleted += part.value;
+          offset += part.value.length;
+        } else if (deleted === "" && added === "") {
+          offset += part.value.length;
+        } else {
+          i--;
+          break;
+        }
       }
-    } else if (part.added) {
+
+      const nextPart = parts[i + 1];
+      if (
+        nextPart &&
+        !nextPart.added &&
+        !nextPart.removed &&
+        nextPart.value.trim() !== ""
+      ) {
+        break;
+      }
+    }
+
+    if (deleted.length > 0 && added.length > 0) {
+      annotations.push({
+        type: "changed",
+        anchor: {
+          fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+          toCursor: A.getCursor(doc, ["content"], offset),
+        },
+        before: deleted,
+        after: added,
+        inversePatches: [
+          {
+            action: "del",
+            path: ["content", offset - added.length],
+            length: added.length,
+          },
+          {
+            action: "splice",
+            path: ["content", offset - added.length],
+            value: deleted,
+          },
+        ],
+      });
+    } else if (deleted.length > 0) {
+      annotations.push({
+        type: "deleted",
+        anchor: {
+          fromCursor: A.getCursor(doc, ["content"], offset),
+          toCursor: A.getCursor(doc, ["content"], offset),
+        },
+        deleted,
+        inversePatches: [],
+      });
+    } else if (added.length > 0) {
       annotations.push({
         type: "added",
         anchor: {
-          fromCursor: A.getCursor(doc, ["content"], offset),
-          toCursor: A.getCursor(doc, ["content"], offset + part.value.length),
+          fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+          toCursor: A.getCursor(doc, ["content"], offset),
         },
-        added: part.value,
+        added,
         inversePatches: [],
       });
-
-      offset += part.value.length;
-    } else {
-      // skip ranges that haven't changed, just increase the offset
-      offset += part.value.length;
     }
   }
 
