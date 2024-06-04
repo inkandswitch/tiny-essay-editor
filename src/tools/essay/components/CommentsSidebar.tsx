@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
-import { AnnotationGroupView } from "@/os/versionControl/components/ReviewSidebar";
+import { AnnotationGroupView } from "@/os/versionControl/components/AnnotationGroupView";
 import { DocHandle } from "@automerge/automerge-repo";
 import { MessageCircle } from "lucide-react";
 import { TextSelection } from "./CodeMirrorEditor";

@@ -19,7 +19,6 @@ const ESSAY_STYLES = {
   ".cm-content": {
     height: "100%",
     fontFamily: '"Merriweather", serif',
-    padding: "10px 0",
     margin: "0",
     // textAlign: "justify",
     textWrap: "pretty",

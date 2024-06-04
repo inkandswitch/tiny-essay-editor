@@ -86,7 +86,7 @@ export const MarkdownInput = ({
       return;
     }
 
-    let view = new EditorView({
+    const view = new EditorView({
       doc: value,
       extensions: [
         // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
@@ -211,7 +211,6 @@ export function MarkdownDocEditor({
     const source = docAtHeads.content; // this should use path
 
     let previousHasFocus = false;
-    const _setSelectedAnchors = setSelectedAnchors;
 
     const view = new EditorView({
       doc: source,
@@ -259,7 +258,7 @@ export function MarkdownDocEditor({
         lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
-        let previousSelection = view.state.selection;
+        const previousSelection = view.state.selection;
 
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
@@ -371,30 +370,32 @@ export function MarkdownDocEditor({
     );
   }
 
+  const onKeyDown = (evt) => {
+    // Let cmd-s thru for saving the doc
+    if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-\ thru for toggling the sidebar
+    if (evt.key === "\\" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-g thru for grouping annotations
+    if (evt.key === "g" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-g thru for grouping annotations
+    if (evt.key === "`" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    evt.stopPropagation();
+  };
+
   return (
     <div className="flex flex-col items-stretch min-h-screen">
       <div
         className="codemirror-editor flex-grow relative min-h-screen"
         ref={containerRef}
-        onKeyDown={(evt) => {
-          // Let cmd-s thru for saving the doc
-          if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-\ thru for toggling the sidebar
-          if (evt.key === "\\" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-g thru for grouping annotations
-          if (evt.key === "g" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-g thru for grouping annotations
-          if (evt.key === "`" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          evt.stopPropagation();
-        }}
+        onKeyDown={onKeyDown}
       />
     </div>
   );
