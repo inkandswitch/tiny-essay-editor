@@ -27,7 +27,7 @@ import { isMarkdownDoc } from "@/datatypes/markdown";
 import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import { isLLMActive } from "@/os/lib/llm";
-import { EditorProps, TOOLS } from "@/os/tools";
+import { EditorProps, TOOLS, Tool } from "@/os/tools";
 import { SideBySide as TLDrawSideBySide } from "@/tools/tldraw/components/TLDraw";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -304,7 +304,6 @@ export const VersionControlEditor: React.FC<{
     : docHeads
     ? A.view(doc, docHeads)
     : doc;
-  const activeChangeDoc = selectedBranch ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranch ? branchHandle : handle;
 
   const {
@@ -313,7 +312,6 @@ export const VersionControlEditor: React.FC<{
     selectedAnchors,
     setHoveredAnchor,
     setSelectedAnchors,
-    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
     setCommentState,
@@ -324,9 +322,13 @@ export const VersionControlEditor: React.FC<{
     isCommentInputFocused,
   });
 
+  // For now we don't have a way for the user to pick a tool so we just pick the first one
+  // In the future this will be selectable in the UI.
+  const activeTool = TOOLS[datatypeId][0];
+
   // global comment keyboard shortcut
   // with cmd + shift + m a new comment is created
-  const supportsInlineComments = DATA_TYPES[datatypeId].supportsInlineComments;
+  const supportsInlineComments = activeTool.supportsInlineComments;
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -355,11 +357,6 @@ export const VersionControlEditor: React.FC<{
       window.removeEventListener("keydown", handleKeyPress, true);
     };
   }, [selectedAnchors]);
-
-  const [
-    annotationsPositionsInSidebarMap,
-    setAnnotationsPositionsInSidebarMap,
-  ] = useState<PositionMap>();
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
@@ -593,9 +590,9 @@ export const VersionControlEditor: React.FC<{
             <div className="flex-1 min-h-0 relative">
               {selectedBranch && compareWithMainFlag ? (
                 <SideBySide
+                  tool={activeTool}
                   key={mainDocUrl}
                   mainDocUrl={mainDocUrl}
-                  datatypeId={datatypeId}
                   docUrl={selectedBranch.url}
                   docHeads={docHeads}
                   annotations={visibleAnnotations}
@@ -610,8 +607,8 @@ export const VersionControlEditor: React.FC<{
                 />
               ) : (
                 <DocEditor
+                  tool={activeTool}
                   key={selectedBranch?.url ?? mainDocUrl}
-                  datatypeId={datatypeId}
                   docUrl={selectedBranch?.url ?? mainDocUrl}
                   docHeads={docHeads}
                   annotations={visibleAnnotations}
@@ -693,13 +690,13 @@ export const VersionControlEditor: React.FC<{
   );
 };
 
-export interface EditorPropsWithDatatype<T, V> extends EditorProps<T, V> {
-  datatypeId: DatatypeId;
+export interface EditorPropsWithTool<T, V> extends EditorProps<T, V> {
+  tool: Tool;
 }
 
 /* Wrapper component that dispatches to the tool for the doc type */
 const DocEditor = <T, V>({
-  datatypeId,
+  tool,
   docUrl,
   docHeads,
   annotations,
@@ -711,9 +708,9 @@ const DocEditor = <T, V>({
   setSelectedAnnotationGroupId,
   setHoveredAnnotationGroupId,
   setCommentState,
-}: EditorPropsWithDatatype<T, V>) => {
+}: EditorPropsWithTool<T, V>) => {
   // Currently we don't have a toolpicker so we just show the first tool for the doc type
-  const Component = TOOLS[datatypeId][0].editorComponent;
+  const Component = tool.editorComponent;
 
   return (
     <Component
@@ -732,39 +729,36 @@ const DocEditor = <T, V>({
   );
 };
 
-export interface SideBySideProps<T, V> extends EditorPropsWithDatatype<T, V> {
+export interface SideBySideProps<T, V> extends EditorPropsWithTool<T, V> {
   mainDocUrl: AutomergeUrl;
 }
 
 export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
-  switch (props.datatypeId) {
-    case "tldraw": {
-      return <TLDrawSideBySide {...props} />;
-    }
-
-    default: {
-      const { mainDocUrl } = props;
-
-      return (
-        <div className="flex h-full w-full">
-          <div className="h-full flex-1 overflow-auto bg-gray-200">
-            {
-              <DocEditor
-                {...props}
-                docUrl={mainDocUrl}
-                docHeads={undefined}
-                annotations={[]}
-                annotationGroups={[]}
-              />
-            }
-          </div>
-          <div className="h-full flex-1 overflow-auto">
-            {<DocEditor {...props} />}
-          </div>
-        </div>
-      );
-    }
+  // special side-by-side view for tldraw with scroll linking
+  if (props.tool.id === "tldraw") {
+    return <TLDrawSideBySide {...props} />;
   }
+
+  const { mainDocUrl } = props;
+
+  return (
+    <div className="flex h-full w-full">
+      <div className="h-full flex-1 overflow-auto bg-gray-200">
+        {
+          <DocEditor
+            {...props}
+            docUrl={mainDocUrl}
+            docHeads={undefined}
+            annotations={[]}
+            annotationGroups={[]}
+          />
+        }
+      </div>
+      <div className="h-full flex-1 overflow-auto">
+        {<DocEditor {...props} />}
+      </div>
+    </div>
+  );
 };
 
 const BranchActions: React.FC<{
@@ -792,6 +786,7 @@ const BranchActions: React.FC<{
   const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
 
   // compute new name suggestions anytime the branch heads change
+  // todo: seems like this should run outside of the react UI...
   useEffect(() => {
     if (!dropdownOpen || !doc || !branchDoc) return;
     if (!isMarkdownDoc(doc) || !isMarkdownDoc(branchDoc)) {

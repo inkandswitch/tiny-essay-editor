@@ -29,6 +29,9 @@ export type Tool = {
       unknown
     >
   >;
+  /** whether this tool has support for rendering comments inline or if it
+   * relies exclusively on the review sidebar to show comments */
+  supportsInlineComments?: boolean;
 };
 
 export type EditorProps<T, V> = {

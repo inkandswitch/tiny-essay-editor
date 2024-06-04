@@ -314,5 +314,4 @@ export const MarkdownDatatype: DataType<
   doAnchorsOverlap,
   sortAnchorsBy,
   fileExportMethods,
-  supportsInlineComments: true, // todo: this should be part of the viewer
 };
