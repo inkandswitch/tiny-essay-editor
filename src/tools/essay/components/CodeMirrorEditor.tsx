@@ -104,7 +104,7 @@ export const MarkdownInput = ({
           indentWithTab,
         ]),
         EditorView.lineWrapping,
-        essayTheme,
+        essayTheme("sans"),
         markdown({
           codeLanguages: languages,
         }),
@@ -235,7 +235,7 @@ export function MarkdownDocEditor({
           indentWithTab,
         ]),
         EditorView.lineWrapping,
-        essayTheme,
+        essayTheme("serif"),
         markdown({
           codeLanguages: languages,
         }),

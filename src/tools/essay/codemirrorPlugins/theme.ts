@@ -18,7 +18,6 @@ const ESSAY_STYLES = {
   },
   ".cm-content": {
     height: "100%",
-    fontFamily: '"Merriweather", serif',
     margin: "0",
     // textAlign: "justify",
     textWrap: "pretty",
@@ -64,22 +63,18 @@ const ESSAY_STYLES = {
       backgroundColor: "rgb(100 202 0 / 30%)",
       borderBottom: "rgb(0 222 0 / 100%) 2px solid",
     },
-  ".cm-patch-private": {
-    backgroundColor: "rgb(184 0 255 / 12%)",
-    borderBottom: "rgb(184 0 255 / 40%) 2px solid",
-    borderRadius: "3px",
-  },
-  ".cm-patch-private.active": {
-    backgroundColor: "rgb(184 0 255 / 24%)",
-    borderRadius: "3px",
-  },
-  ".cm-patch-private::before": {
-    content: "🔒",
-    marginRight: "0.5em",
-  },
 };
 
-export const essayTheme = EditorView.theme(ESSAY_STYLES);
+export const essayTheme = (style: "serif" | "sans") =>
+  EditorView.theme({
+    ...ESSAY_STYLES,
+    ".cm-content": {
+      fontFamily:
+        style === "serif"
+          ? '"Merriweather", serif'
+          : '"Merriweather Sans", sans-serif',
+    },
+  });
 
 const baseHeadingStyles = {
   fontFamily: '"Merriweather Sans", sans-serif',
