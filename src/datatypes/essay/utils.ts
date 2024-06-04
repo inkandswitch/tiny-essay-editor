@@ -1,29 +1,11 @@
 import * as A from "@automerge/automerge/next";
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement } from "react";
 import ReactDOMServer from "react-dom/server";
 import { MarkdownDoc } from "./schema";
 
 export const isMarkdownDoc = (doc: A.Doc<unknown>): doc is MarkdownDoc => {
   const typedDoc = doc as MarkdownDoc;
   return typeof typedDoc.content === "string";
-};
-
-export const useScrollPosition = (container: HTMLElement | null) => {
-  const [scrollPosition, setScrollPosition] = useState(0);
-
-  useEffect(() => {
-    if (!container) {
-      return;
-    }
-    const updatePosition = () => {
-      setScrollPosition(container.scrollTop);
-    };
-    container.addEventListener("scroll", () => updatePosition());
-    updatePosition();
-    return () => container.removeEventListener("scroll", updatePosition);
-  }, [container]);
-
-  return scrollPosition;
 };
 
 // Utils for converting back and forth between CodeMirror and Automerge ranges.

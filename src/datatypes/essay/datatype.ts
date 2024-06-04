@@ -12,11 +12,12 @@ import {
 } from "@/os/versionControl/utils";
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-import { Doc, splice } from "@automerge/automerge/next";
+import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
+import { diffWords } from "diff";
 
 import JSZip from "jszip";
 
@@ -148,13 +149,13 @@ export const patchesToAnnotations = (
 
     switch (patch.action) {
       case "splice": {
-        const patchStart = patch.path[1] as number;
-        const patchEnd = Math.min(
+        let fromPos = patch.path[1] as number;
+        let toPos = Math.min(
           (patch.path[1] as number) + patch.value.length,
           doc.content.length - 1
         );
-        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+        let fromCursor = A.getCursor(doc, ["content"], fromPos);
+        let toCursor = A.getCursor(doc, ["content"], toPos);
 
         if (!fromCursor || !toCursor) {
           console.warn("Failed to get cursor for patch", patch);
@@ -165,25 +166,17 @@ export const patchesToAnnotations = (
         if (
           nextPatch &&
           nextPatch.action === "del" &&
-          nextPatch.path[1] === patchEnd
+          nextPatch.path[1] === toPos
         ) {
-          const before = docBefore.content.slice(
-            patchStart - offset,
-            patchStart - offset + nextPatch.length
+          let deleted = docBefore.content.slice(
+            fromPos - offset,
+            fromPos - offset + (nextPatch.length ?? 1)
           );
+          let inserted = patch.value;
 
-          annotations.push({
-            type: "changed",
-            before,
-            after: patch.value,
-            anchor: {
-              fromCursor: fromCursor,
-              toCursor: toCursor,
-            },
-          });
+          annotations.push(...diffText(deleted, inserted, doc, fromPos));
 
           offset += patch.value.length - nextPatch.length;
-
           i += 1;
         } else {
           annotations.push({
@@ -193,6 +186,14 @@ export const patchesToAnnotations = (
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
+            inversePatches: [
+              {
+                action: "del",
+                path: ["content"],
+                cursor: fromCursor,
+                length: patch.value.length,
+              },
+            ],
           });
 
           offset += patch.value.length;
@@ -201,18 +202,17 @@ export const patchesToAnnotations = (
       }
       case "del": {
         const patchStart = patch.path[1] as number;
-        const patchEnd = (patch.path[1] as number) + 1;
-        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+        const cursor = getCursorSafely(doc, ["content"], patchStart);
 
+        const patchLength = patch.length ?? 1; // length is undefined if only one character is deleted
         const deleted = docBefore.content.slice(
           patchStart - offset,
-          patchStart - offset + patch.length
+          patchStart - offset + patchLength
         );
 
         offset -= patch.length;
 
-        if (!fromCursor || !toCursor) {
+        if (!cursor) {
           console.warn("Failed to get cursor for patch", patch);
           break;
         }
@@ -221,9 +221,17 @@ export const patchesToAnnotations = (
           type: "deleted",
           deleted,
           anchor: {
-            fromCursor: fromCursor,
-            toCursor: toCursor,
+            fromCursor: cursor,
+            toCursor: cursor,
           },
+          inversePatches: [
+            {
+              action: "splice",
+              path: ["content"],
+              cursor,
+              value: deleted,
+            },
+          ],
         });
         break;
       }
@@ -236,9 +244,129 @@ export const patchesToAnnotations = (
   return annotations;
 };
 
+const diffText = (
+  before: string,
+  after: string,
+  doc: MarkdownDoc,
+  offset: number
+): Annotation<MarkdownDocAnchor, string>[] => {
+  const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
+  const parts = diffWords(before, after);
+
+  for (let i = 0; i < parts.length; i++) {
+    let deleted = "";
+    let added = "";
+
+    for (; i < parts.length; i++) {
+      let part = parts[i];
+
+      if (part.added) {
+        added += part.value;
+        offset += part.value.length;
+      } else if (part.removed) {
+        deleted += part.value;
+      } else {
+        if (part.value.trim() === "") {
+          added += part.value;
+          deleted += part.value;
+          offset += part.value.length;
+        } else if (deleted === "" && added === "") {
+          offset += part.value.length;
+        } else {
+          i--;
+          break;
+        }
+      }
+
+      const nextPart = parts[i + 1];
+      if (
+        nextPart &&
+        !nextPart.added &&
+        !nextPart.removed &&
+        nextPart.value.trim() !== ""
+      ) {
+        break;
+      }
+    }
+
+    if (deleted.length > 0 && added.length > 0) {
+      const anchor = {
+        fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+        toCursor: A.getCursor(doc, ["content"], offset),
+      };
+
+      annotations.push({
+        type: "changed",
+        anchor,
+        before: deleted,
+        after: added,
+        inversePatches: [
+          {
+            action: "del",
+            path: ["content"],
+            cursor: anchor.fromCursor,
+            length: added.length,
+          },
+          {
+            action: "splice",
+            path: ["content"],
+            cursor: anchor.fromCursor,
+            value: deleted,
+          },
+        ],
+      });
+    } else if (deleted.length > 0) {
+      const cursor = A.getCursor(doc, ["content"], offset);
+
+      annotations.push({
+        type: "deleted",
+        anchor: {
+          fromCursor: cursor,
+          toCursor: cursor,
+        },
+        deleted,
+        inversePatches: [
+          {
+            action: "splice",
+            path: ["content"],
+            cursor,
+            value: deleted,
+          },
+        ],
+      });
+    } else if (added.length > 0) {
+      const anchor = {
+        fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+        toCursor: A.getCursor(doc, ["content"], offset),
+      };
+      annotations.push({
+        type: "added",
+        anchor,
+        added,
+        inversePatches: [
+          {
+            action: "del",
+            path: ["content"],
+            cursor: anchor.fromCursor,
+            length: added.length,
+          },
+        ],
+      });
+    }
+  }
+
+  return annotations;
+};
+
 const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
   const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+  // if the anchor points to an empty range return undefined
+  // so highlight comments that point to this will be filtered out
+  if (from === to) {
+    return undefined;
+  }
 
   return doc.content.slice(from, to);
 };
@@ -308,4 +436,5 @@ export const MarkdownDatatype: DataType<
   doAnchorsOverlap,
   sortAnchorsBy,
   fileExportMethods,
+  supportsInlineComments: true, // todo: this should be part of the viewer
 };

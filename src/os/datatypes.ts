@@ -16,9 +16,10 @@ import bot from "@/datatypes/bot";
 import datagrid from "@/datatypes/datagrid";
 import folder from "@/datatypes/folder";
 import kanban from "@/datatypes/kanban";
-import markdown from "@/datatypes/markdown";
+import markdown from "@/datatypes/essay";
 import tldraw from "@/datatypes/tldraw";
 import { FileExportMethod } from "./fileExports";
+import { HasAssets } from "@/tools/essay/assets";
 
 export type CoreDataType<D> = {
   id: string;
@@ -108,6 +109,10 @@ export type VersionedDataType<D, T, V> = {
    *  If this method is not implemented the anchors will not be sorted.
    */
   sortAnchorsBy?: (doc: D, anchor: T) => any;
+
+  // flag wether or not this data type has support for rendering comments inline or if it
+  // relies exclusively on the review sidebar to show comments
+  supportsInlineComments?: boolean;
 };
 
 export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;

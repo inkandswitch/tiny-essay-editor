@@ -1,6 +1,6 @@
 import { RegisteredContactDoc } from "@/os/explorer/account";
 import { EssayEditor } from "@/tools/essay/components/EssayEditor";
-import { MarkdownDoc } from "@/datatypes/markdown/schema";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { Bot } from "lucide-react";

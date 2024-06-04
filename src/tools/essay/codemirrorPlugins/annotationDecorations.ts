@@ -2,7 +2,7 @@ import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { ResolvedMarkdownDocAnchor } from "../../../datatypes/markdown/schema";
+import { ResolvedMarkdownDocAnchor } from "../../../datatypes/essay/schema";
 
 export const setAnnotationsEffect =
   StateEffect.define<
@@ -108,7 +108,7 @@ export const annotationDecorations = EditorView.decorations.compute(
 
     const decorations = annotations.flatMap((annotation) => {
       const { fromPos, toPos } = annotation.anchor;
-      if (fromPos >= toPos) {
+      if (fromPos > toPos) {
         return [];
       }
 
@@ -129,6 +129,10 @@ export const annotationDecorations = EditorView.decorations.compute(
         }
 
         case "changed": {
+          if (fromPos === toPos) {
+            return [];
+          }
+
           const decoration = annotation.isEmphasized
             ? spliceDecorationActive
             : spliceDecoration;
@@ -142,6 +146,10 @@ export const annotationDecorations = EditorView.decorations.compute(
         }
 
         case "highlighted": {
+          if (fromPos === toPos) {
+            return [];
+          }
+
           const decoration = annotation.isEmphasized
             ? highlightDecorationActive
             : highlightDecoration;

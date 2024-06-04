@@ -1,40 +1,46 @@
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import { MarkdownEditor } from "./CodeMirrorEditor";
+import { MarkdownDocEditor, TextSelection } from "./CodeMirrorEditor";
 
-import { useEffect, useMemo, useState } from "react";
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "@/datatypes/markdown";
+} from "@/datatypes/essay";
+import { useEffect, useMemo, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
 
 // TODO: audit the CSS being imported here;
 // it should be all 1) specific to TEE, 2) not dependent on viewport / media queries
-import { useCurrentAccount } from "@/os/explorer/account";
 import { EditorProps } from "@/os/tools";
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
+import { useAnnotationGroupsWithPosition } from "../utils";
+import { CommentsSidebar } from "./CommentsSidebar";
 
 export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
   const {
     docUrl,
     docHeads,
     annotations = [],
+    annotationGroups = [],
     setSelectedAnchors = () => {},
     actorIdToAuthor,
+    hideInlineComments,
+    setSelectedAnnotationGroupId,
+    setHoveredAnnotationGroupId,
+    setCommentState,
   } = props;
 
-  const account = useCurrentAccount();
-  const [doc, changeDoc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
+  const [hasEditorFocus, setHasEditorFocus] = useState(false);
+  const [selection, setSelection] = useState<TextSelection>();
+  const [doc] = useDocument<MarkdownDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<MarkdownDoc>(docUrl);
   const [editorView, setEditorView] = useState<EditorView>();
-  const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [editorContainer, setEditorContainer] = useState<HTMLDivElement>(null);
   const readOnly = docHeads && !isEqual(docHeads, A.getHeads(doc));
 
@@ -55,7 +61,7 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
       const fromPos = getCursorPositionSafely(doc, ["content"], fromCursor);
       const toPos = getCursorPositionSafely(doc, ["content"], toCursor);
 
-      return fromPos === undefined || toPos === undefined
+      return fromPos === null || toPos === null
         ? []
         : [
             {
@@ -65,6 +71,13 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
           ];
     });
   }, [doc, annotations]);
+
+  const annotationGroupsWithPosition = useAnnotationGroupsWithPosition({
+    doc,
+    editorView,
+    editorContainer,
+    annotationGroups,
+  });
 
   if (!doc) {
     return null;
@@ -83,25 +96,39 @@ export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {
          */}
         <div className="flex @xl:mt-4 @xl:mr-2 @xl:mb-8 @xl:ml-[-100px] @4xl:ml-[-200px] w-full @xl:w-4/5  max-w-[722px]">
           <div
-            className={`w-full bg-white box-border rounded-md px-8 py-4 transition-all duration-500 ${
+            className={`w-full bg-white box-border rounded-md px-10 py-4 transition-all duration-500 ${
               readOnly
                 ? " border-2 border-dashed border-slate-400"
                 : "border border-gray-200 "
             }`}
           >
-            <MarkdownEditor
+            <MarkdownDocEditor
               editorContainer={editorContainer}
-              diffStyle="normal"
               handle={handle}
               path={["content"]}
-              setSelectedAnchors={setSelectedAnchors ?? (() => {})}
+              setSelectedAnchors={setSelectedAnchors}
               setView={setEditorView}
+              setSelection={setSelection}
+              setHasFocus={setHasEditorFocus}
               annotations={resolvedAnnotations}
               readOnly={readOnly ?? false}
               docHeads={docHeads}
-              isCommentBoxOpen={isCommentBoxOpen}
             />
           </div>
+        </div>
+
+        <div>
+          <CommentsSidebar
+            doc={doc}
+            hideInlineComments={hideInlineComments}
+            handle={handle}
+            selection={selection}
+            hasEditorFocus={hasEditorFocus}
+            annotationGroupsWithPosition={annotationGroupsWithPosition}
+            setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+            setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+            setCommentState={setCommentState}
+          />
         </div>
       </div>
     </div>

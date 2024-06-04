@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { getHeads, save } from "@automerge/automerge";
-import { MarkdownDoc } from "@/datatypes/markdown/schema";
+import { MarkdownDoc } from "@/datatypes/essay/schema";
 import { DatatypeId, DATA_TYPES } from "../../datatypes";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
 import { Button } from "@/components/ui/button";
@@ -151,11 +151,10 @@ export const Topbar: React.FC<TopbarProps> = ({
                               </div>
                               <Button
                                 onClick={() => {
-                                  // todo: add branch to doclink
-                                  /* setSelectedBranch({
-                                  type: "branch",
-                                  url: result,
-                                })*/
+                                  selectDocLink({
+                                    ...selectedDocLink,
+                                    branchUrl: result,
+                                  });
                                 }}
                                 className="px-4 h-6"
                               >
