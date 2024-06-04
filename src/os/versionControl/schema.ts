@@ -2,6 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
 import { HasAssets } from "@/tools/essay/assets";
+import { PatchValue } from "@/vendor/automerge-wasm";
 
 export type Branch = {
   name: string;
@@ -127,27 +128,46 @@ export type HasVersionControlMetadata<T, V> = HasChangeGroupSummaries &
 
 export type AnnotationId = string & { __annotationId: true };
 
-interface AddAnnotation<A, V> {
+type RelativeDelPatch = {
+  action: "del";
+  path: A.Prop[];
+  cursor: A.Cursor;
+  length: number;
+};
+
+type RelativeSpliceTextPatch = {
+  action: "splice";
+  path: A.Prop[];
+  cursor: A.Cursor;
+  value: string;
+};
+
+// todo: this is a workaround to create patches that can be applied
+// together with other patches
+
+type RelativePatch = RelativeDelPatch | RelativeSpliceTextPatch;
+
+type AddAnnotation<A, V> = {
   type: "added";
   anchor: A;
   added: V;
-  inversePatches: A.Patch[];
-}
+  inversePatches: RelativePatch[];
+};
 
-interface DeleteAnnotation<A, V> {
+type DeleteAnnotation<A, V> = {
   type: "deleted";
   anchor: A;
   deleted: V;
-  inversePatches: A.Patch[];
-}
+  inversePatches: RelativePatch[];
+};
 
-interface ChangeAnnotation<A, V> {
+type ChangeAnnotation<A, V> = {
   type: "changed";
   anchor: A;
   before: V;
   after: V;
-  inversePatches: A.Patch[];
-}
+  inversePatches: RelativePatch[];
+};
 
 export interface HighlightAnnotation<A, V> {
   type: "highlighted";

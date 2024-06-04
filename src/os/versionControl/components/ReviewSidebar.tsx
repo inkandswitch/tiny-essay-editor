@@ -16,7 +16,6 @@ import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
-import { patch } from "@onsetsoftware/automerge-patcher";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
@@ -167,7 +166,19 @@ export const AnnotationGroupView = forwardRef<
 
       handle.change((doc) => {
         for (const p of patches) {
-          patch(doc, p);
+          switch (p.action) {
+            case "del": {
+              const index = A.getCursorPosition(doc, p.path, p.cursor);
+              A.splice(doc, p.path, index, p.length);
+              break;
+            }
+
+            case "splice": {
+              const index = A.getCursorPosition(doc, p.path, p.cursor);
+              A.splice(doc, p.path, index, 0, p.value);
+              break;
+            }
+          }
         }
       });
     };

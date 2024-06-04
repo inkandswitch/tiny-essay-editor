@@ -13,11 +13,10 @@ import {
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 import { splice } from "@automerge/automerge/next";
-import { add, pick } from "lodash";
+import { pick } from "lodash";
 import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
-import { unpatchAll } from "@onsetsoftware/automerge-patcher";
 import { diffWords } from "diff";
 
 import JSZip from "jszip";
@@ -132,8 +131,6 @@ export const patchesToAnnotations = (
       (patch.action === "splice" || patch.action === "del")
   );
 
-  const inversePatches = unpatchAll(docBefore, filteredPatches).reverse();
-
   const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
 
   // We keep track of the offset between doc and docBefore.
@@ -189,7 +186,14 @@ export const patchesToAnnotations = (
               fromCursor: fromCursor,
               toCursor: toCursor,
             },
-            inversePatches: [inversePatches[i]],
+            inversePatches: [
+              {
+                action: "del",
+                path: ["content"],
+                cursor: fromCursor,
+                length: patch.value.length,
+              },
+            ],
           });
 
           offset += patch.value.length;
@@ -220,7 +224,14 @@ export const patchesToAnnotations = (
             fromCursor: cursor,
             toCursor: cursor,
           },
-          inversePatches: [inversePatches[i]],
+          inversePatches: [
+            {
+              action: "splice",
+              path: ["content"],
+              cursor,
+              value: deleted,
+            },
+          ],
         });
         break;
       }
@@ -279,46 +290,67 @@ const diffText = (
     }
 
     if (deleted.length > 0 && added.length > 0) {
+      const anchor = {
+        fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+        toCursor: A.getCursor(doc, ["content"], offset),
+      };
+
       annotations.push({
         type: "changed",
-        anchor: {
-          fromCursor: A.getCursor(doc, ["content"], offset - added.length),
-          toCursor: A.getCursor(doc, ["content"], offset),
-        },
+        anchor,
         before: deleted,
         after: added,
         inversePatches: [
           {
             action: "del",
-            path: ["content", offset - added.length],
+            path: ["content"],
+            cursor: anchor.fromCursor,
             length: added.length,
           },
           {
             action: "splice",
-            path: ["content", offset - added.length],
+            path: ["content"],
+            cursor: anchor.fromCursor,
             value: deleted,
           },
         ],
       });
     } else if (deleted.length > 0) {
+      const cursor = A.getCursor(doc, ["content"], offset);
+
       annotations.push({
         type: "deleted",
         anchor: {
-          fromCursor: A.getCursor(doc, ["content"], offset),
-          toCursor: A.getCursor(doc, ["content"], offset),
+          fromCursor: cursor,
+          toCursor: cursor,
         },
         deleted,
-        inversePatches: [],
+        inversePatches: [
+          {
+            action: "splice",
+            path: ["content"],
+            cursor,
+            value: deleted,
+          },
+        ],
       });
     } else if (added.length > 0) {
+      const anchor = {
+        fromCursor: A.getCursor(doc, ["content"], offset - added.length),
+        toCursor: A.getCursor(doc, ["content"], offset),
+      };
       annotations.push({
         type: "added",
-        anchor: {
-          fromCursor: A.getCursor(doc, ["content"], offset - added.length),
-          toCursor: A.getCursor(doc, ["content"], offset),
-        },
+        anchor,
         added,
-        inversePatches: [],
+        inversePatches: [
+          {
+            action: "del",
+            path: ["content"],
+            cursor: anchor.fromCursor,
+            length: added.length,
+          },
+        ],
       });
     }
   }
