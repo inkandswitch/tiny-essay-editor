@@ -18,6 +18,7 @@ import { Text } from "lucide-react";
 import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 import { unpatchAll } from "@onsetsoftware/automerge-patcher";
+import { diffWordsWithSpace } from "diff";
 
 import JSZip from "jszip";
 
@@ -176,52 +177,7 @@ export const patchesToAnnotations = (
           );
           let inserted = patch.value;
 
-          const overlapStart = getOverlapStart(inserted, deleted);
-          if (overlapStart > 0) {
-            inserted = inserted.slice(overlapStart);
-            deleted = deleted.slice(overlapStart);
-            fromPos += overlapStart;
-          }
-
-          const overlapEnd = getOverlapEnd(inserted, deleted);
-          if (overlapEnd > 0) {
-            inserted = inserted.slice(0, -overlapEnd);
-            deleted = deleted.slice(0, -overlapEnd);
-            toPos -= overlapEnd;
-          }
-
-          const anchor = {
-            fromCursor: A.getCursor(doc, ["content"], fromPos),
-            toCursor: A.getCursor(doc, ["content"], toPos),
-          };
-          const inverseInsertAndDelete = [
-            inversePatches[i + 1],
-            inversePatches[i],
-          ];
-
-          if (inserted.length > 0 && deleted.length > 0) {
-            annotations.push({
-              type: "changed",
-              before: deleted,
-              after: inserted,
-              anchor,
-              inversePatches: inverseInsertAndDelete,
-            });
-          } else if (inserted.length > 0) {
-            annotations.push({
-              type: "added",
-              added: inserted,
-              anchor,
-              inversePatches: inverseInsertAndDelete,
-            });
-          } else if (deleted.length > 0) {
-            annotations.push({
-              type: "deleted",
-              deleted: deleted,
-              anchor,
-              inversePatches: inverseInsertAndDelete,
-            });
-          }
+          annotations.push(...diffText(deleted, inserted, doc, fromPos));
 
           offset += patch.value.length - nextPatch.length;
           i += 1;
@@ -271,6 +227,72 @@ export const patchesToAnnotations = (
 
       default:
         throw new Error("invalid patch");
+    }
+  }
+
+  return annotations;
+};
+
+const diffText = (
+  before: string,
+  after: string,
+  doc: MarkdownDoc,
+  offset: number
+): Annotation<MarkdownDocAnchor, string>[] => {
+  const annotations: Annotation<MarkdownDocAnchor, string>[] = [];
+  const parts = diffWordsWithSpace(before, after);
+
+  for (let i = 0; i < parts.length; i++) {
+    let part = parts[i];
+
+    if (part.removed) {
+      const nextPart = parts[i + 1];
+
+      if (nextPart && nextPart.added) {
+        annotations.push({
+          type: "changed",
+          anchor: {
+            fromCursor: A.getCursor(doc, ["content"], offset),
+            toCursor: A.getCursor(
+              doc,
+              ["content"],
+              offset + nextPart.value.length
+            ),
+          },
+          before: part.value,
+          after: nextPart.value,
+          inversePatches: [],
+        });
+
+        offset += nextPart.value.length;
+        // we already reconciled next part, so skip it
+        i += 1;
+      } else {
+        annotations.push({
+          type: "deleted",
+          anchor: {
+            fromCursor: A.getCursor(doc, ["content"], offset),
+            toCursor: A.getCursor(doc, ["content"], offset + part.value.length),
+          },
+          deleted: part.value,
+          inversePatches: [],
+        });
+      }
+    } else if (part.added) {
+      annotations.push({
+        type: "added",
+        anchor: {
+          fromCursor: A.getCursor(doc, ["content"], offset),
+          toCursor: A.getCursor(doc, ["content"], offset + part.value.length),
+        },
+        added: part.value,
+        inversePatches: [],
+      });
+
+      offset += part.value.length;
+    } else {
+      // don't add an annotation for ranges that haven't changed just increase the offset
+      offset += part.value.length;
     }
   }
 

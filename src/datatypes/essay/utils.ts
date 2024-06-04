@@ -1,5 +1,5 @@
 import * as A from "@automerge/automerge/next";
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement } from "react";
 import ReactDOMServer from "react-dom/server";
 import { MarkdownDoc } from "./schema";
 
