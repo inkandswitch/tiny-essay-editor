@@ -444,7 +444,7 @@ export const AnnotationGroupView = forwardRef<
                   <Check size={16} /> Revert
                 </div>
                 <span className="text-gray-400 text-xs w-full text-center">
-                  (⌘ + z)
+                  (⌘ + ⌫)
                 </span>
               </Button>
             )}

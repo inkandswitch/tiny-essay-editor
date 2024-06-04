@@ -151,13 +151,13 @@ export const patchesToAnnotations = (
 
     switch (patch.action) {
       case "splice": {
-        const patchStart = patch.path[1] as number;
-        const patchEnd = Math.min(
+        let fromPos = patch.path[1] as number;
+        let toPos = Math.min(
           (patch.path[1] as number) + patch.value.length,
           doc.content.length - 1
         );
-        const fromCursor = getCursorSafely(doc, ["content"], patchStart);
-        const toCursor = getCursorSafely(doc, ["content"], patchEnd);
+        let fromCursor = A.getCursor(doc, ["content"], fromPos);
+        let toCursor = A.getCursor(doc, ["content"], toPos);
 
         if (!fromCursor || !toCursor) {
           console.warn("Failed to get cursor for patch", patch);
@@ -168,137 +168,57 @@ export const patchesToAnnotations = (
         if (
           nextPatch &&
           nextPatch.action === "del" &&
-          nextPatch.path[1] === patchEnd
+          nextPatch.path[1] === toPos
         ) {
-          const deleted = docBefore.content.slice(
-            patchStart - offset,
-            patchStart - offset + nextPatch.length
+          let deleted = docBefore.content.slice(
+            fromPos - offset,
+            fromPos - offset + (nextPatch.length ?? 1)
           );
-          const inserted = patch.value;
+          let inserted = patch.value;
+
           const overlapStart = getOverlapStart(inserted, deleted);
+          if (overlapStart > 0) {
+            inserted = inserted.slice(overlapStart);
+            deleted = deleted.slice(overlapStart);
+            fromPos += overlapStart;
+          }
+
           const overlapEnd = getOverlapEnd(inserted, deleted);
+          if (overlapEnd > 0) {
+            inserted = inserted.slice(0, -overlapEnd);
+            deleted = deleted.slice(0, -overlapEnd);
+            toPos -= overlapEnd;
+          }
+
+          const anchor = {
+            fromCursor: A.getCursor(doc, ["content"], fromPos),
+            toCursor: A.getCursor(doc, ["content"], toPos),
+          };
           const inverseInsertAndDelete = [
             inversePatches[i + 1],
             inversePatches[i],
           ];
 
-          // handle overlap at the beginning
-          if (overlapStart > 0) {
-            const insertHasEffect = inserted.length > overlapStart;
-            const deleteHasEffect = deleted.length > overlapStart;
-
-            if (insertHasEffect && !deleteHasEffect) {
-              annotations.push({
-                type: "added",
-                added: inserted.slice(overlapStart),
-                anchor: {
-                  fromCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchStart + overlapStart
-                  ),
-                  toCursor,
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-
-            if (!insertHasEffect && deleteHasEffect) {
-              annotations.push({
-                type: "deleted",
-                deleted: deleted.slice(overlapStart),
-                anchor: {
-                  fromCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchStart + overlapStart
-                  ),
-                  toCursor,
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-
-            if (insertHasEffect && deleteHasEffect) {
-              annotations.push({
-                type: "changed",
-                before: deleted.slice(overlapStart),
-                after: inserted.slice(overlapStart),
-                anchor: {
-                  fromCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchStart + overlapStart
-                  ),
-                  toCursor,
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-
-            // handle overlap at the end
-          } else if (overlapEnd > 0) {
-            const deleteHasEffect = inserted.length > overlapStart;
-            const insertHasEffect = deleted.length > overlapStart;
-
-            if (deleteHasEffect && !insertHasEffect) {
-              annotations.push({
-                type: "added",
-                added: inserted.slice(0, -overlapEnd),
-                anchor: {
-                  fromCursor,
-                  toCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchEnd - overlapEnd
-                  ),
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-
-            if (insertHasEffect && !deleteHasEffect) {
-              annotations.push({
-                type: "deleted",
-                deleted: deleted.slice(0, -overlapEnd),
-                anchor: {
-                  fromCursor,
-                  toCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchEnd - overlapEnd
-                  ),
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-
-            if (insertHasEffect && deleteHasEffect) {
-              annotations.push({
-                type: "changed",
-                before: deleted.slice(0, -overlapEnd),
-                after: inserted.slice(0, -overlapEnd),
-                anchor: {
-                  fromCursor,
-                  toCursor: getCursorSafely(
-                    doc,
-                    ["content"],
-                    patchEnd - overlapEnd
-                  ),
-                },
-                inversePatches: inverseInsertAndDelete,
-              });
-            }
-            // no overlap
-          } else {
+          if (inserted.length > 0 && deleted.length > 0) {
             annotations.push({
               type: "changed",
               before: deleted,
               after: inserted,
-              anchor: {
-                fromCursor,
-                toCursor,
-              },
+              anchor,
+              inversePatches: inverseInsertAndDelete,
+            });
+          } else if (inserted.length > 0) {
+            annotations.push({
+              type: "added",
+              added: inserted,
+              anchor,
+              inversePatches: inverseInsertAndDelete,
+            });
+          } else if (deleted.length > 0) {
+            annotations.push({
+              type: "deleted",
+              deleted: deleted,
+              anchor,
               inversePatches: inverseInsertAndDelete,
             });
           }
