@@ -1,13 +1,9 @@
 import { EditorView } from "@codemirror/view";
 import { next as A } from "@automerge/automerge";
-import { ReactElement, useEffect, useMemo, useState } from "react";
+import { ReactElement, useMemo } from "react";
 import ReactDOMServer from "react-dom/server";
-import {
-  AnnotationGroup,
-  AnnotationGroupWithUIState,
-} from "@/os/versionControl/schema";
+import { AnnotationGroupWithUIState } from "@/os/versionControl/schema";
 import { MarkdownDoc, MarkdownDocAnchor } from "@/datatypes/markdown";
-import { Annotation } from "@uiw/react-codemirror";
 import { useScrollPosition } from "@/os/hooks/useScrollPosition";
 
 export type AnnotationGroupWithPosition = AnnotationGroupWithUIState<
@@ -27,8 +23,8 @@ const estimatedHeightOfAnnotationGroup = (
       )
     : [];
   const commentsHeight = commentHeights.reduce((a, b) => a + b, 0);
-  const PADDING = 32;
-  const BUTTONS = 40;
+  const PADDING = 24;
+  const BUTTONS = 0;
   const actionButtonsHeight = annotationGroup.state === "expanded" ? 50 : 0;
   return PADDING + BUTTONS + commentsHeight + 20 + actionButtonsHeight;
 };

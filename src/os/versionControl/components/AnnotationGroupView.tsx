@@ -26,10 +26,11 @@ export interface AnnotationGroupViewProps {
   onSelectPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
-  enableScrollSync?: boolean; // todo: this shouldn't be a flag
   setIsHovered: (isHovered: boolean) => void;
   setIsSelected: (isSelected: boolean) => void;
   setCommentState: (state: CommentState<unknown>) => void;
+  enableScrollSync?: boolean; // todo: this shouldn't be a flag
+  hideAnnotations?: boolean;
 }
 
 export const AnnotationGroupView = forwardRef<
@@ -50,6 +51,7 @@ export const AnnotationGroupView = forwardRef<
       onSelectPrev,
       setCommentState,
       enableScrollSync,
+      hideAnnotations,
     }: AnnotationGroupViewProps,
     ref
   ) => {
@@ -252,12 +254,14 @@ export const AnnotationGroupView = forwardRef<
                 : ""
             }`}
           >
-            <AnnotationsView
-              doc={doc}
-              handle={handle}
-              datatypeId={datatypeId}
-              annotations={annotationGroup.annotations}
-            />
+            {!hideAnnotations && (
+              <AnnotationsView
+                doc={doc}
+                handle={handle}
+                datatypeId={datatypeId}
+                annotations={annotationGroup.annotations}
+              />
+            )}
             <div className="mx-1.5">
               {annotationGroup.discussion?.comments.map((comment, index) => (
                 <DiscussionCommentView

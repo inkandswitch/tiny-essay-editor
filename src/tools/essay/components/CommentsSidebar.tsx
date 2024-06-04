@@ -84,6 +84,7 @@ export const CommentsSidebar = ({
                 hasNext={index < annotationGroupsWithPosition.length - 1}
                 hasPrev={index > 0}
                 setCommentState={setCommentState}
+                hideAnnotations={true}
               />
             </div>
           );
