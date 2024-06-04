@@ -248,7 +248,11 @@ const diffText = (
     if (part.removed) {
       const nextPart = parts[i + 1];
 
+      // combine remove if it's followed by an add
       if (nextPart && nextPart.added) {
+        const before = part.value;
+        const after = nextPart.value;
+
         annotations.push({
           type: "changed",
           anchor: {
@@ -259,13 +263,20 @@ const diffText = (
               offset + nextPart.value.length
             ),
           },
-          before: part.value,
-          after: nextPart.value,
-          inversePatches: [],
+          before,
+          after,
+          inversePatches: [
+            { action: "del", path: ["content", offset], length: after.length },
+            {
+              action: "splice",
+              path: ["content", offset],
+              value: before,
+            },
+          ],
         });
 
         offset += nextPart.value.length;
-        // we already reconciled next part, so skip it
+        // we already have reconciled the next part, so skip it
         i += 1;
       } else {
         annotations.push({
@@ -291,63 +302,12 @@ const diffText = (
 
       offset += part.value.length;
     } else {
-      // don't add an annotation for ranges that haven't changed just increase the offset
+      // skip ranges that haven't changed, just increase the offset
       offset += part.value.length;
     }
   }
 
   return annotations;
-};
-
-const WORD_SEPARATOR_REGEX = /[\s.,:;?!(){}[\]<>]/;
-
-const getOverlapStart = (str1: string, str2: string) => {
-  // full match
-  if (str1 === str2) {
-    return str1.length;
-  }
-
-  // partial match
-  let overlapLength = 0;
-  for (let i = 0; i < str1.length && i < str2.length; i++) {
-    if (str1[i] === str2[i]) {
-      overlapLength++;
-    } else {
-      break;
-    }
-  }
-
-  // reduce the overlap if this is not a full word
-  while (
-    overlapLength > 0 &&
-    !WORD_SEPARATOR_REGEX.test(str1[overlapLength - 1])
-  ) {
-    overlapLength--;
-  }
-
-  return overlapLength;
-};
-
-const getOverlapEnd = (str1: string, str2: string) => {
-  let overlapLength = 0;
-  const minLength = Math.min(str1.length, str2.length);
-  for (let i = 1; i <= minLength; i++) {
-    if (str1[str1.length - i] === str2[str2.length - i]) {
-      overlapLength++;
-    } else {
-      break;
-    }
-  }
-
-  // reduce the overlap if this is not a full word
-  while (
-    overlapLength > 0 &&
-    !WORD_SEPARATOR_REGEX.test(str1[str1.length - overlapLength])
-  ) {
-    overlapLength--;
-  }
-
-  return overlapLength;
 };
 
 const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
