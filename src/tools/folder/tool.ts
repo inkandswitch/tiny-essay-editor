@@ -1,8 +1,6 @@
 import { Tool } from "@/os/tools";
 import { FolderViewer } from "./FolderViewer";
 
-export default {
-  id: "folder",
-  name: "Folder",
+export const FolderViewerTool: Tool = {
   editorComponent: FolderViewer,
-} as Tool;
+};

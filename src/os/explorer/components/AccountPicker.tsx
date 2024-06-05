@@ -5,7 +5,7 @@ import {
   useSelf,
   automergeUrlToAccountToken,
   accountTokenToAutomergeUrl,
-  DatatypeSettingsDoc,
+  ModuleSettingsDoc,
 } from "../account";
 import { ChangeEvent, useEffect, useState } from "react";
 
@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
-import { Copy, Eye, EyeOff } from "lucide-react";
+import { Copy, Eye, EyeOff, PlusIcon } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
-import { DATA_TYPES } from "@/os/datatypes";
+import { useDataTypeModules } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // 1MB in bytes
@@ -56,6 +56,7 @@ export const AccountPicker = ({
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
+  const datatypeModules = useDataTypeModules();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
@@ -74,8 +75,8 @@ export const AccountPicker = ({
   );
   const [accountToLogin] = useDocument<AccountDoc>(accountAutomergeUrlToLogin);
   const [contactToLogin] = useDocument<ContactDoc>(accountToLogin?.contactUrl);
-  const [datatypeSettingsDoc, changeDatatypeSettingsDoc] =
-    useDocument<DatatypeSettingsDoc>(currentAccountDoc?.datatypeSettingsUrl);
+  const [moduleSettingsDoc, changeModuleSettingsDoc] =
+    useDocument<ModuleSettingsDoc>(currentAccountDoc?.moduleSettingsUrl);
 
   const accountTokenToLoginStatus: AccountTokenToLoginStatus = (() => {
     if (!accountTokenToLogin || accountTokenToLogin === "") return null;
@@ -145,9 +146,38 @@ export const AccountPicker = ({
 
   const isLoggedIn = self?.type === "registered";
 
-  const experimentalDatatypes = Object.values(DATA_TYPES).filter(
-    ({ isExperimental }) => isExperimental
-  );
+  // load custom tools
+  const [moduleUrl, setModuleUrl] = useState<string>("");
+
+  const onAddModuleUrl = () => {
+    // validate url
+    try {
+      new URL(moduleUrl);
+    } catch (err) {
+      alert(`Invalid url "${moduleUrl}}"`);
+      return;
+    }
+
+    import(moduleUrl)
+      .then((module) => {
+        if (
+          !module.default ||
+          !module.default.metadata ||
+          !module.default.load
+        ) {
+          alert("Invalid module");
+          return;
+        }
+
+        changeModuleSettingsDoc((doc) => {
+          doc.moduleUrls.push(moduleUrl);
+          setModuleUrl("");
+        });
+      })
+      .catch((err) => {
+        alert(`Failed to load module at "${moduleUrl}"`);
+      });
+  };
 
   return (
     <Dialog>
@@ -322,38 +352,48 @@ export const AccountPicker = ({
             </form>
 
             <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
-              <Label>Experimental data types</Label>
+              <Label>Data types</Label>
 
               <div className="flex flex-col gap-2 py-2">
-                {datatypeSettingsDoc &&
-                  experimentalDatatypes.map((datatype) => {
+                {moduleSettingsDoc &&
+                  Object.values(datatypeModules).map((datatypeModule) => {
+                    const isEnabled =
+                      moduleSettingsDoc.enabledDatatypeIds[
+                        datatypeModule.metadata.id
+                      ];
+
+                    const isChecked =
+                      isEnabled ||
+                      (isEnabled === undefined &&
+                        !datatypeModule.metadata.isExperimental);
+
                     return (
                       <div
                         className="flex items-center gap-2"
-                        key={datatype.id}
+                        key={datatypeModule.metadata.id}
                       >
                         <Checkbox
-                          id={`datatype-${datatype.id}`}
-                          checked={
-                            datatypeSettingsDoc.enabledDatatypeIds[datatype.id]
-                          }
+                          id={`datatype-${datatypeModule.metadata.id}`}
+                          checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
-                            changeDatatypeSettingsDoc((settings) => {
-                              settings.enabledDatatypeIds[datatype.id] =
-                                !settings.enabledDatatypeIds[datatype.id];
+                            changeModuleSettingsDoc((settings) => {
+                              settings.enabledDatatypeIds[
+                                datatypeModule.metadata.id
+                              ] = !isChecked;
                             });
                           }}
                         />
                         <label
-                          htmlFor={`datatype-${datatype.id}`}
+                          htmlFor={`datatype-${datatypeModule.metadata.id}`}
                           className="text-sm text-gray-600 cursor-pointer "
                         >
-                          <datatype.icon
+                          <datatypeModule.metadata.icon
                             size={14}
                             className="inline-block font-bold mr-2 align-top mt-[2px]"
                           />
-                          {datatype.name}
+                          {datatypeModule.metadata.name}
+                          {datatypeModule.metadata.isExperimental ? " 🧪" : ""}
                         </label>
                       </div>
                     );
@@ -364,6 +404,24 @@ export const AccountPicker = ({
                 🧪 These are data types that are less fleshed out. Expect things
                 to break!
               </p>
+            </div>
+
+            <div className="grid w-full max-w-sm items-center gap-1.5 pt-2">
+              <Label>Module urls</Label>
+
+              {moduleSettingsDoc?.moduleUrls.map((url) => {
+                return <div>{url}</div>;
+              })}
+
+              <div className="flex gap-2">
+                <Input
+                  onChange={(evt) => setModuleUrl(evt.target.value)}
+                  value={moduleUrl}
+                />
+                <Button variant="outline" disabled={!moduleUrl}>
+                  <PlusIcon onClick={onAddModuleUrl} />
+                </Button>
+              </div>
             </div>
           </>
         )}

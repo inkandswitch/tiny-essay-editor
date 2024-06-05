@@ -1,9 +1,8 @@
-import { DataType } from "@/os/datatypes";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
 import { Annotation } from "@/os/versionControl/schema";
 import { next as A } from "@automerge/automerge";
 import { pick } from "lodash";
-import { Sheet } from "lucide-react";
 import { DataGridDoc, DataGridDocAnchor } from "./schema";
 
 // When a copy of the document has been made,
@@ -123,15 +122,11 @@ const patchesToAnnotations = (
   });
 };
 
-export const DataGridDatatype: DataType<
+export const DataGridDatatype: DataTypeWitoutMetaData<
   DataGridDoc,
   DataGridDocAnchor,
   string
 > = {
-  id: "datagrid",
-  name: "Spreadsheet",
-  isExperimental: true,
-  icon: Sheet,
   init,
   getTitle,
   setTitle,

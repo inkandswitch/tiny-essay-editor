@@ -1,5 +1,4 @@
-import { DataType } from "@/os/datatypes";
-import { FolderIcon } from "lucide-react";
+import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { FolderDoc } from ".";
 
 export const init = (doc: any) => {
@@ -22,10 +21,7 @@ export const setTitle = (doc: FolderDoc, title: string) => {
   doc.title = title;
 };
 
-export const FolderDatatype: DataType<FolderDoc, never, never> = {
-  id: "folder",
-  name: "Folder",
-  icon: FolderIcon,
+export const FolderDatatype: DataTypeWitoutMetaData<FolderDoc, never, never> = {
   init,
   getTitle,
   setTitle,

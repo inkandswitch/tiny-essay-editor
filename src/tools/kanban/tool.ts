@@ -1,8 +1,6 @@
 import { Tool } from "@/os/tools";
 import { KanbanBoard } from "./KanbanBoard";
 
-export default {
-  id: "kanban",
-  name: "Kanban",
+export const KanbanTool: Tool = {
   editorComponent: KanbanBoard,
-} as Tool;
+};
