@@ -383,7 +383,7 @@ export const VersionControlEditor: React.FC<{
   const highlightSidebarButton =
     !sidebarMode &&
     annotations.some((a) => a.type === "highlighted" && a.isEmphasized) &&
-    (!DATA_TYPES[datatypeId].supportsInlineComments || hideInlineComments);
+    (!supportsInlineComments || hideInlineComments);
 
   return (
     <div className="flex h-full overflow-hidden">
