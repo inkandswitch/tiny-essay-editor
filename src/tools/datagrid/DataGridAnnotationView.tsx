@@ -10,7 +10,7 @@ export const DataGridAnnotationView = ({
       {annotations.map((annotation) => (
         <div
           className={`border border-gray-200 p-1 mx-auto ${
-            annotation.type === "highlighted" ? "bg-yellow-100" : ""
+            annotation.type === "highlighted" ? "bg-yellow-50" : ""
           }`}
           style={{
             fontSize: 13,
