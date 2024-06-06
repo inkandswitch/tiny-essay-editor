@@ -170,10 +170,15 @@ export const theme = (style: "serif" | "sans") => [
     ...MARKDOWN_STYLES,
     ".cm-content": {
       ...MARKDOWN_STYLES[".cm-content"],
-      fontFamily:
-        style === "serif"
-          ? '"Merriweather", serif'
-          : '"Merriweather Sans", sans-serif',
+      ...(style === "serif"
+        ? {
+            fontFamily: '"Merriweather", serif',
+            lineHeight: "1.5rem",
+          }
+        : {
+            fontFamily: '"Merriweather Sans", sans-serif',
+            lineHeight: "1.25rem",
+          }),
     },
   }),
   syntaxHighlighting(markdownStyles),
