@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import * as A from "@automerge/automerge/next";
 import { isEqual, sortBy, min } from "lodash";
 import { useStaticCallback } from "@/os/hooks/useStaticCallback";
-import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
+import { DataType, DatatypeId, useDataTypeModules } from "@/os/datatypes";
 import {
   Annotation,
   HighlightAnnotation,
@@ -33,12 +33,12 @@ type HoverState<T> = HoverAnchorState<T> | ActiveGroupState;
 
 export function useAnnotations({
   doc,
-  datatypeId,
+  dataType,
   diff,
   isCommentInputFocused,
 }: {
   doc: A.Doc<HasVersionControlMetadata<unknown, unknown>>;
-  datatypeId: DatatypeId;
+  dataType: DataType<unknown, unknown, unknown>;
   diff?: DiffWithProvenance;
   isCommentInputFocused: boolean;
 }): {
@@ -105,12 +105,12 @@ export function useAnnotations({
   );
 
   const { annotations, annotationGroups } = useMemo(() => {
-    if (!doc) {
+    if (!doc || !dataType) {
       return { annotations: [], annotationGroups: [] };
     }
 
-    const patchesToAnnotations = DATA_TYPES[datatypeId].patchesToAnnotations;
-    const valueOfAnchor = DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
+    const patchesToAnnotations = dataType.patchesToAnnotations;
+    const valueOfAnchor = dataType.valueOfAnchor ?? (() => null);
     const discussions = Object.values(doc?.discussions ?? []);
 
     const discussionGroups: AnnotationGroup<unknown, unknown>[] = [];
@@ -165,7 +165,7 @@ export function useAnnotations({
       editAnnotations.forEach((editAnnotation) => {
         if (
           discussion.anchors.some((anchor) =>
-            doAnchorsOverlap(datatypeId, editAnnotation.anchor, anchor, doc)
+            doAnchorsOverlap(dataType, editAnnotation.anchor, anchor, doc)
           )
         ) {
           // mark any annotation that is part of a discussion as claimed
@@ -184,7 +184,7 @@ export function useAnnotations({
 
     const computedAnnotationGroups: AnnotationGroup<unknown, unknown>[] =
       groupAnnotations(
-        datatypeId,
+        dataType,
         editAnnotations.filter(
           (annotation) => !claimedAnnotations.has(annotation)
         )
@@ -206,7 +206,7 @@ export function useAnnotations({
       highlightAnnotations.push(...selectionAnnotations);
     }
 
-    const sortAnchorsBy = DATA_TYPES[datatypeId].sortAnchorsBy;
+    const sortAnchorsBy = dataType.sortAnchorsBy;
 
     return {
       annotations: editAnnotations.concat(highlightAnnotations),
@@ -220,7 +220,7 @@ export function useAnnotations({
           )
         : combinedAnnotationGroups,
     };
-  }, [doc, diff, selectedState, isCommentInputFocused, datatypeId]);
+  }, [doc, diff, selectedState, isCommentInputFocused, dataType]);
 
   const {
     selectedAnchors,
@@ -242,7 +242,7 @@ export function useAnnotations({
         // first annotationGroup that contains all selected anchors is expanded
         const annotationGroup = annotationGroups.find((group) =>
           doesAnnotationGroupContainAnchors(
-            datatypeId,
+            dataType,
             group,
             selectedState.anchors,
             doc
@@ -286,7 +286,7 @@ export function useAnnotations({
         // find first discussion that contains the hovered anchor and hover all anchors that are part of that discussion as wellp
         const annotationGroup = annotationGroups.find((group) =>
           doesAnnotationGroupContainAnchors(
-            datatypeId,
+            dataType,
             group,
             [hoveredState.anchor],
             doc
@@ -377,17 +377,17 @@ export function useAnnotations({
 }
 
 export const doAnchorsOverlap = (
-  type: DatatypeId,
+  datatype: DataType<unknown, unknown, unknown>,
   a: unknown,
   b: unknown,
   doc: HasVersionControlMetadata<unknown, unknown>
 ) => {
-  const comperator = DATA_TYPES[type].doAnchorsOverlap;
+  const comperator = datatype.doAnchorsOverlap;
   return comperator ? comperator(doc, a, b) : isEqual(a, b);
 };
 
 export const areAnchorSelectionsEqual = (
-  type: DatatypeId,
+  datatype: DataType<unknown, unknown, unknown>,
   a: unknown[],
   b: unknown[],
   doc: HasVersionControlMetadata<unknown, unknown>
@@ -397,7 +397,7 @@ export const areAnchorSelectionsEqual = (
   }
 
   return a.every((anchor) =>
-    b.some((other) => doAnchorsOverlap(type, anchor, other, doc))
+    b.some((other) => doAnchorsOverlap(datatype, anchor, other, doc))
   );
 };
 
@@ -413,25 +413,25 @@ export function getAnnotationGroupId<T, V>(
   return `${firstAnnotation.type}:${JSON.stringify(firstAnnotation.anchor)}`;
 }
 
-export function doesAnnotationGroupContainAnchors<T, V>(
-  datatypeId: DatatypeId,
+export function doesAnnotationGroupContainAnchors<D, T, V>(
+  datatype: DataType<D, T, V>,
   group: AnnotationGroup<T, V>,
   anchors: T[],
   doc: HasVersionControlMetadata<T, V>
 ) {
   return anchors.every((anchor) =>
     group.annotations.some((annotation) =>
-      doAnchorsOverlap(datatypeId, annotation.anchor, anchor, doc)
+      doAnchorsOverlap(datatype, annotation.anchor, anchor, doc)
     )
   );
 }
 
-export function groupAnnotations<T, V>(
-  datatypeId: DatatypeId,
+export function groupAnnotations<D, T, V>(
+  datatype: DataType<D, T, V>,
   annotations: Annotation<T, V>[]
 ): Annotation<T, V>[][] {
   const grouper =
-    DATA_TYPES[datatypeId].groupAnnotations ??
+    datatype.groupAnnotations ??
     ((annotations: Annotation<T, V>[]) =>
       annotations.map((annotation) => [annotation]));
 

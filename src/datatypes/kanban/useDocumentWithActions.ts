@@ -1,7 +1,7 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 import { useMemo } from "react";
-import { DataType } from "../../os/datatypes";
+import { DataType, useDataType } from "../../os/datatypes";
 
 /** Returns a doc with helper actions from a datatype definition.
  *
@@ -14,13 +14,19 @@ import { DataType } from "../../os/datatypes";
  */
 export const useDocumentWithActions = <D>(
   docUrl: AutomergeUrl,
-  datatype: DataType<D, any, any>
+  datatypeId: string
 ) => {
+  const dataType = useDataType(datatypeId);
   const [doc, changeDoc] = useDocument<D>(docUrl);
   const handle = useHandle(docUrl);
   const actions = useMemo(() => {
     const result = {};
-    for (const [key, value] of Object.entries(datatype.actions)) {
+
+    if (!dataType) {
+      return;
+    }
+
+    for (const [key, value] of Object.entries(dataType.actions)) {
       result[key] = (args: object) => {
         handle.change(
           (doc: D) => {
@@ -36,6 +42,6 @@ export const useDocumentWithActions = <D>(
       };
     }
     return result as Record<string, (...args: unknown[]) => void>;
-  }, [datatype, handle]);
+  }, [dataType, handle]);
   return [doc, changeDoc, actions] as const;
 };

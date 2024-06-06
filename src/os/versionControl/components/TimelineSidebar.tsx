@@ -11,7 +11,6 @@ import {
   GenericChangeGroup,
   groupingByEditTime,
 } from "../groupChanges";
-import { DATA_TYPES } from "@/os/datatypes";
 
 import {
   MilestoneIcon,
@@ -49,7 +48,7 @@ import {
   useAutoPopulateChangeGroupSummaries,
 } from "@/os/versionControl/changeGroupSummaries";
 
-import { DatatypeId } from "@/os/datatypes";
+import { DataType } from "@/os/datatypes";
 import { ChangeGroupingOptions } from "../groupChanges";
 import { ChangeGrouper } from "../ChangeGrouper";
 
@@ -110,14 +109,14 @@ export type ChangelogSelection =
   | undefined;
 
 export const TimelineSidebar: React.FC<{
-  datatypeId: DatatypeId;
+  dataType: DataType<unknown, unknown, unknown>;
   docUrl: AutomergeUrl;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;
   setDocHeads: (heads: Heads) => void;
   setDiff: (diff: DiffWithProvenance) => void;
 }> = ({
-  datatypeId,
+  dataType,
   docUrl,
   selectedBranch,
   setSelectedBranch,
@@ -138,7 +137,7 @@ export const TimelineSidebar: React.FC<{
     includePatchInChangeGroup,
     promptForAIChangeGroupSummary: promptForAutoChangeGroupDescription,
     fallbackSummaryForChangeGroup,
-  } = DATA_TYPES[datatypeId] ?? {};
+  } = dataType ?? {};
 
   // todo: extract this as an interface that different doc types can implement
   const changeGroupingOptions = useMemo<
@@ -154,7 +153,7 @@ export const TimelineSidebar: React.FC<{
       fallbackSummaryForChangeGroup,
     };
   }, [
-    datatypeId,
+    dataType.id,
     includeChangeInHistory,
     includePatchInChangeGroup,
     fallbackSummaryForChangeGroup,

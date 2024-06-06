@@ -20,6 +20,31 @@
   </head>
   <body>
     <div id="root"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "@automerge/automerge": "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/index.js",
+          "@automerge/automerge-repo-react-hooks": "https://ga.jspm.io/npm:@automerge/automerge-repo-react-hooks@1.1.12/dist/index.js",
+          "@automerge/automerge-wasm": "https://ga.jspm.io/npm:@automerge/automerge-wasm@0.17.0/bundler/automerge_wasm.js",
+          "react": "https://ga.jspm.io/npm:react@18.3.1/dev.index.js"
+        },
+        "scopes": {
+          "https://ga.jspm.io/": {
+            "uuid": "https://ga.jspm.io/npm:uuid@9.0.1/dist/esm-browser/index.js"
+          }
+        }
+      }
+    </script>
+    <script>
+      window.esmsInitOptions = {
+        polyfillEnable: ["css-modules", "json-modules", "wasm-modules"],
+      };
+    </script>
+    <script
+      async
+      src="https://ga.jspm.io/npm:es-module-shims@1.10.0/dist/es-module-shims.js"
+      crossorigin="anonymous"
+    ></script>
     <script type="module" src="/src/os/main.tsx"></script>
   </body>
 </html>

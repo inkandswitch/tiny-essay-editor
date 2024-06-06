@@ -1,10 +1,6 @@
 import * as A from "@automerge/automerge/next";
 
-import {
-  KanbanBoardDatatype,
-  KanbanBoardDoc,
-  KanbanBoardDocAnchor,
-} from "../../datatypes/kanban/datatype";
+import { KanbanBoardDoc, KanbanBoardDocAnchor } from "@/datatypes/kanban";
 
 import { EditorProps } from "@/os/tools";
 import { useDocumentWithActions } from "@/datatypes/kanban/useDocumentWithActions";
@@ -18,7 +14,7 @@ export const KanbanBoard = ({
   annotations = [],
 }: EditorProps<KanbanBoardDocAnchor, string> & { readOnly?: boolean }) => {
   const [latestDoc, _changeDoc, actions] =
-    useDocumentWithActions<KanbanBoardDoc>(docUrl, KanbanBoardDatatype); // used to trigger re-rendering when the doc loads
+    useDocumentWithActions<KanbanBoardDoc>(docUrl, "kanban"); // used to trigger re-rendering when the doc loads
 
   const doc = useMemo(
     () => (docHeads ? A.view(latestDoc, docHeads) : latestDoc),

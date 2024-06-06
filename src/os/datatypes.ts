@@ -2,38 +2,32 @@ import {
   ChangeGroup,
   DecodedChangeWithMetadata,
 } from "@/os/versionControl/groupChanges";
-import {
-  Annotation,
-  HasVersionControlMetadata,
-} from "@/os/versionControl/schema";
+import { Annotation } from "@/os/versionControl/schema";
 import { TextPatch } from "@/os/versionControl/utils";
 import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 
 // datatypes
-
-import bot from "@/datatypes/bot";
-import datagrid from "@/datatypes/datagrid";
-import folder from "@/datatypes/folder";
-import kanban from "@/datatypes/kanban";
-import markdown from "@/datatypes/markdown";
-import tldraw from "@/datatypes/tldraw";
 import { FileExportMethod } from "./fileExports";
+import { Module, useModule } from "./modules";
 
-export type CoreDataType<D> = {
-  id: string;
+export type DataTypeMetadata = {
+  id: DatatypeId;
   name: string;
   icon: any;
+
+  /* Marking a data types as experimental hides it by default
+   * so the user has to enable them in their account first  */
+  isExperimental?: boolean;
+};
+
+export type CoreDataType<D> = {
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
   fileExportMethods?: FileExportMethod<D>[];
-
-  /* Marking a data types as experimental hides it by default
-   * so the user has to enable them in their account first  */
-  isExperimental?: boolean;
 };
 
 export type VersionedDataType<D, T, V> = {
@@ -110,22 +104,47 @@ export type VersionedDataType<D, T, V> = {
   sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
 
-export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
+export type DataTypeWitoutMetaData<D, T, V> = CoreDataType<D> &
+  VersionedDataType<D, T, V>;
 
-// TODO: we can narrow the types below by constructing a mapping from datatype IDs
-// to the corresponding typescript type. This will be more natural once we have a
-// schema system for generating typescript types.
+export type DataType<D, T, V> = DataTypeWitoutMetaData<D, T, V> &
+  DataTypeMetadata;
 
-export const DATA_TYPES: Record<
+const dataTypesFolder: Record<
   string,
-  DataType<HasVersionControlMetadata<unknown, unknown>, unknown, unknown>
-> = {
-  essay: markdown, // todo: migrate, we can't just rename it
-  tldraw,
-  datagrid,
-  bot,
-  kanban,
-  folder,
-} as const;
+  { default: Module<DataTypeMetadata, DataType<unknown, unknown, unknown>> }
+> = import.meta.glob("../datatypes/*/module.@(ts|js|tsx|jsx)", {
+  eager: true,
+});
 
-export type DatatypeId = keyof typeof DATA_TYPES;
+const DATA_TYPE_MODULES: Record<
+  string,
+  Module<DataTypeMetadata, DataType<unknown, unknown, unknown>>
+> = {};
+
+for (const [path, { default: module }] of Object.entries(dataTypesFolder)) {
+  const id = path.split("/")[2];
+
+  if (id !== module.metadata.id) {
+    throw new Error(
+      `Can't load datatype: id "${module.metadata.id}" does not match the folder name "${id}" `
+    );
+  }
+
+  DATA_TYPE_MODULES[id] = module;
+}
+
+export const useDataTypeModules = () => {
+  return DATA_TYPE_MODULES;
+};
+
+export const useDataType = <D, T, V>(
+  dataTypeId: DatatypeId
+): DataType<D, T, V> | undefined => {
+  const dataTypeModules = useDataTypeModules();
+  const dataType = useModule(dataTypeModules[dataTypeId]);
+
+  return dataType as DataType<D, T, V>;
+};
+
+export type DatatypeId = string;

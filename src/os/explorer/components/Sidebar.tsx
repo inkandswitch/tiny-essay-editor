@@ -1,5 +1,4 @@
 import { AutomergeUrl, isValidAutomergeUrl } from "@automerge/automerge-repo";
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -7,9 +6,16 @@ import {
   FileQuestionIcon,
   FolderInput,
 } from "lucide-react";
-import { Tree, NodeRendererProps } from "react-arborist";
-import { FillFlexParent } from "./FillFlexParent";
+import React, {
+  ReactElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { NodeRendererProps, Tree } from "react-arborist";
 import { AccountPicker } from "./AccountPicker";
+import { FillFlexParent } from "./FillFlexParent";
 
 import {
   DocLink,
@@ -17,7 +23,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/datatypes/folder";
-import { DatatypeId, DATA_TYPES } from "../../datatypes";
+import { DatatypeId, useDataTypeModules } from "../../datatypes";
 
 import {
   Popover,
@@ -26,16 +32,20 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
+import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";
-import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
 import { capitalize, uniqBy } from "lodash";
-import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { UIStateDoc, useCurrentAccountDoc } from "../account";
-import { useDatatypeSettings } from "../account";
+import {
+  UIStateDoc,
+  useCurrentAccountDoc,
+  useDatatypeSettings,
+} from "../account";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
+  const datatypeModules = useDataTypeModules();
   let Icon;
 
   if (node.data.type === "folder") {
@@ -45,7 +55,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       Icon = ChevronRight;
     }
   } else {
-    Icon = DATA_TYPES[node.data.type]?.icon ?? FileQuestionIcon;
+    Icon = datatypeModules[node.data.type]?.metadata.icon ?? FileQuestionIcon;
   }
 
   return (
@@ -75,7 +85,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       {!node.isEditing && (
         <>
           <div>
-            {DATA_TYPES[node.data.type]
+            {datatypeModules[node.data.type]
               ? node.data.name
               : `Unknown type: ${node.data.type}`}
           </div>
@@ -155,6 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   rootFolderDoc,
 }) => {
   const repo = useRepo();
+  const datatypeModules = useDataTypeModules();
   const {
     doc: rootFolderDocWithChildren,
     status,
@@ -232,9 +243,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const treeSelection = selectedDocLink ? idAccessor(selectedDocLink) : null;
 
-  const onRename = ({ node, name }) => {
+  const onRename = async ({ node, name }) => {
     const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
-    const datatype = DATA_TYPES[docLink.type];
+    const datatypeModule = datatypeModules[docLink.type];
+    const datatype = await datatypeModule.load();
 
     if (!datatype.setTitle) {
       alert(
@@ -327,26 +339,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.entries(DATA_TYPES).map(([id, datatype]) => {
+        {Object.values(datatypeModules).map((datatypeModule) => {
+          const { id } = datatypeModule.metadata;
+          const isEnabled = datatypeSettings?.enabledDatatypeIds[id];
           if (
-            datatype.isExperimental &&
-            !datatypeSettings?.enabledDatatypeIds[id]
+            isEnabled == false ||
+            (isEnabled !== true && datatypeModule.metadata.isExperimental)
           ) {
             return;
           }
 
           return (
-            <div key={datatype.id}>
+            <div key={datatypeModule.metadata.id}>
               {" "}
               <div
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
                 onClick={() => addNewDocument({ type: id as DatatypeId })}
               >
-                <datatype.icon
+                <datatypeModule.metadata.icon
                   size={14}
                   className="inline-block font-bold mr-2 align-top mt-[2px]"
                 />
-                New {datatype.name}
+                New {datatypeModule.metadata.name}
               </div>
             </div>
           );

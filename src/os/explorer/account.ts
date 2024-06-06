@@ -11,13 +11,13 @@ import { EventEmitter } from "eventemitter3";
 import { useEffect, useState } from "react";
 import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
-import { useForceUpdate } from "@/components/utils";
+import { useForceUpdate } from "@/os/hooks/useForceUpdate";
 
 import { FolderDoc } from "@/datatypes/folder";
 import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";
 import { DatatypeId } from "../datatypes";
 
-export type DatatypeSettingsDoc = {
+export type ModuleSettingsDoc = {
   enabledDatatypeIds: { [id: DatatypeId]: boolean };
 };
 
@@ -25,7 +25,7 @@ export interface AccountDoc {
   contactUrl: AutomergeUrl;
   rootFolderUrl: AutomergeUrl;
   uiStateUrl: AutomergeUrl;
-  datatypeSettingsUrl: AutomergeUrl;
+  moduleSettingsUrl: AutomergeUrl;
 }
 
 export type UIStateDoc = {
@@ -268,13 +268,13 @@ export function useCurrentAccount(): Account | undefined {
       });
     }
 
-    if (doc && doc.datatypeSettingsUrl === undefined) {
-      const datatypeSettingsHandle = repo.create<DatatypeSettingsDoc>();
-      datatypeSettingsHandle.change((settings) => {
+    if (doc && doc.moduleSettingsUrl === undefined) {
+      const moduleSettingsHandle = repo.create<ModuleSettingsDoc>();
+      moduleSettingsHandle.change((settings) => {
         settings.enabledDatatypeIds = {};
       });
       account.handle.change((account) => {
-        account.datatypeSettingsUrl = datatypeSettingsHandle.url;
+        account.moduleSettingsUrl = moduleSettingsHandle.url;
       });
     }
   }, [account?.handle.docSync()]);
@@ -315,10 +315,10 @@ export function useSelf(): ContactDoc {
   return contactDoc;
 }
 
-export const useDatatypeSettings = (): DatatypeSettingsDoc => {
+export const useDatatypeSettings = (): ModuleSettingsDoc => {
   const [accountDoc] = useCurrentAccountDoc();
-  const [datatypeSettingsDoc] = useDocument<DatatypeSettingsDoc>(
-    accountDoc?.datatypeSettingsUrl
+  const [datatypeSettingsDoc] = useDocument<ModuleSettingsDoc>(
+    accountDoc?.moduleSettingsUrl
   );
 
   return datatypeSettingsDoc;

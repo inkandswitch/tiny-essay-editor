@@ -6,11 +6,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { DATA_TYPES, DatatypeId } from "@/os/datatypes";
+import { DataType, DatatypeId } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { getRelativeTimeString } from "@/os/lib/dates";
-import { AnnotationsViewProps, TOOLS } from "@/os/tools";
+import {
+  AnnotationsViewProps,
+  Tool,
+  ToolMetaData,
+  useToolModulesForDataType,
+} from "@/os/tools";
 import {
   AnnotationGroup,
   AnnotationGroupWithState,
@@ -23,11 +28,12 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageCircleIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
+import { useModule } from "@/os/modules";
 
 type ReviewSidebarProps = {
   doc: HasVersionControlMetadata<unknown, unknown>;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
-  datatypeId: DatatypeId;
+  dataType: DataType<unknown, unknown, unknown>;
   annotationGroups: AnnotationGroupWithState<unknown, unknown>[];
   selectedAnchors: unknown[];
   changeDoc: (
@@ -47,7 +53,7 @@ export const ReviewSidebar = React.memo(
   ({
     doc,
     handle,
-    datatypeId,
+    dataType,
     annotationGroups,
     selectedAnchors,
     changeDoc,
@@ -67,14 +73,13 @@ export const ReviewSidebar = React.memo(
       unknown
     >[] = useMemo(() => {
       if (!doc) return [];
-      const valueOfAnchor =
-        DATA_TYPES[datatypeId].valueOfAnchor ?? (() => null);
+      const valueOfAnchor = dataType.valueOfAnchor ?? (() => null);
       return selectedAnchors.map((anchor) => ({
         type: "highlighted",
         anchor: [anchor],
         value: valueOfAnchor(doc, anchor),
       }));
-    }, [selectedAnchors, doc, datatypeId]);
+    }, [selectedAnchors, doc, dataType]);
 
     const addCommentToAnnotationGroup = (
       annotationGroup: AnnotationGroup<unknown, unknown>,
@@ -179,7 +184,7 @@ export const ReviewSidebar = React.memo(
               <AnnotationGroupView
                 doc={doc}
                 handle={handle}
-                datatypeId={datatypeId}
+                datatypeId={dataType.id}
                 key={id}
                 annotationGroup={annotationGroup}
                 isReplyBoxOpen={annotationGroupIdOfActiveReply === id}
@@ -235,7 +240,7 @@ export const ReviewSidebar = React.memo(
             <AnnotationsView
               doc={doc}
               handle={handle}
-              datatypeId={datatypeId}
+              datatypeId={dataType.id}
               annotations={pendingAnnotationsForComment}
             />
           </div>
@@ -565,11 +570,18 @@ const AnnotationsView = ({
   unknown,
   unknown
 >) => {
+  const tools = useToolModulesForDataType(datatypeId);
+  const tool = useModule(tools[0]);
+
+  if (!tool) {
+    return;
+  }
+
   // For now, we just use the first annotation viewer available for this doc type.
   // In the future, we might want to:
   // - use an annotations view that's similar to the viewer being used for the main doc
   // - allow switching between different viewers?
-  const Viewer = TOOLS[datatypeId]?.[0].annotationViewComponent;
+  const Viewer = tool.annotationViewComponent;
   if (!Viewer) {
     return (
       <div className="text-gray-500 text-xs italic">

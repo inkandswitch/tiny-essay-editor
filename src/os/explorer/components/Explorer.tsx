@@ -12,7 +12,7 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DatatypeId, DATA_TYPES } from "@/os/datatypes";
+import { DatatypeId, useDataTypeModules } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -26,9 +26,12 @@ import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 import { ErrorFallback } from "./ErrorFallback";
+import { Module, useModule } from "@/os/modules";
+import { ToolMetaData, Tool, useToolModulesForDataType } from "@/os/tools";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
+  const datatypeModules = useDataTypeModules();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
 
@@ -49,6 +52,7 @@ export const Explorer: React.FC = () => {
     useDocument<HasVersionControlMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
+  const selectedDataType = selectedDocLink?.type;
   const selectedBranchUrl = selectedDocLink?.branchUrl;
 
   const selectedBranch = useMemo<Branch>(() => {
@@ -61,15 +65,38 @@ export const Explorer: React.FC = () => {
     );
   }, [selectedBranchUrl, selectedDoc]);
 
+  const [selectedToolModuleId, setSelectedToolModuleId] = useState<string>();
+
+  const toolModules = useToolModulesForDataType(selectedDataType);
+  const selectedToolModule = toolModules.find(
+    (module) => module.metadata.id === selectedToolModuleId
+  );
+
+  const currentToolModule =
+    // make sure the current tool is reset to the fallback tool
+    // if the selected datatype changes and the selected tool is not compatible
+    selectedToolModule &&
+    selectedToolModule.metadata.supportedDatatypes.some(
+      (supportedDataType) =>
+        supportedDataType === selectedDataType || supportedDataType === "*"
+    )
+      ? selectedToolModule
+      : toolModules[0];
+
+  const currentTool = useModule(currentToolModule);
+
   const addNewDocument = useCallback(
-    ({ type }: { type: DatatypeId }) => {
-      if (!DATA_TYPES[type]) {
+    async ({ type }: { type: DatatypeId }) => {
+      const datatypeModule = datatypeModules[type];
+
+      if (!datatypeModule) {
         throw new Error(`Unsupported document type: ${type}`);
       }
+      const datatype = await datatypeModule.load();
 
       const newDocHandle =
         repo.create<HasVersionControlMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => DATA_TYPES[type].init(doc, repo));
+      newDocHandle.change((doc) => datatype.init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];
@@ -128,7 +155,7 @@ export const Explorer: React.FC = () => {
 
       // if there's no document selected and the user hits enter, make a new document
       if (!selectedDocUrl && event.key === "Enter") {
-        addNewDocument({ type: "essay" });
+        addNewDocument({ type: "essay" as DatatypeId });
       }
     };
 
@@ -213,6 +240,9 @@ export const Explorer: React.FC = () => {
               selectedDocHandle={selectedDocHandle}
               removeDocLink={removeDocLink}
               addNewDocument={addNewDocument}
+              toolModuleId={currentToolModule?.metadata.id}
+              setToolModuleId={setSelectedToolModuleId}
+              toolModules={toolModules}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (
@@ -222,7 +252,9 @@ export const Explorer: React.FC = () => {
                       No document selected
                     </p>
                     <Button
-                      onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
+                      onClick={() =>
+                        addNewDocument({ type: "essay" as DatatypeId })
+                      } // Default type for new document
                       variant="outline"
                     >
                       Create new document
@@ -234,11 +266,12 @@ export const Explorer: React.FC = () => {
 
               {/* NOTE: we set the URL as the component key, to force re-mount on URL change.
                 If we want more continuity we could not do this. */}
-              {selectedDocUrl && selectedDoc && (
+              {selectedDocUrl && selectedDoc && currentTool && (
                 <VersionControlEditor
                   datatypeId={selectedDocLink?.type}
                   docUrl={selectedDocUrl}
                   key={selectedDocUrl}
+                  tool={currentTool}
                   selectedBranch={selectedBranch}
                   setSelectedBranch={(branch) => {
                     selectDocLink({
