@@ -10,7 +10,7 @@ import {
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { HasAssets } from "@/tools/essay/assets";
-import { MarkdownInput } from "@/tools/essay/components/CodeMirrorEditor";
+import { MarkdownInput } from "@/os/lib/markdown";
 import { next as A, uuid } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";

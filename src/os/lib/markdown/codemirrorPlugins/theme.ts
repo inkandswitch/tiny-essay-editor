@@ -1,8 +1,8 @@
-import { HighlightStyle } from "@codemirror/language";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 
-const ESSAY_STYLES = {
+const MARKDOWN_STYLES = {
   "&": {},
   "&.cm-editor.cm-focused": {
     outline: "none",
@@ -65,17 +65,6 @@ const ESSAY_STYLES = {
     },
 };
 
-export const essayTheme = (style: "serif" | "sans") =>
-  EditorView.theme({
-    ...ESSAY_STYLES,
-    ".cm-content": {
-      fontFamily:
-        style === "serif"
-          ? '"Merriweather", serif'
-          : '"Merriweather Sans", sans-serif',
-    },
-  });
-
 const baseHeadingStyles = {
   fontFamily: '"Merriweather Sans", sans-serif',
   fontWeight: 400,
@@ -87,7 +76,7 @@ const baseCodeStyles = {
   fontSize: "14px",
 };
 
-export const markdownStyles = HighlightStyle.define([
+const markdownStyles = HighlightStyle.define([
   {
     tag: tags.heading1,
     ...baseHeadingStyles,
@@ -173,3 +162,16 @@ export const markdownStyles = HighlightStyle.define([
   },
   { tag: tags.definition(tags.propertyName), ...baseCodeStyles, color: "#00c" },
 ]);
+
+export const theme = (style: "serif" | "sans") => [
+  EditorView.theme({
+    ...MARKDOWN_STYLES,
+    ".cm-content": {
+      fontFamily:
+        style === "serif"
+          ? '"Merriweather", serif'
+          : '"Merriweather Sans", sans-serif',
+    },
+  }),
+  syntaxHighlighting(markdownStyles),
+];

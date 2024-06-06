@@ -15,7 +15,7 @@ import {
   DocumentId,
   Repo,
 } from "@automerge/automerge-repo";
-import { AssetsDoc, HasAssets } from "../assets";
+import { AssetsDoc, HasAssets } from "../../../../tools/essay/assets";
 import * as A from "@automerge/automerge";
 
 class Image extends WidgetType {

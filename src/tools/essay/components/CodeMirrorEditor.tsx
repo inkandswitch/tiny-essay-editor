@@ -2,154 +2,33 @@ import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 
+import { theme, useMarkdownPlugins } from "@/os/lib/markdown";
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
-import { Repo, type DocHandle } from "@automerge/automerge-repo";
+import { type DocHandle } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
-import { completionKeymap } from "@codemirror/autocomplete";
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-} from "@codemirror/commands";
-import {
-  foldKeymap,
-  indentOnInput,
-  indentUnit,
-  syntaxHighlighting,
-} from "@codemirror/language";
-import { searchKeymap } from "@codemirror/search";
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "../../../datatypes/markdown/schema";
+} from "@/datatypes/markdown";
 import {
-  annotationDecorations,
-  annotationsField,
+  annotationsPlugin,
   setAnnotationsEffect,
-} from "../codemirrorPlugins/annotationDecorations";
-import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
+} from "../codemirrorPlugins/annotations";
 import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
-import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
-import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
 import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
-import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { AssetsDoc, HasAssets } from "../assets";
-import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
-import { dropCursor } from "../codemirrorPlugins/dropCursor";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
+import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { isEqual } from "lodash";
 
 export type TextSelection = {
   from: number;
   to: number;
   yCoord: number;
-};
-
-type MarkdownInputProps = {
-  value: string;
-
-  // when no onChange handler is defined the markdown input will be readonly
-  onChange?: (value: string) => void;
-
-  // handle to the main doc which has an assets doc that we use
-  // to store dragged in images
-  docWithAssetsHandle?: DocHandle<HasAssets>;
-};
-
-export const MarkdownInput = ({
-  value,
-  onChange,
-  docWithAssetsHandle,
-}: MarkdownInputProps) => {
-  const repo = useRepo();
-  const [editorView, setEditorView] = useState(null);
-  const [container, setContainer] = useState(null);
-  const [remountEditor, setRemountEditor] = useState(null);
-
-  // trigger a remount when value has changed from the outside
-  useEffect(() => {
-    if (editorView && editorView.state.doc.toString() !== value) {
-      setRemountEditor({});
-    }
-  }, [value, editorView]);
-
-  useEffect(() => {
-    if (!container) {
-      return;
-    }
-
-    const view = new EditorView({
-      doc: value,
-      extensions: [
-        // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
-        // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
-        history(),
-        EditorView.editable.of(!!onChange),
-        dropCursor(),
-        indentOnInput(),
-        keymap.of([
-          ...defaultKeymap,
-          ...searchKeymap,
-          ...historyKeymap,
-          ...foldKeymap,
-          ...completionKeymap,
-          indentWithTab,
-        ]),
-        EditorView.lineWrapping,
-        essayTheme("sans"),
-        markdown({
-          codeLanguages: languages,
-        }),
-        indentUnit.of("    "),
-        syntaxHighlighting(markdownStyles),
-
-        frontmatterPlugin,
-        annotationsField,
-        annotationDecorations,
-        previewFiguresPlugin,
-        docWithAssetsHandle
-          ? [
-              dragAndDropFilesPlugin({
-                createFileReference: (file) =>
-                  createFileReferenceInDoc(repo, docWithAssetsHandle, file),
-              }),
-              previewImagesPlugin(docWithAssetsHandle, repo),
-            ]
-          : [],
-        highlightKeywordsPlugin,
-        tableOfContentsPreviewPlugin,
-        codeMonospacePlugin,
-        lineWrappingPlugin,
-        onChange
-          ? EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                onChange(update.state.doc.toString());
-              }
-            })
-          : [],
-      ],
-
-      parent: container,
-    });
-
-    view.focus();
-
-    setEditorView(view);
-
-    return () => {
-      view.destroy();
-    };
-  }, [container, remountEditor, onChange]);
-
-  return <div className="codemirror-editor" ref={setContainer} />;
 };
 
 export type MarkdownDocEditorProps = {
@@ -179,10 +58,10 @@ export function MarkdownDocEditor({
   annotations,
   setEditorContainerElement,
 }: MarkdownDocEditorProps) {
-  const repo = useRepo();
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
+  const markdownPlugins = useMarkdownPlugins({ docWithAssetsHandle: handle });
 
   const annotationsRef = useRef<
     AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
@@ -215,47 +94,22 @@ export function MarkdownDocEditor({
     const view = new EditorView({
       doc: source,
       extensions: [
+        ...markdownPlugins,
         EditorView.editable.of(!readOnly),
-        // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
-        // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
-        history(),
-
-        dropCursor(),
-        dragAndDropFilesPlugin({
-          createFileReference: (file) =>
-            createFileReferenceInDoc(repo, handle, file),
-        }),
-        indentOnInput(),
-        keymap.of([
-          ...defaultKeymap,
-          ...searchKeymap,
-          ...historyKeymap,
-          ...foldKeymap,
-          ...completionKeymap,
-          indentWithTab,
-        ]),
-        EditorView.lineWrapping,
-        essayTheme("serif"),
+        theme("serif"),
         markdown({
           codeLanguages: languages,
         }),
-        indentUnit.of("    "),
-        syntaxHighlighting(markdownStyles),
 
-        // Now our custom stuff: Automerge collab, comment threads, etc.
+        // essay editor specific plugins
         automergeSyncPlugin({
           handle,
           path,
         }),
         frontmatterPlugin,
-        annotationsField,
-        annotationDecorations,
+        annotationsPlugin,
         previewFiguresPlugin,
-        previewImagesPlugin(handle, repo),
-        highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
-        codeMonospacePlugin,
-        lineWrappingPlugin,
       ],
       dispatch(transaction, view) {
         const previousSelection = view.state.selection;
@@ -350,7 +204,7 @@ export function MarkdownDocEditor({
     return () => {
       view.destroy();
     };
-  }, [handle, handleReady, docHeads, editorContainer]);
+  }, [handle, handleReady, docHeads, editorContainer, markdownPlugins]);
 
   if (editorCrashed) {
     return (
@@ -401,54 +255,6 @@ export function MarkdownDocEditor({
   );
 }
 
-const createFileReferenceInDoc = async (
-  repo: Repo,
-  handle: DocHandle<HasAssets>,
-  file: File
-): Promise<string> => {
-  const doc = handle.docSync();
-  let assetsHandle: DocHandle<AssetsDoc>;
-
-  if (!doc.assetsDocUrl) {
-    // add assets doc to old documents
-    assetsHandle = repo.create<AssetsDoc>();
-    assetsHandle.change((assetsDoc) => {
-      assetsDoc.files = {};
-    });
-    handle.change((doc) => {
-      doc.assetsDocUrl = assetsHandle.url;
-    });
-  } else {
-    assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
-  }
-  await assetsHandle.whenReady();
-  const assetsDoc = assetsHandle.docSync();
-
-  if (!isSupportedImageFile(file)) {
-    alert(
-      "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
-    );
-    return;
-  }
-
-  const fileAlreadyExists = assetsDoc.files[file.name];
-  if (fileAlreadyExists) {
-    alert(`a file with the name "${file.name}" already exists in the document`);
-    return;
-  }
-
-  loadFile(file).then((contents) => {
-    assetsHandle.change((assetsDoc) => {
-      assetsDoc.files[file.name] = {
-        contentType: file.type,
-        contents,
-      };
-    });
-  });
-
-  return `![](./assets/${file.name})`;
-};
-
 // Scroll annotations into view when needed
 const useScrollAnnotationsIntoView = (
   annotations: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[],
@@ -496,34 +302,4 @@ const useScrollAnnotationsIntoView = (
 
     editorRoot.current;
   }, [annotationsToScrollIntoView, editorRoot]);
-};
-
-const loadFile = (file: File): Promise<Uint8Array> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      // The file's text will be printed here
-      const arrayBuffer = e.target.result as ArrayBuffer;
-
-      // Convert the arrayBuffer to a Uint8Array
-      resolve(new Uint8Array(arrayBuffer));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-};
-
-const isSupportedImageFile = (file: File) => {
-  switch (file.type) {
-    case "image/png":
-    case "image/jpeg":
-    case "image/gif":
-    case "image/webp":
-    case "image/bmp":
-    case "image/tiff":
-      return true;
-
-    default:
-      return false;
-  }
 };
