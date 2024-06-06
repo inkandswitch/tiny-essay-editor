@@ -19,7 +19,6 @@ import { DatatypeId } from "../datatypes";
 
 export type ModuleSettingsDoc = {
   enabledDatatypeIds: { [id: DatatypeId]: boolean };
-  moduleUrls: string[];
 };
 
 export interface AccountDoc {
@@ -273,7 +272,6 @@ export function useCurrentAccount(): Account | undefined {
       const moduleSettingsHandle = repo.create<ModuleSettingsDoc>();
       moduleSettingsHandle.change((settings) => {
         settings.enabledDatatypeIds = {};
-        settings.moduleUrls = [];
       });
       account.handle.change((account) => {
         account.moduleSettingsUrl = moduleSettingsHandle.url;

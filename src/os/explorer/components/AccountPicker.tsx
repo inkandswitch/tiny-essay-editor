@@ -146,47 +146,6 @@ export const AccountPicker = ({
 
   const isLoggedIn = self?.type === "registered";
 
-  const onAddModuleUrl = () => {
-    const moduleUrl = prompt("Enter a module url");
-
-    if (!moduleUrl) {
-      return;
-    }
-
-    // validate url
-    try {
-      new URL(moduleUrl);
-    } catch (err) {
-      alert(`Invalid url "${moduleUrl}}"`);
-      return;
-    }
-
-    import(moduleUrl)
-      .then((module) => {
-        if (
-          !module.default ||
-          !module.default.metadata ||
-          !module.default.load
-        ) {
-          alert("Invalid module");
-          return;
-        }
-
-        changeModuleSettingsDoc((doc) => {
-          doc.moduleUrls.push(moduleUrl);
-        });
-      })
-      .catch((err) => {
-        alert(`Failed to load module at "${moduleUrl}"`);
-      });
-  };
-
-  const onDeleteModuleUrlAtIndex = (index) => {
-    changeModuleSettingsDoc((doc) => {
-      delete doc.moduleUrls[index];
-    });
-  };
-
   return (
     <Dialog>
       <DialogTrigger>
@@ -412,45 +371,6 @@ export const AccountPicker = ({
                 🧪 These are data types that are less fleshed out. Expect things
                 to break!
               </p>
-            </div>
-
-            <div className="grid overflow-h items-center gap-1.5 pt-2">
-              <Label>Module urls</Label>
-
-              {moduleSettingsDoc?.moduleUrls.map((url, index) => {
-                const name = new URL(url).pathname.split("/").slice(-1)[0];
-
-                return (
-                  <div
-                    className="flex items-center overflow-hidden"
-                    key={index}
-                  >
-                    <Button
-                      className="flex overflow-hidden"
-                      variant="link"
-                      onClick={() => window.open(url, "_blank")}
-                    >
-                      <div className="truncate overflow-ellipsis min-w-0">
-                        {url}
-                      </div>
-                      <div>{name}</div>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      onClick={() => onDeleteModuleUrlAtIndex(index)}
-                    >
-                      <XIcon />
-                    </Button>
-                  </div>
-                );
-              })}
-
-              <div className="flex justify-center items-center">
-                <Button variant="ghost" size="sm">
-                  <PlusIcon onClick={onAddModuleUrl} />
-                </Button>
-              </div>
             </div>
           </>
         )}

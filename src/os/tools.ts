@@ -73,15 +73,9 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
 }
 
 export const useToolModules = () => {
-  const account = useCurrentAccount();
-  const [accountDoc] = useDocument<AccountDoc>(account?.handle.url);
-  const [moduleSettingsDoc] = useDocument<ModuleSettingsDoc>(
-    accountDoc?.moduleSettingsUrl
-  );
-
   const [dynamicModules, setDynamicModules] = useState([]);
 
-  const dynamicModuleUrls = moduleSettingsDoc?.moduleUrls ?? [];
+  /* const dynamicModuleUrls = [];
   const dynamicModuleUrlsRef = useRef<string[]>();
   dynamicModuleUrlsRef.current = dynamicModuleUrls;
 
@@ -96,7 +90,7 @@ export const useToolModules = () => {
 
       setDynamicModules(modules);
     });
-  }, [dynamicModuleUrls]);
+  }, [dynamicModuleUrls]); */
 
   return TOOLS.concat(dynamicModules);
 };
