@@ -123,6 +123,10 @@ const patchesToAnnotations = (
   });
 };
 
+const valueOfAnchor = (doc: DataGridDoc, anchor: DataGridDocAnchor): string => {
+  return doc.data[anchor.row][anchor.column];
+};
+
 export const DataGridDatatype: DataType<
   DataGridDoc,
   DataGridDocAnchor,
@@ -143,4 +147,6 @@ export const DataGridDatatype: DataType<
   patchesToAnnotations,
 
   promptForAIChangeGroupSummary,
+
+  valueOfAnchor,
 };

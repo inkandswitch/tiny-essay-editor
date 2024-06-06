@@ -21,10 +21,25 @@ registerRenderer("addedCell", (hotInstance, TD, ...rest) => {
   TD.style.background = "rgb(0 255 0 / 10%)";
 });
 
+registerRenderer("deletedCell", (hotInstance, TD, ...rest) => {
+  textRenderer(hotInstance, TD, ...rest);
+
+  TD.style.outline = "solid 1px rgb(100 0 0 / 80%)";
+  TD.style.background = "rgb(255 0 0 / 10%)";
+});
+
+registerRenderer("highlightedCell", (hotInstance, TD, ...rest) => {
+  textRenderer(hotInstance, TD, ...rest);
+
+  TD.style.outline = "solid 1px rgb(200 200 0 / 80%)"; // Changed to yellow outline
+  TD.style.background = "rgb(255 255 0 / 20%)"; // Changed to light yellow background
+});
+
 export const DataGrid = ({
   docUrl,
   docHeads,
   annotations = [],
+  setSelectedAnchors,
 }: EditorProps<DataGridDocAnchor, string>) => {
   const [latestDoc] = useDocument<DataGridDoc>(docUrl); // used to trigger re-rendering when the doc loads
   const handle = useHandle<DataGridDoc>(docUrl);
@@ -69,11 +84,21 @@ export const DataGrid = ({
     return false;
   };
 
-  const cellAnnotations = annotations.map((annotation) => ({
-    row: annotation.anchor.row,
-    col: annotation.anchor.column,
-    renderer: "addedCell",
-  }));
+  const cellAnnotations = annotations.map((annotation) => {
+    let renderer;
+    if (annotation.type === "added") {
+      renderer = "addedCell";
+    } else if (annotation.type === "deleted") {
+      renderer = "deletedCell";
+    } else if (annotation.type === "highlighted") {
+      renderer = "highlightedCell";
+    }
+    return {
+      row: annotation.anchor.row,
+      col: annotation.anchor.column,
+      renderer,
+    };
+  });
 
   if (!doc) {
     return null;
@@ -86,6 +111,9 @@ export const DataGrid = ({
         beforeChange={onBeforeHotChange}
         beforeCreateRow={onBeforeCreateRow}
         beforeCreateCol={onBeforeCreateCol}
+        afterSelection={(row, col) =>
+          setSelectedAnchors([{ row, column: col }])
+        }
         rowHeaders={true}
         colHeaders={true}
         contextMenu={true}
