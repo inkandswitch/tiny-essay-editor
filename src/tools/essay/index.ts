@@ -7,4 +7,5 @@ export default {
   name: "Editor",
   editorComponent: EssayEditor,
   annotationViewComponent: EssayAnnotations,
+  supportsInlineComments: true,
 } as Tool;

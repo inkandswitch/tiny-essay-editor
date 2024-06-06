@@ -15,8 +15,7 @@ import {
   DocumentId,
   Repo,
 } from "@automerge/automerge-repo";
-import { MarkdownDoc } from "../../../datatypes/markdown/schema";
-import { AssetsDoc } from "../assets";
+import { AssetsDoc, HasAssets } from "../../../assets";
 import * as A from "@automerge/automerge";
 
 class Image extends WidgetType {
@@ -120,7 +119,7 @@ export const assetsHeadsField = StateField.define<A.Heads>({
 });
 
 export const previewImagesPlugin = (
-  handle: DocHandle<MarkdownDoc>,
+  handle: DocHandle<HasAssets>,
   repo: Repo
 ) => [
   assetsHeadsField,
@@ -144,7 +143,7 @@ export const previewImagesPlugin = (
         handle.on("change", this.onChangeDoc);
       }
 
-      onChangeDoc({ doc }: DocHandleChangePayload<MarkdownDoc>) {
+      onChangeDoc({ doc }: DocHandleChangePayload<HasAssets>) {
         if (
           this.assetsDocHandle &&
           this.assetsDocHandle.url === doc.assetsDocUrl

@@ -19,6 +19,7 @@ import kanban from "@/datatypes/kanban";
 import markdown from "@/datatypes/markdown";
 import tldraw from "@/datatypes/tldraw";
 import { FileExportMethod } from "./fileExports";
+import { HasAssets } from "@/os/assets";
 
 export type CoreDataType<D> = {
   id: string;

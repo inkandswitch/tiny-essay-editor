@@ -1,8 +1,8 @@
-import { HighlightStyle } from "@codemirror/language";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 
-const ESSAY_STYLES = {
+const MARKDOWN_STYLES = {
   "&": {},
   "&.cm-editor.cm-focused": {
     outline: "none",
@@ -18,9 +18,9 @@ const ESSAY_STYLES = {
   },
   ".cm-content": {
     height: "100%",
-    fontFamily: '"Merriweather", serif',
-    padding: "10px 0",
-    margin: "0 var(--cm-padding-x)",
+    margin: "0",
+    // Justified text makes it look more like the I&S web essay template,
+    // but doesn't feel right for most documents.
     // textAlign: "justify",
     textWrap: "pretty",
     lineHeight: "1.5rem",
@@ -65,22 +65,7 @@ const ESSAY_STYLES = {
       backgroundColor: "rgb(100 202 0 / 30%)",
       borderBottom: "rgb(0 222 0 / 100%) 2px solid",
     },
-  ".cm-patch-private": {
-    backgroundColor: "rgb(184 0 255 / 12%)",
-    borderBottom: "rgb(184 0 255 / 40%) 2px solid",
-    borderRadius: "3px",
-  },
-  ".cm-patch-private.active": {
-    backgroundColor: "rgb(184 0 255 / 24%)",
-    borderRadius: "3px",
-  },
-  ".cm-patch-private::before": {
-    content: "🔒",
-    marginRight: "0.5em",
-  },
 };
-
-export const essayTheme = EditorView.theme(ESSAY_STYLES);
 
 const baseHeadingStyles = {
   fontFamily: '"Merriweather Sans", sans-serif',
@@ -93,7 +78,7 @@ const baseCodeStyles = {
   fontSize: "14px",
 };
 
-export const markdownStyles = HighlightStyle.define([
+const markdownStyles = HighlightStyle.define([
   {
     tag: tags.heading1,
     ...baseHeadingStyles,
@@ -179,3 +164,17 @@ export const markdownStyles = HighlightStyle.define([
   },
   { tag: tags.definition(tags.propertyName), ...baseCodeStyles, color: "#00c" },
 ]);
+
+export const theme = (style: "serif" | "sans") => [
+  EditorView.theme({
+    ...MARKDOWN_STYLES,
+    ".cm-content": {
+      ...MARKDOWN_STYLES[".cm-content"],
+      fontFamily:
+        style === "serif"
+          ? '"Merriweather", serif'
+          : '"Merriweather Sans", sans-serif',
+    },
+  }),
+  syntaxHighlighting(markdownStyles),
+];

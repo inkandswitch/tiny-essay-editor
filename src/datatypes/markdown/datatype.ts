@@ -12,10 +12,10 @@ import {
 } from "@/os/versionControl/utils";
 import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-import { Doc, splice } from "@automerge/automerge/next";
+import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
 import { Text } from "lucide-react";
-import { AssetsDoc } from "../../tools/essay/assets";
+import { AssetsDoc } from "../../os/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
 import JSZip from "jszip";
@@ -239,6 +239,12 @@ export const patchesToAnnotations = (
 const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
   const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+  // if the anchor points to an empty range return undefined
+  // so highlight comments that point to this will be filtered out
+  if (from === to) {
+    return undefined;
+  }
 
   return doc.content.slice(from, to);
 };

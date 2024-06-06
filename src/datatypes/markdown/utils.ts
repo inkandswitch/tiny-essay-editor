@@ -8,24 +8,6 @@ export const isMarkdownDoc = (doc: A.Doc<unknown>): doc is MarkdownDoc => {
   return typeof typedDoc.content === "string";
 };
 
-export const useScrollPosition = (container: HTMLElement | null) => {
-  const [scrollPosition, setScrollPosition] = useState(0);
-
-  useEffect(() => {
-    if (!container) {
-      return;
-    }
-    const updatePosition = () => {
-      setScrollPosition(container.scrollTop);
-    };
-    container.addEventListener("scroll", () => updatePosition());
-    updatePosition();
-    return () => container.removeEventListener("scroll", updatePosition);
-  }, [container]);
-
-  return scrollPosition;
-};
-
 // Utils for converting back and forth between CodeMirror and Automerge ranges.
 // The end of a Codemirror range can be an index past the last character in the
 // document, but we can't get an Automerge cursor for that position.

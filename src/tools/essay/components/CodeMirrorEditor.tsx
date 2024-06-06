@@ -2,64 +2,27 @@ import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 
-import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
-import { type DocHandle } from "@automerge/automerge-repo";
-import * as A from "@automerge/automerge/next";
-import { searchKeymap } from "@codemirror/search";
-import { completionKeymap } from "@codemirror/autocomplete";
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-  standardKeymap,
-} from "@codemirror/commands";
-import {
-  codeFolding,
-  foldEffect,
-  foldKeymap,
-  indentOnInput,
-  indentUnit,
-  syntaxHighlighting,
-} from "@codemirror/language";
-import { lintKeymap } from "@codemirror/lint";
-import { SelectionRange } from "@codemirror/state";
-import { codeMonospacePlugin } from "../codemirrorPlugins/codeMonospace";
-import {
-  annotationDecorations,
-  annotationsField,
-  setAnnotationsEffect,
-} from "../codemirrorPlugins/annotationDecorations";
-import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
-import { highlightKeywordsPlugin } from "../codemirrorPlugins/highlightKeywords";
-import { lineWrappingPlugin } from "../codemirrorPlugins/lineWrapping";
-import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
-import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
-import { essayTheme, markdownStyles } from "../codemirrorPlugins/theme";
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "../../../datatypes/markdown/schema";
+} from "@/datatypes/markdown";
+import { theme, useMarkdownPlugins } from "@/os/lib/markdown";
+import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
+import { type DocHandle } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
+import {
+  annotationsPlugin,
+  setAnnotationsEffect,
+} from "../codemirrorPlugins/annotations";
+import { frontmatterPlugin } from "../codemirrorPlugins/frontmatter";
+import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
+import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 
-import {
-  DebugHighlight,
-  setDebugHighlightsEffect,
-  debugHighlightsField,
-  debugHighlightsDecorations,
-} from "../codemirrorPlugins/DebugHighlight";
-import {
-  AnnotationPosition,
-  AnnotationWithUIState,
-} from "@/os/versionControl/schema";
-import { getCursorSafely } from "@/os/versionControl/utils";
-import { dragAndDropFilesPlugin } from "../codemirrorPlugins/dragAndDropFiles";
-import { previewImagesPlugin } from "../codemirrorPlugins/previewMarkdownImages";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { AssetsDoc } from "../assets";
-import { dropCursor } from "../codemirrorPlugins/dropCursor";
+import { AnnotationWithUIState } from "@/os/versionControl/schema";
+import { isEqual } from "lodash";
 import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
 
 export type TextSelection = {
@@ -68,59 +31,46 @@ export type TextSelection = {
   yCoord: number;
 };
 
-export type DiffStyle = "normal" | "private";
-
-export type EditorProps = {
+export type MarkdownDocEditorProps = {
   editorContainer: HTMLDivElement;
   handle: DocHandle<MarkdownDoc>;
   path: A.Prop[];
-  setView: (view: EditorView) => void;
-  setSelectedAnchors: (anchors: MarkdownDocAnchor[]) => void;
+  setSelection?: (selection: TextSelection) => void;
+  setHasFocus?: (hasFocus) => void;
+  setView?: (view: EditorView) => void;
+  setSelectedAnchors?: (anchors: MarkdownDocAnchor[]) => void;
   readOnly?: boolean;
   docHeads?: A.Heads;
   annotations?: AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[];
-  diffStyle: DiffStyle;
-  debugHighlights?: DebugHighlight[];
-  onOpenSnippet?: (range: SelectionRange) => void;
-  foldRanges?: { from: number; to: number }[];
-  isCommentBoxOpen?: boolean;
   setEditorContainerElement?: (container: HTMLDivElement) => void;
 };
 
-export function MarkdownEditor({
+export function MarkdownDocEditor({
   editorContainer,
   handle,
   path,
-  setSelectedAnchors,
-  setView,
+  setSelection = () => {},
+  setHasFocus = () => {},
+  setSelectedAnchors = () => {},
+  setView = () => {},
   readOnly,
   docHeads,
   annotations,
-  debugHighlights,
-  onOpenSnippet,
-  foldRanges,
   setEditorContainerElement,
-}: EditorProps) {
-  const repo = useRepo();
+}: MarkdownDocEditorProps) {
   const containerRef = useRef(null);
   const editorRoot = useRef<EditorView>(null);
   const [editorCrashed, setEditorCrashed] = useState<boolean>(false);
+  const markdownPlugins = useMarkdownPlugins({ docWithAssetsHandle: handle });
+
+  const annotationsRef = useRef<
+    AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
+  >([]);
+  annotationsRef.current = annotations;
 
   const handleReady = handle.isReady();
 
-  // Propagate debug highlights into codemirror
-  useEffect(() => {
-    editorRoot.current?.dispatch({
-      effects: setDebugHighlightsEffect.of(debugHighlights ?? []),
-    });
-  }, [debugHighlights]);
-
-  // propagate fold ranges into codemirror
-  useEffect(() => {
-    editorRoot.current?.dispatch({
-      effects: (foldRanges ?? []).map((range) => foldEffect.of(range)),
-    });
-  }, [foldRanges]);
+  useScrollAnnotationsIntoView(annotations, editorRoot);
 
   // Propagate annotations into codemirror
   useEffect(() => {
@@ -129,8 +79,6 @@ export function MarkdownEditor({
       effects: setAnnotationsEffect.of(annotations),
     });
   }, [annotations, editorRoot.current]);
-
-  useScrollAnnotationsIntoView(annotations, editorRoot);
 
   // This big useEffect sets up the editor view
   useEffect(() => {
@@ -141,141 +89,96 @@ export function MarkdownEditor({
     const docAtHeads = docHeads ? A.view(doc, docHeads) : doc;
     const source = docAtHeads.content; // this should use path
 
+    let previousHasFocus = false;
+
     const view = new EditorView({
       doc: source,
       extensions: [
+        // generic markdown plugins
+        ...markdownPlugins,
+
+        // essay editor specific plugins
         EditorView.editable.of(!readOnly),
-        // Start with a variety of basic plugins, subset of Codemirror "basic setup" kit:
-        // https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
-        history(),
-
-        dropCursor(),
-        dragAndDropFilesPlugin({
-          createFileReference: async (file) => {
-            const doc = handle.docSync();
-            let assetsHandle: DocHandle<AssetsDoc>;
-
-            if (!doc.assetsDocUrl) {
-              // add assets doc to old documents
-              assetsHandle = repo.create<AssetsDoc>();
-              assetsHandle.change((assetsDoc) => {
-                assetsDoc.files = {};
-              });
-              handle.change((doc) => {
-                doc.assetsDocUrl = assetsHandle.url;
-              });
-            } else {
-              assetsHandle = repo.find<AssetsDoc>(doc.assetsDocUrl);
-            }
-
-            await assetsHandle.whenReady();
-            const assetsDoc = assetsHandle.docSync();
-
-            if (!isSupportedImageFile(file)) {
-              alert(
-                "Only the following image files are supported:\n.png, .jpg, .jpeg, .gif, .webp .bmp, .tiff, .tif"
-              );
-              return;
-            }
-
-            const fileAlreadyExists = assetsDoc.files[file.name];
-            if (fileAlreadyExists) {
-              alert(
-                `a file with the name "${file.name}" already exists in the document`
-              );
-              return;
-            }
-
-            loadFile(file).then((contents) => {
-              assetsHandle.change((assetsDoc) => {
-                assetsDoc.files[file.name] = {
-                  contentType: file.type,
-                  contents,
-                };
-              });
-            });
-
-            return `![](./assets/${file.name})`;
-          },
-        }),
-        indentOnInput(),
-        keymap.of([
-          {
-            key: "Mod-o",
-            run: () => {
-              const selectedRange = view.state.selection.main;
-              onOpenSnippet(selectedRange);
-              return true;
-            },
-            preventDefault: true,
-            stopPropagation: true,
-          },
-          ...defaultKeymap,
-          ...searchKeymap,
-          ...historyKeymap,
-          ...foldKeymap,
-          ...completionKeymap,
-          ...lintKeymap,
-          indentWithTab,
-        ]),
-        EditorView.lineWrapping,
-        essayTheme,
+        theme("serif"),
         markdown({
           codeLanguages: languages,
         }),
-        indentUnit.of("    "),
-        syntaxHighlighting(markdownStyles),
 
-        // Now our custom stuff: Automerge collab, comment threads, etc.
         automergeSyncPlugin({
           handle,
-          path: ["content"],
+          path,
         }),
         frontmatterPlugin,
-        annotationsField,
-        annotationDecorations,
+        annotationsPlugin,
         clickableMarkdownLinksPlugin,
         previewFiguresPlugin,
-        previewImagesPlugin(handle, repo),
-        highlightKeywordsPlugin,
         tableOfContentsPreviewPlugin,
-        codeMonospacePlugin,
-        lineWrappingPlugin,
-        debugHighlightsField,
-        debugHighlightsDecorations,
-        codeFolding({
-          placeholderDOM: () => {
-            // TODO use a nicer API for creating these elements?
-            const placeholder = document.createElement("div");
-            placeholder.className = "cm-foldPlaceholder";
-            placeholder.style.padding = "10px";
-            placeholder.style.marginTop = "5px";
-            placeholder.style.marginBottom = "5px";
-            placeholder.style.fontSize = "14px";
-            placeholder.style.fontFamily = "Fira Code";
-            placeholder.style.textAlign = "center";
-            placeholder.innerText = "N lines hidden";
-            return placeholder;
-          },
-        }),
       ],
       dispatch(transaction, view) {
+        const previousSelection = view.state.selection;
+
         // TODO: can some of these dispatch handlers be factored out into plugins?
         try {
           view.update([transaction]);
 
-          // only update selection if it has changed and the editor is focused
-          // if the editor is not focused it can still trigger selection changes which resets selections made through the review sidebar
-          if (transaction.newSelection && view.hasFocus) {
+          if (view.hasFocus !== previousHasFocus) {
+            // hack: delay focus update because otherwise click handlers don't work on elements
+            // that are hidden if the editor is not focused, because blur is triggered before click
+            setTimeout(() => setHasFocus(view.hasFocus), 200);
+            previousHasFocus = view.hasFocus;
+          }
+
+          // new selection is sometimes set
+          if (
+            transaction.newSelection &&
+            !isEqual(view.state.selection, previousSelection)
+          ) {
             const selection = view.state.selection.ranges[0];
 
             if (selection) {
-              setSelectedAnchors([
-                {
-                  fromCursor: getCursorSafely(doc, ["content"], selection.from),
-                  toCursor: getCursorSafely(doc, ["content"], selection.to),
-                },
-              ]);
+              setSelection({
+                from: selection.from,
+                to: selection.to,
+                yCoord:
+                  -1 * view.scrollDOM.getBoundingClientRect().top +
+                  view.coordsAtPos(selection.from).top,
+              });
+
+              if (selection.from === selection.to) {
+                const cursorPos = selection.from;
+
+                const selectedAnnotationAnchors =
+                  annotationsRef.current.flatMap((annotation) =>
+                    annotation.anchor.fromPos <= cursorPos &&
+                    annotation.anchor.toPos > cursorPos
+                      ? [annotation.anchor]
+                      : []
+                  );
+
+                setSelectedAnchors(
+                  // remove resolved position
+                  selectedAnnotationAnchors.map(({ fromCursor, toCursor }) => ({
+                    fromCursor,
+                    toCursor,
+                  }))
+                );
+              } else {
+                const docLength = view.state.doc.length;
+                setSelectedAnchors([
+                  {
+                    fromCursor: A.getCursor(doc, path, selection.from),
+                    toCursor: A.getCursor(
+                      doc,
+                      path,
+                      // todo: remove once cursors can point to sides of characters
+                      // we can't get a cursor to the end the document because cursors always point to characters
+                      // in the future we want to have a cursor API in Automerge that allows to point to a side of a character similar to marks
+                      // as a workaround for now we just point to the last character instead if the end of the document is selected
+                      selection.to === docLength ? docLength - 1 : selection.to
+                    ),
+                  },
+                ]);
+              }
             } else {
               setSelectedAnchors([]);
             }
@@ -311,7 +214,7 @@ export function MarkdownEditor({
     return () => {
       view.destroy();
     };
-  }, [handle, handleReady, docHeads, editorContainer]);
+  }, [handle, handleReady, docHeads, editorContainer, markdownPlugins]);
 
   if (editorCrashed) {
     return (
@@ -331,30 +234,32 @@ export function MarkdownEditor({
     );
   }
 
+  const onKeyDown = (evt) => {
+    // Let cmd-s thru for saving the doc
+    if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-\ thru for toggling the sidebar
+    if (evt.key === "\\" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-g thru for grouping annotations
+    if (evt.key === "g" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    // Let cmd-g thru for grouping annotations
+    if (evt.key === "`" && (evt.metaKey || evt.ctrlKey)) {
+      return;
+    }
+    evt.stopPropagation();
+  };
+
   return (
     <div className="flex flex-col items-stretch min-h-screen">
       <div
         className="codemirror-editor flex-grow relative min-h-screen"
         ref={containerRef}
-        onKeyDown={(evt) => {
-          // Let cmd-s thru for saving the doc
-          if (evt.key === "s" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-\ thru for toggling the sidebar
-          if (evt.key === "\\" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-g thru for grouping annotations
-          if (evt.key === "g" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          // Let cmd-g thru for grouping annotations
-          if (evt.key === "`" && (evt.metaKey || evt.ctrlKey)) {
-            return;
-          }
-          evt.stopPropagation();
-        }}
+        onKeyDown={onKeyDown}
       />
     </div>
   );
@@ -407,34 +312,4 @@ const useScrollAnnotationsIntoView = (
 
     editorRoot.current;
   }, [annotationsToScrollIntoView, editorRoot]);
-};
-
-const loadFile = (file: File): Promise<Uint8Array> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      // The file's text will be printed here
-      const arrayBuffer = e.target.result as ArrayBuffer;
-
-      // Convert the arrayBuffer to a Uint8Array
-      resolve(new Uint8Array(arrayBuffer));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-};
-
-const isSupportedImageFile = (file: File) => {
-  switch (file.type) {
-    case "image/png":
-    case "image/jpeg":
-    case "image/gif":
-    case "image/webp":
-    case "image/bmp":
-    case "image/tiff":
-      return true;
-
-    default:
-      return false;
-  }
 };

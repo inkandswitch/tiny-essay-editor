@@ -1,6 +1,7 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
+import { HasAssets } from "@/os/assets";
 
 export type Branch = {
   name: string;
@@ -76,8 +77,9 @@ export type Discussion<T> = {
   resolved: boolean;
   comments: DiscussionComment[];
 
-  // optionally a list of doc anchors that this discussion refers to
-  anchors?: T[];
+  // a list of doc anchors that this discussion refers to
+  // an empty anchors array means, that this discussion is a general comment on the overall document
+  anchors: T[];
 };
 
 export type AnnotationGroup<T, V> = {
@@ -85,8 +87,17 @@ export type AnnotationGroup<T, V> = {
   discussion?: Discussion<T>;
 };
 
-export type AnnotationGroupWithState<T, V> = AnnotationGroup<T, V> & {
+export type CommentState<T> =
+  | { type: "edit"; commentId: string }
+  | { type: "create"; target: string | T[] | undefined };
+
+export type AnnotationGroupCommentState =
+  | { type: "create" }
+  | { type: "edit"; commentId: string };
+
+export type AnnotationGroupWithUIState<T, V> = AnnotationGroup<T, V> & {
   state: "focused" | "expanded" | "neutral";
+  comment?: AnnotationGroupCommentState;
 };
 
 export type Discussable<T> = {
@@ -105,7 +116,14 @@ export type HasVersionControlMetadata<T, V> = HasChangeGroupSummaries &
   Branchable &
   Taggable &
   Diffable &
-  Discussable<T>;
+  Discussable<T> &
+  // @Paul 5/24/24
+  // todo: we should rethink how to structure core interfaces
+  // the application now assumes that all document types in the system implement HasVersionControlMetadata
+  // HasAssets is also a universal interface that can be used with any document but it's not really related to versioning
+  // We should create a base schema that's a union of all interfaces that we can assume all documents implement but
+  // split them up into logical sub interfaces like versioning, commenting, assets, etc
+  HasAssets;
 
 export type AnnotationId = string & { __annotationId: true };
 
