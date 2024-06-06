@@ -404,7 +404,7 @@ const DiscussionCommentView = ({
               ? "border border-1 rounded-sm px-2 border-gray-300"
               : "border-white"
           }`}
-          onKeyDown={(event) => {
+          onKeyDownCapture={(event) => {
             // stop navigation key presses from bubbling up
             if (
               event.key === "k" ||
