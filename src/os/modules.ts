@@ -29,13 +29,18 @@ export const useModule = <M, D>(module: Module<M, D>): (D & M) | undefined => {
       return;
     }
 
-    module.load().then((loadedModule) => {
-      // ignore if module has changed in the meantime
-      if (module !== moduleRef.current) {
-        return;
-      }
-      setLoadedModule(loadedModule);
-    });
+    module
+      .load()
+      .then((loadedModule) => {
+        // ignore if module has changed in the meantime
+        if (module !== moduleRef.current) {
+          return;
+        }
+        setLoadedModule(loadedModule);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }, [module]);
 
   return module ? loadedModule : undefined;

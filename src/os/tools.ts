@@ -7,13 +7,11 @@ import {
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import {
-  AccountDoc,
-  ModuleSettingsDoc,
-  useCurrentAccount,
-} from "./explorer/account";
+import { useRootFolderDocWithChildren } from "./explorer/account";
 import { Module } from "./modules";
+import { DocLink } from "@/datatypes/folder";
+import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { ModuleDoc } from "@/datatypes/module";
 
 export type ToolMetaData = {
   id: string;
@@ -74,23 +72,35 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
 
 export const useToolModules = () => {
   const [dynamicModules, setDynamicModules] = useState([]);
+  const repo = useRepo();
 
-  /* const dynamicModuleUrls = [];
-  const dynamicModuleUrlsRef = useRef<string[]>();
-  dynamicModuleUrlsRef.current = dynamicModuleUrls;
+  const { flatDocLinks } = useRootFolderDocWithChildren();
+
+  const moduleDocLinks = useMemo(
+    () =>
+      flatDocLinks ? flatDocLinks.filter((link) => link.type === "module") : [],
+    [flatDocLinks]
+  );
+
+  const moduleDocLinksRef = useRef<DocLink[]>();
+  moduleDocLinksRef.current = moduleDocLinks;
 
   useEffect(() => {
     Promise.all(
-      dynamicModuleUrls.map(async (url) => (await import(url)).default)
+      moduleDocLinks.map(async ({ url }) => {
+        const moduleDoc = await repo.find<ModuleDoc>(url).doc();
+        const module = await import(moduleDoc.url);
+        return module.default;
+      })
     ).then((modules) => {
-      // do nothing if dynamicModuleUrls has changed in the meantime
-      if (dynamicModuleUrls !== dynamicModuleUrlsRef.current) {
+      // skip if moduleDocLinks has changed in the meantime
+      if (moduleDocLinks !== moduleDocLinksRef.current) {
         return;
       }
 
       setDynamicModules(modules);
     });
-  }, [dynamicModuleUrls]); */
+  }, [moduleDocLinks]);
 
   return TOOLS.concat(dynamicModules);
 };
