@@ -269,8 +269,8 @@ export function useAnnotations({
     selectedAnnotationGroupIds,
     expandedAnnotationGroupId,
   } = useMemo(() => {
-    const selectedAnchors = new Set<unknown>();
-    const hoveredAnchors = new Set<unknown>();
+    const selectedAnchors = new Set<string>();
+    const hoveredAnchors = new Set<string>();
     const selectedAnnotationGroupIds = new Set<string>();
     let expandedAnnotationGroupId: string;
 
@@ -278,23 +278,20 @@ export function useAnnotations({
     switch (selectedState?.type) {
       case "anchors": {
         // focus selected anchors
-        selectedState.anchors.forEach((anchor) => selectedAnchors.add(anchor));
+        selectedState.anchors.forEach((anchor) =>
+          selectedAnchors.add(JSON.stringify(anchor))
+        );
 
         // first annotationGroup that contains all selected anchors is expanded
         const annotationGroup = annotationGroups.find((group) =>
-          doesAnnotationGroupContainAnchors(
-            datatypeId,
-            group,
-            selectedState.anchors,
-            doc
-          )
+          doesAnnotationGroupContainAnchors(group, selectedState.anchors)
         );
         if (annotationGroup) {
           expandedAnnotationGroupId = getAnnotationGroupId(annotationGroup);
 
           // ... the anchors in that group are focused as well
           annotationGroup.annotations.forEach((annotation) =>
-            selectedAnchors.add(annotation.anchor)
+            selectedAnchors.add(JSON.stringify(annotation.anchor))
           );
         }
         break;
@@ -311,7 +308,7 @@ export function useAnnotations({
 
           // focus all anchors in the annotation group
           annotationGroup.annotations.forEach((annotation) =>
-            selectedAnchors.add(annotation.anchor)
+            selectedAnchors.add(JSON.stringify(annotation.anchor))
           );
         }
         break;
@@ -322,21 +319,16 @@ export function useAnnotations({
     switch (hoveredState?.type) {
       case "anchor": {
         // focus hovered anchor
-        hoveredAnchors.add(hoveredState.anchor);
+        hoveredAnchors.add(JSON.stringify(hoveredState.anchor));
 
         // find first discussion that contains the hovered anchor and hover all anchors that are part of that discussion as wellp
         const annotationGroup = annotationGroups.find((group) =>
-          doesAnnotationGroupContainAnchors(
-            datatypeId,
-            group,
-            [hoveredState.anchor],
-            doc
-          )
+          doesAnnotationGroupContainAnchors(group, [hoveredState.anchor])
         );
 
         if (annotationGroup) {
           annotationGroup.annotations.forEach(({ anchor }) =>
-            hoveredAnchors.add(anchor)
+            hoveredAnchors.add(JSON.stringify(anchor))
           );
         }
 
@@ -351,7 +343,7 @@ export function useAnnotations({
         if (annotationGroup) {
           // focus all anchors in the annotation groupd
           annotationGroup.annotations.forEach((annotation) =>
-            hoveredAnchors.add(annotation.anchor)
+            hoveredAnchors.add(JSON.stringify(annotation.anchor))
           );
         }
         break;
@@ -375,11 +367,13 @@ export function useAnnotations({
           // todo: In the future we might decide to allow views to distinguish between selected and hovered states,
           // but for now we're keeping it simple and just exposing a single highlighted property.
           isEmphasized:
-            selectedAnchors.has(annotation.anchor) ||
-            hoveredAnchors.has(annotation.anchor),
+            selectedAnchors.has(JSON.stringify(annotation.anchor)) ||
+            hoveredAnchors.has(JSON.stringify(annotation.anchor)),
 
           // Selected annotations should be scrolled into view
-          shouldBeVisibleInViewport: selectedAnchors.has(annotation.anchor),
+          shouldBeVisibleInViewport: selectedAnchors.has(
+            JSON.stringify(annotation.anchor)
+          ),
         })),
       [annotations, selectedAnchors]
     );
@@ -494,15 +488,11 @@ export function getAnnotationGroupId<T, V>(
 }
 
 export function doesAnnotationGroupContainAnchors<T, V>(
-  datatypeId: DatatypeId,
   group: AnnotationGroup<T, V>,
-  anchors: T[],
-  doc: HasVersionControlMetadata<T, V>
+  anchors: T[]
 ) {
   return anchors.every((anchor) =>
-    group.annotations.some((annotation) =>
-      doAnchorsOverlap(datatypeId, annotation.anchor, anchor, doc)
-    )
+    group.annotations.some((annotation) => isEqual(annotation.anchor, anchor))
   );
 }
 

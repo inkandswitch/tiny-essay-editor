@@ -4,15 +4,15 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 
-import { theme, useMarkdownPlugins } from "@/os/lib/markdown";
-import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
-import { type DocHandle } from "@automerge/automerge-repo";
-import * as A from "@automerge/automerge/next";
 import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
 } from "@/datatypes/markdown";
+import { theme, useMarkdownPlugins } from "@/os/lib/markdown";
+import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
+import { type DocHandle } from "@automerge/automerge-repo";
+import * as A from "@automerge/automerge/next";
 import {
   annotationsPlugin,
   setAnnotationsEffect,
@@ -22,7 +22,6 @@ import { previewFiguresPlugin } from "../codemirrorPlugins/previewFigures";
 import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfContentsPreview";
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { isEqual } from "lodash";
 
 export type TextSelection = {
@@ -143,6 +142,7 @@ export function MarkdownDocEditor({
 
               if (selection.from === selection.to) {
                 const cursorPos = selection.from;
+
                 const selectedAnnotationAnchors =
                   annotationsRef.current.flatMap((annotation) =>
                     annotation.anchor.fromPos <= cursorPos &&
@@ -151,7 +151,13 @@ export function MarkdownDocEditor({
                       : []
                   );
 
-                setSelectedAnchors(selectedAnnotationAnchors);
+                setSelectedAnchors(
+                  // remove resolved position
+                  selectedAnnotationAnchors.map(({ fromCursor, toCursor }) => ({
+                    fromCursor,
+                    toCursor,
+                  }))
+                );
               } else {
                 const docLength = view.state.doc.length;
                 setSelectedAnchors([
