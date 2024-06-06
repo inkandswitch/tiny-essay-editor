@@ -13,7 +13,7 @@ import { HasAssets } from "@/os/assets";
 import { MarkdownInput } from "@/os/lib/markdown";
 import { next as A, uuid } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
-import { Check, MessageSquare, PencilIcon, XIcon } from "lucide-react";
+import { Check, MessageCircle, PencilIcon, XIcon } from "lucide-react";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { getAnnotationGroupId } from "../annotations";
 
@@ -223,7 +223,7 @@ export const AnnotationGroupView = forwardRef<
       <div
         onClick={(event) => event.stopPropagation()}
         ref={setRef}
-        className={`pt-2 transition-all cursor-default ${
+        className={`pt-2 transition-all ${
           isBeingResolved ? "overflow-hidden" : ""
         }`}
         style={
@@ -262,7 +262,7 @@ export const AnnotationGroupView = forwardRef<
                 annotations={annotationGroup.annotations}
               />
             )}
-            <div className="mx-1.5">
+            <div className="mx-1.5 cursor-default">
               {annotationGroup.discussion?.comments.map((comment, index) => (
                 <DiscussionCommentView
                   contactUrl={comment.contactUrl}
@@ -317,7 +317,7 @@ export const AnnotationGroupView = forwardRef<
               onClick={onReply}
             >
               <div className="flex text-gray-600 gap-2">
-                <MessageSquare size={16} /> Reply
+                <MessageCircle size={16} /> Reply
               </div>
               <span className="text-gray-400 text-xs w-full text-center">
                 (⌘ + ⏎)
@@ -371,7 +371,7 @@ const DiscussionCommentView = ({
       onMouseEnter={() => setIsBeingHovered(true)}
       onMouseLeave={() => setIsBeingHovered(false)}
     >
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm cursor-default">
         <div className="flex items-center gap-2">
           <ContactAvatar url={contactUrl} showName={true} size="sm" />
 
@@ -401,7 +401,7 @@ const DiscussionCommentView = ({
         <div
           className={`text-sm ${
             isBeingEdited
-              ? "border border-1 rounded-sm px-2 border-gray-300"
+              ? "border border-1 rounded-sm px-2 border-gray-300 min-h-20"
               : "border-white"
           }`}
           onKeyDownCapture={(event) => {
