@@ -19,6 +19,8 @@ const MARKDOWN_STYLES = {
   ".cm-content": {
     height: "100%",
     margin: "0",
+    // Justified text makes it look more like the I&S web essay template,
+    // but doesn't feel right for most documents.
     // textAlign: "justify",
     textWrap: "pretty",
     lineHeight: "1.5rem",
@@ -167,6 +169,7 @@ export const theme = (style: "serif" | "sans") => [
   EditorView.theme({
     ...MARKDOWN_STYLES,
     ".cm-content": {
+      ...MARKDOWN_STYLES[".cm-content"],
       fontFamily:
         style === "serif"
           ? '"Merriweather", serif'
