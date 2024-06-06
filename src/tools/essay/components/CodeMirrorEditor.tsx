@@ -94,14 +94,16 @@ export function MarkdownDocEditor({
     const view = new EditorView({
       doc: source,
       extensions: [
+        // generic markdown plugins
         ...markdownPlugins,
+
+        // essay editor specific plugins
         EditorView.editable.of(!readOnly),
         theme("serif"),
         markdown({
           codeLanguages: languages,
         }),
 
-        // essay editor specific plugins
         automergeSyncPlugin({
           handle,
           path,
