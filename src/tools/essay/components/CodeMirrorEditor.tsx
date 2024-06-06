@@ -23,6 +23,7 @@ import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfConten
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { isEqual } from "lodash";
+import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
 
 export type TextSelection = {
   from: number;
@@ -107,6 +108,7 @@ export function MarkdownDocEditor({
         }),
         frontmatterPlugin,
         annotationsPlugin,
+        clickableMarkdownLinksPlugin,
         previewFiguresPlugin,
         tableOfContentsPreviewPlugin,
       ],
