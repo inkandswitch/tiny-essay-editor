@@ -47,7 +47,7 @@ import { DiscussionInput } from "./DiscussionInput";
 
 import { DatatypeId } from "@/os/datatypes";
 import { MarkdownInput } from "@/os/lib/markdown";
-import { HasAssets } from "@/tools/essay/assets";
+import { HasAssets } from "@/os/assets";
 import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGrouper } from "../ChangeGrouper";
 import { ChangeGroupingOptions } from "../groupChanges";

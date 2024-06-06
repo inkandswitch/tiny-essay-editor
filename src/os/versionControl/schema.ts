@@ -1,7 +1,7 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
-import { HasAssets } from "@/tools/essay/assets";
+import { HasAssets } from "@/os/assets";
 
 export type Branch = {
   name: string;

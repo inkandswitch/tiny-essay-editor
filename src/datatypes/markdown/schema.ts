@@ -1,6 +1,6 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import * as A from "@automerge/automerge/next";
-import { HasAssets } from "../../tools/essay/assets";
+import { HasAssets } from "../../os/assets";
 
 // todo: split content of document and metadata
 // currently branches copy also global metadata

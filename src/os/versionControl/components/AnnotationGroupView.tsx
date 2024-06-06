@@ -9,7 +9,7 @@ import {
   CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import { HasAssets } from "@/tools/essay/assets";
+import { HasAssets } from "@/os/assets";
 import { MarkdownInput } from "@/os/lib/markdown";
 import { next as A, uuid } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
