@@ -6,10 +6,26 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { globSync } from "glob";
 import { fileURLToPath } from "node:url";
+import externalize from "vite-plugin-externalize-dependencies";
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), react()],
+  plugins: [
+    topLevelAwait(),
+    react(),
+    externalize({
+      externals: [
+        "react",
+        "@automerge/automerge",
+        "@automerge/automerge-repo",
+        "@automerge/automerge-repo-network-broadcastchannel",
+        "@automerge/automerge-repo-network-messagechannel",
+        "@automerge/automerge-repo-network-websocket",
+        "@automerge/automerge-repo-react-hooks",
+        "@automerge/automerge-repo-storage-indexeddb",
+      ],
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
