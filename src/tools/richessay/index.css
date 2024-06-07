@@ -1,0 +1,161 @@
+h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  margin: 2rem 0 1rem 0;
+}
+
+h4 {
+  font-size: 1.1rem;
+  margin: 2rem 0 1rem 0;
+}
+
+h1+h2, h2+h3 {
+  margin: -.5rem 0 1rem 0;
+}
+
+ul, ol {
+  margin-bottom: 1.5rem;
+  margin-left: 1.3em;
+}
+
+ul {
+  list-style-type: square;
+}
+ol {
+  list-style-type: decimal;
+}
+
+li {
+  margin-bottom: .5rem;
+  white-space: normal;
+}
+
+li.no-bullet {
+  list-style-type: none;
+  margin-left: -1.3em;
+}
+li h3, li h4 {
+  display: inline;
+  font-size: inherit;
+}
+li ul {
+  margin-top: .5rem;
+}
+
+aside {
+  --aside-offset: 1rem - 0.21rem; /* The 0.21rem is a tweak to make the baseline of the aside match the baseline of the adjacent paragraph */
+  --aside-offset-lineheight: 1.5rem;
+  box-sizing: border-box;
+  margin-bottom: calc(var(--padding) * 2);
+  padding: var(--padding);
+  position: absolute;
+  right: 0;
+  width: var(--aside-width);
+}
+
+aside, figcaption, figure img, figure video, article p>img {
+  border-radius: calc(var(--padding)/4);
+  max-width: 100%;
+}
+
+aside, aside>*, aside li, #byline, #byline li, figcaption, figcaption>*, blockquote footer, blockquote cite {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  -ms-hyphens: none;
+  -webkit-hyphens: none;
+  hyphens: none;
+  line-height: 1.25rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+aside h4, aside h3, figcaption h4, figcaption h3 {
+  font-weight: 700;
+  letter-spacing: 0.15ch;
+  margin-bottom: 0.25rem;
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+aside code, figcaption code, table code {
+  line-height: inherit;
+  padding: .125rem;
+  white-space: nowrap;
+}
+
+aside p:last-child, aside li:last-child, figcaption p:last-child {
+  margin-bottom: 0;
+}
+
+.teeMenu {
+    display: flex;
+    flex-direction: row;
+    border: 1px solid #f2f2f2;
+    padding: 1rem;
+}
+
+.teeMenu button {
+    padding: 0.25rem;
+    margin: 0 0.25rem;
+    width: 2rem;
+    border: 1px solid #f2f2f2;
+    background-color: white;
+}
+
+.menubar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menubar button {
+  padding: 10px;
+  border: none;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+
+.menubar .row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.captionedButton {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 10px;
+  font-size: 10px;
+}
+
+.captionedButton p {
+  padding: 0;
+  margin: 0;
+}
+
+blockquote {
+  background: #f9f9f9;
+  border-left: 10px solid #ccc;
+  margin: 1em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C" "\201D" "\2018" "\2019";
+}

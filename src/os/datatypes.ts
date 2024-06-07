@@ -18,6 +18,7 @@ import folder from "@/datatypes/folder";
 import kanban from "@/datatypes/kanban";
 import markdown from "@/datatypes/markdown";
 import tldraw from "@/datatypes/tldraw";
+import richText from "@/datatypes/richtee";
 import { FileExportMethod } from "./fileExports";
 import { HasAssets } from "@/os/assets";
 
@@ -127,6 +128,7 @@ export const DATA_TYPES: Record<
   bot,
   kanban,
   folder,
+  [richText.id]: richText,
 } as const;
 
 export type DatatypeId = keyof typeof DATA_TYPES;

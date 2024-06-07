@@ -6,6 +6,7 @@ import folder from "@/tools/folder";
 import datagrid from "@/tools/datagrid";
 import bot from "@/tools/bot";
 import kanban from "@/tools/kanban";
+import richessay from "@/tools/richessay";
 
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
@@ -77,6 +78,7 @@ const getToolsMap = (tools: Tool[]): Record<string, Tool[]> => {
 
 export const TOOLS = getToolsMap([
   essay,
+  richessay,
   tldraw,
   folder,
   datagrid,

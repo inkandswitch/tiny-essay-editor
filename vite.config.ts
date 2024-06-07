@@ -13,7 +13,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-
+  worker: {
+    plugins: () => [topLevelAwait(), wasm()],
+  },
   optimizeDeps: {
     // This is necessary because otherwise `vite dev` includes two separate
     // versions of the JS wrapper. This causes problems because the JS
@@ -22,6 +24,9 @@ export default defineConfig({
     exclude: [
       "@automerge/automerge-wasm",
       "@automerge/automerge-wasm/bundler/bindgen_bg.wasm",
+      "@automerge/prosemirror",
+      "prosemirror-model",
+      "prosemirror-schema-basic",
       "@syntect/wasm",
     ],
   },
