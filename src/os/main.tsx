@@ -17,28 +17,29 @@ import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { getAccount } from "./explorer/account.js";
 import { Explorer } from "./explorer/components/Explorer.js";
 import "./index.css";
+import { Button } from "@/components/ui/button.js";
 
-const serviceWorker = await setupServiceWorker();
+// const serviceWorker = await setupServiceWorker();
 
 // Service workers stop on their own, which breaks sync.
 // Here we ping the service worker while the tab is running
 // to keep it alive (and make it restart if it did stop.)
-setInterval(() => {
+/* setInterval(() => {
   serviceWorker.postMessage({ type: "PING" });
-}, 5000);
+}, 5000); */
 
 // This case should never happen
 // if the service worker is not defined here either the initialization failed
 // or we found a new case that we haven't considered yet
-if (!serviceWorker) {
+/* if (!serviceWorker) {
   throw new Error("Failed to setup service worker");
-}
+} */
 
 const repo = await setupRepo();
 
-establishMessageChannel(serviceWorker);
+// establishMessageChannel(serviceWorker);
 
-async function setupServiceWorker(): Promise<ServiceWorker> {
+/* async function setupServiceWorker(): Promise<ServiceWorker> {
   return navigator.serviceWorker
     .register("/service-worker.js", {
       type: "module",
@@ -59,7 +60,7 @@ async function setupServiceWorker(): Promise<ServiceWorker> {
       // otherwise return the active service worker
       return registration.active;
     });
-}
+} */
 
 async function setupRepo() {
   // in our vendored version we export a promise that resolves once the wasm is loaded
@@ -84,7 +85,7 @@ async function setupRepo() {
 }
 
 // Re-establish the MessageChannel if the controlling service worker changes.
-navigator.serviceWorker.addEventListener("controllerchange", (event) => {
+/* navigator.serviceWorker.addEventListener("controllerchange", (event) => {
   const newServiceWorker = (event.target as ServiceWorkerContainer).controller;
   // controllerchange is fired after a new service worker is installed
   // even if we wait above in setupServiceWorker() until the service worker state changes to activated.
@@ -92,7 +93,7 @@ navigator.serviceWorker.addEventListener("controllerchange", (event) => {
   if (newServiceWorker !== serviceWorker) {
     establishMessageChannel(newServiceWorker);
   }
-});
+}); */
 
 // Re-establish the MessageChannel if the service worker restarts
 /* navigator.serviceWorker.addEventListener("message", (event) => {
@@ -105,7 +106,7 @@ navigator.serviceWorker.addEventListener("controllerchange", (event) => {
 // Connects the repo in the tab with the repo in the service worker through a message channel.
 // The repo in the tab takes advantage of loaded state in the SW.
 // TODO: clean up MessageChannels to old repos
-function establishMessageChannel(serviceWorker: ServiceWorker) {
+/* function establishMessageChannel(serviceWorker: ServiceWorker) {
   // Send one side of a MessageChannel to the service worker and register the other with the repo.
   const messageChannel = new MessageChannel();
   repo.networkSubsystem.addNetworkAdapter(
@@ -113,7 +114,7 @@ function establishMessageChannel(serviceWorker: ServiceWorker) {
   );
   serviceWorker.postMessage({ type: "INIT_PORT" }, [messageChannel.port2]);
   console.log("Connected to service worker");
-}
+} */
 
 // Setup account
 

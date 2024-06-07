@@ -102,8 +102,5 @@
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "^0.34.6"
-  },
-  "resolutions": {
-    "@automerge/automerge-wasm": "file:./src/vendor/automerge-wasm"
   }
 }

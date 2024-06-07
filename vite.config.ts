@@ -8,33 +8,30 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
 const IMPORT_MAP = {
-  imports: {
-    "@automerge/automerge":
-      "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/index.js",
-    "@automerge/automerge-repo":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo@1.1.12/dist/index.js",
-    "@automerge/automerge-repo-network-broadcastchannel":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo-network-broadcastchannel@1.1.12/dist/index.js",
-    "@automerge/automerge-repo-network-messagechannel":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo-network-messagechannel@1.1.12/dist/index.js",
-    "@automerge/automerge-repo-network-websocket":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo-network-websocket@1.1.12/dist/index.js",
-    "@automerge/automerge-repo-react-hooks":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo-react-hooks@1.1.12/dist/index.js",
-    "@automerge/automerge-repo-storage-indexeddb":
-      "https://ga.jspm.io/npm:@automerge/automerge-repo-storage-indexeddb@1.1.12/dist/index.js",
-    "@automerge/automerge-wasm":
-      "https://ga.jspm.io/npm:@automerge/automerge-wasm@0.17.0/bundler/automerge_wasm.js",
-    "@automerge/automerge/next":
-      "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/next.js",
-    react: "https://ga.jspm.io/npm:react@18.3.1/dev.index.js",
-    "react-dom": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.index.js",
-    "react-dom/client": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.client.js",
-    "react/jsx-dev-runtime":
-      "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-dev-runtime.js",
-    "react/jsx-runtime":
-      "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-runtime.js",
-  },
+  "@automerge/automerge":
+    "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/index.js",
+  "@automerge/automerge-repo":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo@1.1.12/dist/index.js",
+  "@automerge/automerge-repo-network-broadcastchannel":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo-network-broadcastchannel@1.1.12/dist/index.js",
+  "@automerge/automerge-repo-network-messagechannel":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo-network-messagechannel@1.1.12/dist/index.js",
+  "@automerge/automerge-repo-network-websocket":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo-network-websocket@1.1.12/dist/index.js",
+  "@automerge/automerge-repo-react-hooks":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo-react-hooks@1.1.12/dist/index.js",
+  "@automerge/automerge-repo-storage-indexeddb":
+    "https://ga.jspm.io/npm:@automerge/automerge-repo-storage-indexeddb@1.1.12/dist/index.js",
+  "@automerge/automerge-wasm":
+    "https://ga.jspm.io/npm:@automerge/automerge-wasm@0.17.0/bundler/automerge_wasm.js",
+  "@automerge/automerge/next":
+    "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/next.js",
+  react: "https://ga.jspm.io/npm:react@18.3.1/dev.index.js",
+  "react-dom": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.index.js",
+  "react-dom/client": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.client.js",
+  "react/jsx-dev-runtime":
+    "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-dev-runtime.js",
+  "react/jsx-runtime": "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-runtime.js",
 };
 
 const EXTERNALS = Object.keys(IMPORT_MAP);
@@ -68,8 +65,8 @@ export default defineConfig({
     // wrapper has a module level variable to track JS side heap
     // allocations, and initializing this twice causes horrible breakage
     exclude: [
-      /* "@automerge/automerge-wasm",
-      "@automerge/automerge-wasm/bundler/bindgen_bg.wasm", */
+      "@automerge/automerge-wasm",
+      "@automerge/automerge-wasm/bundler/bindgen_bg.wasm",
       "@syntect/wasm",
     ],
   },
