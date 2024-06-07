@@ -32,7 +32,11 @@
           "@automerge/automerge-repo-storage-indexeddb": "https://ga.jspm.io/npm:@automerge/automerge-repo-storage-indexeddb@1.1.12/dist/index.js",
           "@automerge/automerge-wasm": "https://ga.jspm.io/npm:@automerge/automerge-wasm@0.17.0/bundler/automerge_wasm.js",
           "@automerge/automerge/next": "https://ga.jspm.io/npm:@automerge/automerge@2.2.2/dist/mjs/next.js",
-          "react": "https://ga.jspm.io/npm:react@18.3.1/dev.index.js"
+          "react": "https://ga.jspm.io/npm:react@18.3.1/dev.index.js",
+          "react-dom": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.index.js",
+          "react-dom/client": "https://ga.jspm.io/npm:react-dom@18.3.1/dev.client.js",
+          "react/jsx-dev-runtime": "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-dev-runtime.js",
+          "react/jsx-runtime": "https://ga.jspm.io/npm:react@18.3.1/dev.jsx-runtime.js"
         },
         "scopes": {
           "https://ga.jspm.io/": {
@@ -48,6 +52,7 @@
             "isomorphic-ws": "https://ga.jspm.io/npm:isomorphic-ws@5.0.0/browser.js",
             "ms": "https://ga.jspm.io/npm:ms@2.1.2/index.js",
             "process": "https://ga.jspm.io/npm:@jspm/core@2.0.1/nodelibs/browser/process.js",
+            "scheduler": "https://ga.jspm.io/npm:scheduler@0.23.2/dev.index.js",
             "uuid": "https://ga.jspm.io/npm:uuid@9.0.1/dist/esm-browser/index.js",
             "xstate": "https://ga.jspm.io/npm:xstate@5.13.1/dist/xstate.development.esm.js"
           }
@@ -56,7 +61,6 @@
     </script>
     <script>
       window.esmsInitOptions = {
-        shimMode: true,
         polyfillEnable: ["css-modules", "json-modules", "wasm-modules"],
       };
     </script>
