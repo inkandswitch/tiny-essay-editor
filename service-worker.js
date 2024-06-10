@@ -143,11 +143,9 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        if (!file.contentType) {
+        if (!file.contentType || file.contents === undefined) {
           return new Response(
-            `Invalid file entry.\n${
-              assetsHandle.url
-            }:\nfileEntry:${JSON.stringify(file)}`,
+            `Invalid file entry.\n${url}:\nfileEntry:${JSON.stringify(file)}`,
             {
               status: 404,
               headers: { "Content-Type": "text/plain" },

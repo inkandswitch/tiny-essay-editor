@@ -6,8 +6,8 @@ type UrlSource = {
 type AutomergeDocSource = {
   type: "automerge";
   "index.js": {
-    contentType: "text/javascript";
-    content: string;
+    contentType: "application/javascript";
+    contents: string;
   };
 };
 

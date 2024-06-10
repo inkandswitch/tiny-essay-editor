@@ -6,7 +6,11 @@ import {
   AnnotationWithUIState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  parseAutomergeUrl,
+} from "@automerge/automerge-repo";
 import { useRootFolderDocWithChildren } from "./explorer/account";
 import { Module } from "./modules";
 import { DocLink } from "@/datatypes/folder";
@@ -93,10 +97,12 @@ export const useToolModules = () => {
         const { source } = moduleDoc;
         console.log("load", source);
 
+        const docId = parseAutomergeUrl(url).documentId;
+
         const sourceUrl =
           source.type === "url"
             ? source.url
-            : `https://automerge/${url}/source/index.js`;
+            : `https://automerge/${docId}/source/index.js`;
 
         console.log(sourceUrl);
 
@@ -123,8 +129,9 @@ export const useToolModulesForDataType = (dataTypeId: string) => {
     () =>
       toolModules.filter(
         (tool) =>
-          tool.metadata.supportedDatatypes.includes(dataTypeId) ||
-          tool.metadata.supportedDatatypes.includes("*")
+          tool?.metadata &&
+          (tool.metadata.supportedDatatypes.includes(dataTypeId) ||
+            tool.metadata.supportedDatatypes.includes("*"))
       ),
     [toolModules, dataTypeId]
   );
