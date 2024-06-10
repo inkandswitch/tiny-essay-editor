@@ -30,8 +30,15 @@ export const ModuleEditor: React.FC<EditorProps<never, never>> = ({
   return (
     <div className="p-4 w-full">
       <div className="font-mono mb-6">
-        <div className="mb-2 text-gray-600 uppercase font-mono">URL</div>
-        <Input value={moduleDoc.source.url ?? ""} onChange={onChangeUrlInput} />
+        {moduleDoc.source.type === "url" && (
+          <div>
+            <div className="mb-2 text-gray-600 uppercase font-mono">URL</div>
+            <Input
+              value={moduleDoc.source.url ?? ""}
+              onChange={onChangeUrlInput}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

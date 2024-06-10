@@ -6,7 +6,9 @@
   "module": "index.js",
   "scripts": {
     "dev": "vite --force --port 5173",
-    "build": "tsc && vite build",
+    "build:main": "tsc && vite build",
+    "build:sw": "vite build --config vite.config-sw.ts",
+    "build": "npm run build:main && npm run build:sw",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest"

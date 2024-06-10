@@ -41,7 +41,6 @@ export default defineConfig({
       ],
       input: {
         main: path.resolve(__dirname, "index.html"),
-        "service-worker": path.resolve(__dirname, "service-worker.js"),
         ...Object.fromEntries(
           globSync(
             path.resolve(__dirname, "src/datatypes/*/module.@(ts|js|tsx|jsx)")
@@ -79,11 +78,6 @@ export default defineConfig({
           return "assets/[name]-[hash][extname]";
         },
         entryFileNames: (chunkInfo) => {
-          // Specify output location for service-worker.js
-          if (chunkInfo.name === "service-worker") {
-            return "[name].js"; // This will place service-worker.js directly under dist
-          }
-
           // output tools under "/tools"
           if (chunkInfo.name.startsWith("tool-")) {
             const typeId = chunkInfo.name.split("-")[1];
