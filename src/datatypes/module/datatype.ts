@@ -3,7 +3,7 @@ import { ModuleDoc } from "./schema";
 
 export const init = (doc: any) => {
   doc.title = "Untitled Module";
-  doc.docs = [];
+  doc.source = { type: "url", url: "" };
 };
 
 // When a copy of the document has been made,

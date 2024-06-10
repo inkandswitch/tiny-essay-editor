@@ -89,7 +89,18 @@ export const useToolModules = () => {
     Promise.all(
       moduleDocLinks.map(async ({ url }) => {
         const moduleDoc = await repo.find<ModuleDoc>(url).doc();
-        const module = await import(moduleDoc.url);
+        console.log(url, moduleDoc);
+        const { source } = moduleDoc;
+        console.log("load", source);
+
+        const sourceUrl =
+          source.type === "url"
+            ? source.url
+            : `https://automerge/${url}/source/index.js`;
+
+        console.log(sourceUrl);
+
+        const module = await import(sourceUrl);
         return module.default;
       })
     ).then((modules) => {

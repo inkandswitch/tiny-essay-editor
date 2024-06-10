@@ -20,7 +20,10 @@ export const ModuleEditor: React.FC<EditorProps<never, never>> = ({
 
   const onChangeUrlInput = (evt) => {
     changeModuleDoc((doc) => {
-      doc.url = evt.target.value;
+      doc.source = {
+        type: "url",
+        url: evt.target.value,
+      };
     });
   };
 
@@ -28,7 +31,7 @@ export const ModuleEditor: React.FC<EditorProps<never, never>> = ({
     <div className="p-4 w-full">
       <div className="font-mono mb-6">
         <div className="mb-2 text-gray-600 uppercase font-mono">URL</div>
-        <Input value={moduleDoc.url ?? ""} onChange={onChangeUrlInput} />
+        <Input value={moduleDoc.source.url ?? ""} onChange={onChangeUrlInput} />
       </div>
     </div>
   );
