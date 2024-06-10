@@ -12,14 +12,14 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@automerge/automerge": "^2.2.2",
+    "@automerge/automerge": "^2.2.3-packaging-revamp.3",
     "@automerge/automerge-codemirror": "^0.0.11",
-    "@automerge/automerge-repo": "^1.1.12",
-    "@automerge/automerge-repo-network-broadcastchannel": "^1.1.12",
-    "@automerge/automerge-repo-network-messagechannel": "^1.1.12",
-    "@automerge/automerge-repo-network-websocket": "^1.1.12",
-    "@automerge/automerge-repo-react-hooks": "^1.1.12",
-    "@automerge/automerge-repo-storage-indexeddb": "^1.1.12",
+    "@automerge/automerge-repo": "1.1.13-alpha.0",
+    "@automerge/automerge-repo-network-broadcastchannel": "1.1.13-alpha.0",
+    "@automerge/automerge-repo-network-messagechannel": "1.1.13-alpha.0",
+    "@automerge/automerge-repo-network-websocket": "1.1.13-alpha.0",
+    "@automerge/automerge-repo-react-hooks": "1.1.13-alpha.0",
+    "@automerge/automerge-repo-storage-indexeddb": "1.1.13-alpha.0",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -98,8 +98,5 @@
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "^0.34.6"
-  },
-  "resolutions": {
-    "@automerge/automerge-wasm": "file:./src/vendor/automerge-wasm"
   }
 }

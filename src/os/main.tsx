@@ -8,7 +8,6 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-messagechannel";
-import * as AW from "@automerge/automerge-wasm";
 
 import { next as Automerge } from "@automerge/automerge";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
@@ -62,11 +61,6 @@ async function setupServiceWorker(): Promise<ServiceWorker> {
 }
 
 async function setupRepo() {
-  // in our vendored version we export a promise that resolves once the wasm is loaded
-  // this property is missing in the type declaration
-  // @ts-expect-error
-  await AW.promise;
-  A.use(AW);
 
   // We create a repo without any network adapters.
   // Later we connect the repo with the repo in the service worker through a message channel

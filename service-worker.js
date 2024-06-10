@@ -1,5 +1,5 @@
-import * as AutomergeWasm from "@automerge/automerge-wasm";
-import * as Automerge from "@automerge/automerge";
+import wasmBlobUrl from "@automerge/automerge/wasm_blob.wasm?url"
+import * as Automerge from "@automerge/automerge/slim";
 import { Repo, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
@@ -10,6 +10,8 @@ const CACHE_NAME = "v6";
 const PEER_ID = "service-worker-" + Math.round(Math.random() * 1000000);
 
 async function initializeRepo() {
+  await Automerge.initializeWasm(wasmBlobUrl);  
+
   console.log(`${PEER_ID}: Creating repo`);
   const repo = new Repo({
     storage: new IndexedDBStorageAdapter(),
@@ -18,9 +20,6 @@ async function initializeRepo() {
     sharePolicy: async (peerId) => peerId.includes("storage-server"),
     enableRemoteHeadsGossiping: true,
   });
-
-  await AutomergeWasm.promise;
-  Automerge.use(AutomergeWasm);
 
   return repo;
 }
