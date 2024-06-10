@@ -7,7 +7,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), react()],
+  plugins: [topLevelAwait(), react(), wasm()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -20,8 +20,6 @@ export default defineConfig({
     // wrapper has a module level variable to track JS side heap
     // allocations, and initializing this twice causes horrible breakage
     exclude: [
-      "@automerge/automerge-wasm",
-      "@automerge/automerge-wasm/bundler/bindgen_bg.wasm",
       "@syntect/wasm",
     ],
   },
@@ -31,6 +29,7 @@ export default defineConfig({
     plugins: () => [wasm()],
   },
   build: {
+    minify: false,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),

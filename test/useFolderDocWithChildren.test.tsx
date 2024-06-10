@@ -1,5 +1,5 @@
 import { AutomergeUrl, PeerId, Repo } from "@automerge/automerge-repo";
-import { DummyStorageAdapter } from "@automerge/automerge-repo/test/helpers/DummyStorageAdapter";
+import { DummyStorageAdapter } from "@automerge/automerge-repo/helpers/DummyStorageAdapter.js";
 import { render, waitFor, act } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
