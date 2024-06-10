@@ -111,7 +111,7 @@ export const useToolModules = () => {
 
       setDynamicModules(modules);
     });
-  }, [moduleDocLinks]);
+  }, [moduleDocLinks, repo]);
 
   return TOOLS.concat(dynamicModules);
 };

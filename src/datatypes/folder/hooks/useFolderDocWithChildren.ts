@@ -1,5 +1,5 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   DocLinkWithFolderPath,
   FolderDoc,
@@ -97,13 +97,17 @@ export function useFolderDocWithChildren(
     materializeLinks: materializeLinks,
   });
 
-  const flatDocLinks = computeFlattenedDocLinks({
-    doc: docWithLinks.doc,
-    status: docWithLinks.status,
-    folderPath: [rootFolderUrl],
-  });
-
   // flatDocLinks is a flat array of all the docs in the hierarchy
+  const flatDocLinks = useMemo(
+    () =>
+      computeFlattenedDocLinks({
+        doc: docWithLinks.doc,
+        status: docWithLinks.status,
+        folderPath: [rootFolderUrl],
+      }),
+    [docWithLinks, rootFolderUrl]
+  );
+
   return {
     ...docWithLinks,
     rootFolderUrl,

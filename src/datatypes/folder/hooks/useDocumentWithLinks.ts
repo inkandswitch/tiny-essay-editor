@@ -20,6 +20,9 @@ import { useDocuments } from "@automerge/automerge-repo-react-hooks";
  *  @param materializeLinks Given a raw document and a map of data we've loaded for linked docs,
  *    construct a final document with links "materialized" into the data.
  */
+
+export type LoadingStatus = "loading" | "loaded";
+
 export const useDocumentWithLinks = <TRawDoc, TDocWithLinksMaterialized>({
   rootUrl,
   findLinks,
@@ -33,7 +36,7 @@ export const useDocumentWithLinks = <TRawDoc, TDocWithLinksMaterialized>({
   ) => TDocWithLinksMaterialized;
 }): {
   doc: TDocWithLinksMaterialized | undefined;
-  status: "loading" | "loaded";
+  status: LoadingStatus;
 } => {
   const [urlsToLoad, setUrlsToLoad] = useState(rootUrl ? [rootUrl] : []);
   const rawDocContentsMap = useDocuments<TRawDoc>(urlsToLoad);
@@ -81,7 +84,11 @@ export const useDocumentWithLinks = <TRawDoc, TDocWithLinksMaterialized>({
     Object.keys(docContentsMapWithUrlsAsKeys).length <
       urlsToLoadForCurrentDocWithChildren.length;
 
-  const status = stillLoading ? "loading" : "loaded";
+  const status = stillLoading ? "loading" : ("loaded" as LoadingStatus);
 
-  return { doc: docWithChildren, status };
+  const result = useMemo(() => {
+    return { doc: docWithChildren, status };
+  }, [docWithChildren, status]);
+
+  return result;
 };
