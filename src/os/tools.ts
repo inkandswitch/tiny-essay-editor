@@ -71,7 +71,7 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
 }
 
 export const useToolModules = () => {
-  const [dynamicModules, setDynamicModules] = useState([]);
+  /*const [dynamicModules, setDynamicModules] = useState([]);
   const repo = useRepo();
 
   const { flatDocLinks } = useRootFolderDocWithChildren();
@@ -100,9 +100,9 @@ export const useToolModules = () => {
 
       setDynamicModules(modules);
     });
-  }, [moduleDocLinks]);
+  }, [moduleDocLinks]); */
 
-  return TOOLS.concat(dynamicModules);
+  return TOOLS;
 };
 
 export const useToolModulesForDataType = (dataTypeId: string) => {

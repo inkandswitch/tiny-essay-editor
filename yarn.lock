@@ -88,10 +88,8 @@
     uuid "^9.0.0"
     xstate "^5.9.1"
 
-"@automerge/automerge-wasm@0.17.0":
+"@automerge/automerge-wasm@0.17.0", "@automerge/automerge-wasm@file:./src/vendor/automerge-wasm":
   version "0.17.0"
-  resolved "https://registry.yarnpkg.com/@automerge/automerge-wasm/-/automerge-wasm-0.17.0.tgz#d6076287e87c3eb3a95c19a20f3fe09fff5381bc"
-  integrity sha512-EPTqadOj+wzv73rPaa80Q+tKnM+XpEtYhqZ4reB9647OZdiQjQwlXo+y/7VrGO+x48Kow0sYpZa9rgx8t785kA==
 
 "@automerge/automerge@^2.1.13", "@automerge/automerge@^2.1.9", "@automerge/automerge@^2.2.2":
   version "2.2.2"
