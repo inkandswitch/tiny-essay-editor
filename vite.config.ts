@@ -1,14 +1,15 @@
 // vite.config.ts
-import { defineConfig } from "vite";
-import path from "path";
 import react from "@vitejs/plugin-react";
-import wasm from "vite-plugin-wasm";
+import * as cheerio from "cheerio";
+import fs from "fs";
 import { globSync } from "glob";
 import { fileURLToPath } from "node:url";
+import path from "path";
+import { ViteDevServer, defineConfig } from "vite";
 import topLevelAwait from "vite-plugin-top-level-await";
+import wasm from "vite-plugin-wasm";
 
 const SHARED_DEPENDENCIES = [
-  "@automerge/automerge-wasm",
   "@automerge/automerge",
   "@automerge/automerge-repo",
   "@automerge/automerge-repo-react-hooks",
@@ -17,7 +18,58 @@ const SHARED_DEPENDENCIES = [
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), react()],
+  plugins: [
+    topLevelAwait(),
+    react(),
+    {
+      name: "index transform",
+      configureServer(server: ViteDevServer) {
+        const originalTransformIndexHtml = server.transformIndexHtml;
+
+        server.transformIndexHtml = async (url, html, originalUrl) => {
+          const transformed = await originalTransformIndexHtml.call(
+            server,
+            url,
+            html,
+            originalUrl
+          );
+
+          const $ = cheerio.load(transformed);
+
+          const metadata = JSON.parse(
+            fs.readFileSync(
+              path.join(__dirname, "node_modules/.vite/deps/_metadata.json"),
+              "utf-8"
+            )
+          );
+
+          const imports = {};
+          for (const dep of SHARED_DEPENDENCIES) {
+            const m = metadata.optimized[dep];
+
+            if (!m) {
+              console.log("can't find", dep);
+              continue;
+            }
+
+            imports[
+              dep
+            ] = `./node_modules/.vite/deps/${m.file}?v=${m.fileHash}`;
+          }
+
+          $("head").append(
+            `<script type="importmap">${JSON.stringify(
+              { imports },
+              null,
+              2
+            )}</script>`
+          );
+
+          return $.html();
+        };
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
