@@ -26,7 +26,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isMarkdownDoc } from "@/datatypes/essay";
 import { DatatypeId, useDataType } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
-import { isLLMActive } from "@/os/lib/llm";
 import {
   EditorProps,
   Tool,
@@ -79,13 +78,14 @@ import {
 } from "../utils";
 import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
+import { isLLMActive } from "@/os/lib/llm";
 
 interface MakeBranchOptions {
   name?: string;
   heads?: A.Heads;
 }
 
-type SidebarMode = "comments" | "timeline";
+type SidebarMode = "review" | "history";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
@@ -125,14 +125,18 @@ export const VersionControlEditor: React.FC<{
     }
   }, [JSON.stringify(selectedBranch)]);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [sidebarMode, _setSidebarMode] = useState<SidebarMode>();
 
-  useEffect(() => {
-    if (!isSidebarOpen) {
+  const setSidebarMode = (sidebarMode: SidebarMode) => {
+    // reset state from history mode
+    if (sidebarMode === "review" || !sidebarMode) {
       setDiffFromTimelineSidebar(undefined);
       setDocHeadsFromTimelineSidebar(undefined);
     }
-  }, [isSidebarOpen]);
+
+    _setSidebarMode(sidebarMode);
+  };
+
   const [diffFromTimelineSidebar, setDiffFromTimelineSidebar] =
     useState<DiffWithProvenance>();
   const [docHeadsFromTimelineSidebar, setDocHeadsFromTimelineSidebar] =
@@ -305,7 +309,6 @@ export const VersionControlEditor: React.FC<{
     : docHeads
     ? A.view(doc, docHeads)
     : doc;
-  const activeChangeDoc = selectedBranch ? changeBranchDoc : changeDoc;
   const activeHandle = selectedBranch ? branchHandle : handle;
 
   const dataType = useDataType(datatypeId);
@@ -316,9 +319,9 @@ export const VersionControlEditor: React.FC<{
     selectedAnchors,
     setHoveredAnchor,
     setSelectedAnchors,
-    hoveredAnnotationGroupId,
     setHoveredAnnotationGroupId,
     setSelectedAnnotationGroupId,
+    setCommentState,
   } = useAnnotations({
     doc: activeDoc,
     dataType,
@@ -326,12 +329,37 @@ export const VersionControlEditor: React.FC<{
     isCommentInputFocused,
   });
 
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("comments");
+  // global comment keyboard shortcut
+  // with cmd + shift + m a new comment is created
+  const supportsInlineComments = tool.supportsInlineComments;
 
-  const [
-    annotationsPositionsInSidebarMap,
-    setAnnotationsPositionsInSidebarMap,
-  ] = useState<PositionMap>();
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.code === "KeyM"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!supportsInlineComments || selectedAnchors.length === 0) {
+          setSidebarMode("review");
+        }
+
+        setCommentState({
+          type: "create",
+          target: selectedAnchors.length > 0 ? selectedAnchors : undefined,
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress, true);
+    };
+  }, [selectedAnchors]);
 
   // ---- ALL HOOKS MUST GO ABOVE THIS EARLY RETURN ----
 
@@ -340,6 +368,25 @@ export const VersionControlEditor: React.FC<{
   // ---- ANYTHING RELYING ON doc SHOULD GO BELOW HERE ----
 
   const branches = doc.branchMetadata.branches ?? [];
+
+  // Currently we can't filter out comments that didn't exist in a previous version of the document
+  // this leads to seemingly random places in the document being highlighted. The problem is that
+  // the cursor api doesn't provide a way to detect if the op was present it always gives the closest
+  // position to that op in the current document.
+  //
+  // As a short term workaround we filter out all comments if the timeline sidebar is active
+  const visibleAnnotations =
+    sidebarMode === "history"
+      ? annotations.filter((annotation) => annotation.type !== "highlighted")
+      : annotations;
+
+  // for now hide inline comments if side by side is enabled because there is not enought space
+  const hideInlineComments = !!sidebarMode || compareWithMainFlag;
+
+  const highlightSidebarButton =
+    !sidebarMode &&
+    annotations.some((a) => a.type === "highlighted" && a.isEmphasized) &&
+    (!supportsInlineComments || hideInlineComments);
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -507,16 +554,14 @@ export const VersionControlEditor: React.FC<{
             )}
           </div>
 
-          {!isSidebarOpen && (
-            <div className={` ml-auto ${isSidebarOpen ? "mr-96" : "mr-4"}`}>
+          {!sidebarMode && (
+            <div className="ml-auto mr-4">
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  onClick={() => setSidebarMode("review")}
                   variant="outline"
                   className={`h-8 text-x ${
-                    annotations.filter(
-                      (a) => a.type === "highlighted" && a.isEmphasized
-                    ).length > 0
+                    highlightSidebarButton
                       ? "bg-yellow-200 hover:bg-yellow-400"
                       : ""
                   }`}
@@ -532,7 +577,7 @@ export const VersionControlEditor: React.FC<{
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <div className="flex-grow items-stretch justify-stretch relative flex flex-col overflow-hidden">
             {compareWithMainFlag && selectedBranch && (
-              <div className="w-full flex top-0 bg-gray-50 pt-4 text-sm font-medium">
+              <div className="w-full flex top-0 bg-gray-100 pt-4 text-sm font-medium">
                 <div className="flex-1 pl-4">
                   <div className="inline-flex items-center gap-1">
                     <CrownIcon className="inline mr-1" size={12} /> Main
@@ -550,26 +595,34 @@ export const VersionControlEditor: React.FC<{
                 <SideBySide
                   key={mainDocUrl}
                   mainDocUrl={mainDocUrl}
-                  datatypeId={datatypeId}
                   tool={tool}
                   docUrl={selectedBranch.url}
                   docHeads={docHeads}
-                  annotations={annotations}
+                  annotations={visibleAnnotations}
+                  annotationGroups={annotationGroups}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
+                  setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                  setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+                  hideInlineComments={hideInlineComments}
+                  setCommentState={setCommentState}
                 />
               ) : (
                 <DocEditor
                   key={selectedBranch?.url ?? mainDocUrl}
-                  datatypeId={datatypeId}
                   tool={tool}
                   docUrl={selectedBranch?.url ?? mainDocUrl}
                   docHeads={docHeads}
-                  annotations={annotations}
+                  annotations={visibleAnnotations}
+                  annotationGroups={annotationGroups}
                   actorIdToAuthor={actorIdToAuthor}
                   setSelectedAnchors={setSelectedAnchors}
                   setHoveredAnchor={setHoveredAnchor}
+                  setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+                  setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+                  hideInlineComments={hideInlineComments}
+                  setCommentState={setCommentState}
                 />
               )}
             </div>
@@ -577,11 +630,11 @@ export const VersionControlEditor: React.FC<{
         </ErrorBoundary>
       </div>
 
-      {isSidebarOpen && (
+      {sidebarMode && (
         <div className="border-l border-gray-200 py-2 h-full flex flex-col relative bg-gray-50">
           <div
             className="-left-[33px] absolute cursor-pointer hover:bg-gray-100 border hover:border-gray-500 rounded-lg w-[24px] h-[24px] grid place-items-center"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => setSidebarMode(null)}
           >
             <ChevronsRight size={16} />
           </div>
@@ -589,14 +642,16 @@ export const VersionControlEditor: React.FC<{
           <div className="px-2 pb-2 flex flex-col gap-2 text-sm font-semibold text-gray-600 border-b border-gray-200">
             <Tabs
               value={sidebarMode}
-              onValueChange={(value) => setSidebarMode(value as SidebarMode)}
+              onValueChange={(mode) =>
+                setSidebarMode(mode as "review" | "history")
+              }
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="comments">
+                <TabsTrigger value="review">
                   <MessageSquareIcon size={16} className="mr-2" />
                   Review ({annotationGroups.length})
                 </TabsTrigger>
-                <TabsTrigger value="timeline">
+                <TabsTrigger value="history">
                   <HistoryIcon size={16} className="mr-2" />
                   History
                 </TabsTrigger>
@@ -605,7 +660,7 @@ export const VersionControlEditor: React.FC<{
           </div>
 
           <div className="min-h-0 flex-grow w-96">
-            {sidebarMode === "timeline" && (
+            {sidebarMode === "history" && (
               <TimelineSidebar
                 // set key to trigger re-mount on branch change
                 key={selectedBranch?.url ?? mainDocUrl}
@@ -617,25 +672,18 @@ export const VersionControlEditor: React.FC<{
                 setSelectedBranch={setSelectedBranch}
               />
             )}
-            {sidebarMode === "comments" && (
+            {sidebarMode === "review" && (
               <ReviewSidebar
                 doc={activeDoc}
                 handle={activeHandle}
-                dataType={dataType}
+                tool={tool}
                 annotationGroups={annotationGroups}
                 selectedAnchors={selectedAnchors}
-                changeDoc={activeChangeDoc}
-                onChangeCommentPositionMap={(positions) => {
-                  // todo: without this condition there is an infinite loop
-                  if (!isEqual(positions, annotationsPositionsInSidebarMap)) {
-                    setAnnotationsPositionsInSidebarMap(positions);
-                  }
-                }}
-                hoveredAnnotationGroupId={hoveredAnnotationGroupId}
                 setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
                 setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
                 isCommentInputFocused={isCommentInputFocused}
                 setIsCommentInputFocused={setIsCommentInputFocused}
+                setCommentState={setCommentState}
               />
             )}
           </div>
@@ -645,8 +693,7 @@ export const VersionControlEditor: React.FC<{
   );
 };
 
-export interface EditorPropsWithDatatype<T, V> extends EditorProps<T, V> {
-  datatypeId: DatatypeId;
+export interface EditorPropsWithTool<T, V> extends EditorProps<T, V> {
   tool: Tool;
 }
 
@@ -656,10 +703,15 @@ const DocEditor = <T, V>({
   docUrl,
   docHeads,
   annotations,
+  annotationGroups,
   actorIdToAuthor,
+  hideInlineComments,
   setSelectedAnchors,
   setHoveredAnchor,
-}: EditorPropsWithDatatype<T, V>) => {
+  setSelectedAnnotationGroupId,
+  setHoveredAnnotationGroupId,
+  setCommentState,
+}: EditorPropsWithTool<T, V>) => {
   if (!tool) {
     return;
   }
@@ -671,45 +723,49 @@ const DocEditor = <T, V>({
       docUrl={docUrl}
       docHeads={docHeads}
       annotations={annotations}
+      annotationGroups={annotationGroups}
       actorIdToAuthor={actorIdToAuthor}
+      hideInlineComments={hideInlineComments}
       setSelectedAnchors={setSelectedAnchors}
       setHoveredAnchor={setHoveredAnchor}
+      setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+      setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+      setCommentState={setCommentState}
     />
   );
 };
 
-export interface SideBySideProps<T, V> extends EditorPropsWithDatatype<T, V> {
+export interface SideBySideProps<T, V> extends EditorPropsWithTool<T, V> {
   mainDocUrl: AutomergeUrl;
 }
 
 export const SideBySide = <T, V>(props: SideBySideProps<T, V>) => {
-  switch (props.datatypeId) {
-    case "tldraw": {
-      return <TLDrawSideBySide {...props} />;
-    }
+  // special side-by-side view for tldraw with scroll linking
+  // todo: add back once modules is gone
+  /* if (props.tool.id === "tldraw") {
+    return <TLDrawSideBySide {...props} />;
+  }*/
 
-    default: {
-      const { mainDocUrl } = props;
+  const { mainDocUrl } = props;
 
-      return (
-        <div className="flex h-full w-full">
-          <div className="h-full flex-1 overflow-auto">
-            {
-              <DocEditor
-                {...props}
-                docUrl={mainDocUrl}
-                docHeads={undefined}
-                annotations={[]}
-              />
-            }
-          </div>
-          <div className="h-full flex-1 overflow-auto">
-            {<DocEditor {...props} />}
-          </div>
-        </div>
-      );
-    }
-  }
+  return (
+    <div className="flex h-full w-full">
+      <div className="h-full flex-1 overflow-auto bg-gray-200">
+        {
+          <DocEditor
+            {...props}
+            docUrl={mainDocUrl}
+            docHeads={undefined}
+            annotations={[]}
+            annotationGroups={[]}
+          />
+        }
+      </div>
+      <div className="h-full flex-1 overflow-auto">
+        {<DocEditor {...props} />}
+      </div>
+    </div>
+  );
 };
 
 const BranchActions: React.FC<{
@@ -737,6 +793,7 @@ const BranchActions: React.FC<{
   const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
 
   // compute new name suggestions anytime the branch heads change
+  // todo: seems like this should run outside of the react UI...
   useEffect(() => {
     if (!dropdownOpen || !doc || !branchDoc) return;
     if (!isMarkdownDoc(doc) || !isMarkdownDoc(branchDoc)) {

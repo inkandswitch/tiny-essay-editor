@@ -190,7 +190,7 @@ export const getMarkersForDoc = <
   let markers: HeadsMarker<T>[] = [];
 
   const discussions = Object.values(doc.discussions ?? {})
-    .filter((d) => !d.anchors)
+    .filter((d) => !d.anchors || d.anchors.length === 0)
     .map((discussion) => ({
       type: "discussionThread" as const,
       id: `discussion-${discussion.id}`,

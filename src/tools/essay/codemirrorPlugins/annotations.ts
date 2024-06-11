@@ -8,7 +8,8 @@ export const setAnnotationsEffect =
   StateEffect.define<
     AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
   >();
-export const annotationsField = StateField.define<
+
+const annotationsField = StateField.define<
   AnnotationWithUIState<ResolvedMarkdownDocAnchor, string>[]
 >({
   create() {
@@ -23,6 +24,7 @@ export const annotationsField = StateField.define<
     return patches;
   },
 });
+
 class DeletionMarker extends WidgetType {
   deletedText: string;
   isActive: boolean;
@@ -101,7 +103,7 @@ const makeDeleteDecoration = (deletedText: string, isActive: boolean) =>
     side: 1,
   });
 
-export const annotationDecorations = EditorView.decorations.compute(
+const annotationDecorations = EditorView.decorations.compute(
   [annotationsField],
   (state) => {
     const annotations = state.field(annotationsField);
@@ -154,3 +156,5 @@ export const annotationDecorations = EditorView.decorations.compute(
     return Decoration.set(decorations, true);
   }
 );
+
+export const annotationsPlugin = [annotationDecorations, annotationsField];

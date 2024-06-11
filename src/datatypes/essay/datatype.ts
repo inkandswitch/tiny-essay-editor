@@ -1,3 +1,4 @@
+import { AssetsDoc } from "@/os/assets";
 import { DataTypeWitoutMetaData } from "@/os/datatypes";
 import { FileExportMethod } from "@/os/fileExports";
 import { DecodedChangeWithMetadata } from "@/os/versionControl/groupChanges";
@@ -14,7 +15,6 @@ import { next as A } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
-import { AssetsDoc } from "../../tools/essay/assets";
 import { MarkdownDoc, MarkdownDocAnchor } from "./schema";
 
 import JSZip from "jszip";
@@ -238,6 +238,12 @@ export const patchesToAnnotations = (
 const valueOfAnchor = (doc: MarkdownDoc, anchor: MarkdownDocAnchor) => {
   const from = getCursorPositionSafely(doc, ["content"], anchor.fromCursor);
   const to = getCursorPositionSafely(doc, ["content"], anchor.toCursor);
+
+  // if the anchor points to an empty range return undefined
+  // so highlight comments that point to this will be filtered out
+  if (from === to) {
+    return undefined;
+  }
 
   return doc.content.slice(from, to);
 };

@@ -5,4 +5,5 @@ import { EssayAnnotations } from "./components/EssayAnnotations";
 export const EssayEditorTool: Tool = {
   editorComponent: EssayEditor,
   annotationViewComponent: EssayAnnotations,
-};
+  supportsInlineComments: true,
+} as Tool;

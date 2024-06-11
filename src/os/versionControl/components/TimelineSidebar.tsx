@@ -1,28 +1,28 @@
 import { AutomergeUrl } from "@automerge/automerge-repo";
-import CodeMirror from "@uiw/react-codemirror";
 import {
   useDocument,
   useHandle,
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
-import React, { useEffect, useMemo, useRef, ReactNode, useState } from "react";
+import React, { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
-  TimelineItems,
   GenericChangeGroup,
+  TimelineItems,
   groupingByEditTime,
 } from "../groupChanges";
 
+import { InlineContactAvatar } from "@/os/explorer/components/InlineContactAvatar";
+import { useSlots } from "@/os/versionControl/utils";
+import { Heads } from "@automerge/automerge/next";
 import {
-  MilestoneIcon,
+  ChevronLeftIcon,
+  CrownIcon,
   GitBranchIcon,
   GitBranchPlusIcon,
-  CrownIcon,
-  ChevronLeftIcon,
-  PencilIcon,
+  MilestoneIcon,
   MoreVerticalIcon,
+  PencilIcon,
 } from "lucide-react";
-import { Heads } from "@automerge/automerge/next";
-import { InlineContactAvatar } from "@/os/explorer/components/InlineContactAvatar";
 import {
   Branch,
   DiffWithProvenance,
@@ -31,25 +31,24 @@ import {
   HasVersionControlMetadata,
   Tag,
 } from "../schema";
-import { useSlots } from "@/os/versionControl/utils";
 
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
-import { EditorView } from "@codemirror/view";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DiscussionInput } from "./DiscussionInput";
 import {
   populateChangeGroupSummaries,
   useAutoPopulateChangeGroupSummaries,
 } from "@/os/versionControl/changeGroupSummaries";
+import { DiscussionInput } from "./DiscussionInput";
 
 import { DataType } from "@/os/datatypes";
 import { ChangeGroupingOptions } from "../groupChanges";
+import { MarkdownInput } from "@/os/lib/markdown";
+import { HasAssets } from "@/os/assets";
+import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGrouper } from "../ChangeGrouper";
 
 const useScrollToBottom = (doc) => {
@@ -349,6 +348,7 @@ export const TimelineSidebar: React.FC<{
                         return (
                           <DiscussionThreadItem
                             discussion={item.discussion}
+                            docWithAssetsHandle={handle}
                             selected={selected}
                           />
                         );
@@ -461,12 +461,9 @@ export const TimelineSidebar: React.FC<{
       <div className="bg-gray-50 z-10">
         <DiscussionInput
           doc={doc}
-          changeDoc={changeDoc}
+          handle={handle}
           changelogItems={changelogItems}
           changelogSelection={selection}
-          handle={handle}
-          selectedBranch={selectedBranch}
-          setSelectedBranch={setSelectedBranch}
         />
       </div>
     </div>
@@ -788,7 +785,9 @@ const BranchOriginItem = ({
 // We only show the first comment in the thread (replying isn't supported yet)
 const DiscussionThreadItem = ({
   discussion,
+  docWithAssetsHandle,
 }: {
+  docWithAssetsHandle: DocHandle<HasAssets>;
   discussion: Discussion<unknown>;
   selected: boolean;
 }) => {
@@ -803,41 +802,9 @@ const DiscussionThreadItem = ({
         />
       </div>
       <div className="font-normal text-gray-800 -ml-1 -my-1">
-        {/* We use a readonly Codemirror to show markdown preview for comments
-                                        using the same style that was used for entering the comment */}
-        <CodeMirror
+        <MarkdownInput
           value={comment.content.trim()}
-          readOnly
-          editable={false}
-          basicSetup={{
-            foldGutter: false,
-            highlightActiveLine: false,
-            lineNumbers: false,
-          }}
-          extensions={[
-            markdown({
-              base: markdownLanguage,
-              codeLanguages: languages,
-            }),
-            EditorView.lineWrapping,
-          ]}
-          theme={EditorView.theme({
-            "&.cm-editor": {
-              height: "100%",
-            },
-            "&.cm-focused": {
-              outline: "none",
-            },
-            ".cm-scroller": {
-              height: "100%",
-            },
-            ".cm-content": {
-              height: "100%",
-              fontSize: "12px",
-              fontFamily: "monospace",
-              fontWeight: "normal",
-            },
-          })}
+          docWithAssetsHandle={docWithAssetsHandle}
         />
       </div>
     </div>
