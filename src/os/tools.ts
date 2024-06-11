@@ -1,22 +1,19 @@
 import * as A from "@automerge/automerge/next";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 
 import {
   Annotation,
-  AnnotationWithUIState,
   AnnotationGroupWithUIState,
+  AnnotationWithUIState,
   CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import {
-  AutomergeUrl,
-  DocHandle,
-  parseAutomergeUrl,
-} from "@automerge/automerge-repo";
-import { useRootFolderDocWithChildren } from "./explorer/account";
 import { DocLink } from "@/packages/folder";
+import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { DataType } from "./datatypes";
+import { useRootFolderDocWithChildren } from "./explorer/account";
+import { PACKAGES } from "@/packages";
 
 export type Tool = {
   type: "patchwork:tool";
@@ -65,22 +62,23 @@ export type AnnotationsViewProps<
   annotations: Annotation<T, V>[];
 };
 
-// todo: remove export and use hook instead everywhere
-export const TOOLS: ToolWithId[] = [];
+const isTool = (value: any): value is Tool => {
+  return "type" in value && value.type === "patchwork:tool";
+};
 
-/* const toolsFolder: Record<string, { default: Module<ToolMetaData, Tool> }> =
- 
-for (const [path, { default: module }] of Object.entries(toolsFolder)) {
-  const id = path.split("/")[2];
+const TOOLS: ToolWithId[] = [];
 
-  if (id !== module.metadata.id) {
-    throw new Error(
-      `Can't load tool: id "${module.metadata.id}" does not match the folder name "${id}"`
-    );
+for (const [path, module] of Object.entries(PACKAGES)) {
+  const id = path.split("/")[1];
+
+  for (const [key, value] of Object.entries(module)) {
+    if (isTool(value)) {
+      TOOLS.push({ ...value, id: `${id}/${key}` });
+    }
   }
+}
 
-  TOOLS.push(module);
-}*/
+console.log({ TOOLS });
 
 export const useTools = (): ToolWithId[] => {
   const [dynamicModules, setDynamicModules] = useState([]);
