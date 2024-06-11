@@ -254,7 +254,7 @@ export const AnnotationGroupView = forwardRef<
                 : ""
             }`}
           >
-            {!hideAnnotations && (
+            {(!hideAnnotations || !annotationGroup.discussion) && (
               <AnnotationsView
                 doc={doc}
                 handle={handle}
@@ -287,7 +287,6 @@ export const AnnotationGroupView = forwardRef<
                 />
               ))}
             </div>
-
             {annotationGroup.comment?.type === "create" && (
               <DiscussionCommentView
                 contactUrl={account?.contactHandle.url}
