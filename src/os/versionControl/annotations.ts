@@ -194,7 +194,7 @@ export function useAnnotations({
 
       editAnnotations.forEach((editAnnotation) => {
         if (
-          discussion.anchors.some((anchor) =>
+          discussion.anchors?.some((anchor) =>
             doAnchorsOverlap(datatypeId, editAnnotation.anchor, anchor, doc)
           )
         ) {
