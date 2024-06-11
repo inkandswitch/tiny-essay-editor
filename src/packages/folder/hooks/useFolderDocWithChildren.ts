@@ -4,7 +4,7 @@ import {
   DocLinkWithFolderPath,
   FolderDoc,
   FolderDocWithChildren,
-} from "../schema";
+} from "../datatype";
 import { useDocumentWithLinks } from "./useDocumentWithLinks";
 
 export type FolderDocWithMetadata = {

@@ -23,7 +23,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/packages/folder";
-import { DatatypeId, useDataTypeModules } from "../../datatypes";
+import { DatatypeId, useDataType, useDataTypes } from "../../datatypes";
 
 import {
   Popover,
@@ -45,7 +45,7 @@ import {
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
-  const datatypeModules = useDataTypeModules();
+  const dataType = useDataType(node.data.type);
   let Icon;
 
   if (node.data.type === "folder") {
@@ -55,7 +55,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       Icon = ChevronRight;
     }
   } else {
-    Icon = datatypeModules[node.data.type]?.metadata.icon ?? FileQuestionIcon;
+    Icon = dataType?.icon ?? FileQuestionIcon;
   }
 
   return (
@@ -85,9 +85,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       {!node.isEditing && (
         <>
           <div>
-            {datatypeModules[node.data.type]
-              ? node.data.name
-              : `Unknown type: ${node.data.type}`}
+            {dataType ? dataType.name : `Unknown type: ${node.data.type}`}
           </div>
           {node.data.type === "folder" && (
             <div className="ml-2 text-gray-500 text-xs py-0.5 px-1.5 rounded-lg bg-gray-200">
@@ -165,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   rootFolderDoc,
 }) => {
   const repo = useRepo();
-  const datatypeModules = useDataTypeModules();
+  const dataTypes = useDataTypes();
   const {
     doc: rootFolderDocWithChildren,
     status,
@@ -243,15 +241,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const treeSelection = selectedDocLink ? idAccessor(selectedDocLink) : null;
 
-  const onRename = async ({ node, name }) => {
+  const onRename = ({ node, name }) => {
     const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
-    const datatypeModule = datatypeModules[docLink.type];
-    const datatype = await datatypeModule.load();
+    const dataType = dataTypes[docLink.type];
 
-    if (!datatype.setTitle) {
+    if (!dataType.setTitle) {
       alert(
         `${capitalize(
-          datatype.name
+          dataType.name
         )} documents can only be renamed in the main editor, not the sidebar.`
       );
       return;
@@ -277,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       docLink.url
     );
     docHandle.change((doc) => {
-      datatype.setTitle(doc, name);
+      dataType.setTitle(doc, name);
     });
 
     selectDocLink({ ...selectedDocLink, name });
@@ -339,28 +336,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.values(datatypeModules).map((datatypeModule) => {
-          const { id } = datatypeModule.metadata;
+        {Object.values(dataTypes).map((dataType) => {
+          const { id } = dataType;
           const isEnabled = datatypeSettings?.enabledDatatypeIds[id];
           if (
             isEnabled == false ||
-            (isEnabled !== true && datatypeModule.metadata.isExperimental)
+            (isEnabled !== true && dataType.isExperimental)
           ) {
             return;
           }
 
           return (
-            <div key={datatypeModule.metadata.id}>
+            <div key={dataType.id}>
               {" "}
               <div
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
                 onClick={() => addNewDocument({ type: id as DatatypeId })}
               >
-                <datatypeModule.metadata.icon
+                <dataType.icon
                   size={14}
                   className="inline-block font-bold mr-2 align-top mt-[2px]"
                 />
-                New {datatypeModule.metadata.name}
+                New {dataType.name}
               </div>
             </div>
           );

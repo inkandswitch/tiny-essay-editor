@@ -1,7 +1,5 @@
-import * as A from "@automerge/automerge/next";
-
-import { KanbanBoardDoc, KanbanBoardDocAnchor } from "@/packages/kanban";
-
+import { next as A } from "@automerge/automerge";
+import { KanbanBoardDoc, KanbanBoardDocAnchor } from "./datatype";
 import { EditorProps, Tool } from "@/os/tools";
 import { useDocumentWithActions } from "@/packages/kanban/useDocumentWithActions";
 import { useMemo } from "react";

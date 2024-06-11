@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { DatatypeId, useDataType, useDataTypes } from "@/os/datatypes";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -12,7 +13,6 @@ import {
   useCurrentAccountDoc,
   useRootFolderDocWithChildren,
 } from "../account";
-import { DatatypeId, useDataTypeModules } from "@/os/datatypes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "./LoadingScreen";
@@ -22,16 +22,16 @@ import { Topbar } from "./Topbar";
 import { VersionControlEditor } from "@/os/versionControl/components/VersionControlEditor";
 import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 
+import { useModule } from "@/os/modules";
+import { useTool, useTools, useToolsForDataType } from "@/os/tools";
 import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 import { ErrorFallback } from "./ErrorFallback";
-import { Module, useModule } from "@/os/modules";
-import { ToolMetaData, Tool, useToolModulesForDataType } from "@/os/tools";
 
 export const Explorer: React.FC = () => {
   const repo = useRepo();
-  const datatypeModules = useDataTypeModules();
+  const dataTypes = useDataTypes();
   const currentAccount = useCurrentAccount();
   const [accountDoc] = useCurrentAccountDoc();
 
@@ -52,7 +52,7 @@ export const Explorer: React.FC = () => {
     useDocument<HasVersionControlMetadata<unknown, unknown>>(selectedDocUrl);
 
   const selectedDocName = selectedDocLink?.name;
-  const selectedDataType = selectedDocLink?.type;
+  const selectedDataTypeId = selectedDocLink?.type;
   const selectedBranchUrl = selectedDocLink?.branchUrl;
 
   const selectedBranch = useMemo<Branch>(() => {
@@ -65,38 +65,34 @@ export const Explorer: React.FC = () => {
     );
   }, [selectedBranchUrl, selectedDoc]);
 
-  const [selectedToolModuleId, setSelectedToolModuleId] = useState<string>();
+  const tools = useTools();
+  const [selectedToolId, setSelectedToolId] = useState<string>();
+  const selectedDataType = useDataType(selectedDataTypeId);
+  const toolModules = useToolsForDataType(selectedDataType);
+  const selectedTool = useTool(selectedToolId);
 
-  const toolModules = useToolModulesForDataType(selectedDataType);
-  const selectedToolModule = toolModules.find(
-    (module) => module.metadata.id === selectedToolModuleId
-  );
-
-  const currentToolModule =
+  const currentTool =
     // make sure the current tool is reset to the fallback tool
     // if the selected datatype changes and the selected tool is not compatible
-    selectedToolModule &&
-    selectedToolModule.metadata.supportedDatatypes.some(
+    selectedTool &&
+    selectedTool.supportedDatatypes.some(
       (supportedDataType) =>
         supportedDataType === selectedDataType || supportedDataType === "*"
     )
-      ? selectedToolModule
+      ? selectedTool
       : toolModules[0];
-
-  const currentTool = useModule(currentToolModule);
 
   const addNewDocument = useCallback(
     async ({ type }: { type: DatatypeId }) => {
-      const datatypeModule = datatypeModules[type];
+      const dataType = dataTypes[type];
 
-      if (!datatypeModule) {
+      if (!dataType) {
         throw new Error(`Unsupported document type: ${type}`);
       }
-      const datatype = await datatypeModule.load();
 
       const newDocHandle =
         repo.create<HasVersionControlMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => datatype.init(doc, repo));
+      newDocHandle.change((doc) => dataType.init(doc, repo));
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];
@@ -240,9 +236,9 @@ export const Explorer: React.FC = () => {
               selectedDocHandle={selectedDocHandle}
               removeDocLink={removeDocLink}
               addNewDocument={addNewDocument}
-              toolModuleId={currentToolModule?.metadata.id}
-              setToolModuleId={setSelectedToolModuleId}
-              toolModules={toolModules}
+              setToolId={setSelectedToolId}
+              tool={currentTool}
+              tools={tools}
             />
             <div className="flex-grow overflow-hidden z-0">
               {!selectedDocUrl && (

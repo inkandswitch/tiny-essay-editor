@@ -1,6 +1,6 @@
-import { MarkdownDoc, MarkdownDocAnchor } from "../../../packages/essay/schema";
 import { truncate } from "lodash";
 import { AnnotationsViewProps } from "@/os/tools";
+import { MarkdownDoc, MarkdownDocAnchor } from "../datatype";
 
 export const EssayAnnotations = ({
   annotations,

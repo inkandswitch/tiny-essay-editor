@@ -8,7 +8,7 @@ import {
   TLShapeId,
   TLStoreWithStatus,
 } from "@tldraw/tldraw";
-import { TLDrawDoc, TLDrawDocAnchor } from "../../../packages/tldraw/schema";
+import { TLDrawDoc, TLDrawDocAnchor } from "../datatype";
 
 export const useCameraSync = ({
   camera: camera,

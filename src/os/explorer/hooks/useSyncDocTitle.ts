@@ -1,5 +1,5 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useDataTypeModules } from "../../datatypes";
+import { useDataTypes } from "../../datatypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -26,7 +26,7 @@ export const useSyncDocTitle = ({
   const counterRef = useRef(0);
   const selectedDocTitleRef = useRef<{ url: AutomergeUrl; title?: string }>();
 
-  const dataTypeModule = useDataTypeModules();
+  const dataTypeModule = useDataTypes();
 
   useEffect(() => {
     if (!selectedDocLink || !selectedDoc) {

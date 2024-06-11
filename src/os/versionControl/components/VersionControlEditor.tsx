@@ -1,5 +1,3 @@
-import { useCurrentAccount } from "@/os/explorer/account";
-import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,19 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ErrorBoundary } from "react-error-boundary";
-import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isMarkdownDoc } from "@/packages/essay";
 import { DatatypeId, useDataType } from "@/os/datatypes";
+import { useCurrentAccount } from "@/os/explorer/account";
+import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
+import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { getRelativeTimeString } from "@/os/lib/dates";
-import {
-  EditorProps,
-  Tool,
-  ToolMetaData,
-  useToolModulesForDataType,
-} from "@/os/tools";
-import { SideBySide as TLDrawSideBySide } from "@/tools/tldraw/components/TLDraw";
+import { isLLMActive } from "@/os/lib/llm";
+import { EditorProps, Tool } from "@/os/tools";
+import { isMarkdownDoc } from "@/packages/essay";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -40,7 +34,7 @@ import {
   useRepo,
 } from "@automerge/automerge-repo-react-hooks";
 import * as A from "@automerge/automerge/next";
-import { isEqual, truncate } from "lodash";
+import { truncate } from "lodash";
 import {
   ChevronsRight,
   CrownIcon,
@@ -58,6 +52,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { useAnnotations } from "../annotations";
 import {
@@ -76,9 +71,8 @@ import {
   diffWithProvenance,
   useActorIdToAuthorMap,
 } from "../utils";
-import { PositionMap, ReviewSidebar } from "./ReviewSidebar";
+import { ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
-import { isLLMActive } from "@/os/lib/llm";
 
 interface MakeBranchOptions {
   name?: string;

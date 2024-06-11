@@ -4,11 +4,6 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 
-import {
-  MarkdownDoc,
-  MarkdownDocAnchor,
-  ResolvedMarkdownDocAnchor,
-} from "@/packages/essay";
 import { theme, useMarkdownPlugins } from "@/os/lib/markdown";
 import { automergeSyncPlugin } from "@automerge/automerge-codemirror";
 import { type DocHandle } from "@automerge/automerge-repo";
@@ -24,6 +19,11 @@ import { tableOfContentsPreviewPlugin } from "../codemirrorPlugins/tableOfConten
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { isEqual } from "lodash";
 import { clickableMarkdownLinksPlugin } from "../codemirrorPlugins/clickableMarkdownLinks";
+import {
+  MarkdownDoc,
+  MarkdownDocAnchor,
+  ResolvedMarkdownDocAnchor,
+} from "../datatype";
 
 export type TextSelection = {
   from: number;

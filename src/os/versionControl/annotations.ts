@@ -1,19 +1,19 @@
-import { useState, useMemo, useRef } from "react";
-import * as A from "@automerge/automerge/next";
-import { isEqual, sortBy, min } from "lodash";
+import { DataType } from "@/os/datatypes";
 import { useStaticCallback } from "@/os/hooks/useStaticCallback";
-import { DataType, DatatypeId, useDataTypeModules } from "@/os/datatypes";
+import * as A from "@automerge/automerge/next";
+import { isEqual, min, sortBy } from "lodash";
+import { useMemo, useState } from "react";
 import {
   Annotation,
-  HighlightAnnotation,
   AnnotationGroup,
   AnnotationGroupWithUIState,
   AnnotationWithUIState,
+  CommentState,
   DiffWithProvenance,
   Discussion,
-  CommentState,
+  HasVersionControlMetadata,
+  HighlightAnnotation,
 } from "./schema";
-import { HasVersionControlMetadata } from "./schema";
 
 type HoverAnchorState<T> = {
   type: "anchor";

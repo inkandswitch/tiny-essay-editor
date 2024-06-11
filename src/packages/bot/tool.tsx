@@ -69,7 +69,6 @@ export const botEditorTool: Tool = {
   type: "patchwork:tool",
   name: "Bot",
   icon: Bot,
-  isExperimental: true,
   editorComponent: BotEditor,
   supportedDatatypes: [essayEditingBotDatatype],
 };

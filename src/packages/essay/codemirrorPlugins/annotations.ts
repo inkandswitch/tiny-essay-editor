@@ -2,7 +2,7 @@ import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 
 import { AnnotationWithUIState } from "@/os/versionControl/schema";
-import { ResolvedMarkdownDocAnchor } from "../../../packages/essay/schema";
+import { ResolvedMarkdownDocAnchor } from "../datatype";
 
 export const setAnnotationsEffect =
   StateEffect.define<

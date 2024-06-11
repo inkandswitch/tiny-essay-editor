@@ -7,7 +7,7 @@ import {
   MarkdownDoc,
   MarkdownDocAnchor,
   ResolvedMarkdownDocAnchor,
-} from "@/packages/essay";
+} from "../datatype";
 import { useEffect, useMemo, useState } from "react";
 
 import { EditorView } from "@codemirror/view";
@@ -19,7 +19,8 @@ import { AnnotationWithUIState } from "@/os/versionControl/schema";
 import { getCursorPositionSafely } from "@/os/versionControl/utils";
 import { isEqual, uniq } from "lodash";
 import "../index.css";
-import { useAnnotationGroupsWithPosition } from "../utils copy";
+
+import { useAnnotationGroupsWithPosition } from "../utils";
 import { CommentsSidebar } from "./CommentsSidebar";
 
 export const EssayEditor = (props: EditorProps<MarkdownDocAnchor, string>) => {

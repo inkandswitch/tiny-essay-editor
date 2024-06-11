@@ -44,12 +44,12 @@ import {
 } from "@/os/versionControl/changeGroupSummaries";
 import { DiscussionInput } from "./DiscussionInput";
 
-import { DataType } from "@/os/datatypes";
-import { ChangeGroupingOptions } from "../groupChanges";
-import { MarkdownInput } from "@/os/lib/markdown";
 import { HasAssets } from "@/os/assets";
+import { DataType, DataTypeWithId } from "@/os/datatypes";
+import { MarkdownInput } from "@/os/lib/markdown";
 import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGrouper } from "../ChangeGrouper";
+import { ChangeGroupingOptions } from "../groupChanges";
 
 const useScrollToBottom = (doc) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ export type ChangelogSelection =
   | undefined;
 
 export const TimelineSidebar: React.FC<{
-  dataType: DataType<unknown, unknown, unknown>;
+  dataType: DataTypeWithId<unknown, unknown, unknown>;
   docUrl: AutomergeUrl;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;

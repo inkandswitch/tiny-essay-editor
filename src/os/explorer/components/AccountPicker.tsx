@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
-import { useDataTypeModules } from "@/os/datatypes";
+import { useDataTypes } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // 1MB in bytes
@@ -56,7 +56,7 @@ export const AccountPicker = ({
   const currentAccount = useCurrentAccount();
 
   const self = useSelf();
-  const datatypeModules = useDataTypeModules();
+  const dataTypes = useDataTypes();
   const [name, setName] = useState<string>("");
   const [avatar, setAvatar] = useState<File>();
   const [activeTab, setActiveTab] = useState<AccountPickerTab>(
@@ -323,44 +323,40 @@ export const AccountPicker = ({
 
               <div className="flex flex-col gap-2 py-2">
                 {moduleSettingsDoc &&
-                  Object.values(datatypeModules).map((datatypeModule) => {
+                  Object.values(dataTypes).map((dataType) => {
                     const isEnabled =
-                      moduleSettingsDoc.enabledDatatypeIds[
-                        datatypeModule.metadata.id
-                      ];
+                      moduleSettingsDoc.enabledDatatypeIds[dataType.id];
 
                     const isChecked =
                       isEnabled ||
-                      (isEnabled === undefined &&
-                        !datatypeModule.metadata.isExperimental);
+                      (isEnabled === undefined && !dataType.isExperimental);
 
                     return (
                       <div
                         className="flex items-center gap-2"
-                        key={datatypeModule.metadata.id}
+                        key={dataType.id}
                       >
                         <Checkbox
-                          id={`datatype-${datatypeModule.metadata.id}`}
+                          id={`datatype-${dataType.id}`}
                           checked={isChecked}
                           onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => {
                             changeModuleSettingsDoc((settings) => {
-                              settings.enabledDatatypeIds[
-                                datatypeModule.metadata.id
-                              ] = !isChecked;
+                              settings.enabledDatatypeIds[dataType.id] =
+                                !isChecked;
                             });
                           }}
                         />
                         <label
-                          htmlFor={`datatype-${datatypeModule.metadata.id}`}
+                          htmlFor={`datatype-${dataType.id}`}
                           className="text-sm text-gray-600 cursor-pointer "
                         >
-                          <datatypeModule.metadata.icon
+                          <dataType.icon
                             size={14}
                             className="inline-block font-bold mr-2 align-top mt-[2px]"
                           />
-                          {datatypeModule.metadata.name}
-                          {datatypeModule.metadata.isExperimental ? " 🧪" : ""}
+                          {dataType.name}
+                          {dataType.isExperimental ? " 🧪" : ""}
                         </label>
                       </div>
                     );

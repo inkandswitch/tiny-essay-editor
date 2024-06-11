@@ -24,7 +24,7 @@ import {
 
 import { applyAutomergePatchesToTLStore } from "./AutomergeToTLStore";
 import { applyTLStoreChangesToAutomerge } from "./TLStoreToAutomerge";
-import { TLDrawDoc } from "../../../../packages/tldraw/schema";
+import { TLDrawDoc } from "../../datatype";
 
 export function useAutomergeStore({
   handle,

@@ -14,10 +14,8 @@ import {
   parseAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useRootFolderDocWithChildren } from "./explorer/account";
-import { Module } from "./modules";
 import { DocLink } from "@/packages/folder";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { ModuleDoc } from "@/packages/package";
 import { DataType } from "./datatypes";
 
 export type Tool = {
@@ -37,6 +35,8 @@ export type Tool = {
    * relies exclusively on the review sidebar to show comments */
   supportsInlineComments?: boolean;
 };
+
+export type ToolWithId = Tool & { id: string };
 
 export type EditorProps<T, V> = {
   docUrl: AutomergeUrl;
@@ -66,13 +66,10 @@ export type AnnotationsViewProps<
 };
 
 // todo: remove export and use hook instead everywhere
-export const TOOLS: Module<ToolMetaData, Tool>[] = [];
+export const TOOLS: ToolWithId[] = [];
 
-const toolsFolder: Record<string, { default: Module<ToolMetaData, Tool> }> =
-  import.meta.glob("../tools/*/module.@(ts|js|tsx|jsx)", {
-    eager: true,
-  });
-
+/* const toolsFolder: Record<string, { default: Module<ToolMetaData, Tool> }> =
+ 
 for (const [path, { default: module }] of Object.entries(toolsFolder)) {
   const id = path.split("/")[2];
 
@@ -83,9 +80,9 @@ for (const [path, { default: module }] of Object.entries(toolsFolder)) {
   }
 
   TOOLS.push(module);
-}
+}*/
 
-export const useToolModules = () => {
+export const useTools = (): ToolWithId[] => {
   const [dynamicModules, setDynamicModules] = useState([]);
   const repo = useRepo();
 
@@ -100,7 +97,8 @@ export const useToolModules = () => {
   const moduleDocLinksRef = useRef<DocLink[]>();
   moduleDocLinksRef.current = moduleDocLinks;
 
-  useEffect(() => {
+  // todo: adapt
+  /* useEffect(() => {
     Promise.all(
       moduleDocLinks.map(async ({ url }) => {
         const moduleDoc = await repo.find<ModuleDoc>(url).doc();
@@ -128,22 +126,28 @@ export const useToolModules = () => {
 
       setDynamicModules(modules);
     });
-  }, [moduleDocLinks, repo]);
+  }, [moduleDocLinks, repo]); */
 
   return TOOLS.concat(dynamicModules);
 };
 
-export const useToolModulesForDataType = (dataTypeId: string) => {
-  const toolModules = useToolModules();
+export const useToolsForDataType = (
+  dataType: DataType<unknown, unknown, unknown>
+): ToolWithId[] => {
+  const tools = useTools();
 
   return useMemo(
     () =>
-      toolModules.filter(
+      tools.filter(
         (tool) =>
-          tool?.metadata &&
-          (tool.metadata.supportedDatatypes.includes(dataTypeId) ||
-            tool.metadata.supportedDatatypes.includes("*"))
+          tool.supportedDatatypes.includes(dataType) ||
+          tool.supportedDatatypes.includes("*")
       ),
-    [toolModules, dataTypeId]
+    [tools, dataType]
   );
+};
+
+export const useTool = (id: string): ToolWithId => {
+  const tools = useTools();
+  return tools.find((tool) => tool.id === id);
 };

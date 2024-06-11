@@ -9,7 +9,6 @@ import { Repo } from "@automerge/automerge-repo";
 
 // datatypes
 import { FileExportMethod } from "./fileExports";
-import { Module, useModule } from "./modules";
 
 export type CoreDataType<D> = {
   type: "patchwork:datatype";
@@ -102,41 +101,21 @@ export type VersionedDataType<D, T, V> = {
 
 export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
-const dataTypesFolder: Record<
-  string,
-  { default: Module<DataTypeMetadata, DataType<unknown, unknown, unknown>> }
-> = import.meta.glob("../datatypes/*/module.@(ts|js|tsx|jsx)", {
-  eager: true,
-});
+export type DataTypeWithId<D, T, V> = DataType<D, T, V> & { id: string };
 
-const DATA_TYPE_MODULES: Record<
-  string,
-  Module<DataTypeMetadata, DataType<unknown, unknown, unknown>>
-> = {};
+const DATA_TYPES: DataTypeWithId<unknown, unknown, unknown>[] = [];
 
-for (const [path, { default: module }] of Object.entries(dataTypesFolder)) {
-  const id = path.split("/")[2];
-
-  if (id !== module.metadata.id) {
-    throw new Error(
-      `Can't load datatype: id "${module.metadata.id}" does not match the folder name "${id}" `
-    );
-  }
-
-  DATA_TYPE_MODULES[id] = module;
-}
-
-export const useDataTypeModules = () => {
-  return DATA_TYPE_MODULES;
+export const useDataTypes = () => {
+  return DATA_TYPES;
 };
 
 export const useDataType = <D, T, V>(
-  dataTypeId: DatatypeId
-): DataType<D, T, V> | undefined => {
-  const dataTypeModules = useDataTypeModules();
-  const dataType = useModule(dataTypeModules[dataTypeId]);
-
-  return dataType as DataType<D, T, V>;
+  id: DatatypeId
+): DataTypeWithId<D, T, V> | undefined => {
+  const dataTypes = useDataTypes();
+  return dataTypes.find((dataType) => dataType.id == id) as
+    | DataTypeWithId<D, T, V>
+    | undefined;
 };
 
 export type DatatypeId = string;

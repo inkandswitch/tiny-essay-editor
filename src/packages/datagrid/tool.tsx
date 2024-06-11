@@ -107,5 +107,4 @@ export const dataGridTool: Tool = {
   icon: Sheet,
   supportedDatatypes: [dataGridDatatype],
   editorComponent: DataGrid,
-  isExperimental: true,
 };

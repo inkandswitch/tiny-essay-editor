@@ -2,7 +2,6 @@ import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { Doc, DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import {
-  Bot,
   BotIcon,
   Download,
   EditIcon,
@@ -12,7 +11,7 @@ import {
   ShareIcon,
   Trash2Icon,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { toast } from "sonner";
 import { saveFile } from "../utils";
 import { AccountPicker } from "./AccountPicker";
@@ -27,17 +26,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Button } from "@/components/ui/button";
-import { runBot } from "@/datatypes/bot/essayEditingBot";
-import { MarkdownDoc } from "@/packages/essay/schema";
-import { FileExportMethod, genericExportMethods } from "@/os/fileExports";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { genericExportMethods } from "@/os/fileExports";
+import { Tool, ToolWithId } from "@/os/tools";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
+import { runBot } from "@/packages/bot";
+import { MarkdownDoc } from "@/packages/essay";
 import { getHeads } from "@automerge/automerge";
-import { DatatypeId, useDataTypeModules } from "../../datatypes";
+import { DatatypeId, useDataType } from "../../datatypes";
 import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
 import { getUrlSafeName } from "../hooks/useSelectedDocLink";
-import { Module, useModule } from "@/os/modules";
-import { Tool, ToolMetaData, useToolModules } from "@/os/tools";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type TopbarProps = {
   showSidebar: boolean;
@@ -50,9 +48,9 @@ type TopbarProps = {
     | undefined;
   addNewDocument: (doc: { type: DatatypeId }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
-  toolModules: Module<ToolMetaData, Tool>[];
-  toolModuleId: string;
-  setToolModuleId: (id: string) => void;
+  tools: ToolWithId[];
+  tool: ToolWithId;
+  setToolId: (id: string) => void;
 };
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -62,9 +60,9 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedDocLink,
   selectedDoc,
   selectedDocHandle,
-  toolModules,
-  toolModuleId,
-  setToolModuleId,
+  tools,
+  tool,
+  setToolId: setToolModuleId,
   removeDocLink,
 }) => {
   const repo = useRepo();
@@ -76,27 +74,11 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const selectedDocUrl = selectedDocLink?.url;
   const selectedDocName = selectedDocLink?.name;
-  const selectedDataType = selectedDocLink?.type;
+  const selectedDataTypeId = selectedDocLink?.type;
   const selectedDataTypeRef = useRef<string>();
-  selectedDataTypeRef.current = selectedDataType;
+  selectedDataTypeRef.current = selectedDataTypeId;
 
-  const dataTypeModules = useDataTypeModules();
-  const selectedDataTypeModule = dataTypeModules[selectedDataType];
-
-  const [fileExportMethods, setFileExportMethods] = useState<
-    FileExportMethod<unknown>[]
-  >([]);
-  useEffect(() => {
-    if (!selectedDataTypeModule) {
-      setFileExportMethods([]);
-    } else {
-      selectedDataTypeModule.load().then((datatype) => {
-        if (datatype.id === selectedDataType) {
-          setFileExportMethods(datatype.fileExportMethods ?? []);
-        }
-      });
-    }
-  }, [selectedDataTypeModule]);
+  const selectedDataType = useDataType(selectedDataTypeId);
 
   const botDocLinks = flatDocLinks?.filter((doc) => doc.type === "bot") ?? [];
 
@@ -111,8 +93,8 @@ export const Topbar: React.FC<TopbarProps> = ({
         </div>
       )}
       <div className="ml-3 text-sm text-gray-700 font-bold">
-        {selectedDataTypeModule &&
-          React.createElement(selectedDataTypeModule.metadata.icon, {
+        {selectedDataType &&
+          React.createElement(selectedDataType.icon, {
             className: "inline mr-1",
             size: 14,
           })}
@@ -124,27 +106,23 @@ export const Topbar: React.FC<TopbarProps> = ({
         )}
       </div>
 
-      {toolModules.length > 1 && selectedDocLink && (
+      {tools.length > 1 && selectedDocLink && (
         <Tabs
-          value={toolModuleId}
+          value={tool?.id}
           className="ml-auto"
           onValueChange={setToolModuleId}
         >
           <TabsList>
-            {toolModules.map((module) => (
-              <TabsTrigger
-                value={module.metadata.id}
-                className="px-2 py-1"
-                key={module.metadata.id}
-              >
-                {module.metadata.name}
+            {tools.map((tool) => (
+              <TabsTrigger value={tool.id} className="px-2 py-1" key={tool.id}>
+                {tool.name}
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
       )}
 
-      <div className={`mr-4 ${toolModules.length <= 1 ? "ml-auto" : "ml-4"}`}>
+      <div className={`mr-4 ${tools.length <= 1 ? "ml-auto" : "ml-4"}`}>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <MoreHorizontal
@@ -167,8 +145,6 @@ export const Topbar: React.FC<TopbarProps> = ({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
-                const selectedDataType = await selectedDataTypeModule.load();
-
                 const newHandle =
                   repo.clone<HasVersionControlMetadata<unknown, unknown>>(
                     selectedDocHandle
@@ -218,29 +194,32 @@ export const Topbar: React.FC<TopbarProps> = ({
               Make a copy
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {fileExportMethods.concat(genericExportMethods).map((method) => (
-              <DropdownMenuItem
-                onClick={async () => {
-                  const blob = await method.export(selectedDoc, repo);
-                  const filename = `${getUrlSafeName(selectedDocLink.name)}.${
-                    method.extension
-                  }`;
-                  saveFile(blob, filename, [
-                    {
-                      accept: {
-                        [method.contentType]: [`.${method.extension}`],
+            {(selectedDataType?.fileExportMethods ?? [])
+              .concat(genericExportMethods)
+              .map((method, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={async () => {
+                    const blob = await method.export(selectedDoc, repo);
+                    const filename = `${getUrlSafeName(selectedDocLink.name)}.${
+                      method.extension
+                    }`;
+                    saveFile(blob, filename, [
+                      {
+                        accept: {
+                          [method.contentType]: [`.${method.extension}`],
+                        },
                       },
-                    },
-                  ]);
-                }}
-              >
-                <Download
-                  size={14}
-                  className="inline-block text-gray-500 mr-2"
-                />{" "}
-                Export as {method.name}
-              </DropdownMenuItem>
-            ))}
+                    ]);
+                  }}
+                >
+                  <Download
+                    size={14}
+                    className="inline-block text-gray-500 mr-2"
+                  />{" "}
+                  Export as {method.name}
+                </DropdownMenuItem>
+              ))}
 
             {selectedDocLink?.type === "essay" && isBotDatatypeEnabled && (
               <>

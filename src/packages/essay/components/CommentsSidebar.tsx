@@ -1,5 +1,5 @@
 import * as A from "@automerge/automerge/next";
-import { AnnotationGroupWithPosition } from "../utils copy";
+import { AnnotationGroupWithPosition } from "../utils";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -7,14 +7,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MarkdownDoc, MarkdownDocAnchor } from "@/packages/essay";
 import { getAnnotationGroupId } from "@/os/versionControl/annotations";
 import { AnnotationGroupView } from "@/os/versionControl/components/AnnotationGroupView";
 import { DocHandle } from "@automerge/automerge-repo";
 import { MessageCircle } from "lucide-react";
 import { TextSelection } from "./CodeMirrorEditor";
 import { CommentState } from "@/os/versionControl/schema";
-import { EssayEditorTool } from "../tool";
+import { MarkdownDoc, MarkdownDocAnchor } from "../datatype";
 
 export const CommentsSidebar = ({
   doc,
@@ -57,7 +56,7 @@ export const CommentsSidebar = ({
                 doc={doc}
                 handle={handle}
                 annotationGroup={annotationGroup}
-                tool={EssayEditorTool}
+                tool={null /*todo: solve circular ref EssayEditorTool*/}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}
