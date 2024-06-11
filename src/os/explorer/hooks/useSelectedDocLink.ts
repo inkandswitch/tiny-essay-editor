@@ -6,10 +6,10 @@ import {
   stringifyAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { useEffect, useMemo, useState } from "react";
-import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
-import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
+import { FolderDocWithMetadata } from "@/packages/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
 import { DatatypeId } from "../../datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";

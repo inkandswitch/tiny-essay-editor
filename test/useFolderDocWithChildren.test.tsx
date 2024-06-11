@@ -3,8 +3,8 @@ import { DummyStorageAdapter } from "@automerge/automerge-repo/test/helpers/Dumm
 import { render, waitFor, act } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
-import { useFolderDocWithChildren } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
-import { FolderDocWithChildren } from "@/datatypes/folder";
+import { useFolderDocWithChildren } from "@/packages/folder/hooks/useFolderDocWithChildren";
+import { FolderDocWithChildren } from "@/packages/folder";
 
 describe("useFolderDocWithChildren", () => {
   const setup = () => {

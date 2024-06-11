@@ -22,7 +22,7 @@ import { Topbar } from "./Topbar";
 import { VersionControlEditor } from "@/os/versionControl/components/VersionControlEditor";
 import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 
-import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
 import { useSyncDocTitle } from "../hooks/useSyncDocTitle";
 import { ErrorFallback } from "./ErrorFallback";

@@ -1,6 +1,6 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDataTypeModules } from "../../datatypes";
-import { DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
 import { useRef, useEffect } from "react";

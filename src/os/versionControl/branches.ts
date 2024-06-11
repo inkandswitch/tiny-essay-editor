@@ -2,7 +2,7 @@ import * as A from "@automerge/automerge/next";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Branch, Branchable } from "./schema";
 import { getStringCompletion } from "@/os/lib/llm";
-import { MarkdownDoc } from "@/datatypes/essay";
+import { MarkdownDoc } from "@/packages/essay";
 import { Hash } from "@automerge/automerge-wasm";
 
 export const createBranch = <DocType extends Branchable>({

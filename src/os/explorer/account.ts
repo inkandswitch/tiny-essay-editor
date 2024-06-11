@@ -13,8 +13,8 @@ import { uploadFile } from "./utils";
 import { ChangeFn } from "@automerge/automerge/next";
 import { useForceUpdate } from "@/os/hooks/useForceUpdate";
 
-import { FolderDoc } from "@/datatypes/folder";
-import { useFolderDocWithChildren } from "../../datatypes/folder/hooks/useFolderDocWithChildren";
+import { FolderDoc } from "@/packages/folder";
+import { useFolderDocWithChildren } from "../../packages/folder/hooks/useFolderDocWithChildren";
 import { DatatypeId } from "../datatypes";
 
 export type ModuleSettingsDoc = {

@@ -1,4 +1,4 @@
-import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/datatypes/folder";
+import { DocLink, DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { Doc, DocHandle, isValidAutomergeUrl } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import {
@@ -28,7 +28,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { runBot } from "@/datatypes/bot/essayEditingBot";
-import { MarkdownDoc } from "@/datatypes/essay/schema";
+import { MarkdownDoc } from "@/packages/essay/schema";
 import { FileExportMethod, genericExportMethods } from "@/os/fileExports";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { getHeads } from "@automerge/automerge";

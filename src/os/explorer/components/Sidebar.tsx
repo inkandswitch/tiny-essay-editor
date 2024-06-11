@@ -22,7 +22,7 @@ import {
   DocLinkWithFolderPath,
   FolderDoc,
   FolderDocWithChildren,
-} from "@/datatypes/folder";
+} from "@/packages/folder";
 import { DatatypeId, useDataTypeModules } from "../../datatypes";
 
 import {
@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
-import { FolderDocWithMetadata } from "@/datatypes/folder/hooks/useFolderDocWithChildren";
+import { FolderDocWithMetadata } from "@/packages/folder/hooks/useFolderDocWithChildren";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { useDocument, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { structuredClone } from "@tldraw/tldraw";

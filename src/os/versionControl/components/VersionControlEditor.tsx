@@ -23,7 +23,7 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isMarkdownDoc } from "@/datatypes/essay";
+import { isMarkdownDoc } from "@/packages/essay";
 import { DatatypeId, useDataType } from "@/os/datatypes";
 import { getRelativeTimeString } from "@/os/lib/dates";
 import {

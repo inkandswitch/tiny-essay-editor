@@ -15,17 +15,16 @@ import {
 } from "@automerge/automerge-repo";
 import { useRootFolderDocWithChildren } from "./explorer/account";
 import { Module } from "./modules";
-import { DocLink } from "@/datatypes/folder";
+import { DocLink } from "@/packages/folder";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { ModuleDoc } from "@/datatypes/module";
-
-export type ToolMetaData = {
-  id: string;
-  supportedDatatypes: string[];
-  name: string;
-};
+import { ModuleDoc } from "@/packages/package";
+import { DataType } from "./datatypes";
 
 export type Tool = {
+  type: "patchwork:tool";
+  supportedDatatypes: (DataType<unknown, unknown, unknown> | "*")[];
+  name: string;
+  icon?: any;
   editorComponent: React.FC<EditorProps<unknown, unknown>>;
   annotationViewComponent?: React.FC<
     AnnotationsViewProps<
@@ -66,7 +65,8 @@ export type AnnotationsViewProps<
   annotations: Annotation<T, V>[];
 };
 
-const TOOLS: Module<ToolMetaData, Tool>[] = [];
+// todo: remove export and use hook instead everywhere
+export const TOOLS: Module<ToolMetaData, Tool>[] = [];
 
 const toolsFolder: Record<string, { default: Module<ToolMetaData, Tool> }> =
   import.meta.glob("../tools/*/module.@(ts|js|tsx|jsx)", {

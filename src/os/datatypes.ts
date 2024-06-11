@@ -11,23 +11,19 @@ import { Repo } from "@automerge/automerge-repo";
 import { FileExportMethod } from "./fileExports";
 import { Module, useModule } from "./modules";
 
-export type DataTypeMetadata = {
-  id: DatatypeId;
+export type CoreDataType<D> = {
+  type: "patchwork:datatype";
   name: string;
   icon: any;
-
-  /* Marking a data types as experimental hides it by default
-   * so the user has to enable them in their account first  */
-  isExperimental?: boolean;
-};
-
-export type CoreDataType<D> = {
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   setTitle?: (doc: any, title: string) => void;
   markCopy: (doc: D) => void; // TODO: this shouldn't be part of the interface
   actions?: Record<string, (doc: Doc<D>, args: object) => void>;
   fileExportMethods?: FileExportMethod<D>[];
+  /* Marking a data types as experimental hides it by default
+   * so the user has to enable them in their account first  */
+  isExperimental?: boolean;
 };
 
 export type VersionedDataType<D, T, V> = {
@@ -104,11 +100,7 @@ export type VersionedDataType<D, T, V> = {
   sortAnchorsBy?: (doc: D, anchor: T) => any;
 };
 
-export type DataTypeWitoutMetaData<D, T, V> = CoreDataType<D> &
-  VersionedDataType<D, T, V>;
-
-export type DataType<D, T, V> = DataTypeWitoutMetaData<D, T, V> &
-  DataTypeMetadata;
+export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
 const dataTypesFolder: Record<
   string,
