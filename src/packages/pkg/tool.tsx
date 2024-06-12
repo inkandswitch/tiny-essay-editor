@@ -50,6 +50,8 @@ export const PackageEditor: React.FC<EditorProps<never, never>> = ({
     });
   };
 
+  const source = moduleDoc.source["index.js"].contents ?? "";
+
   return (
     <div className="p-4 w-full">
       <div className="mb-4">
@@ -82,7 +84,8 @@ export const PackageEditor: React.FC<EditorProps<never, never>> = ({
               Source Code
             </div>
             <Textarea
-              value={moduleDoc.source["index.js"].contents ?? ""}
+              rows={source.split("\n").length}
+              value={source}
               onChange={onChangeSourceCode}
             />
           </div>

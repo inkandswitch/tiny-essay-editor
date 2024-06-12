@@ -60,7 +60,7 @@ self.addEventListener("message", async (event) => {
     return;
   }
   console.log(`${PEER_ID}: Client messaged`, event.data);
-  if (event.data && event.data.type === "INIT_PORT") {
+  if (event.data && event.data.type === "INIT_POdRT") {
     const clientPort = event.ports[0];
     (await repo).networkSubsystem.addNetworkAdapter(
       new MessageChannelNetworkAdapter(clientPort, { useWeakRef: true })
@@ -95,14 +95,15 @@ self.addEventListener("activate", async (event) => {
 });
 
 const ASSETS_REQUEST_URL_REGEX =
-  /^https?:\/\/automerge\/(?<docId>[a-zA-Z0-9]+)(\/(?<path>.*))?$/;
+  /^https?:\/\/automerge\/([a-zA-Z0-9]+)(\/.*)?$/;
 
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
-  const match = event.request.url.match(ASSETS_REQUEST_URL_REGEX);
 
-  if (match) {
-    const { docId, path } = match.groups;
+  if (ASSETS_REQUEST_URL_REGEX.test(event.request.url)) {
+    const [, docId, ...parts] = url.pathname.split("/");
+
+    console.log(docId, parts);
 
     const automergeUrl = `automerge:${docId}`;
     if (!isValidAutomergeUrl(automergeUrl)) {
@@ -131,8 +132,7 @@ self.addEventListener("fetch", async (event) => {
           );
         }
 
-        const parts = decodeURI(path).split("/");
-        const file = parts.reduce((acc, curr) => acc?.[curr], doc);
+        const file = parts.reduce((dir, name) => dir?.[name], doc);
         if (!file) {
           return new Response(
             `Not found\nObject path: ${path}\n${JSON.stringify(doc, null, 2)}`,

@@ -9,10 +9,15 @@ import {
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
 import { DocLink } from "@/packages/folder";
-import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
+import {
+  AutomergeUrl,
+  DocHandle,
+  parseAutomergeUrl,
+} from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { DataType } from "./datatypes";
 import { useRootFolderDocWithChildren } from "./explorer/account";
+import { PackageDoc } from "@/packages/pkg/datatype";
 
 export type Tool = {
   id: string;
@@ -65,12 +70,12 @@ const isTool = (value: any): value is Tool => {
 };
 
 export const useTools = (): Tool[] => {
-  const [tools, setTools] = useState<Tool[]>([]);
+  const [builtInTools, setBuiltInTools] = useState<Tool[]>([]);
 
   // load packages asynchronously to break the dependency loop tools -> packages -> tools
   useEffect(() => {
     import("@/packages").then((packages) => {
-      setTools(
+      setBuiltInTools(
         Object.values(packages).flatMap((module) =>
           Object.values(module).filter(isTool)
         )
@@ -78,54 +83,54 @@ export const useTools = (): Tool[] => {
     });
   }, []);
 
-  return tools;
-
-  const [dynamicModules, setDynamicModules] = useState([]);
+  const [dynamicTools, setDynamicTools] = useState([]);
   const repo = useRepo();
 
   const { flatDocLinks } = useRootFolderDocWithChildren();
 
   const moduleDocLinks = useMemo(
     () =>
-      flatDocLinks ? flatDocLinks.filter((link) => link.type === "module") : [],
+      flatDocLinks ? flatDocLinks.filter((link) => link.type === "pkg") : [],
     [flatDocLinks]
   );
 
   const moduleDocLinksRef = useRef<DocLink[]>();
   moduleDocLinksRef.current = moduleDocLinks;
 
-  // todo: adapt
-  /* useEffect(() => {
+  useEffect(() => {
     Promise.all(
       moduleDocLinks.map(async ({ url }) => {
-        const moduleDoc = await repo.find<ModuleDoc>(url).doc();
-        console.log(url, moduleDoc);
-        const { source } = moduleDoc;
-        console.log("load", source);
-
+        const packageDoc = await repo.find<PackageDoc>(url).doc();
+        const { source } = packageDoc;
         const docId = parseAutomergeUrl(url).documentId;
+        const heads = A.getHeads(packageDoc);
 
         const sourceUrl =
           source.type === "url"
             ? source.url
-            : `https://automerge/${docId}/source/index.js`;
+            : `https://automerge/${docId}/source/index.js?heads=${heads.join(
+                ","
+              )}`;
 
-        console.log(sourceUrl);
-
-        const module = await import(sourceUrl);
-        return module.default;
+        return import(sourceUrl);
       })
-    ).then((modules) => {
+    ).then((packages) => {
       // skip if moduleDocLinks has changed in the meantime
       if (moduleDocLinks !== moduleDocLinksRef.current) {
         return;
       }
 
-      setDynamicModules(modules);
-    });
-  }, [moduleDocLinks, repo]); */
+      console.log(packages);
 
-  return TOOLS.concat(dynamicModules);
+      setDynamicTools(
+        Object.values(packages).flatMap((module) =>
+          Object.values(module).filter(isTool)
+        )
+      );
+    });
+  }, [moduleDocLinks, repo]);
+
+  return builtInTools.concat(dynamicTools);
 };
 
 export const useToolsForDataType = (
