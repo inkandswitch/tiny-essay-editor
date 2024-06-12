@@ -65,5 +65,5 @@ export const folderViewerTool: Tool = {
   type: "patchwork:tool",
   name: "Folder",
   editorComponent: FolderViewer,
-  supportedDatatypes: [folderDatatype],
+  supportedDataTypes: [folderDatatype],
 };

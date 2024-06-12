@@ -151,7 +151,7 @@ export const dataGridDatatype: DataType<
   DataGridDocAnchor,
   string
 > = {
-  type: "patchwork:datatype",
+  type: "patchwork:dataType",
   name: "Spreadsheet",
   icon: Sheet,
   isExperimental: true,

@@ -249,7 +249,7 @@ export const kanbanBoardDatatype: DataType<
   KanbanBoardDocAnchor,
   undefined
 > = {
-  type: "patchwork:datatype",
+  type: "patchwork:dataType",
   name: "Kanban Board",
   icon: KanbanSquare,
   isExperimental: true,

@@ -6,7 +6,7 @@ import { markdownDataType } from "./datatype";
 export const EssayEditorTool: Tool = {
   type: "patchwork:tool",
   name: "Editor",
-  supportedDatatypes: [markdownDataType],
+  supportedDataTypes: [markdownDataType],
   editorComponent: EssayEditor,
   annotationViewComponent: EssayAnnotations,
   supportsInlineComments: true,

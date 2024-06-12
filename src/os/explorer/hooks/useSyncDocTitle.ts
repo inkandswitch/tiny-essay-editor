@@ -1,5 +1,5 @@
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useDataTypes } from "../../datatypes";
+import { useDataType, useDataTypes } from "../../datatypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
@@ -26,10 +26,10 @@ export const useSyncDocTitle = ({
   const counterRef = useRef(0);
   const selectedDocTitleRef = useRef<{ url: AutomergeUrl; title?: string }>();
 
-  const dataTypeModule = useDataTypes();
+  const dataType = useDataType(selectedDocLink?.type);
 
   useEffect(() => {
-    if (!selectedDocLink || !selectedDoc) {
+    if (!selectedDocLink || !selectedDoc || !dataType) {
       selectedDocTitleRef.current = null;
       return;
     }
@@ -42,50 +42,47 @@ export const useSyncDocTitle = ({
     let counter = (counterRef.current = counterRef.current + 1);
 
     // load title
-    dataTypeModule[selectedDocLink.type]
-      .load()
-      .then((dataType) => dataType.getTitle(selectedDoc, repo))
-      .then((title) => {
-        // do nothing if selectedDocLink has changed in between
-        // or if this promise resolved after newer update
-        if (
-          selectedDocLink.url !== selectedDocTitleRef.current.url ||
-          counter !== counterRef.current
-        ) {
-          return;
+    dataType.getTitle(selectedDoc, repo).then((title) => {
+      // do nothing if selectedDocLink has changed in between
+      // or if this promise resolved after newer update
+      if (
+        selectedDocLink.url !== selectedDocTitleRef.current.url ||
+        counter !== counterRef.current
+      ) {
+        return;
+      }
+
+      // title has changed compared to previous computation
+      if (title !== selectedDocTitleRef.current?.title) {
+        selectedDocTitleRef.current.title = title;
+
+        const parentFolderUrl =
+          selectedDocLink.folderPath[selectedDocLink.folderPath.length - 1];
+        if (!parentFolderUrl) {
+          console.warn(
+            "expected to find a parent folder for selected doc",
+            selectedDocLink.url
+          );
         }
 
-        // title has changed compared to previous computation
-        if (title !== selectedDocTitleRef.current?.title) {
-          selectedDocTitleRef.current.title = title;
+        const folderHandle = repo.find<FolderDoc>(parentFolderUrl);
+        folderHandle.change((doc) => {
+          const existingDocLink = doc.docs.find(
+            (link) => link.url === selectedDocLink.url
+          );
+          // check if the doc link matches the current title
+          if (
+            existingDocLink &&
+            existingDocLink.name &&
+            existingDocLink.name !== title
+          ) {
+            existingDocLink.name = title;
 
-          const parentFolderUrl =
-            selectedDocLink.folderPath[selectedDocLink.folderPath.length - 1];
-          if (!parentFolderUrl) {
-            console.warn(
-              "expected to find a parent folder for selected doc",
-              selectedDocLink.url
-            );
+            // update url
+            selectDocLink({ ...selectedDocLink, name: title });
           }
-
-          const folderHandle = repo.find<FolderDoc>(parentFolderUrl);
-          folderHandle.change((doc) => {
-            const existingDocLink = doc.docs.find(
-              (link) => link.url === selectedDocLink.url
-            );
-            // check if the doc link matches the current title
-            if (
-              existingDocLink &&
-              existingDocLink.name &&
-              existingDocLink.name !== title
-            ) {
-              existingDocLink.name = title;
-
-              // update url
-              selectDocLink({ ...selectedDocLink, name: title });
-            }
-          });
-        }
-      });
+        });
+      }
+    });
   }, [selectedDoc, selectedDocLink?.url]);
 };

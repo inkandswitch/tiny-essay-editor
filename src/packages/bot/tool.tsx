@@ -70,5 +70,5 @@ export const botEditorTool: Tool = {
   name: "Bot",
   icon: Bot,
   editorComponent: BotEditor,
-  supportedDatatypes: [essayEditingBotDatatype],
+  supportedDataTypes: [essayEditingBotDatatype],
 };

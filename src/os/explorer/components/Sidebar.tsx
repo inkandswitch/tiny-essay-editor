@@ -23,7 +23,7 @@ import {
   FolderDoc,
   FolderDocWithChildren,
 } from "@/packages/folder";
-import { DatatypeId, useDataType, useDataTypes } from "../../datatypes";
+import { useDataType, useDataTypes } from "../../datatypes";
 
 import {
   Popover,
@@ -125,7 +125,7 @@ type SidebarProps = {
   selectedDocLink: DocLinkWithFolderPath | null;
   selectDocLink: (docLink: DocLinkWithFolderPath | null) => void;
   hideSidebar: () => void;
-  addNewDocument: (doc: { type: DatatypeId }) => void;
+  addNewDocument: (doc: { type: string }) => void;
 };
 
 const prepareDataForTree = (
@@ -164,6 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const repo = useRepo();
   const dataTypes = useDataTypes();
+
   const {
     doc: rootFolderDocWithChildren,
     status,
@@ -243,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const onRename = ({ node, name }) => {
     const docLink = flatDocLinks.find((doc) => doc.url === node.data.url);
-    const dataType = dataTypes[docLink.type];
+    const dataType = dataTypes.find(({ id }) => id === docLink.type);
 
     if (!dataType.setTitle) {
       alert(
@@ -336,7 +337,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="py-2  border-b border-gray-200">
-        {Object.values(dataTypes).map((dataType) => {
+        {dataTypes.map((dataType) => {
           const { id } = dataType;
           const isEnabled = datatypeSettings?.enabledDatatypeIds[id];
           if (
@@ -351,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {" "}
               <div
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
-                onClick={() => addNewDocument({ type: id as DatatypeId })}
+                onClick={() => addNewDocument({ type: id })}
               >
                 <dataType.icon
                   size={14}

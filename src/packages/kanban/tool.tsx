@@ -86,6 +86,6 @@ export const KanbanBoard = ({
 export const kanbanTool: Tool = {
   type: "patchwork:tool",
   name: "Kanban",
-  supportedDatatypes: [kanbanBoardDatatype],
+  supportedDataTypes: [kanbanBoardDatatype],
   editorComponent: KanbanBoard,
 };

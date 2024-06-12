@@ -6,7 +6,7 @@ import { tldrawDatatype } from "./datatype";
 export const drawingTool: Tool = {
   type: "patchwork:tool",
   name: "Drawing",
-  supportedDatatypes: [tldrawDatatype],
+  supportedDataTypes: [tldrawDatatype],
   editorComponent: TLDraw,
   annotationViewComponent: TLDrawAnnotations,
 };

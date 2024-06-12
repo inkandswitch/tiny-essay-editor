@@ -15,10 +15,9 @@ import { useForceUpdate } from "@/os/hooks/useForceUpdate";
 
 import { FolderDoc } from "@/packages/folder";
 import { useFolderDocWithChildren } from "../../packages/folder/hooks/useFolderDocWithChildren";
-import { DatatypeId } from "../datatypes";
 
 export type ModuleSettingsDoc = {
-  enabledDatatypeIds: { [id: DatatypeId]: boolean };
+  enabledDatatypeIds: { [id: string]: boolean };
 };
 
 export interface AccountDoc {

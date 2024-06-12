@@ -8,12 +8,14 @@ import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
 
 // datatypes
+import * as PACKAGES from "@/packages";
+import { LucideIcon } from "lucide-react";
 import { FileExportMethod } from "./fileExports";
 
 export type CoreDataType<D> = {
-  type: "patchwork:datatype";
+  type: "patchwork:dataType";
   name: string;
-  icon: any;
+  icon: LucideIcon;
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   setTitle?: (doc: any, title: string) => void;
@@ -103,19 +105,44 @@ export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
 export type DataTypeWithId<D, T, V> = DataType<D, T, V> & { id: string };
 
-const DATA_TYPES: DataTypeWithId<unknown, unknown, unknown>[] = [];
+const isDataType = (
+  value: any
+): value is DataType<unknown, unknown, unknown> => {
+  return "type" in value && value.type === "patchwork:dataType";
+};
+
+const DATA_TYPE_TO_ID = new Map<DataType<unknown, unknown, unknown>, string>();
+
+export const DATA_TYPES: DataTypeWithId<unknown, unknown, unknown>[] = [];
+
+for (const [packageId, module] of Object.entries(PACKAGES)) {
+  for (const [dataTypeId, dataType] of Object.entries(module)) {
+    if (isDataType(dataType)) {
+      const id = `${packageId}/${dataTypeId}`;
+
+      DATA_TYPE_TO_ID.set(dataType, id);
+      DATA_TYPES.push({ ...dataType, id });
+    }
+  }
+}
+
+window.$PKG = PACKAGES;
+
+export const getIdOfDataType = (
+  dataType: DataType<unknown, unknown, unknown>
+): string => {
+  return DATA_TYPE_TO_ID.get(dataType);
+};
 
 export const useDataTypes = () => {
   return DATA_TYPES;
 };
 
 export const useDataType = <D, T, V>(
-  id: DatatypeId
+  id: string
 ): DataTypeWithId<D, T, V> | undefined => {
   const dataTypes = useDataTypes();
   return dataTypes.find((dataType) => dataType.id == id) as
     | DataTypeWithId<D, T, V>
     | undefined;
 };
-
-export type DatatypeId = string;

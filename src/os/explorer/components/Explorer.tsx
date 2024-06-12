@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { DatatypeId, useDataType, useDataTypes } from "@/os/datatypes";
+import { useDataType, useDataTypes } from "@/os/datatypes";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import {
   useDocument,
@@ -22,7 +22,6 @@ import { Topbar } from "./Topbar";
 import { VersionControlEditor } from "@/os/versionControl/components/VersionControlEditor";
 import { Branch, HasVersionControlMetadata } from "@/os/versionControl/schema";
 
-import { useModule } from "@/os/modules";
 import { useTool, useTools, useToolsForDataType } from "@/os/tools";
 import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
 import { useSelectedDocLink } from "../hooks/useSelectedDocLink";
@@ -65,9 +64,9 @@ export const Explorer: React.FC = () => {
     );
   }, [selectedBranchUrl, selectedDoc]);
 
-  const tools = useTools();
-  const [selectedToolId, setSelectedToolId] = useState<string>();
   const selectedDataType = useDataType(selectedDataTypeId);
+  const tools = useToolsForDataType(selectedDataType);
+  const [selectedToolId, setSelectedToolId] = useState<string>();
   const toolModules = useToolsForDataType(selectedDataType);
   const selectedTool = useTool(selectedToolId);
 
@@ -75,16 +74,16 @@ export const Explorer: React.FC = () => {
     // make sure the current tool is reset to the fallback tool
     // if the selected datatype changes and the selected tool is not compatible
     selectedTool &&
-    selectedTool.supportedDatatypes.some(
-      (supportedDataType) =>
-        supportedDataType === selectedDataType || supportedDataType === "*"
-    )
+    (selectedTool.supportedDataTypes === "all" ||
+      selectedTool.supportedDataTypes.some(
+        (supportedDataType) => supportedDataType === selectedDataType
+      ))
       ? selectedTool
       : toolModules[0];
 
   const addNewDocument = useCallback(
-    async ({ type }: { type: DatatypeId }) => {
-      const dataType = dataTypes[type];
+    async ({ type }: { type: string }) => {
+      const dataType = dataTypes.find(({ id }) => id === type);
 
       if (!dataType) {
         throw new Error(`Unsupported document type: ${type}`);
@@ -151,7 +150,7 @@ export const Explorer: React.FC = () => {
 
       // if there's no document selected and the user hits enter, make a new document
       if (!selectedDocUrl && event.key === "Enter") {
-        addNewDocument({ type: "essay" as DatatypeId });
+        addNewDocument({ type: "essay" });
       }
     };
 
@@ -248,9 +247,7 @@ export const Explorer: React.FC = () => {
                       No document selected
                     </p>
                     <Button
-                      onClick={() =>
-                        addNewDocument({ type: "essay" as DatatypeId })
-                      } // Default type for new document
+                      onClick={() => addNewDocument({ type: "essay" })} // Default type for new document
                       variant="outline"
                     >
                       Create new document

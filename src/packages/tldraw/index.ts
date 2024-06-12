@@ -1,2 +1,2 @@
 export { tldrawDatatype as dataType } from "./datatype";
-import { drawingTool as tool } from "./tool";
+export { drawingTool as tool } from "./tool";
