@@ -2,8 +2,10 @@ import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import * as A from "@automerge/automerge/next";
 import React from "react";
 
-import { EditorProps, Tool } from "@/os/tools";
-import { FolderDoc, folderDatatype } from "./datatype";
+import { EditorProps, Tool, useToolsForDataType, useTools } from "@/os/tools";
+import { DocLink, FolderDoc, folderDatatype } from "./datatype";
+import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
+import { useDataType } from "@/os/datatypes";
 
 export const FolderViewer: React.FC<EditorProps<never, never>> = ({
   docUrl,
@@ -23,65 +25,62 @@ export const FolderViewer: React.FC<EditorProps<never, never>> = ({
         {folderAtHeads.docs.length} documents
       </div>
       <div className="flex flex-col gap-10 px-4 h-full overflow-y-auto pb-24">
-        {/*folderAtHeads.docs.map((docLink) => (      
-          <FolderEntryView docLink={docLink}/>
-        ))*/}
+        {folderAtHeads.docs.map((docLink, index) => (
+          <FolderEntryView docLink={docLink} key={index} />
+        ))}
       </div>
     </div>
   );
 };
 
-/*
-
 type FolderEntryView = {
-  docLink: DocLink
-}
+  docLink: DocLink;
+};
 
 export const FolderEntryView = ({ docLink }) => {
-  const tool = useToolsForDataType(docLink.type)[0]
+  const dataType = useDataType(docLink.type);
+  const tool = useToolsForDataType(docLink.type)[0];
 
-  if (!tool) {
-    return
-  }
+  const Icon = tool?.icon ?? dataType?.icon;
 
   return (
-
-      <div className="flex gap-2 items-center font-medium mb-1">
-
-      {!tool ? 
-       `Unknown type: ${docLink.type}`
-      :   <>
-      {React.createElement(tool.icon, {size: 16})}
-        <div>{docLink.name}</div>
-        <button
-          className="text-sm text-gray-500 underline align-bottom cursor-pointer"
-          onClick={() => {
-            selectDocLink(docLink);
-          }}
-        >
-          Open
-        </button>
-      </div>
-      <div className="h-72 border border-gray-300">
-        {!Tool && <div>No editor available</div>}
-        {Tool && docLink.type !== "folder" && (
-          <Tool docUrl={docLink.url} />
-        )}
-        {docLink.type === "folder" && (
-          <div className="bg-gray-50 justify-center items-center flex h-full">
-            Click "open" to see nested folder contents
+    <div>
+      {!tool ? (
+        <div className="flex gap-2 items-center font-medium mb-1">
+          Unknown type: {docLink.type}
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-2 items-center font-medium mb-1">
+            <Icon size={16} />
+            <div>{docLink.name}</div>
+            <button
+              className="text-sm text-gray-500 underline align-bottom cursor-pointer"
+              onClick={() => {
+                selectDocLink(docLink);
+              }}
+            >
+              Open
+            </button>
           </div>
-        )}
-      </>
-      
-      }
-
-        
-      </div>
+          <div className="h-72 border border-gray-300">
+            {!tool && <div>No editor available</div>}
+            {tool &&
+              docLink.type !== "folder" &&
+              React.createElement(tool.editorComponent, {
+                docUrl: docLink.url,
+              })}
+            {docLink.type === "folder" && (
+              <div className="bg-gray-50 justify-center items-center flex h-full">
+                Click "open" to see nested folder contents
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
-})
 };
-*/
 
 export const folderViewerTool: Tool = {
   type: "patchwork:tool",

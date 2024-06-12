@@ -64,8 +64,6 @@ const isTool = (value: any): value is Tool => {
   return "type" in value && value.type === "patchwork:tool";
 };
 
-export const TOOLS: Tool[] = [];
-
 export const useTools = (): Tool[] => {
   const [tools, setTools] = useState<Tool[]>([]);
 
@@ -131,7 +129,7 @@ export const useTools = (): Tool[] => {
 };
 
 export const useToolsForDataType = (
-  dataType: DataType<unknown, unknown, unknown>
+  dataType: DataType<unknown, unknown, unknown> | string
 ): Tool[] => {
   const tools = useTools();
 
@@ -139,7 +137,9 @@ export const useToolsForDataType = (
     return tools.filter((tool) => {
       return (
         tool.supportedDataTypes === "*" ||
-        tool.supportedDataTypes.includes(dataType)
+        (typeof dataType === "string"
+          ? tool.supportedDataTypes.some((d) => d.id === dataType)
+          : tool.supportedDataTypes.includes(dataType))
       );
     });
   }, [tools, dataType]);
