@@ -50,7 +50,7 @@ export const PackageEditor: React.FC<EditorProps<never, never>> = ({
     });
   };
 
-  const source = moduleDoc.source["index.js"].contents ?? "";
+  const source = moduleDoc.source["index.js"]?.contents ?? "";
 
   return (
     <div className="p-4 w-full">
