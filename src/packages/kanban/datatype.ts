@@ -250,6 +250,7 @@ export const kanbanBoardDatatype: DataType<
   undefined
 > = {
   type: "patchwork:dataType",
+  id: "folder",
   name: "Kanban Board",
   icon: KanbanSquare,
   isExperimental: true,

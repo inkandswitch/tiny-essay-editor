@@ -57,6 +57,7 @@ const setTitle = (doc: FolderDoc, title: string) => {
 
 export const folderDatatype: DataType<FolderDoc, never, never> = {
   type: "patchwork:dataType",
+  id: "folder",
   name: "Folder",
   icon: Folder,
   init,

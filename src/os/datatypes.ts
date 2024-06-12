@@ -13,6 +13,7 @@ import { LucideIcon } from "lucide-react";
 import { FileExportMethod } from "./fileExports";
 
 export type CoreDataType<D> = {
+  id: string;
   type: "patchwork:dataType";
   name: string;
   icon: LucideIcon;
@@ -103,34 +104,21 @@ export type VersionedDataType<D, T, V> = {
 
 export type DataType<D, T, V> = CoreDataType<D> & VersionedDataType<D, T, V>;
 
-export type DataTypeWithId<D, T, V> = DataType<D, T, V> & { id: string };
-
 const isDataType = (
   value: any
 ): value is DataType<unknown, unknown, unknown> => {
   return "type" in value && value.type === "patchwork:dataType";
 };
 
-const DATA_TYPE_TO_ID = new Map<DataType<unknown, unknown, unknown>, string>();
+export const DATA_TYPES: DataType<unknown, unknown, unknown>[] = [];
 
-export const DATA_TYPES: DataTypeWithId<unknown, unknown, unknown>[] = [];
-
-for (const [packageId, module] of Object.entries(PACKAGES)) {
-  for (const [dataTypeId, dataType] of Object.entries(module)) {
+for (const module of Object.values(PACKAGES)) {
+  for (const dataType of Object.values(module)) {
     if (isDataType(dataType)) {
-      const id = `${packageId}/${dataTypeId}`;
-
-      DATA_TYPE_TO_ID.set(dataType, id);
-      DATA_TYPES.push({ ...dataType, id });
+      DATA_TYPES.push(dataType);
     }
   }
 }
-
-export const getIdOfDataType = (
-  dataType: DataType<unknown, unknown, unknown>
-): string => {
-  return DATA_TYPE_TO_ID.get(dataType);
-};
 
 export const useDataTypes = () => {
   return DATA_TYPES;
@@ -138,9 +126,9 @@ export const useDataTypes = () => {
 
 export const useDataType = <D, T, V>(
   id: string
-): DataTypeWithId<D, T, V> | undefined => {
+): DataType<D, T, V> | undefined => {
   const dataTypes = useDataTypes();
   return dataTypes.find((dataType) => dataType.id == id) as
-    | DataTypeWithId<D, T, V>
+    | DataType<D, T, V>
     | undefined;
 };

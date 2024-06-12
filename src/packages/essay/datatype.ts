@@ -324,6 +324,7 @@ export const markdownDataType: DataType<
   string
 > = {
   type: "patchwork:dataType",
+  id: "essay",
   name: "Essay",
   icon: TextIcon,
   init,

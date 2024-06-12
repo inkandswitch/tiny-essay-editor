@@ -45,7 +45,7 @@ import {
 import { DiscussionInput } from "./DiscussionInput";
 
 import { HasAssets } from "@/os/assets";
-import { DataType, DataTypeWithId } from "@/os/datatypes";
+import { DataType } from "@/os/datatypes";
 import { MarkdownInput } from "@/os/lib/markdown";
 import { DocHandle } from "@automerge/automerge-repo";
 import { ChangeGrouper } from "../ChangeGrouper";
@@ -108,7 +108,7 @@ export type ChangelogSelection =
   | undefined;
 
 export const TimelineSidebar: React.FC<{
-  dataType: DataTypeWithId<unknown, unknown, unknown>;
+  dataType: DataType<unknown, unknown, unknown>;
   docUrl: AutomergeUrl;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;

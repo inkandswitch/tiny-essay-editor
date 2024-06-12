@@ -152,6 +152,7 @@ export const dataGridDatatype: DataType<
   string
 > = {
   type: "patchwork:dataType",
+  id: "datagrid",
   name: "Spreadsheet",
   icon: Sheet,
   isExperimental: true,

@@ -67,6 +67,7 @@ export const BotEditor = ({
 
 export const botEditorTool: Tool = {
   type: "patchwork:tool",
+  id: "bot",
   name: "Bot",
   icon: Bot,
   editorComponent: BotEditor,

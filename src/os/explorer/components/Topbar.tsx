@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { genericExportMethods } from "@/os/fileExports";
-import { ToolWithIds } from "@/os/tools";
+import { Tool } from "@/os/tools";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { runBot } from "@/packages/bot";
 import { MarkdownDoc } from "@/packages/essay";
@@ -48,8 +48,8 @@ type TopbarProps = {
     | undefined;
   addNewDocument: (doc: { type: string }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
-  tools: ToolWithIds[];
-  tool: ToolWithIds;
+  tools: Tool[];
+  tool: Tool;
   setToolId: (id: string) => void;
 };
 

@@ -22,6 +22,7 @@ export const essayEditingBotDatatype: DataType<
   never
 > = {
   type: "patchwork:dataType",
+  id: "bot",
   name: "Bot",
   isExperimental: true,
   icon: Bot,

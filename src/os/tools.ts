@@ -8,15 +8,15 @@ import {
   CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
+import * as PACKAGES from "@/packages";
 import { DocLink } from "@/packages/folder";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
-import { DataType, DataTypeWithId, getIdOfDataType } from "./datatypes";
+import { DataType } from "./datatypes";
 import { useRootFolderDocWithChildren } from "./explorer/account";
-import * as PACKAGES from "@/packages";
-import { DATA_TYPES } from "@/os/datatypes";
 
 export type Tool = {
+  id: string;
   type: "patchwork:tool";
   supportedDataTypes: "*" | DataType<unknown, unknown, unknown>[];
   name: string;
@@ -32,11 +32,6 @@ export type Tool = {
   /** whether this tool has support for rendering comments inline or if it
    * relies exclusively on the review sidebar to show comments */
   supportsInlineComments?: boolean;
-};
-
-export type ToolWithIds = Tool & {
-  id: string;
-  supportedDataTypes: "*" | DataTypeWithId<unknown, unknown, unknown>[];
 };
 
 export type EditorProps<T, V> = {
@@ -70,31 +65,17 @@ const isTool = (value: any): value is Tool => {
   return "type" in value && value.type === "patchwork:tool";
 };
 
-const TOOLS: ToolWithIds[] = [];
+const TOOLS: Tool[] = [];
 
-for (const [packageId, module] of Object.entries(PACKAGES)) {
-  for (const [toolId, tool] of Object.entries(module)) {
+for (const module of Object.values(PACKAGES)) {
+  for (const tool of Object.values(module)) {
     if (isTool(tool)) {
-      TOOLS.push({
-        ...tool,
-        id: `${packageId}/${toolId}`,
-        supportedDataTypes:
-          tool.supportedDataTypes === "*"
-            ? "*"
-            : tool.supportedDataTypes.map((supportedDataType) =>
-                DATA_TYPES.find((dataType) => {
-                  console.log(dataType.id, getIdOfDataType(supportedDataType));
-                  return dataType.id === getIdOfDataType(supportedDataType);
-                })
-              ),
-      });
+      TOOLS.push(tool);
     }
   }
 }
 
-console.log(TOOLS);
-
-export const useTools = (): ToolWithIds[] => {
+export const useTools = (): Tool[] => {
   const [dynamicModules, setDynamicModules] = useState([]);
   const repo = useRepo();
 
@@ -145,13 +126,12 @@ export const useTools = (): ToolWithIds[] => {
 
 export const useToolsForDataType = (
   dataType: DataType<unknown, unknown, unknown>
-): ToolWithIds[] => {
+): Tool[] => {
   const tools = useTools();
 
   return useMemo(() => {
     return tools.filter((tool) => {
-      console.log(tool.supportedDataTypes);
-
+      console.log("filter", dataType, tool.supportedDataTypes);
       return (
         tool.supportedDataTypes === "*" ||
         tool.supportedDataTypes.includes(dataType)
@@ -160,7 +140,7 @@ export const useToolsForDataType = (
   }, [tools, dataType]);
 };
 
-export const useTool = (id: string): ToolWithIds => {
+export const useTool = (id: string): Tool => {
   const tools = useTools();
   return tools.find((tool) => tool.id === id);
 };
