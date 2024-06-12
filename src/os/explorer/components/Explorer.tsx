@@ -70,8 +70,6 @@ export const Explorer: React.FC = () => {
   const toolModules = useToolsForDataType(selectedDataType);
   const selectedTool = useTool(selectedToolId);
 
-  console.log({ selectedDataType, tools });
-
   const currentTool =
     // make sure the current tool is reset to the fallback tool
     // if the selected datatype changes and the selected tool is not compatible

@@ -85,7 +85,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
       {!node.isEditing && (
         <>
           <div>
-            {dataType ? dataType.name : `Unknown type: ${node.data.type}`}
+            {dataType ? node.data.name : `Unknown type: ${node.data.type}`}
           </div>
           {node.data.type === "folder" && (
             <div className="ml-2 text-gray-500 text-xs py-0.5 px-1.5 rounded-lg bg-gray-200">

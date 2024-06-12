@@ -131,7 +131,6 @@ export const useToolsForDataType = (
 
   return useMemo(() => {
     return tools.filter((tool) => {
-      console.log("filter", dataType, tool.supportedDataTypes);
       return (
         tool.supportedDataTypes === "*" ||
         tool.supportedDataTypes.includes(dataType)

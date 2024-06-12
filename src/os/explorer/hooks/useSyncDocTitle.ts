@@ -1,9 +1,9 @@
-import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { useDataType, useDataTypes } from "../../datatypes";
 import { DocLinkWithFolderPath, FolderDoc } from "@/packages/folder";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
 import { Doc } from "@automerge/automerge/next";
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useDataType } from "../../datatypes";
 
 // This hook keeps the name of the link synced with the title of the document.
 // The update is triggered every time the selected doc changes.
@@ -25,7 +25,6 @@ export const useSyncDocTitle = ({
   // counter is incremented each time the title is re computed so we can detect async operations that should be aborted because they are based on old state
   const counterRef = useRef(0);
   const selectedDocTitleRef = useRef<{ url: AutomergeUrl; title?: string }>();
-
   const dataType = useDataType(selectedDocLink?.type);
 
   useEffect(() => {
@@ -84,5 +83,5 @@ export const useSyncDocTitle = ({
         });
       }
     });
-  }, [selectedDoc, selectedDocLink?.url]);
+  }, [selectedDoc, selectedDocLink?.url, dataType]);
 };
