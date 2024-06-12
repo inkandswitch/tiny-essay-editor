@@ -60,7 +60,7 @@ self.addEventListener("message", async (event) => {
     return;
   }
   console.log(`${PEER_ID}: Client messaged`, event.data);
-  if (event.data && event.data.type === "INIT_POdRT") {
+  if (event.data && event.data.type === "INIT_PORT") {
     const clientPort = event.ports[0];
     (await repo).networkSubsystem.addNetworkAdapter(
       new MessageChannelNetworkAdapter(clientPort, { useWeakRef: true })
