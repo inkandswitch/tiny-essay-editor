@@ -1,5 +1,5 @@
 import * as A from "@automerge/automerge/next";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Annotation,
@@ -8,7 +8,6 @@ import {
   CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import * as PACKAGES from "@/packages";
 import { DocLink } from "@/packages/folder";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
@@ -65,17 +64,24 @@ const isTool = (value: any): value is Tool => {
   return "type" in value && value.type === "patchwork:tool";
 };
 
-const TOOLS: Tool[] = [];
-
-for (const module of Object.values(PACKAGES)) {
-  for (const tool of Object.values(module)) {
-    if (isTool(tool)) {
-      TOOLS.push(tool);
-    }
-  }
-}
+export const TOOLS: Tool[] = [];
 
 export const useTools = (): Tool[] => {
+  const [tools, setTools] = useState<Tool[]>([]);
+
+  // load packages asynchronously to break the dependency loop tools -> packages -> tools
+  useEffect(() => {
+    import("@/packages").then((packages) => {
+      setTools(
+        Object.values(packages).flatMap((module) =>
+          Object.values(module).filter(isTool)
+        )
+      );
+    });
+  }, []);
+
+  return tools;
+
   const [dynamicModules, setDynamicModules] = useState([]);
   const repo = useRepo();
 

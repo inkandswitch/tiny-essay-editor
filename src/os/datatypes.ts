@@ -6,11 +6,9 @@ import { Annotation } from "@/os/versionControl/schema";
 import { TextPatch } from "@/os/versionControl/utils";
 import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-
-// datatypes
-import * as PACKAGES from "@/packages";
 import { LucideIcon } from "lucide-react";
 import { FileExportMethod } from "./fileExports";
+import { useEffect, useState } from "react";
 
 export type CoreDataType<D> = {
   id: string;
@@ -110,18 +108,23 @@ const isDataType = (
   return "type" in value && value.type === "patchwork:dataType";
 };
 
-export const DATA_TYPES: DataType<unknown, unknown, unknown>[] = [];
-
-for (const module of Object.values(PACKAGES)) {
-  for (const dataType of Object.values(module)) {
-    if (isDataType(dataType)) {
-      DATA_TYPES.push(dataType);
-    }
-  }
-}
-
 export const useDataTypes = () => {
-  return DATA_TYPES;
+  const [dataTypes, setDataTypes] = useState<
+    DataType<unknown, unknown, unknown>[]
+  >([]);
+
+  // load packages asynchronously to break the dependency loop tools -> packages -> tools
+  useEffect(() => {
+    import("@/packages").then((packages) => {
+      setDataTypes(
+        Object.values(packages).flatMap((module) =>
+          Object.values(module).filter(isDataType)
+        )
+      );
+    });
+  }, []);
+
+  return dataTypes;
 };
 
 export const useDataType = <D, T, V>(
