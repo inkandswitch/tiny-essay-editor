@@ -122,6 +122,8 @@ self.addEventListener("fetch", async (event) => {
         await handle.whenReady();
         const doc = await handle.doc();
 
+        console.log("sw found doc", doc);
+
         if (!doc) {
           return new Response(
             `Document unavailable.\n${automergeUrl}: ${handle.state}`,

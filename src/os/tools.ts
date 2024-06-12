@@ -8,13 +8,8 @@ import {
   CommentState,
   HasVersionControlMetadata,
 } from "@/os/versionControl/schema";
-import { DocLink } from "@/packages/folder";
-import {
-  AutomergeUrl,
-  DocHandle,
-  parseAutomergeUrl,
-} from "@automerge/automerge-repo";
-import { useRepo } from "@automerge/automerge-repo-react-hooks";
+import { AutomergeUrl, DocHandle, DocumentId } from "@automerge/automerge-repo";
+import { useDocuments, useRepo } from "@automerge/automerge-repo-react-hooks";
 import { DataType } from "./datatypes";
 import { useRootFolderDocWithChildren } from "./explorer/account";
 import { PackageDoc } from "@/packages/pkg/datatype";
@@ -88,47 +83,51 @@ export const useTools = (): Tool[] => {
 
   const { flatDocLinks } = useRootFolderDocWithChildren();
 
-  const moduleDocLinks = useMemo(
+  const packageDocLinks = useMemo(
     () =>
       flatDocLinks ? flatDocLinks.filter((link) => link.type === "pkg") : [],
     [flatDocLinks]
   );
 
-  const moduleDocLinksRef = useRef<DocLink[]>();
-  moduleDocLinksRef.current = moduleDocLinks;
+  const packageDocs = useDocuments<PackageDoc>(
+    packageDocLinks.map((link) => link.url)
+  );
+
+  const packageDocsRef = useRef<Record<DocumentId, PackageDoc>>();
+  packageDocsRef.current = packageDocs;
 
   useEffect(() => {
-    Promise.all(
-      moduleDocLinks.map(async ({ url }) => {
-        const packageDoc = await repo.find<PackageDoc>(url).doc();
-        const { source } = packageDoc;
-        const docId = parseAutomergeUrl(url).documentId;
-        const heads = A.getHeads(packageDoc);
+    (async () => {
+      const packages = await Promise.all(
+        Object.entries(packageDocs).map(async ([docId, packageDoc]) => {
+          const { source } = packageDoc;
+          const heads = A.getHeads(packageDoc);
 
-        const sourceUrl =
-          source.type === "url"
-            ? source.url
-            : `https://automerge/${docId}/source/index.js?heads=${heads.join(
-                ","
-              )}`;
+          const sourceUrl =
+            source.type === "url"
+              ? source.url
+              : `https://automerge/${docId}/source/index.js?heads=${heads.join(
+                  ","
+                )}`;
 
-        return import(sourceUrl);
-      })
-    ).then((packages) => {
-      // skip if moduleDocLinks has changed in the meantime
-      if (moduleDocLinks !== moduleDocLinksRef.current) {
+          return import(sourceUrl);
+        })
+      );
+
+      // skip if packageDocs has changed in the meantime
+      if (packageDocs !== packageDocsRef.current) {
         return;
       }
 
-      console.log(packages);
-
-      setDynamicTools(
-        Object.values(packages).flatMap((module) =>
-          Object.values(module).filter(isTool)
-        )
+      const dynamicTools = Object.values(packages).flatMap((module) =>
+        Object.values(module).filter(isTool)
       );
-    });
-  }, [moduleDocLinks, repo]);
+
+      console.log("dynamicTools", dynamicTools);
+
+      setDynamicTools(dynamicTools);
+    })();
+  }, [packageDocs]);
 
   return builtInTools.concat(dynamicTools);
 };
