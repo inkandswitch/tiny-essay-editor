@@ -74,7 +74,7 @@ export const Explorer: React.FC = () => {
     // make sure the current tool is reset to the fallback tool
     // if the selected datatype changes and the selected tool is not compatible
     selectedTool &&
-    (selectedTool.supportedDataTypes === "all" ||
+    (selectedTool.supportedDataTypes === "*" ||
       selectedTool.supportedDataTypes.some(
         (supportedDataType) => supportedDataType === selectedDataType
       ))

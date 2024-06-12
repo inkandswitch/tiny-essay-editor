@@ -1,4 +1,4 @@
-import { DataType, DatatypeId } from "@/os/datatypes";
+import { DataType } from "@/os/datatypes";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { Folder } from "lucide-react";
@@ -15,7 +15,7 @@ export type FolderDocWithChildren = Omit<FolderDoc, "docs"> & {
 
 export type DocLink = {
   name: string;
-  type: DatatypeId;
+  type: string;
   url: AutomergeUrl;
   branchUrl?: AutomergeUrl;
   branchName?: string;

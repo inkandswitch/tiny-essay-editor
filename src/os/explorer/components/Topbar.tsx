@@ -33,7 +33,7 @@ import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 import { runBot } from "@/packages/bot";
 import { MarkdownDoc } from "@/packages/essay";
 import { getHeads } from "@automerge/automerge";
-import { DatatypeId, useDataType } from "../../datatypes";
+import { useDataType } from "../../datatypes";
 import { useDatatypeSettings, useRootFolderDocWithChildren } from "../account";
 import { getUrlSafeName } from "../hooks/useSelectedDocLink";
 
@@ -46,7 +46,7 @@ type TopbarProps = {
   selectedDocHandle:
     | DocHandle<HasVersionControlMetadata<unknown, unknown>>
     | undefined;
-  addNewDocument: (doc: { type: DatatypeId }) => void;
+  addNewDocument: (doc: { type: string }) => void;
   removeDocLink: (link: DocLinkWithFolderPath) => void;
   tools: ToolWithIds[];
   tool: ToolWithIds;
@@ -278,7 +278,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                       onClick={(e) => {
                         selectDocLink({
                           ...botDocLink,
-                          type: "essay" as DatatypeId,
+                          type: "essay",
                         });
                         e.stopPropagation();
                       }}

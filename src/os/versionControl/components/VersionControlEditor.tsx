@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DatatypeId, useDataType } from "@/os/datatypes";
+import { useDataType } from "@/os/datatypes";
 import { useCurrentAccount } from "@/os/explorer/account";
 import { ContactAvatar } from "@/os/explorer/components/ContactAvatar";
 import { ErrorFallback } from "@/os/explorer/components/ErrorFallback";
@@ -84,7 +84,7 @@ type SidebarMode = "review" | "history";
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
   docUrl: AutomergeUrl;
-  datatypeId: DatatypeId;
+  datatypeId: string;
   tool: Tool;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;

@@ -126,8 +126,6 @@ for (const [packageId, module] of Object.entries(PACKAGES)) {
   }
 }
 
-window.$PKG = PACKAGES;
-
 export const getIdOfDataType = (
   dataType: DataType<unknown, unknown, unknown>
 ): string => {

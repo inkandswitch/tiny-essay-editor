@@ -11,7 +11,6 @@ import { useCurrentUrl } from "../navigation";
 import queryString from "query-string";
 import { FolderDocWithMetadata } from "@/packages/folder/hooks/useFolderDocWithChildren";
 import { isEqual } from "lodash";
-import { DatatypeId } from "../../datatypes";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
@@ -77,7 +76,7 @@ const parseLegacyUrl = (
   if (isValidAutomergeUrl(possibleAutomergeUrl)) {
     return {
       url: possibleAutomergeUrl,
-      type: "essay" as DatatypeId,
+      type: "essay",
     };
   }
 
@@ -103,7 +102,7 @@ const parseLegacyUrl = (
 
   return {
     url: docUrl,
-    type: docType as DatatypeId,
+    type: docType,
     branchUrl: branchUrl as AutomergeUrl,
   };
 };
@@ -125,8 +124,8 @@ const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
     return null;
   }
 
-  const datatypeId = (url.searchParams.get("type") ??
-    url.searchParams.get("docType")) as DatatypeId; // use legacy docType as a fallback
+  const datatypeId =
+    url.searchParams.get("type") ?? url.searchParams.get("docType"); // use legacy docType as a fallback
 
   const branchUrl = url.searchParams.get("branchUrl");
   if (branchUrl && !isValidAutomergeUrl(branchUrl)) {
