@@ -97,6 +97,14 @@ self.addEventListener("activate", async (event) => {
 const ASSETS_REQUEST_URL_REGEX =
   /^https?:\/\/automerge\/([a-zA-Z0-9]+)(\/.*)?$/;
 
+const headsEqual = (doc, heads) => {
+  if (!doc) {
+    return false;
+  }
+  const docHeads = Automerge.getHeads(doc);
+  return heads.every((head) => docHeads.includes(head));
+};
+
 self.addEventListener("fetch", async (event) => {
   const url = new URL(event.request.url);
 
@@ -120,9 +128,7 @@ self.addEventListener("fetch", async (event) => {
       (async () => {
         const handle = (await repo).find(automergeUrl);
         await handle.whenReady();
-        const doc = await handle.doc();
-
-        console.log("sw found doc", doc);
+        let doc = await handle.doc();
 
         if (!doc) {
           return new Response(
@@ -132,6 +138,43 @@ self.addEventListener("fetch", async (event) => {
               headers: { "Content-Type": "text/plain" },
             }
           );
+        }
+
+        // If the request asked for a specific heads on the document,
+        // try waiting to see if the document arrives at that heads.
+        // (NOTE: this is overly simplistic because it requires an exact match
+        // between the requested heads and the current doc on the service worker;
+        // we probably want something more sophisticated like waiting until the SW
+        // has a superset of the requested heads and then can return a view at the
+        // requested heads? However, for the simple case of a client tab coordinating
+        // with the service worker, this seems to be enough for now.)
+
+        // Try every INTERVAL_MS for TIMEOUT_MS
+        const INTERVAL_MS = 16;
+        const TIMEOUT_MS = 2000;
+        const startTime = Date.now();
+
+        const queryHeads = url.searchParams.get("heads")?.split(",");
+        if (queryHeads?.length > 0) {
+          while (
+            !headsEqual(doc, queryHeads) &&
+            Date.now() - startTime < TIMEOUT_MS
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS));
+            doc = handle.docSync();
+          }
+
+          if (!headsEqual(doc, queryHeads)) {
+            return new Response(
+              `Heads mismatch: requested ${queryHeads} but had ${Automerge.getHeads(
+                doc
+              )}`,
+              {
+                status: 404,
+                headers: { "Content-Type": "text/plain" },
+              }
+            );
+          }
         }
 
         const file = parts.reduce((dir, name) => dir?.[name], doc);
