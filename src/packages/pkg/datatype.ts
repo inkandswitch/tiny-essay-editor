@@ -47,8 +47,8 @@ export const setTitle = (doc: PackageDoc, title: string) => {
 
 export const packageDataType: DataType<PackageDoc, never, never> = {
   type: "patchwork:dataType",
-  id: "folder",
-  name: "Module",
+  id: "pkg",
+  name: "Package",
   icon: Package,
   isExperimental: true,
   init,

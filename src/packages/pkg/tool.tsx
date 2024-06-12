@@ -94,8 +94,8 @@ export const PackageEditor: React.FC<EditorProps<never, never>> = ({
 
 export const packageEditorTool: Tool = {
   type: "patchwork:tool",
-  id: "folder",
-  name: "Module",
+  id: "pkg",
+  name: "Package",
   supportedDataTypes: [packageDataType],
   editorComponent: PackageEditor,
 };
