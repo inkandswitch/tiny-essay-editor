@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { HasAssets } from "@/os/assets";
 import { useCurrentAccount } from "@/os/explorer/account";
@@ -19,8 +20,14 @@ import { getAnnotationGroupId } from "../annotations";
 export interface AnnotationGroupViewProps {
   doc: HasVersionControlMetadata<unknown, unknown> & HasAssets;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown> & HasAssets>;
-  tool: Tool;
   annotationGroup: AnnotationGroupWithUIState<unknown, unknown>;
+  annotationsViewComponent: React.FC<
+    AnnotationsViewProps<
+      HasVersionControlMetadata<unknown, unknown>,
+      unknown,
+      unknown
+    >
+  >;
   onSelectNext: () => void;
   onSelectPrev: () => void;
   hasNext: boolean;
@@ -40,8 +47,8 @@ export const AnnotationGroupView = forwardRef<
     {
       doc,
       handle,
-      tool,
       annotationGroup,
+      annotationsViewComponent,
       setIsHovered,
       setIsSelected,
       hasNext,
@@ -253,14 +260,19 @@ export const AnnotationGroupView = forwardRef<
                 : ""
             }`}
           >
-            {!hideAnnotations && (
-              <AnnotationsView
-                doc={doc}
-                handle={handle}
-                tool={tool}
-                annotations={annotationGroup.annotations}
-              />
-            )}
+            {(!hideAnnotations || !annotationGroup.discussion) &&
+              (annotationsViewComponent ? (
+                React.createElement(annotationsViewComponent, {
+                  doc,
+                  handle,
+
+                  annotations: annotationGroup.annotations,
+                })
+              ) : (
+                <div className="text-gray-500 text-xs italic">
+                  No view available for this edit
+                </div>
+              ))}
             <div className="mx-1.5 cursor-default">
               {annotationGroup.discussion?.comments.map((comment, index) => (
                 <DiscussionCommentView
@@ -469,35 +481,4 @@ const DiscussionCommentView = ({
       </div>
     </div>
   );
-};
-type AnnotationViewPropsWithDatatypeId<
-  D extends HasVersionControlMetadata<T, V>,
-  T,
-  V
-> = AnnotationsViewProps<D, T, V> & {
-  tool: Tool;
-};
-const AnnotationsView = ({
-  annotations,
-  tool,
-  doc,
-  handle,
-}: AnnotationViewPropsWithDatatypeId<
-  HasVersionControlMetadata<unknown, unknown>,
-  unknown,
-  unknown
->) => {
-  // For now, we just use the first annotation viewer available for this doc type.
-  // In the future, we might want to:
-  // - use an annotations view that's similar to the viewer being used for the main doc
-  // - allow switching between different viewers?
-  const Viewer = tool.annotationViewComponent;
-  if (!Viewer) {
-    return (
-      <div className="text-gray-500 text-xs italic">
-        No view available for this edit
-      </div>
-    );
-  }
-  return <Viewer doc={doc} handle={handle} annotations={annotations} />;
 };

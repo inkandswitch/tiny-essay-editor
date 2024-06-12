@@ -14,6 +14,7 @@ import { MessageCircle } from "lucide-react";
 import { TextSelection } from "./CodeMirrorEditor";
 import { CommentState } from "@/os/versionControl/schema";
 import { MarkdownDoc, MarkdownDocAnchor } from "../datatype";
+import { EssayAnnotations } from "./EssayAnnotations";
 
 export const CommentsSidebar = ({
   doc,
@@ -56,7 +57,7 @@ export const CommentsSidebar = ({
                 doc={doc}
                 handle={handle}
                 annotationGroup={annotationGroup}
-                tool={null /*todo: solve circular ref EssayEditorTool*/}
+                annotationsViewComponent={EssayAnnotations}
                 setIsHovered={(isHovered) => {
                   setHoveredAnnotationGroupId(isHovered ? id : undefined);
                 }}

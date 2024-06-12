@@ -22,7 +22,7 @@ export type Tool = {
   name: string;
   icon?: any;
   editorComponent: React.FC<EditorProps<unknown, unknown>>;
-  annotationViewComponent?: React.FC<
+  annotationsViewComponent?: React.FC<
     AnnotationsViewProps<
       HasVersionControlMetadata<unknown, unknown>,
       unknown,
