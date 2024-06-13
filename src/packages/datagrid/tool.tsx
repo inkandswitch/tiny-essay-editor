@@ -1,15 +1,14 @@
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
 
+import { EditorProps, Tool } from "@/os/tools";
 import { next as A } from "@automerge/automerge";
 import { HotTable } from "@handsontable/react";
-import { registerAllModules } from "handsontable/registry";
 import "handsontable/dist/handsontable.full.min.css";
+import { registerAllModules } from "handsontable/registry";
+import { registerRenderer, textRenderer } from "handsontable/renderers";
 import { HyperFormula } from "hyperformula";
 import { useMemo } from "react";
-import { EditorProps, Tool } from "@/os/tools";
-import { registerRenderer, textRenderer } from "handsontable/renderers";
-import { DataGridDoc, DataGridDocAnchor, dataGridDatatype } from "./datatype";
-import { Sheet } from "lucide-react";
+import { DataGridDoc, DataGridDocAnchor } from "./datatype";
 
 // register Handsontable's modules
 registerAllModules();
@@ -105,6 +104,6 @@ export const dataGridTool: Tool = {
   type: "patchwork:tool",
   id: "datagrid",
   name: "Spreadsheet",
-  supportedDataTypes: [dataGridDatatype],
+  supportedDataTypes: ["datagrid"],
   editorComponent: DataGrid,
 };

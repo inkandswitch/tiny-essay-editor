@@ -2,11 +2,11 @@ import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import * as A from "@automerge/automerge/next";
 import React from "react";
 
-import { EditorProps, Tool, useToolsForDataType, useTools } from "@/os/tools";
-import { DocLink, FolderDoc, folderDatatype } from "./datatype";
-import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
 import { useDataType } from "@/os/datatypes";
+import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
 import { Icon } from "@/os/lib/icons";
+import { EditorProps, Tool, useToolsForDataType } from "@/os/tools";
+import { DocLink, FolderDoc } from "./datatype";
 
 export const FolderViewer: React.FC<EditorProps<never, never>> = ({
   docUrl,
@@ -88,5 +88,5 @@ export const folderViewerTool: Tool = {
   id: "folder",
   name: "Folder",
   editorComponent: FolderViewer,
-  supportedDataTypes: [folderDatatype],
+  supportedDataTypes: ["folder"],
 };

@@ -1,13 +1,12 @@
 import { Tool } from "@/os/tools";
-import { EssayEditor } from "./components/EssayEditor";
 import { EssayAnnotations } from "./components/EssayAnnotations";
-import { markdownDataType } from "./datatype";
+import { EssayEditor } from "./components/EssayEditor";
 
 export const essayEditorTool: Tool = {
   type: "patchwork:tool",
   id: "essay",
   name: "Editor",
-  supportedDataTypes: [markdownDataType],
+  supportedDataTypes: ["essay"],
   editorComponent: EssayEditor,
   annotationsViewComponent: EssayAnnotations,
   supportsInlineComments: true,

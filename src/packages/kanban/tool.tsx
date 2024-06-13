@@ -1,10 +1,9 @@
-import { next as A } from "@automerge/automerge";
-import { KanbanBoardDoc, KanbanBoardDocAnchor } from "./datatype";
 import { EditorProps, Tool } from "@/os/tools";
 import { useDocumentWithActions } from "@/packages/kanban/useDocumentWithActions";
+import { next as A } from "@automerge/automerge";
 import { useMemo } from "react";
 import Board from "react-trello";
-import { kanbanBoardDatatype } from "./datatype";
+import { KanbanBoardDoc, KanbanBoardDocAnchor } from "./datatype";
 
 export const KanbanBoard = ({
   docUrl,
@@ -87,6 +86,6 @@ export const kanbanTool: Tool = {
   type: "patchwork:tool",
   id: "kanban",
   name: "Kanban",
-  supportedDataTypes: [kanbanBoardDatatype],
+  supportedDataTypes: ["kanban"],
   editorComponent: KanbanBoard,
 };

@@ -7,5 +7,5 @@ export const ambSheetTool: Tool = {
   id: "ambsheet",
   name: "AmbSheet",
   editorComponent: AmbSheet,
-  supportedDataTypes: [ambSheetDatatype],
+  supportedDataTypes: ["ambsheet"],
 };

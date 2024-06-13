@@ -16,7 +16,7 @@ import { IconType } from "./lib/icons";
 export type Tool = {
   id: string;
   type: "patchwork:tool";
-  supportedDataTypes: "*" | DataType<unknown, unknown, unknown>[];
+  supportedDataTypes: "*" | string[];
   name: string;
   icon?: IconType;
   editorComponent: React.FC<EditorProps<unknown, unknown>>;
@@ -97,12 +97,16 @@ export const useToolsForDataType = (
   const tools = useTools();
 
   return useMemo(() => {
+    if (!dataType) {
+      return [];
+    }
+
     return tools.filter((tool) => {
       return (
         tool.supportedDataTypes === "*" ||
         (typeof dataType === "string"
-          ? tool.supportedDataTypes.some((d) => d.id === dataType)
-          : tool.supportedDataTypes.includes(dataType))
+          ? tool.supportedDataTypes.some((d) => d === dataType)
+          : tool.supportedDataTypes.includes(dataType.id))
       );
     });
   }, [tools, dataType]);

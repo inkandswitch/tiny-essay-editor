@@ -1,9 +1,8 @@
 import { DataType } from "@/os/datatypes";
 import { ContactDoc, RegisteredContactDoc } from "@/os/explorer/account";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
-import { markdownDataType, MarkdownDoc } from "@/packages/essay/datatype";
+import { MarkdownDoc, markdownDataType } from "@/packages/essay/datatype";
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
-import { Bot } from "lucide-react";
 
 const BOT_AVATAR_URL = "automerge:uL1duhieqUV4qaeHGHX1dg8FnNy" as AutomergeUrl;
 

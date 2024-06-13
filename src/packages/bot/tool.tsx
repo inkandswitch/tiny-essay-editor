@@ -7,7 +7,7 @@ import { MarkdownDoc } from "@/packages/essay";
 import { EssayEditor } from "@/packages/essay/components/EssayEditor";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { Bot } from "lucide-react";
-import { EssayEditingBotDoc, essayEditingBotDatatype } from "./datatype";
+import { EssayEditingBotDoc } from "./datatype";
 
 export const BotEditor = ({
   docUrl,
@@ -70,5 +70,5 @@ export const botEditorTool: Tool = {
   id: "bot",
   name: "Bot",
   editorComponent: BotEditor,
-  supportedDataTypes: [essayEditingBotDatatype],
+  supportedDataTypes: ["bot"],
 };

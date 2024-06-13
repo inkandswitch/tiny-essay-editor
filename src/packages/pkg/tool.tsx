@@ -4,7 +4,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EditorProps, Tool } from "@/os/tools";
-import { PackageDoc, packageDataType } from "./datatype";
+import { PackageDoc } from "./datatype";
 
 export const PackageEditor: React.FC<EditorProps<never, never>> = ({
   docUrl,
@@ -99,6 +99,6 @@ export const packageEditorTool: Tool = {
   type: "patchwork:tool",
   id: "pkg",
   name: "Package",
-  supportedDataTypes: [packageDataType],
+  supportedDataTypes: ["pkg"],
   editorComponent: PackageEditor,
 };
