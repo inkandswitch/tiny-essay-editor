@@ -6,11 +6,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Doc, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "@/os/datatypes";
-import { makeBotTextEdits } from "../bots";
+import { SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
 import { MarkdownDoc } from "@/packages/essay";
 import { toast } from "sonner";
-
-const SUPPORTED_DATATYPES = ["essay"];
 
 export const BotsSidebar = ({
   doc,
@@ -30,7 +28,7 @@ export const BotsSidebar = ({
       await makeBotTextEdits({
         targetDocHandle: handle as DocHandle<MarkdownDoc>,
         prompt: editPrompt,
-        path: ["content"],
+        dataType,
       });
     } catch (e) {
       toast.error("Error performing edit");

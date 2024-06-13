@@ -5,15 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EditorProps, Tool } from "@/os/tools";
 import { PackageDoc } from "./datatype";
+import { view } from "@automerge/automerge";
 
 export const PackageEditor: React.FC<EditorProps<never, never>> = ({
   docUrl,
+  docHeads,
 }: EditorProps<never, never>) => {
-  const [moduleDoc, changeModuleDoc] = useDocument<PackageDoc>(docUrl);
+  const [rawModuleDoc, changeModuleDoc] = useDocument<PackageDoc>(docUrl);
 
-  if (!moduleDoc) {
+  if (!rawModuleDoc) {
     return null;
   }
+
+  const moduleDoc = docHeads ? view(rawModuleDoc, docHeads) : rawModuleDoc;
 
   const onChangeUrlInput = (evt) => {
     changeModuleDoc((doc) => {

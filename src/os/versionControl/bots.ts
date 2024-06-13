@@ -2,6 +2,7 @@ import { DEFAULT_MODEL, openaiClient } from "@/os/lib/llm";
 import { MarkdownDoc } from "@/packages/essay";
 import { DocHandle } from "@automerge/automerge-repo";
 import { Doc, splice } from "@automerge/automerge/next";
+import { DataType } from "../datatypes";
 
 const EDITOR_BOT_CONTACT_URL = "automerge:QprGUET1kXHD76mMmg7p7Q9TD1R";
 
@@ -29,24 +30,40 @@ const functionsSpec = [
 ];
 
 // given a path like ["content", "main"], get doc.content.main
-
 const getPath = (doc: Doc<unknown>, path: string[]) => {
   return path.reduce((acc, key) => acc[key], doc);
 };
 
+const DATATYPE_CONFIGS = {
+  essay: {
+    instructions: `The user will give you some text. Return a list of edits to apply to the text to achieve the task below.
+In your reasoning, concisely explain in a short sentence why the edit is necessary given the task specification.
+Keep your before and after regions short. If you're only editing one word, you only need to include that word.`,
+    path: ["content"],
+  },
+  pkg: {
+    instructions: `The user will provide code for a widget which uses React for UI (without JSX) and Automerge for state.
+  Edit the code to achieve the user's requested task below.
+  Return a list of edits to apply to the code.
+  Each edit should have reasoning for that edit, some before text, and the corresponding after text.
+  `,
+    path: ["source", "index.js", "contents"],
+  },
+};
+
+export const SUPPORTED_DATATYPES = Object.keys(DATATYPE_CONFIGS);
+
 export const makeBotTextEdits = async ({
   targetDocHandle,
-  path,
   prompt,
+  dataType,
 }: {
   targetDocHandle: DocHandle<MarkdownDoc>;
-  path: string[];
   prompt: string;
+  dataType: DataType<unknown, unknown, unknown>;
 }): Promise<void> => {
-  const systemPrompt = `The user will give you some text. Return a list of edits to apply to the text to achieve the task below.
-Each edit should have reasoning for that edit, some before text, and the corresponding after text.
-In your reasoning, concisely explain in a short sentence why the edit is necessary given the task specification.
-Keep your before and after regions short. If you're only editing one word, you only need to include that word.
+  const { instructions, path } = DATATYPE_CONFIGS[dataType.id];
+  const systemPrompt = `${instructions}
 
 Task:
 
