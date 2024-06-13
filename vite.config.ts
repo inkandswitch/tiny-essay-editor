@@ -33,6 +33,8 @@ export default defineConfig({
     plugins: () => [wasm()],
   },
   build: {
+    minify: false,
+
     rollupOptions: {
       external: [
         "@automerge/automerge",
