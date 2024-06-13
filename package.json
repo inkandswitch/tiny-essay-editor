@@ -9,7 +9,7 @@
     "build:main": "tsc && vite build",
     "build:sw": "vite build --config vite.config-sw.ts",
     "build": "yarn run build:main && yarn run build:sw",
-    "build:dev": "yarn build && concurrently \"http-server dist\" \"yarn run chokidar 'src/**/*' -c 'yarn build'\"",
+    "build:dev": "yarn build && concurrently \"http-server dist\" \"yarn run chokidar 'src/**/*' 'service-worker.js' -c 'yarn build'\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest"
