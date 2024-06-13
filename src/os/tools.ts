@@ -65,7 +65,6 @@ const isTool = (value: any): value is Tool => {
 export const useTools = (): Tool[] => {
   const [builtInTools, setBuiltInTools] = useState<Tool[]>([]);
   const [dynamicTools, setDynamicTools] = useState<Tool[]>([]);
-
   const modules = usePackageModulesInRootFolder();
 
   // add exported tools in packages to tools

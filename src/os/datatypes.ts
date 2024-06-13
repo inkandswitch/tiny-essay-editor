@@ -9,6 +9,7 @@ import { Repo } from "@automerge/automerge-repo";
 import { LucideIcon } from "lucide-react";
 import { FileExportMethod } from "./fileExports";
 import { useEffect, useState } from "react";
+import { usePackageModulesInRootFolder } from "@/packages/pkg/usePackages";
 
 export type CoreDataType<D> = {
   id: string;
@@ -112,6 +113,21 @@ export const useDataTypes = () => {
   const [dataTypes, setDataTypes] = useState<
     DataType<unknown, unknown, unknown>[]
   >([]);
+  const [dynamicDataTypes, setDynamicDataTypes] = useState<
+    DataType<unknown, unknown, unknown>[]
+  >([]);
+  const modules = usePackageModulesInRootFolder();
+
+  console.log(modules, dynamicDataTypes);
+
+  // add exported tools in packages to tools
+  useEffect(() => {
+    setDynamicDataTypes(
+      Object.values(modules).flatMap((module) =>
+        Object.values(module).filter(isDataType)
+      )
+    );
+  }, [modules]);
 
   // load packages asynchronously to break the dependency loop tools -> packages -> tools
   useEffect(() => {
@@ -124,7 +140,7 @@ export const useDataTypes = () => {
     });
   }, []);
 
-  return dataTypes;
+  return dataTypes.concat(dynamicDataTypes);
 };
 
 export const useDataType = <D, T, V>(
