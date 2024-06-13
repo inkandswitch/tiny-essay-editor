@@ -687,7 +687,11 @@ export const VersionControlEditor: React.FC<{
               />
             )}
             {sidebarMode === "bots" && (
-              <BotsSidebar doc={activeDoc} handle={activeHandle} tool={tool} />
+              <BotsSidebar
+                doc={activeDoc}
+                handle={activeHandle}
+                dataType={dataType}
+              />
             )}
           </div>
         </div>

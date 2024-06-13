@@ -9,7 +9,7 @@ export const openaiClient = isLLMActive
     })
   : undefined;
 
-export const DEFAULT_MODEL = "gpt-4-turbo-preview";
+export const DEFAULT_MODEL = "gpt-4o";
 
 export const getStringCompletion = async (message) => {
   const response = await openaiClient.chat.completions.create({

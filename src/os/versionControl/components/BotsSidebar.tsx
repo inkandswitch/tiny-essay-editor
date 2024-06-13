@@ -4,19 +4,47 @@ import React from "react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Doc, DocHandle } from "@automerge/automerge-repo";
+import { DataType } from "@/os/datatypes";
+import { runBot } from "../bots";
+import { MarkdownDoc } from "@/packages/essay";
+import { toast } from "sonner";
 
-export const BotsSidebar = () => {
+const SUPPORTED_DATATYPES = ["essay"];
+
+export const BotsSidebar = ({
+  doc,
+  handle,
+  dataType,
+}: {
+  doc: Doc<unknown>;
+  handle: DocHandle<unknown>;
+  dataType: DataType<unknown, unknown, unknown>;
+}) => {
   const [editPrompt, setEditPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleEdit = () => {
-    // Perform the edit action here
-    console.log("Edit performed with prompt:", editPrompt);
+  const handleEdit = async () => {
+    setLoading(true);
+    try {
+      await runBot({
+        targetDocHandle: handle as DocHandle<MarkdownDoc>,
+        prompt: editPrompt,
+      });
+    } catch (e) {
+      toast.error("Error performing edit");
+    }
+    setLoading(false);
+    toast.success("Edit performed");
   };
 
-  const handleProposeEdit = () => {
-    // Perform the propose edit action here
-    console.log("Propose edit on branch with prompt:", editPrompt);
-  };
+  if (!SUPPORTED_DATATYPES.includes(dataType.id)) {
+    return (
+      <div className="p-2 text-sm text-gray-500 flex items-center justify-center h-full">
+        Bots are not yet supported for datatype: {dataType.id}
+      </div>
+    );
+  }
 
   return (
     <div className="p-2">
@@ -34,8 +62,8 @@ export const BotsSidebar = () => {
       />
       <div className="mt-2 flex gap-2">
         <Button onClick={handleEdit}>Make Edit</Button>
-        <Button onClick={handleProposeEdit}>Try on branch</Button>
       </div>
+      {loading && <div className="mt-2 text-sm text-gray-500">Loading...</div>}
     </div>
   );
 };
