@@ -1,7 +1,7 @@
 import { DEFAULT_MODEL, openaiClient } from "@/os/lib/llm";
 import { MarkdownDoc } from "@/packages/essay";
 import { DocHandle } from "@automerge/automerge-repo";
-import { splice } from "@automerge/automerge/next";
+import { Doc, splice } from "@automerge/automerge/next";
 
 const EDITOR_BOT_CONTACT_URL = "automerge:QprGUET1kXHD76mMmg7p7Q9TD1R";
 
@@ -17,9 +17,9 @@ const functionsSpec = [
           items: {
             type: "object",
             properties: {
+              reasoning: { type: "string" },
               before: { type: "string" },
               after: { type: "string" },
-              reasoning: { type: "string" },
             },
           },
         },
@@ -28,16 +28,24 @@ const functionsSpec = [
   },
 ];
 
-export const runBot = async ({
+// given a path like ["content", "main"], get doc.content.main
+
+const getPath = (doc: Doc<unknown>, path: string[]) => {
+  return path.reduce((acc, key) => acc[key], doc);
+};
+
+export const makeBotTextEdits = async ({
   targetDocHandle,
+  path,
   prompt,
 }: {
   targetDocHandle: DocHandle<MarkdownDoc>;
+  path: string[];
   prompt: string;
 }): Promise<void> => {
   const systemPrompt = `The user will give you some text. Return a list of edits to apply to the text to achieve the task below.
-Each edit should have some before text, the corresponding after text, and reasoning for that edit.
-In your reasoning, concisely explain in one short sentence why the edit is necessary given the task specification.
+Each edit should have reasoning for that edit, some before text, and the corresponding after text.
+In your reasoning, concisely explain in a short sentence why the edit is necessary given the task specification.
 Keep your before and after regions short. If you're only editing one word, you only need to include that word.
 
 Task:
@@ -50,7 +58,7 @@ ${JSON.stringify(functionsSpec)}
   `;
 
   const message = `
-  ${targetDocHandle.docSync().content}
+  ${getPath(targetDocHandle.docSync(), path)}
   `;
 
   const response = await openaiClient.chat.completions.create({
@@ -79,10 +87,10 @@ ${JSON.stringify(functionsSpec)}
     for (const edit of parsed.edits) {
       targetDocHandle.change(
         (doc) => {
-          const from = doc.content.indexOf(edit.before);
+          const from = getPath(doc, path).indexOf(edit.before);
 
           // edit the text
-          splice(doc, ["content"], from, edit.before.length, edit.after);
+          splice(doc, path, from, edit.before.length, edit.after);
 
           // leave a comment
           // const fromCursor = getCursor(doc, ["content"], from);

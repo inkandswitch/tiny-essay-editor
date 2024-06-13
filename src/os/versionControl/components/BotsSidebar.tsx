@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Doc, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "@/os/datatypes";
-import { runBot } from "../bots";
+import { makeBotTextEdits } from "../bots";
 import { MarkdownDoc } from "@/packages/essay";
 import { toast } from "sonner";
 
@@ -27,9 +27,10 @@ export const BotsSidebar = ({
   const handleEdit = async () => {
     setLoading(true);
     try {
-      await runBot({
+      await makeBotTextEdits({
         targetDocHandle: handle as DocHandle<MarkdownDoc>,
         prompt: editPrompt,
+        path: ["content"],
       });
     } catch (e) {
       toast.error("Error performing edit");
