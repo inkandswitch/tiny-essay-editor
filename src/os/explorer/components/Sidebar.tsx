@@ -42,20 +42,21 @@ import {
   useCurrentAccountDoc,
   useDatatypeSettings,
 } from "../account";
+import { Icon } from "@/os/lib/icons";
 
 const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
   const { node, style, dragHandle } = props;
   const dataType = useDataType(node.data.type);
-  let Icon;
+  let icon;
 
   if (node.data.type === "folder") {
     if (node.isOpen) {
-      Icon = ChevronDown;
+      icon = ChevronDown;
     } else {
-      Icon = ChevronRight;
+      icon = ChevronRight;
     }
   } else {
-    Icon = dataType?.icon ?? FileQuestionIcon;
+    icon = dataType?.icon;
   }
 
   return (
@@ -79,7 +80,7 @@ const Node = (props: NodeRendererProps<DocLinkWithFolderPath>) => {
           }
         }}
       >
-        <Icon size={14} />
+        <Icon type={icon} size={14} />
       </div>
 
       {!node.isEditing && (
@@ -354,7 +355,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="py-1 px-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-200 "
                 onClick={() => addNewDocument({ type: id })}
               >
-                <dataType.icon
+                <Icon
+                  type={dataType.icon}
                   size={14}
                   className="inline-block font-bold mr-2 align-top mt-[2px]"
                 />

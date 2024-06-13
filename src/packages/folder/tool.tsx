@@ -6,6 +6,7 @@ import { EditorProps, Tool, useToolsForDataType, useTools } from "@/os/tools";
 import { DocLink, FolderDoc, folderDatatype } from "./datatype";
 import { selectDocLink } from "@/os/explorer/hooks/useSelectedDocLink";
 import { useDataType } from "@/os/datatypes";
+import { Icon } from "@/os/lib/icons";
 
 export const FolderViewer: React.FC<EditorProps<never, never>> = ({
   docUrl,
@@ -41,7 +42,7 @@ export const FolderEntryView = ({ docLink }) => {
   const dataType = useDataType(docLink.type);
   const tool = useToolsForDataType(docLink.type)[0];
 
-  const Icon = tool?.icon ?? dataType?.icon;
+  const icon = tool?.icon ?? dataType?.icon;
 
   return (
     <div>
@@ -52,7 +53,7 @@ export const FolderEntryView = ({ docLink }) => {
       ) : (
         <>
           <div className="flex gap-2 items-center font-medium mb-1">
-            <Icon size={16} />
+            <Icon type={icon} size={16} />
             <div>{docLink.name}</div>
             <button
               className="text-sm text-gray-500 underline align-bottom cursor-pointer"

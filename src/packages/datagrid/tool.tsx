@@ -105,7 +105,6 @@ export const dataGridTool: Tool = {
   type: "patchwork:tool",
   id: "datagrid",
   name: "Spreadsheet",
-  icon: Sheet,
   supportedDataTypes: [dataGridDatatype],
   editorComponent: DataGrid,
 };

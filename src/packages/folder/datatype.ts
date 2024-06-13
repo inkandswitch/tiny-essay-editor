@@ -59,7 +59,7 @@ export const folderDatatype: DataType<FolderDoc, never, never> = {
   type: "patchwork:dataType",
   id: "folder",
   name: "Folder",
-  icon: Folder,
+  icon: "Folder",
   init,
   getTitle,
   setTitle,

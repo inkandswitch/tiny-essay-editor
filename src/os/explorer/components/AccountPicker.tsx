@@ -35,6 +35,7 @@ import {
 import { ContactAvatar } from "./ContactAvatar";
 import { useDataTypes } from "@/os/datatypes";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Icon } from "@/os/lib/icons";
 
 // 1MB in bytes
 const MAX_AVATAR_SIZE = 1024 * 1024;
@@ -351,7 +352,8 @@ export const AccountPicker = ({
                           htmlFor={`datatype-${dataType.id}`}
                           className="text-sm text-gray-600 cursor-pointer "
                         >
-                          <dataType.icon
+                          <Icon
+                            type={dataType.icon}
                             size={14}
                             className="inline-block font-bold mr-2 align-top mt-[2px]"
                           />

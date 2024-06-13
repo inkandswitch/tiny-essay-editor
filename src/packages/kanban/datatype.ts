@@ -252,7 +252,7 @@ export const kanbanBoardDatatype: DataType<
   type: "patchwork:dataType",
   id: "kanban",
   name: "Kanban Board",
-  icon: KanbanSquare,
+  icon: "KanbanSquare",
   isExperimental: true,
   init,
   getTitle,

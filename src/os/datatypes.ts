@@ -6,16 +6,16 @@ import { Annotation } from "@/os/versionControl/schema";
 import { TextPatch } from "@/os/versionControl/utils";
 import { next as A, Doc } from "@automerge/automerge";
 import { Repo } from "@automerge/automerge-repo";
-import { LucideIcon } from "lucide-react";
 import { FileExportMethod } from "./fileExports";
 import { useEffect, useState } from "react";
 import { usePackageModulesInRootFolder } from "@/packages/pkg/usePackages";
+import { IconType } from "./lib/icons";
 
 export type CoreDataType<D> = {
   id: string;
   type: "patchwork:dataType";
   name: string;
-  icon: LucideIcon;
+  icon: IconType;
   init: (doc: D, repo: Repo) => void;
   getTitle: (doc: D, repo: Repo) => Promise<string>;
   setTitle?: (doc: any, title: string) => void;
@@ -117,8 +117,6 @@ export const useDataTypes = () => {
     DataType<unknown, unknown, unknown>[]
   >([]);
   const modules = usePackageModulesInRootFolder();
-
-  console.log(modules, dynamicDataTypes);
 
   // add exported tools in packages to tools
   useEffect(() => {

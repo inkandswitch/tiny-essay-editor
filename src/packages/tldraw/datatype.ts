@@ -316,7 +316,7 @@ export const tldrawDatatype: DataType<TLDrawDoc, TLDrawDocAnchor, TLShape> = {
   type: "patchwork:dataType",
   id: "tldraw",
   name: "Drawing",
-  icon: PenLine,
+  icon: "PenLine",
   init,
   getTitle,
   setTitle,

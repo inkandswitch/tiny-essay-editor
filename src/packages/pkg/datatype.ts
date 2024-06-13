@@ -49,7 +49,7 @@ export const packageDataType: DataType<PackageDoc, never, never> = {
   type: "patchwork:dataType",
   id: "pkg",
   name: "Package",
-  icon: Package,
+  icon: "Package",
   isExperimental: true,
   init,
   getTitle,

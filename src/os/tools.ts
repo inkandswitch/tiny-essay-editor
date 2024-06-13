@@ -11,13 +11,14 @@ import {
 import { usePackageModulesInRootFolder } from "@/packages/pkg/usePackages";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "./datatypes";
+import { IconType } from "./lib/icons";
 
 export type Tool = {
   id: string;
   type: "patchwork:tool";
   supportedDataTypes: "*" | DataType<unknown, unknown, unknown>[];
   name: string;
-  icon?: any;
+  icon?: IconType;
   editorComponent: React.FC<EditorProps<unknown, unknown>>;
   annotationsViewComponent?: React.FC<
     AnnotationsViewProps<

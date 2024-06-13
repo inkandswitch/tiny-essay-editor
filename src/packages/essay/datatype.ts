@@ -326,7 +326,7 @@ export const markdownDataType: DataType<
   type: "patchwork:dataType",
   id: "essay",
   name: "Essay",
-  icon: TextIcon,
+  icon: "Text",
   init,
   getTitle,
   markCopy,

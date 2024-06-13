@@ -169,7 +169,7 @@ export const ambSheetDatatype: DataType<
   type: "patchwork:dataType",
   id: "ambsheet",
   name: "AmbSheet",
-  icon: BoxesIcon,
+  icon: "Boxes",
   init,
   getTitle,
   setTitle,
