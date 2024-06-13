@@ -111,8 +111,6 @@ self.addEventListener("fetch", async (event) => {
   if (ASSETS_REQUEST_URL_REGEX.test(event.request.url)) {
     const [, docId, ...parts] = url.pathname.split("/");
 
-    console.log(docId, parts);
-
     const automergeUrl = `automerge:${docId}`;
     if (!isValidAutomergeUrl(automergeUrl)) {
       event.respondWith(
