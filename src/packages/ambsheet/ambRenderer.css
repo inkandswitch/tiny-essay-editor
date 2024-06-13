@@ -1,0 +1,15 @@
+.value-container::after {
+  content: '';
+  height: 100%;
+  border-right: 1px solid #ddd;
+}
+.value-container > div:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0; /* adjusted for removed gap */
+  height: 100%;
+  border-right: 1px solid #ddd;
+}
+.value-container > div {
+  position: relative;
+}
