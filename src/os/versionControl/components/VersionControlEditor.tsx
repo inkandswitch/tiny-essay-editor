@@ -36,6 +36,7 @@ import {
 import * as A from "@automerge/automerge/next";
 import { truncate } from "lodash";
 import {
+  BotIcon,
   ChevronsRight,
   CrownIcon,
   Edit3Icon,
@@ -73,13 +74,14 @@ import {
 } from "../utils";
 import { ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
+import { BotsSidebar } from "./BotsSidebar";
 
 interface MakeBranchOptions {
   name?: string;
   heads?: A.Heads;
 }
 
-type SidebarMode = "review" | "history";
+type SidebarMode = "review" | "history" | "bots";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
@@ -123,7 +125,7 @@ export const VersionControlEditor: React.FC<{
 
   const setSidebarMode = (sidebarMode: SidebarMode) => {
     // reset state from history mode
-    if (sidebarMode === "review" || !sidebarMode) {
+    if (sidebarMode !== "history") {
       setDiffFromTimelineSidebar(undefined);
       setDocHeadsFromTimelineSidebar(undefined);
     }
@@ -640,7 +642,7 @@ export const VersionControlEditor: React.FC<{
                 setSidebarMode(mode as "review" | "history")
               }
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="review">
                   <MessageSquareIcon size={16} className="mr-2" />
                   Review ({annotationGroups.length})
@@ -648,6 +650,10 @@ export const VersionControlEditor: React.FC<{
                 <TabsTrigger value="history">
                   <HistoryIcon size={16} className="mr-2" />
                   History
+                </TabsTrigger>
+                <TabsTrigger value="bots">
+                  <BotIcon size={16} className="mr-2" />
+                  Bots
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -679,6 +685,9 @@ export const VersionControlEditor: React.FC<{
                 setIsCommentInputFocused={setIsCommentInputFocused}
                 setCommentState={setCommentState}
               />
+            )}
+            {sidebarMode === "bots" && (
+              <BotsSidebar doc={activeDoc} handle={activeHandle} tool={tool} />
             )}
           </div>
         </div>
