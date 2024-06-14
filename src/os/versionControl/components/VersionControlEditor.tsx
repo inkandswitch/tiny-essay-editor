@@ -82,14 +82,14 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
-type SidebarMode = "review" | "history" | "Bot";
+export type SidebarMode = "review" | "history" | "Bot";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
   docUrl: AutomergeUrl;
   datatypeId: string;
   tool: Tool;
-  selectedBranch: Branch;
+  selectedBranch: Branch | undefined;
   setSelectedBranch: (branch: Branch) => void;
   addNewDocument: (doc: { type: string; change?: (doc: any) => void }) => void;
 }> = ({
@@ -712,6 +712,8 @@ export const VersionControlEditor: React.FC<{
                 dataType={dataType}
                 selectedBranch={selectedBranch}
                 setSelectedBranch={setSelectedBranch}
+                setSidebarMode={setSidebarMode}
+                mergeBranch={handleMergeBranch}
               />
             )}
           </div>
