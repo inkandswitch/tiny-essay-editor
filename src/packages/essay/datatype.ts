@@ -17,7 +17,6 @@ import { splice } from "@automerge/automerge/next";
 import { pick } from "lodash";
 import JSZip from "jszip";
 import { DataType } from "@/os/datatypes";
-import { TextIcon } from "lucide-react";
 
 // SCHEMA
 

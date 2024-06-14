@@ -91,7 +91,7 @@ export const makeBotTextEdits = async ({
   dataType,
   repo,
 }: {
-  targetDocHandle: DocHandle<MarkdownDoc>;
+  targetDocHandle: DocHandle<any>;
   chatHistory: ChatMessage[];
   dataType: DataType<unknown, unknown, unknown>;
   repo: Repo;
