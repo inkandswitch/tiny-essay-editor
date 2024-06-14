@@ -113,11 +113,17 @@ export const Topbar: React.FC<TopbarProps> = ({
           onValueChange={setToolModuleId}
         >
           <TabsList>
-            {tools.map((tool) => (
-              <TabsTrigger value={tool.id} className="px-2 py-1" key={tool.id}>
-                {tool.name}
-              </TabsTrigger>
-            ))}
+            {tools
+              .filter((tool) => tool.editorComponent)
+              .map((tool) => (
+                <TabsTrigger
+                  value={tool.id}
+                  className="px-2 py-1"
+                  key={tool.id}
+                >
+                  {tool.name}
+                </TabsTrigger>
+              ))}
           </TabsList>
         </Tabs>
       )}

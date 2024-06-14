@@ -4,16 +4,24 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import React, { useMemo } from "react";
 import { PackageDoc } from "@/packages/pkg/datatype";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 
 type StatusBarProps = EditorProps<unknown, unknown> & {
   dataType: DataType<unknown, unknown, unknown>;
   addNewDocument: (doc: { type: string; change?: (doc: any) => void }) => void;
 };
 
-const getEmptyPackageSource = (dataType: string) => {
+const getEmptyPackageSource = (dataType: string, doc: any) => {
   return `
 import React from "react";
 import {useDocument} from "@automerge/automerge-repo-react-hooks";
+
+/*
+ An example for doc:
+
+ ${JSON.stringify(doc)}
+
+*/
 
 export const tool = {
   type: "patchwork:tool",
@@ -27,11 +35,16 @@ export const tool = {
 
     return null
   },
-};`;
+};
+
+
+`;
 };
 
 export const StatusBar = (props: StatusBarProps) => {
-  const { dataType, addNewDocument } = props;
+  const { dataType, addNewDocument, docUrl } = props;
+
+  const [doc] = useDocument(docUrl);
 
   const tools = useToolsForDataType(dataType);
   const statusBarComponent = useMemo(
@@ -44,10 +57,15 @@ export const StatusBar = (props: StatusBarProps) => {
   );
 
   return (
-    <div className="bg-gray-100 p-2 flex items-center border-t border-gray-200 gap-3">
-      {statusBarComponent.map((component) =>
-        React.createElement(component, props)
-      )}
+    <div
+      className="bg-gray-100 p-2 flex items-center border-t border-gray-200 gap-3"
+      style={{ height: "48px" }}
+    >
+      {statusBarComponent.map((component) => (
+        <div className="bg-gray-100 rounded-md px-2 py-1">
+          {React.createElement(component, props)}
+        </div>
+      ))}
 
       <Button
         variant="ghost"
@@ -59,7 +77,7 @@ export const StatusBar = (props: StatusBarProps) => {
                 type: "automerge",
                 "index.js": {
                   contentType: "application/javascript",
-                  contents: getEmptyPackageSource(dataType.id),
+                  contents: getEmptyPackageSource(dataType.id, doc),
                 },
               };
             },

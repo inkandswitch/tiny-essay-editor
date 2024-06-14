@@ -1,4 +1,5 @@
 import { DataType } from "@/os/datatypes";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
 // SCHEMA
 
@@ -17,7 +18,7 @@ type AutomergeDocSource = {
 
 type PackageSource = UrlSource | AutomergeDocSource;
 
-export type PackageDoc = {
+export type PackageDoc = HasVersionControlMetadata<never, never> & {
   title: string;
   source: PackageSource;
 };

@@ -4,6 +4,7 @@ import { useDocuments } from "@automerge/automerge-repo-react-hooks";
 import { useMemo, useRef, useEffect, useState } from "react";
 import { next as A } from "@automerge/automerge";
 import { PackageDoc } from "./datatype";
+import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
 export const usePackageModulesInRootFolder = () => {
   const { flatDocLinks } = useRootFolderDocWithChildren();
@@ -15,8 +16,30 @@ export const usePackageModulesInRootFolder = () => {
     [flatDocLinks]
   );
 
-  const packageDocs = useDocuments<PackageDoc>(
-    packageDocLinks.map((link) => link.url)
+  const packageDocUrls = useMemo(
+    () => packageDocLinks.map((link) => link.url),
+    [packageDocLinks]
+  );
+  const packageDocs = useDocuments<PackageDoc>(packageDocUrls);
+
+  const branchUrls = useMemo(
+    () =>
+      (
+        Object.values(packageDocs) as HasVersionControlMetadata<
+          unknown,
+          unknown
+        >[]
+      ).flatMap((doc) =>
+        doc.branchMetadata?.branches.map((branch) => branch.url)
+      ),
+    [packageDocs]
+  );
+
+  const packageDocsOnBranches = useDocuments<PackageDoc>(branchUrls);
+
+  const allPackageDocs = useMemo(
+    () => ({ ...packageDocs, ...packageDocsOnBranches }),
+    [packageDocs, packageDocsOnBranches]
   );
 
   const packageDocsRef = useRef<Record<DocumentId, PackageDoc>>();
@@ -24,7 +47,7 @@ export const usePackageModulesInRootFolder = () => {
   useEffect(() => {
     (async () => {
       const modules = await Promise.all(
-        Object.entries(packageDocs).map(async ([docId, packageDoc]) => {
+        Object.entries(allPackageDocs).map(async ([docId, packageDoc]) => {
           const { source } = packageDoc;
           const heads = A.getHeads(packageDoc);
 
@@ -46,7 +69,7 @@ export const usePackageModulesInRootFolder = () => {
 
       setModules(modules);
     })();
-  }, [packageDocs]);
+  }, [allPackageDocs]);
 
   return modules;
 };
