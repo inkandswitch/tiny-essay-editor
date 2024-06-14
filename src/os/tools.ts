@@ -30,6 +30,12 @@ export type Tool = {
   /** whether this tool has support for rendering comments inline or if it
    * relies exclusively on the review sidebar to show comments */
   supportsInlineComments?: boolean;
+
+  /**
+   * Experiment: allow tools to specify a status bar component that will be rendered
+   * below the primary tool that is selected
+   */
+  statusBarComponent?: React.FC<EditorProps<unknown, unknown>>;
 };
 
 export type EditorProps<T, V> = {

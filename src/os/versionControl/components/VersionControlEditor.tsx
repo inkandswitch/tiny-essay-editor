@@ -75,6 +75,7 @@ import {
 import { ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
 import { BotsSidebar } from "./BotsSidebar";
+import { StatusBar } from "./Statusbar";
 
 interface MakeBranchOptions {
   name?: string;
@@ -624,6 +625,21 @@ export const VersionControlEditor: React.FC<{
             </div>
           </div>
         </ErrorBoundary>
+        <StatusBar
+          dataType={dataType}
+          key={selectedBranch?.url ?? mainDocUrl}
+          docUrl={selectedBranch?.url ?? mainDocUrl}
+          docHeads={docHeads}
+          annotations={visibleAnnotations}
+          annotationGroups={annotationGroups}
+          actorIdToAuthor={actorIdToAuthor}
+          setSelectedAnchors={setSelectedAnchors}
+          setHoveredAnchor={setHoveredAnchor}
+          setHoveredAnnotationGroupId={setHoveredAnnotationGroupId}
+          setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
+          hideInlineComments={hideInlineComments}
+          setCommentState={setCommentState}
+        />
       </div>
 
       {sidebarMode && (
