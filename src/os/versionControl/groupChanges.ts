@@ -655,10 +655,30 @@ export const getGroupedChanges = <T extends Branchable>({
             (m) => m.type === "otherBranchMergedIntoThisDoc"
           );
           if (mergeMarker) {
+            //  we need to finalize the change group for the branch merge before we add it to the merge marker;
+            // this will do things like calculate the diff for the group.
+            // Normally this step is handled inside pushGroup, but here we aren't pushing to the
+            // overall list of change groups, we're adding it to the merge marker.
+            const finalized = finalizeChangeGroup({
+              group: branchChangeGroup.changeGroup,
+              doc,
+              diffHeads:
+                changeGroups.length > 0
+                  ? [changeGroups[changeGroups.length - 1].to]
+                  : [],
+              options: {
+                grouping,
+                markers,
+                includeChangeInHistory,
+                includePatchInChangeGroup,
+                fallbackSummaryForChangeGroup,
+              },
+            });
+
             branchChangeGroup.changeGroup.markers.push({
               ...mergeMarker,
               // @ts-expect-error this is fine; we know we're adding to a merge marker
-              changeGroups: [branchChangeGroup.changeGroup],
+              changeGroups: [finalized],
             });
             const otherMarkersForThisGroup = markersForGroup.filter(
               (m) => m !== mergeMarker
@@ -667,7 +687,6 @@ export const getGroupedChanges = <T extends Branchable>({
               branchChangeGroup.changeGroup.markers.push(marker);
             }
           }
-
           // todo: what other finalizing do we need to do here..? any?
           pushGroup(branchChangeGroup.changeGroup);
         }
