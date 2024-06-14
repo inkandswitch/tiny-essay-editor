@@ -710,6 +710,8 @@ export const VersionControlEditor: React.FC<{
                 doc={activeDoc}
                 handle={activeHandle}
                 dataType={dataType}
+                selectedBranch={selectedBranch}
+                setSelectedBranch={setSelectedBranch}
               />
             )}
           </div>

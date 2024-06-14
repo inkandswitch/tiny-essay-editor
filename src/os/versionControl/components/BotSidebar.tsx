@@ -7,7 +7,7 @@ import { DataType } from "@/os/datatypes";
 import { ChatMessage, SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
 import { toast } from "sonner";
 
-type HasBotChatHistory = {
+export type HasBotChatHistory = {
   botChatHistory: ChatMessage[];
 };
 

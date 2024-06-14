@@ -2,6 +2,7 @@ import { AutomergeUrl } from "@automerge/automerge-repo";
 import * as A from "@automerge/automerge/next";
 import { TextPatch } from "./utils";
 import { HasAssets } from "@/os/assets";
+import { HasBotChatHistory } from "./components/BotSidebar";
 
 export type Branch = {
   name: string;
@@ -123,7 +124,8 @@ export type HasVersionControlMetadata<T, V> = HasChangeGroupSummaries &
   // HasAssets is also a universal interface that can be used with any document but it's not really related to versioning
   // We should create a base schema that's a union of all interfaces that we can assume all documents implement but
   // split them up into logical sub interfaces like versioning, commenting, assets, etc
-  HasAssets;
+  HasAssets &
+  HasBotChatHistory;
 
 export type AnnotationId = string & { __annotationId: true };
 
