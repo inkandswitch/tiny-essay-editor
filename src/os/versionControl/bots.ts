@@ -17,7 +17,8 @@ export type AssistantMessage = {
     type: "function";
     function: { name: string; arguments: string };
   }[];
-  branchUrl: AutomergeUrl;
+  // We put a branch url on the message if there was an edit suggested
+  branchUrl?: AutomergeUrl;
 };
 export type ToolMessage = {
   role: "tool";
@@ -64,7 +65,10 @@ const getPath = (doc: Doc<unknown>, path: string[]) => {
 
 const DATATYPE_CONFIGS = {
   essay: {
-    instructions: `The user will give you some text. Return a list of edits to apply to the text to achieve the task below.
+    instructions: `The user will give you some text.
+Your job is to edit the text given their specified task below.
+First ask them a clarifying question or two if there is any ambiguity in their request.
+Then use a tool call to make the edits to the document.
 In your reasoning, concisely explain in a short sentence why the edit is necessary given the task specification.
 Keep your before and after regions short. If you're only editing one word, you only need to include that word.
 Include a short commit message of 2-8 words summarizing the change in specific terms.`,
@@ -72,13 +76,14 @@ Include a short commit message of 2-8 words summarizing the change in specific t
   },
   pkg: {
     instructions: `The user will provide code for a widget which uses React for UI (without using JSX) and Automerge for state.
-  Edit the code to achieve the user's requested task below.
-  Return a list of edits to apply to the code.
+  Your job is to edit the code to achieve the user's requested task below.
+  First ask the user up to 3 clarifying questions in a numbered list if there is any ambiguity about what they want.
+  Then, use a tool call to make edits to the code.
   Each edit should have reasoning for that edit, some before text, and the corresponding after text.
   If there are todo comments try to address them and remove them if you resolved them.
   Include a short commit message of 2-8 words summarizing the change in specific terms.
 
-  Here's an example:
+  Here's an example of the code:
   \`\`\`
   import React from "react";
   import {useDocument} from "@automerge/automerge-repo-react-hooks";
@@ -120,7 +125,7 @@ export const makeBotTextEdits = async ({
   chatHistory: ChatMessage[];
   dataType: DataType<unknown, unknown, unknown>;
   repo: Repo;
-}): Promise<Branch> => {
+}): Promise<Branch | null> => {
   const { instructions, path } = DATATYPE_CONFIGS[dataType.id];
 
   const messages = [
@@ -143,10 +148,17 @@ ${getPath(targetDocHandle.docSync(), path)}`,
     // @ts-expect-error I don't understand what's wrong with the input here...
     messages,
     tools: toolsSpec,
-    tool_choice: "required",
+    tool_choice: "auto",
   });
 
   const assistantMessage = response.choices[0].message;
+
+  if (!assistantMessage.tool_calls) {
+    targetDocHandle.change((d) => {
+      d.botChatHistory.push(assistantMessage as AssistantMessage);
+    });
+    return null;
+  }
 
   try {
     // const parsed: any = JSON.parse(output.function_call.arguments);

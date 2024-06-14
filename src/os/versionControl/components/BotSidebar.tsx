@@ -1,11 +1,4 @@
-import {
-  BotIcon,
-  CheckIcon,
-  EyeIcon,
-  PencilIcon,
-  SearchIcon,
-  XIcon,
-} from "lucide-react";
+import { BotIcon, CheckIcon, EyeIcon, XIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -85,7 +78,9 @@ export const BotSidebar = ({
         dataType,
       });
 
-      setSelectedBranch(branch);
+      if (branch) {
+        setSelectedBranch(branch);
+      }
     } catch (e) {
       toast.error("Error performing edit");
     }
@@ -109,9 +104,8 @@ export const BotSidebar = ({
     .reverse()
     .find((msg) => msg.role === "assistant") as AssistantMessage;
   const showAcceptRejectButtons =
-    ["assistant", "tool"].includes(
-      doc.botChatHistory[doc.botChatHistory.length - 1]?.role
-    ) && selectedBranch?.url === lastAssistantMessage?.branchUrl;
+    lastAssistantMessage?.branchUrl &&
+    selectedBranch?.url === lastAssistantMessage?.branchUrl;
 
   const acceptSuggestion = () => {
     handle.change((d) => {
