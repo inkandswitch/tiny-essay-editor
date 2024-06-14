@@ -74,7 +74,7 @@ import {
 } from "../utils";
 import { ReviewSidebar } from "./ReviewSidebar";
 import { TimelineSidebar } from "./TimelineSidebar";
-import { BotsSidebar } from "./BotsSidebar";
+import { BotSidebar } from "./BotSidebar";
 import { StatusBar } from "./Statusbar";
 
 interface MakeBranchOptions {
@@ -82,7 +82,7 @@ interface MakeBranchOptions {
   heads?: A.Heads;
 }
 
-type SidebarMode = "review" | "history" | "bots";
+type SidebarMode = "review" | "history" | "Bot";
 
 /** A wrapper UI that renders a doc editor with a surrounding branch picker + timeline/annotations sidebar */
 export const VersionControlEditor: React.FC<{
@@ -670,9 +670,9 @@ export const VersionControlEditor: React.FC<{
                   <HistoryIcon size={16} className="mr-2" />
                   History
                 </TabsTrigger>
-                <TabsTrigger value="bots">
+                <TabsTrigger value="Bot">
                   <BotIcon size={16} className="mr-2" />
-                  Bots
+                  Bot
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -705,8 +705,8 @@ export const VersionControlEditor: React.FC<{
                 setCommentState={setCommentState}
               />
             )}
-            {sidebarMode === "bots" && (
-              <BotsSidebar
+            {sidebarMode === "Bot" && (
+              <BotSidebar
                 doc={activeDoc}
                 handle={activeHandle}
                 dataType={dataType}

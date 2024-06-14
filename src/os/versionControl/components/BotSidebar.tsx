@@ -10,13 +10,23 @@ import { SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
 import { MarkdownDoc } from "@/packages/essay";
 import { toast } from "sonner";
 
-export const BotsSidebar = ({
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  // todo: store edits
+};
+
+type HasBotChatHistory = {
+  botChatHistory: ChatMessage[];
+};
+
+export const BotSidebar = ({
   doc,
   handle,
   dataType,
 }: {
-  doc: Doc<unknown>;
-  handle: DocHandle<unknown>;
+  doc: Doc<HasBotChatHistory>;
+  handle: DocHandle<HasBotChatHistory>;
   dataType: DataType<unknown, unknown, unknown>;
 }) => {
   const [editPrompt, setEditPrompt] = useState("");
@@ -26,7 +36,7 @@ export const BotsSidebar = ({
     setLoading(true);
     try {
       await makeBotTextEdits({
-        targetDocHandle: handle as DocHandle<MarkdownDoc>,
+        targetDocHandle: handle,
         prompt: editPrompt,
         dataType,
       });
