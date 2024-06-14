@@ -6,21 +6,24 @@ import { DataType } from "../datatypes";
 
 const EDITOR_BOT_CONTACT_URL = "automerge:QprGUET1kXHD76mMmg7p7Q9TD1R";
 
-const functionsSpec = [
+const toolsSpec = [
   {
-    name: "editDocument",
-    description: "Apply a series of edits to the document",
-    parameters: {
-      type: "object",
-      properties: {
-        edits: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              reasoning: { type: "string" },
-              before: { type: "string" },
-              after: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "editDocument",
+      description: "Apply a series of edits to the document",
+      parameters: {
+        type: "object",
+        properties: {
+          edits: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                reasoning: { type: "string" },
+                before: { type: "string" },
+                after: { type: "string" },
+              },
             },
           },
         },
@@ -65,14 +68,11 @@ export const makeBotTextEdits = async ({
 }): Promise<string> => {
   const { instructions, path } = DATATYPE_CONFIGS[dataType.id];
   const systemPrompt = `${instructions}
+If you use a tool, only make a single tool call.
 
 Task:
 
 ${prompt}
-
-Response format:
-
-${JSON.stringify(functionsSpec)}
   `;
 
   const message = `
@@ -89,18 +89,15 @@ ${JSON.stringify(functionsSpec)}
         content: message,
       },
     ],
-    functions: functionsSpec,
-    function_call: { name: "editDocument" },
+    tools: toolsSpec,
+    tool_choice: "required",
   });
 
   const output = response.choices[0].message;
 
-  if (!output.function_call) {
-    throw new Error("it was supposed to do a function call deterministically");
-  }
-
   try {
-    const parsed: any = JSON.parse(output.function_call.arguments);
+    // const parsed: any = JSON.parse(output.function_call.arguments);
+    const parsed: any = JSON.parse(output.tool_calls[0].function.arguments);
 
     for (const edit of parsed.edits) {
       targetDocHandle.change(
@@ -125,7 +122,8 @@ ${JSON.stringify(functionsSpec)}
       output.content ?? `OK, I made ${parsed.edits.length} edits.`;
 
     return message;
-  } catch {
+  } catch (e) {
+    console.error(e);
     throw new Error(`Failed to parse output: ${output}`);
   }
 };

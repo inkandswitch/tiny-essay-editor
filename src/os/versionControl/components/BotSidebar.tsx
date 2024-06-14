@@ -1,20 +1,16 @@
 import { BotIcon } from "lucide-react";
-import React, { useEffect } from "react";
-
+import React, { useEffect, useRef } from "react";
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Doc, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "@/os/datatypes";
 import { SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
-import { MarkdownDoc } from "@/packages/essay";
 import { toast } from "sonner";
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-  // todo: store edits
-};
+type UserMessage = { role: "user"; content: string };
+type AssistantMessage = { role: "assistant"; content: string | null };
+
+type ChatMessage = UserMessage | AssistantMessage;
 
 type HasBotChatHistory = {
   botChatHistory: ChatMessage[];
@@ -31,12 +27,17 @@ export const BotSidebar = ({
 }) => {
   const [pendingMessage, setPendingMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!doc.botChatHistory) {
       handle.change((d) => (d.botChatHistory = []));
     }
   }, [doc.botChatHistory, handle]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [doc.botChatHistory, loading]);
 
   const handleUserMessage = async () => {
     const newMessage: ChatMessage = {
@@ -119,6 +120,7 @@ export const BotSidebar = ({
         {loading && (
           <div className="mt-2 text-sm text-gray-500">Loading...</div>
         )}
+        <div ref={chatEndRef} />
       </div>
       <div className="flex items-center gap-2">
         <textarea
