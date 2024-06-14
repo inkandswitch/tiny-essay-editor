@@ -51,6 +51,8 @@ export const StatusBar = (props: StatusBarProps) => {
     [tools]
   );
 
+  console.log({ tools });
+
   return (
     <div
       className="bg-gray-100 p-2 flex items-center border-t border-gray-200 gap-3"

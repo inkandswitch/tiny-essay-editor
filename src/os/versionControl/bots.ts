@@ -1,5 +1,4 @@
 import { DEFAULT_MODEL, openaiClient } from "@/os/lib/llm";
-import { MarkdownDoc } from "@/packages/essay";
 import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Doc, splice } from "@automerge/automerge/next";
 import { DataType } from "../datatypes";
@@ -72,12 +71,38 @@ Include a short commit message of 2-8 words summarizing the change in specific t
     path: ["content"],
   },
   pkg: {
-    instructions: `The user will provide code for a widget which uses React for UI (without JSX) and Automerge for state.
+    instructions: `The user will provide code for a widget which uses React for UI (without using JSX) and Automerge for state.
   Edit the code to achieve the user's requested task below.
   Return a list of edits to apply to the code.
   Each edit should have reasoning for that edit, some before text, and the corresponding after text.
   If there are todo comments try to address them and remove them if you resolved them.
-  Include a short commit message of 2-8 words summarizing the change in specific terms
+  Include a short commit message of 2-8 words summarizing the change in specific terms.
+
+  Here's an example:
+  \`\`\`
+  import React from "react";
+  import {useDocument} from "@automerge/automerge-repo-react-hooks";
+
+  export const tool = {
+    type: "patchwork:tool",
+    id: "wordcount-tool", // todo: come up with an id
+    name: "Word Count Tool", // todo: come up with a short name
+    supportedDataTypes: ["essay"],
+    statusBarComponent: ({ docUrl }) => {
+      const [doc] = useDocument(docUrl);
+
+      if (!doc) {
+        return React.createElement('div', null, 'Loading...');
+      }
+
+      const wordCount = doc.content ? doc.content.split(/\s+/).filter(word => word.length > 0).length : 0;
+
+      const style = wordCount > 100 ? { color: 'red' } : {};
+
+      return React.createElement('div', { style }, \`Word Count: \${wordCount} / 100 words\`);
+    },
+  };
+  \`\`\`
   `,
     path: ["source", "index.js", "contents"],
   },
@@ -130,7 +155,7 @@ ${getPath(targetDocHandle.docSync(), path)}`,
     );
 
     if (!assistantMessage.content) {
-      assistantMessage.content = `Made ${parsed.edits.length} edits.`;
+      assistantMessage.content = `Suggesting edits: ${parsed.commitMessage}`;
     }
 
     // The chat updates need to happen on the main doc before we branch,
