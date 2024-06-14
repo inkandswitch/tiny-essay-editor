@@ -77,8 +77,11 @@ Include a short commit message of 2-8 words summarizing the change in specific t
   pkg: {
     instructions: `The user will provide code for a widget which uses React for UI (without using JSX) and Automerge for state.
   Your job is to edit the code to achieve the user's requested task below.
-  First ask the user up to 3 clarifying questions in a numbered list if there is any ambiguity about what they want.
+
+  First, if you need clarification, ask the user up to 3 questions about their desired functionality and intent (NOT the technical functionality) in a numbered list.
+
   Then, use a tool call to make edits to the code.
+  Your edits should be to the statusBarComponent.
   Each edit should have reasoning for that edit, some before text, and the corresponding after text.
   If there are todo comments try to address them and remove them if you resolved them.
   Include a short commit message of 2-8 words summarizing the change in specific terms.

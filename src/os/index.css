@@ -183,3 +183,8 @@
 .timeline-item {
   @apply relative;
 }
+
+ol {
+  list-style-type: decimal;
+  list-style-position: inside;
+}

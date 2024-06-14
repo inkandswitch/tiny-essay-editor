@@ -714,6 +714,7 @@ export const VersionControlEditor: React.FC<{
                 setSelectedBranch={setSelectedBranch}
                 setSidebarMode={setSidebarMode}
                 mergeBranch={handleMergeBranch}
+                deleteBranch={handleDeleteBranch}
               />
             )}
           </div>

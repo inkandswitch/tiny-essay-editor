@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useRepo } from "@automerge/automerge-repo-react-hooks";
 import { Branch, HasVersionControlMetadata } from "../schema";
 import { SidebarMode } from "./VersionControlEditor";
+import Markdown from "react-markdown";
 
 export type HasBotChatHistory = {
   botChatHistory: ChatMessage[];
@@ -32,6 +33,7 @@ export const BotSidebar = ({
   setSelectedBranch,
   setSidebarMode,
   mergeBranch,
+  deleteBranch,
 }: {
   doc: Doc<HasVersionControlMetadata<unknown, unknown>>;
   handle: DocHandle<HasVersionControlMetadata<unknown, unknown>>;
@@ -40,6 +42,7 @@ export const BotSidebar = ({
   setSelectedBranch: (branch: Branch) => void;
   setSidebarMode: (mode: SidebarMode) => void;
   mergeBranch: (branchUrl: AutomergeUrl) => void;
+  deleteBranch: (branchUrl: AutomergeUrl) => void;
 }) => {
   const repo = useRepo();
   const [pendingMessage, setPendingMessage] = useState("");
@@ -134,6 +137,9 @@ export const BotSidebar = ({
         content: REJECT_MESSAGE,
       });
     });
+
+    deleteBranch(selectedBranch.url);
+
     setSelectedBranch(undefined);
   };
   const reviewSuggestion = () => {
@@ -200,7 +206,7 @@ export const BotSidebar = ({
                     : "bg-gray-300 text-black mr-auto w-2/3"
                 }`}
               >
-                {message.content}
+                <Markdown>{message.content}</Markdown>
               </div>
             );
           })}
