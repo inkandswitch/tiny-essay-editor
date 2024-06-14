@@ -4,6 +4,27 @@ import { DocHandle } from "@automerge/automerge-repo";
 import { Doc, splice } from "@automerge/automerge/next";
 import { DataType } from "../datatypes";
 
+// These types are compatible with OpenAI's API so we can directly store a chat history
+// and pass it to OpenAI without further modification.
+
+type UserMessage = { role: "user"; content: string };
+type AssistantMessage = {
+  role: "assistant";
+  content: string | null;
+  tool_calls: {
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }[];
+};
+type ToolMessage = {
+  role: "tool";
+  content: string;
+  tool_call_id: string;
+};
+
+export type ChatMessage = UserMessage | AssistantMessage | ToolMessage;
+
 const EDITOR_BOT_CONTACT_URL = "automerge:QprGUET1kXHD76mMmg7p7Q9TD1R";
 
 const toolsSpec = [
@@ -59,45 +80,44 @@ export const SUPPORTED_DATATYPES = Object.keys(DATATYPE_CONFIGS);
 
 export const makeBotTextEdits = async ({
   targetDocHandle,
-  prompt,
+  chatHistory,
   dataType,
 }: {
   targetDocHandle: DocHandle<MarkdownDoc>;
-  prompt: string;
+  chatHistory: ChatMessage[];
   dataType: DataType<unknown, unknown, unknown>;
-}): Promise<string> => {
+}): Promise<AssistantMessage> => {
   const { instructions, path } = DATATYPE_CONFIGS[dataType.id];
-  const systemPrompt = `${instructions}
-If you use a tool, only make a single tool call.
 
-Task:
-
-${prompt}
-  `;
-
-  const message = `
-  ${getPath(targetDocHandle.docSync(), path)}
-  `;
+  const messages = [
+    {
+      role: "system",
+      content: `${instructions}
+If you call a tool, only make a single call.`,
+    },
+    ...chatHistory,
+    {
+      role: "user",
+      content: `Current document contents:
+${getPath(targetDocHandle.docSync(), path)}`,
+    },
+  ];
 
   const response = await openaiClient.chat.completions.create({
     model: DEFAULT_MODEL,
     temperature: 0,
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
+    messages,
     tools: toolsSpec,
     tool_choice: "required",
   });
 
-  const output = response.choices[0].message;
+  const assistantMessage = response.choices[0].message;
 
   try {
     // const parsed: any = JSON.parse(output.function_call.arguments);
-    const parsed: any = JSON.parse(output.tool_calls[0].function.arguments);
+    const parsed: any = JSON.parse(
+      assistantMessage.tool_calls[0].function.arguments
+    );
 
     for (const edit of parsed.edits) {
       targetDocHandle.change(
@@ -118,12 +138,14 @@ ${prompt}
         { message: JSON.stringify({ author: EDITOR_BOT_CONTACT_URL }) }
       );
     }
-    const message =
-      output.content ?? `OK, I made ${parsed.edits.length} edits.`;
 
-    return message;
+    if (!assistantMessage.content) {
+      assistantMessage.content = `OK, I made ${parsed.edits.length} edits.`;
+    }
+
+    return assistantMessage as AssistantMessage;
   } catch (e) {
     console.error(e);
-    throw new Error(`Failed to parse output: ${output}`);
+    throw new Error(`Failed to parse output: ${assistantMessage}`);
   }
 };

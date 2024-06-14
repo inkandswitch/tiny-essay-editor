@@ -4,13 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Doc, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "@/os/datatypes";
-import { SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
+import { ChatMessage, SUPPORTED_DATATYPES, makeBotTextEdits } from "../bots";
 import { toast } from "sonner";
-
-type UserMessage = { role: "user"; content: string };
-type AssistantMessage = { role: "assistant"; content: string | null };
-
-type ChatMessage = UserMessage | AssistantMessage;
 
 type HasBotChatHistory = {
   botChatHistory: ChatMessage[];
@@ -52,20 +47,27 @@ export const BotSidebar = ({
     setPendingMessage("");
     setLoading(true);
     try {
-      const message = await makeBotTextEdits({
+      const botMessage = await makeBotTextEdits({
         targetDocHandle: handle,
-        prompt: newMessage.content,
+        // The doc object hasn't updated yet from the Automerge update above,
+        // so we need to also tack on the message here.
+        chatHistory: [...doc.botChatHistory, newMessage],
         dataType,
       });
-
-      const botMessage: ChatMessage = {
-        role: "assistant",
-        content: message,
-      };
 
       handle.change((d) => {
         d.botChatHistory.push(botMessage);
       });
+
+      for (const toolCall of botMessage.tool_calls) {
+        handle.change((d) => {
+          d.botChatHistory.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: "OK",
+          });
+        });
+      }
     } catch (e) {
       toast.error("Error performing edit");
     }
@@ -105,18 +107,20 @@ export const BotSidebar = ({
       </h3>
 
       <div className="flex-grow overflow-y-auto mb-2">
-        {doc.botChatHistory.map((message, index) => (
-          <div
-            key={index}
-            className={`relative p-2 m-2 text-sm font-systemSans rounded-lg ${
-              message.role === "user"
-                ? "bg-blue-500 text-white ml-auto w-2/3"
-                : "bg-gray-300 text-black mr-auto w-2/3"
-            }`}
-          >
-            {message.content}
-          </div>
-        ))}
+        {doc.botChatHistory
+          .filter((message) => message.role !== "tool")
+          .map((message, index) => (
+            <div
+              key={index}
+              className={`relative p-2 m-2 text-sm font-systemSans rounded-lg ${
+                message.role === "user"
+                  ? "bg-blue-500 text-white ml-auto w-2/3"
+                  : "bg-gray-300 text-black mr-auto w-2/3"
+              }`}
+            >
+              {message.content}
+            </div>
+          ))}
         {loading && (
           <div className="mt-2 text-sm text-gray-500">Loading...</div>
         )}
