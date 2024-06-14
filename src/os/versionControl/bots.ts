@@ -46,6 +46,7 @@ Keep your before and after regions short. If you're only editing one word, you o
   Edit the code to achieve the user's requested task below.
   Return a list of edits to apply to the code.
   Each edit should have reasoning for that edit, some before text, and the corresponding after text.
+  If there are todo comments try to address them and remove them if you resolved them.
   `,
     path: ["source", "index.js", "contents"],
   },

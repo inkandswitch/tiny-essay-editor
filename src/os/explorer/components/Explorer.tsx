@@ -82,7 +82,13 @@ export const Explorer: React.FC = () => {
       : toolModules[0];
 
   const addNewDocument = useCallback(
-    async ({ type }: { type: string }) => {
+    async ({
+      type,
+      change,
+    }: {
+      type: string;
+      change?: (doc: unknown) => void;
+    }) => {
       const dataType = dataTypes.find(({ id }) => id === type);
 
       if (!dataType) {
@@ -91,7 +97,13 @@ export const Explorer: React.FC = () => {
 
       const newDocHandle =
         repo.create<HasVersionControlMetadata<unknown, unknown>>();
-      newDocHandle.change((doc) => dataType.init(doc, repo));
+      newDocHandle.change((doc) => {
+        dataType.init(doc, repo);
+
+        if (change) {
+          change(doc);
+        }
+      });
 
       let parentFolderUrl: AutomergeUrl;
       let folderPath: AutomergeUrl[];
@@ -273,6 +285,7 @@ export const Explorer: React.FC = () => {
                       branchName: branch?.name,
                     });
                   }}
+                  addNewDocument={addNewDocument}
                 />
               )}
             </div>

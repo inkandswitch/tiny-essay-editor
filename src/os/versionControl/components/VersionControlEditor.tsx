@@ -91,12 +91,14 @@ export const VersionControlEditor: React.FC<{
   tool: Tool;
   selectedBranch: Branch;
   setSelectedBranch: (branch: Branch) => void;
+  addNewDocument: (doc: { type: string; change?: (doc: any) => void }) => void;
 }> = ({
   docUrl: mainDocUrl,
   datatypeId,
   tool,
   selectedBranch,
   setSelectedBranch,
+  addNewDocument,
 }) => {
   const repo = useRepo();
   const [doc, changeDoc] =
@@ -639,6 +641,7 @@ export const VersionControlEditor: React.FC<{
           setSelectedAnnotationGroupId={setSelectedAnnotationGroupId}
           hideInlineComments={hideInlineComments}
           setCommentState={setCommentState}
+          addNewDocument={addNewDocument}
         />
       </div>
 
