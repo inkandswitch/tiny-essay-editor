@@ -81,6 +81,16 @@ module.exports = {
         sans: ["Merriweather Sans", "sans-serif"],
         serif: ["Merriweather", "serif"],
         narrow: ["Arial Narrow", "Arial", "sans-serif"],
+        systemSans: [
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
       },
       boxShadow: {
         upward:

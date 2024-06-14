@@ -62,7 +62,7 @@ export const makeBotTextEdits = async ({
   targetDocHandle: DocHandle<MarkdownDoc>;
   prompt: string;
   dataType: DataType<unknown, unknown, unknown>;
-}): Promise<void> => {
+}): Promise<string> => {
   const { instructions, path } = DATATYPE_CONFIGS[dataType.id];
   const systemPrompt = `${instructions}
 
@@ -121,6 +121,10 @@ ${JSON.stringify(functionsSpec)}
         { message: JSON.stringify({ author: EDITOR_BOT_CONTACT_URL }) }
       );
     }
+    const message =
+      output.content ?? `OK, I made ${parsed.edits.length} edits.`;
+
+    return message;
   } catch {
     throw new Error(`Failed to parse output: ${output}`);
   }
