@@ -19,8 +19,6 @@ import {useDocument} from "@automerge/automerge-repo-react-hooks";
 /*
  An example for doc:
 
- ${JSON.stringify(doc)}
-
 */
 
 export const tool = {
@@ -47,11 +45,8 @@ export const StatusBar = (props: StatusBarProps) => {
   const [doc] = useDocument(docUrl);
 
   const tools = useToolsForDataType(dataType);
-  const statusBarComponent = useMemo(
-    () =>
-      tools.flatMap(({ statusBarComponent }) =>
-        statusBarComponent ? [statusBarComponent] : []
-      ),
+  const toolsWithStatusBarComponent = useMemo(
+    () => tools.filter((tool) => tool.statusBarComponent),
 
     [tools]
   );
@@ -61,31 +56,47 @@ export const StatusBar = (props: StatusBarProps) => {
       className="bg-gray-100 p-2 flex items-center border-t border-gray-200 gap-3"
       style={{ height: "48px" }}
     >
-      {statusBarComponent.map((component) => (
-        <div className="bg-gray-100 rounded-md px-2 py-1">
-          {React.createElement(component, props)}
+      {toolsWithStatusBarComponent.map((tool) => (
+        <div
+          className={`bg-white border border-gray-200 rounded-md px-2 py-1 relative ${
+            tool.sourceDocUrl ? "border-dashed" : ""
+          }`}
+        >
+          {React.createElement(tool.statusBarComponent, props)}
+          {tool.sourceDocUrl ? (
+            <div
+              style={{ transform: " translate(-10px, -60px) rotate(-5deg)" }}
+              className="absolute whitespace-nowrap bg-yellow-100 border border-yellow-200 px-1 "
+            >
+              {(tool.sourceDocUrl as any).name}
+            </div>
+          ) : (
+            ""
+          )}
         </div>
       ))}
 
-      <Button
-        variant="ghost"
-        onClick={() =>
-          addNewDocument({
-            type: "pkg",
-            change: (doc) => {
-              (doc as PackageDoc).source = {
-                type: "automerge",
-                "index.js": {
-                  contentType: "application/javascript",
-                  contents: getEmptyPackageSource(dataType.id, doc),
-                },
-              };
-            },
-          })
-        }
-      >
-        <PlusIcon />
-      </Button>
+      {false && (
+        <Button
+          variant="ghost"
+          onClick={() =>
+            addNewDocument({
+              type: "pkg",
+              change: (doc) => {
+                (doc as PackageDoc).source = {
+                  type: "automerge",
+                  "index.js": {
+                    contentType: "application/javascript",
+                    contents: getEmptyPackageSource(dataType.id, doc),
+                  },
+                };
+              },
+            })
+          }
+        >
+          <PlusIcon />
+        </Button>
+      )}
     </div>
   );
 };

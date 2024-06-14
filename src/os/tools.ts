@@ -36,6 +36,7 @@ export type Tool = {
    * below the primary tool that is selected
    */
   statusBarComponent?: React.FC<EditorProps<unknown, unknown>>;
+  sourceDocUrl?: AutomergeUrl;
 };
 
 export type EditorProps<T, V> = {
@@ -77,8 +78,11 @@ export const useTools = (): Tool[] => {
   // add exported tools in packages to tools
   useEffect(() => {
     setDynamicTools(
-      Object.values(modules).flatMap((module) =>
-        Object.values(module).filter(isTool)
+      Object.values(modules).flatMap(({ module, sourceDocUrl }) =>
+        Object.values(module).flatMap((tool) => {
+          console.log(tool);
+          return isTool(tool) ? [{ ...tool, sourceDocUrl }] : [];
+        })
       )
     );
   }, [modules]);

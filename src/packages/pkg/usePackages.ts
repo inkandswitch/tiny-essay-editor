@@ -1,14 +1,19 @@
 import { useRootFolderDocWithChildren } from "@/os/explorer/account";
-import { DocumentId } from "@automerge/automerge-repo";
+import { AutomergeUrl, DocumentId } from "@automerge/automerge-repo";
 import { useDocuments } from "@automerge/automerge-repo-react-hooks";
 import { useMemo, useRef, useEffect, useState } from "react";
 import { next as A } from "@automerge/automerge";
 import { PackageDoc } from "./datatype";
 import { HasVersionControlMetadata } from "@/os/versionControl/schema";
 
-export const usePackageModulesInRootFolder = () => {
+type Package = {
+  module: any;
+  sourceDocUrl?: AutomergeUrl;
+};
+
+export const usePackageModulesInRootFolder = (): Package[] => {
   const { flatDocLinks } = useRootFolderDocWithChildren();
-  const [modules, setModules] = useState<any[]>([]);
+  const [modules, setModules] = useState<Package[]>([]);
 
   const packageDocLinks = useMemo(
     () =>
@@ -58,7 +63,22 @@ export const usePackageModulesInRootFolder = () => {
                   ","
                 )}`;
 
-          return import(sourceUrl);
+          /*if (packageDoc.branchMetadata.source) {
+            debugger;
+          }*/
+
+          const sourcePackage = packageDoc.branchMetadata.source
+            ? packageDocs[packageDoc.branchMetadata.source.url.slice(10)]
+            : undefined;
+
+          return {
+            module: await import(sourceUrl),
+            sourceDocUrl: sourcePackage
+              ? sourcePackage.branchMetadata.branches.find((branch) =>
+                  branch.url.includes(docId)
+                )
+              : undefined,
+          };
         })
       );
 

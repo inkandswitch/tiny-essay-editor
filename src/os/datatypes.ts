@@ -121,7 +121,7 @@ export const useDataTypes = () => {
   // add exported tools in packages to tools
   useEffect(() => {
     setDynamicDataTypes(
-      Object.values(modules).flatMap((module) =>
+      Object.values(modules).flatMap(({ module }) =>
         Object.values(module).filter(isDataType)
       )
     );
