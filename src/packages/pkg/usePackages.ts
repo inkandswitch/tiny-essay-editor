@@ -35,7 +35,9 @@ export const usePackageModulesInRootFolder = (): Package[] => {
           unknown
         >[]
       ).flatMap((doc) =>
-        doc.branchMetadata?.branches.map((branch) => branch.url)
+        doc.branchMetadata?.branches
+          .filter((branch) => !branch.mergeMetadata)
+          .map((branch) => branch.url)
       ),
     [packageDocs]
   );
@@ -62,10 +64,6 @@ export const usePackageModulesInRootFolder = (): Package[] => {
               : `https://automerge/${docId}/source/index.js?heads=${heads.join(
                   ","
                 )}`;
-
-          /*if (packageDoc.branchMetadata.source) {
-            debugger;
-          }*/
 
           const sourcePackage = packageDoc.branchMetadata.source
             ? packageDocs[packageDoc.branchMetadata.source.url.slice(10)]
