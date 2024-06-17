@@ -1,18 +1,16 @@
 // vite.config.ts
-import {
-  HtmlTagDescriptor,
-  IndexHtmlTransformContext,
-  defineConfig,
-} from "vite";
-import path from "path";
 import react from "@vitejs/plugin-react";
-import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
+import fs from "fs";
 import { globSync } from "glob";
 import { fileURLToPath } from "node:url";
-import fs from "fs";
+import path from "path";
+import { HtmlTagDescriptor, defineConfig } from "vite";
+import topLevelAwait from "vite-plugin-top-level-await";
+import wasm from "vite-plugin-wasm";
+import { Generator } from "@jspm/generator";
 
 const SHARED_DEPENDENCIES = [
+  "@automerge/automerge",
   "@automerge/automerge-repo",
   "@automerge/automerge-repo-react-hooks",
   "react",
@@ -57,7 +55,29 @@ export default defineConfig({
 
           return { html, tags };
         }
-        return html;
+
+        const generator = new Generator({
+          debug: false,
+          env: ["browser", "module"],
+        });
+
+        for (const dep of SHARED_DEPENDENCIES) {
+          await generator.install(dep);
+        }
+
+        return {
+          html,
+          tags: [
+            {
+              tag: "script",
+              attrs: {
+                type: "importmap",
+              },
+              children: JSON.stringify(generator.getMap(), null, 2),
+              injectTo: "head-prepend",
+            },
+          ],
+        };
       },
     },
   ],
@@ -87,11 +107,7 @@ export default defineConfig({
     minify: false,
 
     rollupOptions: {
-      external: [
-        "@automerge/automerge",
-        "@automerge/automerge-repo-react-hooks",
-        "react",
-      ],
+      external: SHARED_DEPENDENCIES,
       input: {
         main: path.resolve(__dirname, "index.html"),
         ...Object.fromEntries(
