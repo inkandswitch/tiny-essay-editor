@@ -1,15 +1,66 @@
 // vite.config.ts
-import { defineConfig } from "vite";
+import {
+  HtmlTagDescriptor,
+  IndexHtmlTransformContext,
+  defineConfig,
+} from "vite";
 import path from "path";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { globSync } from "glob";
 import { fileURLToPath } from "node:url";
+import fs from "fs";
+
+const SHARED_DEPENDENCIES = [
+  "@automerge/automerge-repo",
+  "@automerge/automerge-repo-react-hooks",
+  "react",
+];
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), react()],
+
+  plugins: [
+    topLevelAwait(),
+    react(),
+    {
+      name: "shared-deps-import-map",
+      async transformIndexHtml(html, { server }) {
+        if (server) {
+          const hash = JSON.parse(
+            fs.readFileSync(
+              path.join(__dirname, "node_modules/.vite/deps/_metadata.json"),
+              "utf-8"
+            )
+          ).browserHash;
+
+          const importMap = { imports: {} };
+
+          for (const dep of SHARED_DEPENDENCIES) {
+            importMap.imports[dep] = `/node_modules/.vite/deps/${dep.replace(
+              /\//g,
+              "_"
+            )}.js?v=${hash}`;
+          }
+
+          const tags: HtmlTagDescriptor[] = [
+            {
+              tag: "script",
+              attrs: {
+                type: "importmap",
+              },
+              children: JSON.stringify(importMap, null, 2),
+              injectTo: "head-prepend",
+            },
+          ];
+
+          return { html, tags };
+        }
+        return html;
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
