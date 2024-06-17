@@ -52,3 +52,4 @@ Basic instructions to add a new datatype:
 - copy an existing `src/{datatype}` directory as a template. `tee` is a reasonable example
 - Fill in `src/<your_datatype>/datatype.ts` with a TS type, an init function, and other functions
 - Add your new datatype to the `datatypes` map in `src/datatypes.ts`
+-
