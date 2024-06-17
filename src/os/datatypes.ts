@@ -10,6 +10,7 @@ import { FileExportMethod } from "./fileExports";
 import { useEffect, useState } from "react";
 import { usePackageModulesInRootFolder } from "@/packages/pkg/usePackages";
 import { IconType } from "./lib/icons";
+import * as PACKAGES from "../packages";
 
 export type CoreDataType<D> = {
   id: string;
@@ -129,13 +130,11 @@ export const useDataTypes = () => {
 
   // load packages asynchronously to break the dependency loop tools -> packages -> tools
   useEffect(() => {
-    import("@/packages").then((packages) => {
-      setDataTypes(
-        Object.values(packages).flatMap((module) =>
-          Object.values(module).filter(isDataType)
-        )
-      );
-    });
+    setDataTypes(
+      Object.values(PACKAGES).flatMap((module) =>
+        Object.values(module).filter(isDataType)
+      )
+    );
   }, []);
 
   return dataTypes.concat(dynamicDataTypes);

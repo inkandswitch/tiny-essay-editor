@@ -12,6 +12,7 @@ import { usePackageModulesInRootFolder } from "@/packages/pkg/usePackages";
 import { AutomergeUrl, DocHandle } from "@automerge/automerge-repo";
 import { DataType } from "./datatypes";
 import { IconType } from "./lib/icons";
+import * as PACKAGES from "../packages";
 
 export type Tool = {
   id: string;
@@ -89,13 +90,11 @@ export const useTools = (): Tool[] => {
 
   // load packages asynchronously to break the dependency loop tools -> packages -> tools
   useEffect(() => {
-    import("@/packages").then((packages) => {
-      setBuiltInTools(
-        Object.values(packages).flatMap((module) =>
-          Object.values(module).filter(isTool)
-        )
-      );
-    });
+    setBuiltInTools(
+      Object.values(PACKAGES).flatMap((module) =>
+        Object.values(module).filter(isTool)
+      )
+    );
   }, []);
 
   return builtInTools.concat(dynamicTools);
