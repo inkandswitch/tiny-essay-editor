@@ -112,13 +112,11 @@ export const clickableMarkdownLinksPlugin = [
             event.stopPropagation();
             event.preventDefault();
 
-            if (link) {
-              if (event.shiftKey) {
-                window.open(link.url, "_tab");
-              } else {
-                window.location.href = link.url;
-              }
+            if (!link) {
+              return;
             }
+
+            window.open(link.url, "_tab");
           }
         },
 
