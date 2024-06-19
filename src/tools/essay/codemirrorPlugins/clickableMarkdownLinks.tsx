@@ -1,6 +1,10 @@
 import { syntaxTree } from "@codemirror/language";
 import { Decoration, EditorView, ViewPlugin } from "@codemirror/view";
 import { StateField, StateEffect } from "@codemirror/state";
+import {
+  parseUrl,
+  selectDocLink,
+} from "@/os/explorer/hooks/useSelectedDocLink";
 
 type Link = {
   url: string;
@@ -116,7 +120,19 @@ export const clickableMarkdownLinksPlugin = [
               return;
             }
 
-            window.open(link.url, "_tab");
+            // If it's an internal link starting with a /, try to route it internally within the app
+            const internalLinkMetadata =
+              link.url.startsWith("/") &&
+              parseUrl(new URL(`${location.origin}/${link.url.split("#")[1]}`));
+
+            if (internalLinkMetadata) {
+              selectDocLink({
+                ...internalLinkMetadata,
+                name: "Loading...",
+              });
+            } else {
+              window.open(link.url, "_tab");
+            }
           }
         },
 
