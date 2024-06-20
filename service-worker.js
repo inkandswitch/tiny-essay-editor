@@ -1,15 +1,36 @@
-import wasmBlobUrl from "@automerge/automerge/wasm_blob.wasm?url"
+// @ts-check
 import * as Automerge from "@automerge/automerge/slim";
-import { Repo, isValidAutomergeUrl } from "@automerge/automerge-repo";
+import { Repo, isValidAutomergeUrl } from "@automerge/automerge-repo/slim";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-messagechannel";
+
+/**
+ * This file is not built using the standard Vite toolchain, it is built by the
+ * build-service-worker.js script which is invoked by `yarn run build`. In
+ * order to provide a good development experience there is also a vite plugin
+ * which builds the file using esbuild in development configured in
+ * vite.config.ts.
+ *
+ * Why?! You exclaim in horror. The problem is that Firefox does not support 
+ * ES modules in service workers, but Vite doesn't give us any way of using a
+ * different build in service-worker.js to elsewhere. Hence, this hack, which
+ * allows us to specify an IIFE output for just service-worker.js.
+ *
+ * Now, this means that we can't use a bunch of useful vite functionality, most
+ * importantly we can't use the `?url` suffix on an import. This is a shame
+ * because due to the fact that we can't use ES modules here, we need some way
+ * of getting the URL to the `.wasm` file which we use to initialize Automerge.
+ * As a workaround, we wait for the host page to send us a message with the URL
+ * for the wasm blob in it.
+ */
 
 const CACHE_NAME = "v6";
 
 const PEER_ID = "service-worker-" + Math.round(Math.random() * 1000000);
 
-async function initializeRepo() {
+async function initializeRepo(wasmBlobUrl) {
+  console.log("Initializing automerge wasm with: ", wasmBlobUrl);
   await Automerge.initializeWasm(wasmBlobUrl);  
 
   console.log(`${PEER_ID}: Creating repo`);
@@ -24,7 +45,10 @@ async function initializeRepo() {
   return repo;
 }
 
-const repo = initializeRepo();
+let resolveRepo
+const repo = new Promise((resolve) => {
+  resolveRepo = resolve;
+});
 
 function sendMessageToClients(message) {
   clients.matchAll().then((clients) => {
@@ -36,12 +60,6 @@ function sendMessageToClients(message) {
 
 // When the service worker restarts, tell all clients to re-establish the message channel
 sendMessageToClients({ type: "SERVICE_WORKER_RESTARTED" });
-
-// put it on the global context for interactive use
-repo.then((r) => {
-  self.repo = r;
-  self.Automerge = Automerge;
-});
 
 // Paul: I'm not sure what this comment means
 // return a promise from this so that we can wait on it before returning fetch/addNetworkAdapter
@@ -59,6 +77,15 @@ self.addEventListener("message", async (event) => {
     return;
   }
   console.log(`${PEER_ID}: Client messaged`, event.data);
+  if (event.data && event.data.type === "INITIALIZE_WASM") {
+    const wasmBlobUrl = event.data.wasmBlobUrl;
+    initializeRepo(wasmBlobUrl).then((repo) => {
+      resolveRepo(repo)
+      // Put the repo on the global context for interactive use
+      self.repo = repo
+      self.Automerge = Automerge;
+    })
+  }
   if (event.data && event.data.type === "INIT_PORT") {
     const clientPort = event.ports[0];
     (await repo).networkSubsystem.addNetworkAdapter(

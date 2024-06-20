@@ -1,13 +1,66 @@
 // vite.config.ts
-import { defineConfig } from "vite";
+import { Plugin, defineConfig } from "vite";
 import path from "path";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import { build } from "esbuild"
+
+const SERVICE_WORKER_MODULE_ID = "/service-worker.js"
+const SERVICE_WORKER_PATH = path.join(import.meta.dirname, "service-worker.js")
+
+/**
+  * This plugin builds the service worker in service-worker.js using esbuild
+  *
+  * The reason this is necessary is that Firefox does not support ES modules in
+  * service workers so we need to build an IIFE script, but we don't want to
+  * use IIFE everywhere else.
+  */
+function swPlugin(): Plugin {
+  return {
+    name: "service-worker-dev",
+    enforce: "pre",
+    apply: "serve",
+    handleHotUpdate(ctx) {
+      if (ctx.file === SERVICE_WORKER_PATH) {
+        ctx.server.hot.send({
+          type: "full-reload", 
+        });
+        const module = ctx.server.moduleGraph.getModuleById(SERVICE_WORKER_MODULE_ID)
+        if (module != null) {
+          ctx.server.moduleGraph.invalidateModule(module)
+        }
+        return []
+      }
+    },
+    async resolveId(id) {
+      if (id === SERVICE_WORKER_MODULE_ID) {
+        return SERVICE_WORKER_MODULE_ID;
+      }
+      if (id === SERVICE_WORKER_PATH) {
+        return SERVICE_WORKER_PATH
+      }
+      return null;
+    },
+    async load(id) {
+      if (id === SERVICE_WORKER_MODULE_ID || id === SERVICE_WORKER_PATH) {
+        const result = await build({
+          absWorkingDir: import.meta.dirname,
+          entryPoints: ["service-worker.js"],
+          bundle: true,
+          format: "iife",
+          write: false,
+        })
+        return result.outputFiles[0].text
+      }
+      return null;
+    }
+  }
+}
 
 export default defineConfig({
   base: "./",
-  plugins: [topLevelAwait(), react(), wasm()],
+  plugins: [swPlugin(), topLevelAwait(), react(), wasm()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -15,10 +68,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    // This is necessary because otherwise `vite dev` includes two separate
-    // versions of the JS wrapper. This causes problems because the JS
-    // wrapper has a module level variable to track JS side heap
-    // allocations, and initializing this twice causes horrible breakage
     exclude: [
       "@syntect/wasm",
     ],
@@ -33,7 +82,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        "service-worker": path.resolve(__dirname, "service-worker.js"),
       },
       output: {
         // We put index.css in dist instead of dist/assets so that we can link to fonts
@@ -45,13 +93,6 @@ export default defineConfig({
           }
           // For all other assets, keep the default behavior
           return "assets/[name]-[hash][extname]";
-        },
-        entryFileNames: (chunkInfo) => {
-          // Specify output location for service-worker.js
-          if (chunkInfo.name === "service-worker") {
-            return "[name].js"; // This will place service-worker.js directly under dist
-          }
-          return "assets/[name]-[hash].js"; // Default behavior for other entries
         },
       },
     },
