@@ -1,24 +1,29 @@
 import assert from "assert";
 import { describe, it } from "vitest";
 import { getSyncIndicatorMachine } from "../src/os/explorer/components/SyncIndicator";
-import { createActor } from "xstate";
+import { createActor, SimulatedClock } from "xstate";
 
-const CONNECTION_INIT_TIMEOUT = 100;
+const CONNECTION_INIT_TIMEOUT = 1000;
 const MAX_SYNC_MESSAGE_DELAY = 100;
 
 function getSyncIndicatorService() {
-  return createActor(
-    getSyncIndicatorMachine({
-      connectionInitTimeout: CONNECTION_INIT_TIMEOUT,
-      maxSyncMessageDelay: MAX_SYNC_MESSAGE_DELAY,
-    })
-  ).start();
+  const clock = new SimulatedClock()
+  return {
+    service: createActor(
+      getSyncIndicatorMachine({
+        connectionInitTimeout: CONNECTION_INIT_TIMEOUT,
+        maxSyncMessageDelay: MAX_SYNC_MESSAGE_DELAY,
+      }),
+      {clock},
+    ).start(),
+    clock,
+  }
 }
 
 describe("SyncIndicator", () => {
   describe("syncIndicatorMachine Tests", () => {
     it("should start in initial state", () => {
-      const service = getSyncIndicatorService();
+      const { service } = getSyncIndicatorService();
       const state = service.getSnapshot();
       assert(state.matches("internet.disconnected"));
       assert(state.matches("sync.unknown"));
@@ -28,7 +33,7 @@ describe("SyncIndicator", () => {
     });
 
     it("should switch between internet.connected and internet.disconnect", () => {
-      const service = getSyncIndicatorService();
+      const { service } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
 
@@ -48,7 +53,7 @@ describe("SyncIndicator", () => {
     });
 
     it("should switch between syncServer.connected and syncServer.disconnect", () => {
-      const service = getSyncIndicatorService();
+      const { service } = getSyncIndicatorService();
 
       service.send({ type: "SYNC_SERVER_CONNECTED" });
 
@@ -67,8 +72,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should switch to syncServer error state if sync server hasn't connected after conection init timeout", async () => {
-      const service = getSyncIndicatorService();
+    it("should switch to syncServer error state if sync server hasn't connected after conection init timeout", () => {
+      const { service, clock } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
 
@@ -77,7 +82,7 @@ describe("SyncIndicator", () => {
       assert(state.matches("sync.unknown"));
       assert(state.matches("syncServer.disconnected.ok"));
 
-      await pause(CONNECTION_INIT_TIMEOUT + 1);
+      clock.increment(CONNECTION_INIT_TIMEOUT + 1);
 
       state = service.getSnapshot();
 
@@ -88,8 +93,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should switch between inSync and outOfSync", async () => {
-      const service = getSyncIndicatorService();
+    it("should switch between inSync and outOfSync", () => {
+      const { service } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
       service.send({ type: "SYNC_SERVER_CONNECTED" });
@@ -110,8 +115,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should switch to sync error state if we are out of sync, connected to sync server and haven't received a message in a while", async () => {
-      const service = getSyncIndicatorService();
+    it("should switch to sync error state if we are out of sync, connected to sync server and haven't received a message in a while", () => {
+      const { service, clock } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
       service.send({ type: "SYNC_SERVER_CONNECTED" });
@@ -122,7 +127,8 @@ describe("SyncIndicator", () => {
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.connected"));
 
-      await pause(CONNECTION_INIT_TIMEOUT + MAX_SYNC_MESSAGE_DELAY + 10);
+      clock.increment(CONNECTION_INIT_TIMEOUT + 10);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY + 10);
 
       state = service.getSnapshot();
       assert(state.matches("internet.connected"));
@@ -132,8 +138,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should not switch into sync error state if we are offline, only once we go online and recive no sync messages", async () => {
-      const service = getSyncIndicatorService();
+    it("should not switch into sync error state if we are offline, only once we go online and recive no sync messages", () => {
+      const { service, clock } = getSyncIndicatorService();
 
       service.send({ type: "IS_OUT_OF_SYNC" });
 
@@ -142,7 +148,8 @@ describe("SyncIndicator", () => {
       assert(state.matches("sync.outOfSync.ok"));
       assert(state.matches("syncServer.disconnected"));
 
-      await pause(MAX_SYNC_MESSAGE_DELAY + 10);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY + 10);
+      //await pause(MAX_SYNC_MESSAGE_DELAY + 10);
 
       state = service.getSnapshot();
       assert(state.matches("internet.disconnected"));
@@ -150,8 +157,11 @@ describe("SyncIndicator", () => {
       assert(state.matches("syncServer.disconnected"));
 
       service.send({ type: "INTERNET_CONNECTED" });
+      state = service.getSnapshot();
+      assert(state.matches("internet.connected"));
 
-      await pause(CONNECTION_INIT_TIMEOUT + MAX_SYNC_MESSAGE_DELAY + 10);
+      clock.increment(CONNECTION_INIT_TIMEOUT + 1);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY + 1);
 
       state = service.getSnapshot();
       assert(state.matches("internet.connected"));
@@ -161,8 +171,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should not switch into sync error state if we are out of sync but are still regularly receiving sync messages ", async () => {
-      const service = getSyncIndicatorService();
+    it("should not switch into sync error state if we are out of sync but are still regularly receiving sync messages ", () => {
+      const { service, clock } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
       service.send({ type: "SYNC_SERVER_CONNECTED" });
@@ -175,13 +185,13 @@ describe("SyncIndicator", () => {
       assert(state.matches("syncServer.connected"));
 
       service.send({ type: "RECEIVED_SYNC_MESSAGE" });
-      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY / 2);
 
       service.send({ type: "RECEIVED_SYNC_MESSAGE" });
-      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY / 2);
 
       service.send({ type: "RECEIVED_SYNC_MESSAGE" });
-      await pause(MAX_SYNC_MESSAGE_DELAY / 2);
+      clock.increment(MAX_SYNC_MESSAGE_DELAY / 2);
 
       state = service.getSnapshot();
       assert(state.matches("internet.connected"));
@@ -191,8 +201,8 @@ describe("SyncIndicator", () => {
       service.stop();
     });
 
-    it("should not switch into syncServer error state if the sync server disconnects ", async () => {
-      const service = getSyncIndicatorService();
+    it("should not switch into syncServer error state if the sync server disconnects ", () => {
+      const { service, clock } = getSyncIndicatorService();
 
       service.send({ type: "INTERNET_CONNECTED" });
       service.send({ type: "SYNC_SERVER_CONNECTED" });
@@ -215,7 +225,3 @@ describe("SyncIndicator", () => {
     });
   });
 });
-
-function pause(t = 0) {
-  return new Promise<void>((resolve) => setTimeout(() => resolve(), t));
-}

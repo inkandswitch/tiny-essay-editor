@@ -72,7 +72,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-resize-observer": "^9.1.0",
     "uuid": "^9.0.1",
-    "xstate": "^5.9.1"
+    "xstate": "5.13.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",

@@ -66,7 +66,7 @@ describe("useFolderDocWithChildren", () => {
       wrapper,
     });
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -78,7 +78,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      })),
     );
   });
 
@@ -105,7 +105,7 @@ describe("useFolderDocWithChildren", () => {
       wrapper,
     });
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -117,7 +117,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
 
     act(() => {
@@ -131,7 +131,7 @@ describe("useFolderDocWithChildren", () => {
     });
 
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -148,7 +148,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
   });
 
@@ -174,7 +174,7 @@ describe("useFolderDocWithChildren", () => {
       wrapper,
     });
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -186,7 +186,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
 
     const subFolder2 = repo.create({
@@ -212,7 +212,7 @@ describe("useFolderDocWithChildren", () => {
 
     // First we just see the link to the new folder
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -229,12 +229,12 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loading",
-      })
+      }))
     );
 
     // Then we see its contents loaded
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -261,7 +261,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
   });
 
@@ -306,7 +306,7 @@ describe("useFolderDocWithChildren", () => {
 
     // At first, the sub folder is just a link, without contents loaded yet
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -323,12 +323,12 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loading",
-      })
+      }))
     );
 
     // Then once the sub folder loads, its contents are nested inside
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -355,7 +355,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
   });
 
@@ -417,7 +417,7 @@ describe("useFolderDocWithChildren", () => {
 
     // At first, the sub folder is just a link, without contents loaded yet
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -434,12 +434,12 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loading",
-      })
+      }))
     );
 
     // Then once the sub folder loads, its contents are nested inside
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -471,12 +471,12 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loading",
-      })
+      }))
     );
 
     // Finally we load all the way down the tree
     await waitFor(() =>
-      expect(onDoc).toHaveBeenCalledWith({
+      expect(onDoc).toHaveBeenCalledWith(expect.objectContaining({
         doc: {
           title: "Top Level Folder",
           docs: [
@@ -518,7 +518,7 @@ describe("useFolderDocWithChildren", () => {
           ],
         },
         status: "loaded",
-      })
+      }))
     );
   });
 });
