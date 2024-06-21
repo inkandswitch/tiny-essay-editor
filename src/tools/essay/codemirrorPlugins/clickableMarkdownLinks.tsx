@@ -1,6 +1,10 @@
 import { syntaxTree } from "@codemirror/language";
 import { Decoration, EditorView, ViewPlugin } from "@codemirror/view";
 import { StateField, StateEffect } from "@codemirror/state";
+import {
+  parseUrl,
+  selectDocLink,
+} from "@/os/explorer/hooks/useSelectedDocLink";
 
 type Link = {
   url: string;
@@ -8,7 +12,7 @@ type Link = {
   to: number;
 };
 
-const URL_REGEX = /\[(?<url>[^\[]*)\]/;
+const URL_REGEX = /\[.*\]\((?<url>.*)\)/;
 
 const setHoveredLinkEffect = StateEffect.define<Link | undefined>();
 
@@ -59,7 +63,11 @@ function getLinks(view: EditorView): Link[] {
       enter: (node) => {
         if (node.name === "Link") {
           const link = view.state.sliceDoc(node.from, node.to);
-          const url = link.match(URL_REGEX).groups.url;
+          const url = link.match(URL_REGEX)?.groups?.url;
+
+          if (!url) {
+            return;
+          }
 
           links.push({
             from: node.from,
@@ -108,12 +116,22 @@ export const clickableMarkdownLinksPlugin = [
             event.stopPropagation();
             event.preventDefault();
 
-            if (link) {
-              if (event.shiftKey) {
-                window.open(link.url, "_tab");
-              } else {
-                window.location.href = link.url;
-              }
+            if (!link) {
+              return;
+            }
+
+            // If it's an internal link starting with a /, try to route it internally within the app
+            const internalLinkMetadata =
+              link.url.startsWith("/") &&
+              parseUrl(new URL(`${location.origin}/${link.url.split("#")[1]}`));
+
+            if (internalLinkMetadata) {
+              selectDocLink({
+                ...internalLinkMetadata,
+                name: "Loading...",
+              });
+            } else {
+              window.open(link.url, "_tab");
             }
           }
         },

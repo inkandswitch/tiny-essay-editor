@@ -116,7 +116,7 @@ const parseLegacyUrl = (
   };
 };
 
-const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
+export const parseUrl = (url: URL): Omit<DocLink, "name"> | null => {
   const match = url.pathname.match(
     /^\/([a-z-A-Z0-9\-]+(\((?<branchName>[a-zA-Z0-9\-]+)\))?--)?(?<docId>\w+)$/
   );
