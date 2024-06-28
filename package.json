@@ -6,20 +6,20 @@
   "module": "index.js",
   "scripts": {
     "dev": "vite --force --port 5173",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node ./build-service-worker.js",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest"
   },
   "dependencies": {
-    "@automerge/automerge": "^2.2.2",
-    "@automerge/automerge-codemirror": "^0.0.11",
-    "@automerge/automerge-repo": "^1.1.12",
-    "@automerge/automerge-repo-network-broadcastchannel": "^1.1.12",
-    "@automerge/automerge-repo-network-messagechannel": "^1.1.12",
-    "@automerge/automerge-repo-network-websocket": "^1.1.12",
-    "@automerge/automerge-repo-react-hooks": "^1.1.12",
-    "@automerge/automerge-repo-storage-indexeddb": "^1.1.12",
+    "@automerge/automerge": "2.2.3",
+    "@automerge/automerge-codemirror": "^0.0.12",
+    "@automerge/automerge-repo": "1.2.0",
+    "@automerge/automerge-repo-network-broadcastchannel": "1.2.0",
+    "@automerge/automerge-repo-network-messagechannel": "1.2.0",
+    "@automerge/automerge-repo-network-websocket": "1.2.0",
+    "@automerge/automerge-repo-react-hooks": "1.2.0",
+    "@automerge/automerge-repo-storage-indexeddb": "1.2.0",
     "@codemirror/lang-javascript": "^6.2.1",
     "@codemirror/lang-markdown": "^6.2.1",
     "@codemirror/language": "^6.9.1",
@@ -72,7 +72,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-resize-observer": "^9.1.0",
     "uuid": "^9.0.1",
-    "xstate": "^5.9.1"
+    "xstate": "5.13.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
@@ -98,8 +98,5 @@
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "^0.34.6"
-  },
-  "resolutions": {
-    "@automerge/automerge-wasm": "file:./src/vendor/automerge-wasm"
   }
 }

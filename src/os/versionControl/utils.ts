@@ -1,7 +1,6 @@
 import { useForceUpdate } from "@/components/utils";
 import { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument, useHandle } from "@automerge/automerge-repo-react-hooks";
-import * as wasm from "@automerge/automerge-wasm";
 import * as A from "@automerge/automerge/next";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DiffWithProvenance } from "./schema";
@@ -377,27 +376,6 @@ export function getCursorSafely(
     return null;
   }
 }
-
-// this creates a copy of the document with only the changes up until the passed in heads
-// some functions like A.merge in automerge don't work with view documents
-// if you need to pass a document at a certain heads to these functions use copyDocAtHeads instead
-export const copyDocAtHeads = <T>(doc: A.Doc<T>, heads: A.Heads): A.Doc<T> => {
-  const saved = A.save(doc);
-  const wasmDoc = wasm.load(saved);
-  const extraneousChanges = new Set(
-    wasmDoc.getChanges(heads).map((change) => A.decodeChange(change).hash)
-  );
-
-  const desiredChanges = A.getAllChanges(doc)
-    .map((c) => A.decodeChange(c))
-    .filter((change) => !extraneousChanges.has(change.hash))
-    .map((change) => A.encodeChange(change));
-
-  const cloned = A.init<T>();
-  const [resultDoc] = A.applyChanges(cloned, desiredChanges);
-
-  return resultDoc;
-};
 
 // slot config allows 2 options:
 // 1. Component to match, example: { leadingVisual: LeadingVisual }

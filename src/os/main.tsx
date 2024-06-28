@@ -8,8 +8,8 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { MessageChannelNetworkAdapter } from "@automerge/automerge-repo-network-messagechannel";
-import * as AW from "@automerge/automerge-wasm";
 
+import wasmBlobUrl from "@automerge/automerge/automerge.wasm?url";
 import { next as Automerge } from "@automerge/automerge";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 
@@ -19,6 +19,8 @@ import { Explorer } from "./explorer/components/Explorer.js";
 import "./index.css";
 
 const serviceWorker = await setupServiceWorker();
+// See the notes in service-worker.js for why we need to do this
+serviceWorker.postMessage({ type: "INITIALIZE_WASM", wasmBlobUrl });
 
 // Service workers stop on their own, which breaks sync.
 // Here we ping the service worker while the tab is running
@@ -40,9 +42,7 @@ establishMessageChannel(serviceWorker);
 
 async function setupServiceWorker(): Promise<ServiceWorker> {
   return navigator.serviceWorker
-    .register("/service-worker.js", {
-      type: "module",
-    })
+    .register("/service-worker.js")
     .then((registration) => {
       // If the service worker is still installing, we wait until it is activated
       if (registration.installing) {
@@ -62,11 +62,6 @@ async function setupServiceWorker(): Promise<ServiceWorker> {
 }
 
 async function setupRepo() {
-  // in our vendored version we export a promise that resolves once the wasm is loaded
-  // this property is missing in the type declaration
-  // @ts-expect-error
-  await AW.promise;
-  A.use(AW);
 
   // We create a repo without any network adapters.
   // Later we connect the repo with the repo in the service worker through a message channel

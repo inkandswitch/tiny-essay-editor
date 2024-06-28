@@ -397,20 +397,21 @@ export function getSyncIndicatorMachine({
             },
             outOfSync: {
               initial: "ok",
-              after: {
-                // every time we re-enter the out of sync state the timeout gets reset
-                [maxSyncMessageDelay]: {
-                  target: ".error",
-                  guard: stateIn("internet.connected"),
-                },
-              },
               on: {
                 IS_IN_SYNC: "inSync",
                 RECEIVED_SYNC_MESSAGE: "outOfSync",
                 CONNECTION_INIT_TIMEOUT: "outOfSync",
               },
               states: {
-                ok: {},
+                ok: {
+                  after: {
+                    // every time we re-enter the out of sync state the timeout gets reset
+                    [maxSyncMessageDelay]: {
+                      target: "error",
+                      guard: stateIn({internet: "connected"}),
+                    },
+                  },
+                },
                 error: {},
               },
             },
@@ -443,6 +444,6 @@ export function getSyncIndicatorMachine({
       actions: {
         connectionInitTimeout: raise({ type: "CONNECTION_INIT_TIMEOUT" }),
       },
-    }
+    },
   );
 }

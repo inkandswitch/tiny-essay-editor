@@ -10,8 +10,8 @@
 //   we should define a total order for changes across all devices.
 
 import { AutomergeUrl, Repo } from "@automerge/automerge-repo";
-import { DocHandle } from "@automerge/automerge-repo/dist/DocHandle";
-import { Hash, Heads } from "@automerge/automerge-wasm"; // todo: should be able to import from @automerge/automerge
+import { DocHandle } from "@automerge/automerge-repo";
+import { Heads } from "@automerge/automerge"
 import {
   ActorId,
   DecodedChange,
@@ -32,6 +32,8 @@ import {
   Taggable,
 } from "./schema";
 import { TextPatch, diffWithProvenance } from "./utils";
+
+type Hash = string
 
 /** Change group attributes that could work for any document */
 export type ChangeGroup<T> = {
