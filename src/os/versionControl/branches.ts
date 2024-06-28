@@ -3,7 +3,6 @@ import { AutomergeUrl, DocHandle, Repo } from "@automerge/automerge-repo";
 import { Branch, Branchable } from "./schema";
 import { getStringCompletion } from "@/os/lib/llm";
 import { MarkdownDoc } from "@/datatypes/markdown";
-import { Hash } from "@automerge/automerge-wasm";
 
 export const createBranch = <DocType extends Branchable>({
   repo,
@@ -170,7 +169,7 @@ export const getChangesFromMergedBranch = ({
   branchHeads: A.Heads;
   mainHeads: A.Heads;
   baseHeads: A.Heads;
-}): Set<Hash> => {
+}): Set<string> => {
   const changesInMain = getHashesBetweenHeads({
     decodedChanges: decodedChangesForDoc,
     // This is a bit subtle so it's worth explaining.
@@ -197,8 +196,8 @@ const getHashesBetweenHeads = ({
   decodedChanges: A.DecodedChange[];
   fromHeads: A.Heads;
   toHeads: A.Heads;
-}): Set<Hash> => {
-  const hashes = new Set<Hash>();
+}): Set<string> => {
+  const hashes = new Set<string>();
   const workQueue = structuredClone(toHeads);
 
   while (workQueue.length > 0) {
