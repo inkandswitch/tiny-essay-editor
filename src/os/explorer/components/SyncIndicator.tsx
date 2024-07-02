@@ -8,10 +8,14 @@ import { getRelativeTimeString } from "@/os/lib/dates";
 import { next as A } from "@automerge/automerge";
 import { AutomergeUrl, DocHandle, StorageId } from "@automerge/automerge-repo";
 import { useHandle, useRepo } from "@automerge/automerge-repo-react-hooks";
+import { Button } from "@/components/ui/button";
 import { useMachine } from "@xstate/react";
-import { WifiIcon, WifiOffIcon } from "lucide-react";
+import { WifiIcon, WifiOffIcon, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createMachine, raise, stateIn } from "xstate";
+
+const SYNC_SERVER_STORAGE_ID = (import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
+  "3760df37-a4c6-4f66-9ecd-732039a9385d") as StorageId;
 
 export const SyncIndicator = ({ docUrl }: { docUrl: AutomergeUrl }) => {
   const handle = useHandle(docUrl);
@@ -24,6 +28,7 @@ export const SyncIndicator = ({ docUrl }: { docUrl: AutomergeUrl }) => {
 // NOTE: this sync indicator component does *not* support changing the handle between renders.
 // If you want to change the handle, you should re-mount the component.
 const SyncIndicatorInner = ({ handle }: { handle: DocHandle<unknown> }) => {
+  const repo = useRepo();
   const {
     lastSyncUpdate,
     isInternetConnected,
@@ -51,8 +56,49 @@ const SyncIndicatorInner = ({ handle }: { handle: DocHandle<unknown> }) => {
     prevHandle.current = handle;
   }, [handle]);
 
+  const onCopySyncState = async () => {
+    if (repo.peers.length !== 1) {
+      throw new Error("tab is connected to multiple peers");
+    }
+
+    const storageId = await repo.storageId();
+
+    const ownSyncState = await repo.storageSubsystem.loadSyncState(
+      handle.documentId,
+      storageId
+    );
+
+    const syncServerSyncState = await repo.storageSubsystem.loadSyncState(
+      handle.documentId,
+      SYNC_SERVER_STORAGE_ID
+    );
+
+    const data = {
+      syncServerHeads,
+      self: {
+        storageId,
+        heads: ownHeads,
+        syncState: ownSyncState,
+      },
+      syncServer: {
+        heads: syncServerHeads,
+        storageId: SYNC_SERVER_STORAGE_ID,
+        syncState: syncServerSyncState,
+      },
+    };
+
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(
+      () => {
+        console.log("Copied sync state to clipboard", data);
+      },
+      (err) => {
+        console.error("Failed to copy sync state:", err);
+      }
+    );
+  };
+
   const headsView = (
-    <div className="mt-2 pt-2 border-t border-gray-300">
+    <div className="mt-2 pt-2 border-t border-gray-300 relative">
       <div className="whitespace-nowrap flex">
         <dt className="font-bold inline mr-1">Server heads:</dt>
         <dd className="inline text-ellipsis flex-shrink overflow-hidden min-w-0">
@@ -66,6 +112,17 @@ const SyncIndicatorInner = ({ handle }: { handle: DocHandle<unknown> }) => {
         <dd className="inline text-ellipsis flex-shrink overflow-hidden min-w-0">
           {JSON.stringify((ownHeads ?? []).map((part) => part.slice(0, 4)))}
         </dd>
+      </div>
+
+      <div className="absolute right-0 top-2 flex items-center justify-center">
+        <Button
+          variant="ghost"
+          className="w-full"
+          size="sm"
+          onClick={onCopySyncState}
+        >
+          <Copy size={14} />
+        </Button>
       </div>
     </div>
   );
@@ -204,9 +261,6 @@ const SyncIndicatorInner = ({ handle }: { handle: DocHandle<unknown> }) => {
     );
   }
 };
-
-const SYNC_SERVER_STORAGE_ID = (import.meta.env?.VITE_SYNC_SERVER_STORAGE_ID ??
-  "3760df37-a4c6-4f66-9ecd-732039a9385d") as StorageId;
 
 enum SyncState {
   InSync,
@@ -408,7 +462,7 @@ export function getSyncIndicatorMachine({
                     // every time we re-enter the out of sync state the timeout gets reset
                     [maxSyncMessageDelay]: {
                       target: "error",
-                      guard: stateIn({internet: "connected"}),
+                      guard: stateIn({ internet: "connected" }),
                     },
                   },
                 },
@@ -444,6 +498,6 @@ export function getSyncIndicatorMachine({
       actions: {
         connectionInitTimeout: raise({ type: "CONNECTION_INIT_TIMEOUT" }),
       },
-    },
+    }
   );
 }
